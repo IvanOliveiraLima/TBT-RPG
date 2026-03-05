@@ -40,12 +40,15 @@
         <div class="w3-dropdown-hover">
             <button class="w3-button w3-hover-blue-gray">Options <i class="fa fa-caret-down"></i></button>
             <div id="menu-options" class="w3-dropdown-content w3-bar-block w3-animate-right">
-                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="loadNewSheet(); w3_close()">Load Save</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="loadNewSheet(); w3_close()">Load Sheet</a>
                 <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="saveSheet(); w3_close()">Save Sheet</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="exportSheet(); w3_close()">Export JSON</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openImportDialog(); w3_close()">Import JSON</a>
                 <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="lock()">Lock/Unlock Sheet</a>
                 <div id="lock" class="unlocked w3-padding">Unlocked</div>
             </div>
         </div>
+        <input id="import-sheet-input" type="file" accept=".json,application/json,.js,text/javascript" onchange="importSheetFile(event)" style="display:none" />
         <div class="info w3-margin-top w3-border-top">
             <div class="label">Info & Help</div>
             <div class="w3-margin-top"><span class="auto-filled-border w3-round">Alt Color</span> = Auto-Filled</div>

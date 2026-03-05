@@ -1,4 +1,36 @@
+// garante que a key existe mesmo se load.js vier antes de save.js
+var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
+window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
+
+function getSheetFromLocalStorage() {
+    try {
+        var stored = localStorage.getItem(DND_SHEET_STORAGE_KEY);
+        if (!stored) {
+            return null;
+        }
+        return JSON.parse(stored);
+    } catch (error) {
+        return null;
+    }
+}
+
+var localSheet = getSheetFromLocalStorage();
+if (localSheet) {
+    window.loadJson = localSheet;
+}
+
 function loadNewSheet(argument) {
+    var storedSheet = getSheetFromLocalStorage();
+
+    if (storedSheet) {
+        window.loadJson = storedSheet;
+        if (typeof showSheetFeedback === 'function') {
+            showSheetFeedback('Carregado do navegador');
+        }
+    } else if (typeof showSheetFeedback === 'function') {
+        showSheetFeedback('Carregado arquivo padrao');
+    }
+
     location.reload();
 }
 

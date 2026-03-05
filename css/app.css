@@ -75,6 +75,25 @@ textarea {
     text-align: center;
 }
 
+#sheet-feedback {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 9999;
+    background: rgba(33, 33, 33, 0.92);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#sheet-feedback.show {
+    opacity: 1;
+}
+
 
 /* Page 1 */
 

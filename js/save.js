@@ -64,7 +64,111 @@ function getSpells(spellLevel) {
     return spells
 }
 
-function saveSheet(argument) {
+var DND_SHEET_STORAGE_KEY = 'dnd_sheet_v1';
+var SHEET_FEEDBACK_TIMEOUT;
+
+function showSheetFeedback(message) {
+    var feedback = document.getElementById('sheet-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.id = 'sheet-feedback';
+        document.body.appendChild(feedback);
+    }
+
+    feedback.textContent = message;
+    feedback.classList.add('show');
+
+    clearTimeout(SHEET_FEEDBACK_TIMEOUT);
+    SHEET_FEEDBACK_TIMEOUT = setTimeout(function() {
+        feedback.classList.remove('show');
+    }, 1700);
+}
+
+function parseSheetJsonText(text) {
+    var trimmed = text.trim();
+    var prefix = 'var loadJson = ';
+
+    if (trimmed.indexOf(prefix) === 0) {
+        trimmed = trimmed.substring(prefix.length).trim();
+        if (trimmed.charAt(trimmed.length - 1) === ';') {
+            trimmed = trimmed.substring(0, trimmed.length - 1);
+        }
+    }
+
+    return JSON.parse(trimmed);
+}
+
+function isObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasKeys(source, keys) {
+    if (!isObject(source)) {
+        return false;
+    }
+
+    for (var i = 0; i < keys.length; i++) {
+        if (!(keys[i] in source)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function isValidSheetSchema(sheet) {
+    if (!hasKeys(sheet, ['page1', 'page2', 'page3', 'page4', 'page5'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1, ['basic_info', 'character_info', 'top_bar', 'attributes', 'saves_skills', 'status', 'proficiencies', 'attacks_spells', 'charges'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.basic_info, ['char_name', 'level', 'level_two'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.saves_skills, ['saves', 'skills'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.status, ['death_saves', 'hit_dice'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.charges, ['charge_1', 'charge_2', 'charge_3', 'charge_4', 'charge_5', 'charge_6'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page2, ['equipment', 'mount_pet', 'mount_pet2'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page2.equipment, ['val', 'currency', 'encumberance'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page3, ['spell_info', 'spells'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page3.spells, ['cantrips', 'level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6', 'level_7', 'level_8', 'level_9'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page4, ['backstory', 'allies_organizations', 'personality'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page5, ['notes_1', 'notes_2'])) {
+        return false;
+    }
+
+    return true;
+}
+
+function buildSheetData() {
 
     var sheet = {
         page1: {
@@ -387,20 +491,81 @@ function saveSheet(argument) {
             notes_1: $('#page-5 #notes-1 textarea[name="notes-1"]').val(),
             notes_2: $('#page-5 #notes-2 textarea[name="notes-2"]').val()
         }
+    };
+
+    return sheet;
+}
+
+function saveSheet(argument) {
+    var sheet = buildSheetData();
+
+    try {
+        localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
+        window.loadJson = sheet;
+        showSheetFeedback('Salvo no navegador');
+    } catch (error) {
+        showSheetFeedback('Falha ao salvar');
     }
+}
 
-    var saveString = "var loadJson = ";
-    var saveString = saveString + JSON.stringify(sheet);
-
+function exportSheet(argument) {
+    var sheet = buildSheetData();
+    var saveString = JSON.stringify(sheet, null, 2);
     var file = new Blob([saveString], { type: 'application/json' });
     var a = document.createElement("a"),
         url = URL.createObjectURL(file);
     a.href = url;
-    a.download = 'savedSheet';
+    a.download = 'savedSheet.json';
     document.body.appendChild(a);
     a.click();
     setTimeout(function() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
     }, 0);
+    showSheetFeedback('JSON exportado');
+}
+
+function openImportDialog(argument) {
+    var input = document.getElementById('import-sheet-input');
+    if (input) {
+        input.click();
+    }
+}
+
+function importSheetFile(event) {
+    var input = event.target;
+    var file = input.files && input.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    var reader = new FileReader();
+
+    reader.onload = function(loadEvent) {
+        try {
+            var sheet = parseSheetJsonText(loadEvent.target.result);
+            if (!isValidSheetSchema(sheet)) {
+                showSheetFeedback('JSON não é uma ficha válida');
+                return;
+            }
+            localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
+            window.loadJson = sheet;
+            showSheetFeedback('Importado com sucesso');
+            setTimeout(function() {
+                location.reload();
+            }, 200);
+        } catch (error) {
+            showSheetFeedback('JSON invalido');
+        } finally {
+            input.value = '';
+        }
+    };
+
+    reader.onerror = function() {
+        showSheetFeedback('Falha na leitura do arquivo');
+        input.value = '';
+    };
+
+    reader.readAsText(file);
 }

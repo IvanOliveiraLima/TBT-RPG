@@ -5,7 +5,7 @@ A principal ideia por trás desta ficha é oferecer acesso fácil às informaç�
 
 Atualmente, isto foi pensado para ser uma ficha offline para o jogo Dungeons and Dragons. Ela foi reescrita para ter um layout responsivo moderno usando o CSS leve do W3.
 
-A única parte que depende de conexão online é o uso do FontAwesome, que é usado apenas no menu suspenso. Ela utiliza jQuery para carregar um personagem a partir de um arquivo JSON e preencher automaticamente a maior parte da ficha com base nos seus atributos.
+A única parte que depende de conexão online é o uso do FontAwesome, que é usado apenas no menu suspenso. Ela utiliza jQuery para carregar um personagem e preencher automaticamente a maior parte da ficha com base nos seus atributos.
 
 Uma Ficha de Personagem padrão foi criada para mostrar como este formulário deve ser usado. Isso inclui um `saveSheet.json`, `character.jpeg` e `symbol.jpeg`.
 
@@ -19,12 +19,19 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 2. Preencha todos os campos, começando por Bônus de Proficiência e Atributos.
 3. Salve sua ficha (no menu).
 
-#### Salvar a ficha:
+#### Salvar e carregar a ficha (novo fluxo):
 1. Clique nas barras de “hambúrguer” para abrir o menu.
 2. No menu suspenso `Options`, clique em `Save`.
-3. Uma ficha JSON será baixada.
-4. Copie a nova ficha para a pasta `sheet` do projeto.
-5. Agora você pode atualizar a página ou clicar no botão `Load` no menu suspenso `Options`.
+3. A ficha será salva no navegador via `localStorage` (chave `dnd_sheet_v1`).
+4. Ao atualizar a página, os dados salvos serão carregados automaticamente.
+5. Você também pode clicar em `Load Sheet` para recarregar a ficha salva.
+6. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
+
+#### Backup (Export/Import JSON):
+1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.
+2. Em `Options`, clique em `Import JSON` para carregar um backup local (`.json`).
+3. O `Import JSON` valida o formato mínimo da ficha; arquivos inválidos são rejeitados sem sobrescrever o que já está salvo.
+4. Após importar um arquivo válido, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
 
 #### Alterar imagens do Personagem e da Aliança:
 1. Envie suas imagens para a pasta `imgs`.
