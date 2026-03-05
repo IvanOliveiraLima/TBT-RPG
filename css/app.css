@@ -68,6 +68,7 @@ textarea {
 
 #scroll-to-top {
     bottom: 16px;
+    background-color: #7f8c8d;
 }
 
 [type=checkbox],
