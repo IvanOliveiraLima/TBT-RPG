@@ -98,6 +98,76 @@ function parseSheetJsonText(text) {
     return JSON.parse(trimmed);
 }
 
+function isObject(value) {
+    return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasKeys(source, keys) {
+    if (!isObject(source)) {
+        return false;
+    }
+
+    for (var i = 0; i < keys.length; i++) {
+        if (!(keys[i] in source)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function isValidSheetSchema(sheet) {
+    if (!hasKeys(sheet, ['page1', 'page2', 'page3', 'page4', 'page5'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1, ['basic_info', 'character_info', 'top_bar', 'attributes', 'saves_skills', 'status', 'proficiencies', 'attacks_spells', 'charges'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.basic_info, ['char_name', 'level', 'level_two'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.saves_skills, ['saves', 'skills'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.status, ['death_saves', 'hit_dice'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page1.charges, ['charge_1', 'charge_2', 'charge_3', 'charge_4', 'charge_5', 'charge_6'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page2, ['equipment', 'mount_pet', 'mount_pet2'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page2.equipment, ['val', 'currency', 'encumberance'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page3, ['spell_info', 'spells'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page3.spells, ['cantrips', 'level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6', 'level_7', 'level_8', 'level_9'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page4, ['backstory', 'allies_organizations', 'personality'])) {
+        return false;
+    }
+
+    if (!hasKeys(sheet.page5, ['notes_1', 'notes_2'])) {
+        return false;
+    }
+
+    return true;
+}
+
 function buildSheetData() {
 
     var sheet = {
@@ -475,6 +545,10 @@ function importSheetFile(event) {
     reader.onload = function(loadEvent) {
         try {
             var sheet = parseSheetJsonText(loadEvent.target.result);
+            if (!isValidSheetSchema(sheet)) {
+                showSheetFeedback('JSON não é uma ficha válida');
+                return;
+            }
             localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
             window.loadJson = sheet;
             showSheetFeedback('Importado com sucesso');

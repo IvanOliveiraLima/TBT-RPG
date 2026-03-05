@@ -30,7 +30,8 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 #### Backup (Export/Import JSON):
 1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.
 2. Em `Options`, clique em `Import JSON` para carregar um backup local (`.json`).
-3. Após importar, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
+3. O `Import JSON` valida o formato mínimo da ficha; arquivos inválidos são rejeitados sem sobrescrever o que já está salvo.
+4. Após importar um arquivo válido, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
 
 #### Alterar imagens do Personagem e da Aliança:
 1. Envie suas imagens para a pasta `imgs`.
