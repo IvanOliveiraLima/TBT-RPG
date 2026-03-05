@@ -54,11 +54,16 @@ textarea {
     font-weight: bold;
 }
 
-#menu,
+#menu-btn,
 #scroll-to-top {
     position: fixed;
     height: 55px;
     width: 55px;
+}
+
+#menu-btn {
+    font-size: 28px;
+    line-height: 1;
 }
 
 #scroll-to-top {
