@@ -32,6 +32,8 @@ function att_attack() {
 		`
 	);
 
+	document.dispatchEvent(new Event('sheetChanged'));
+
 }
 
 $('document').ready(function (argument) {
@@ -53,6 +55,7 @@ $('document').ready(function (argument) {
 
 	$('#attacks tbody').on('click', 'button', function (argument) {
 		$(this).parent().parent().remove();
+		document.dispatchEvent(new Event('sheetChanged'));
 	});
 
 });

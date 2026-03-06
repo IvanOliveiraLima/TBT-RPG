@@ -64,8 +64,14 @@ function getSpells(spellLevel) {
     return spells
 }
 
-var DND_SHEET_STORAGE_KEY = 'dnd_sheet_v1';
+var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
+window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
 var SHEET_FEEDBACK_TIMEOUT;
+var AUTO_SAVE_DEBOUNCE_MS = 800;
+var AUTO_SAVE_TIMER = null;
+var LAST_AUTOSAVE_FEEDBACK_TS = 0;
+var AUTOSAVE_FEEDBACK_MIN_INTERVAL_MS = 4000;
+var skipUnloadSave = false;
 
 function showSheetFeedback(message) {
     var feedback = document.getElementById('sheet-feedback');
@@ -496,16 +502,57 @@ function buildSheetData() {
     return sheet;
 }
 
+function persistSheetToLocalStorage(sheet) {
+    localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
+    window.loadJson = sheet;
+}
+
 function saveSheet(argument) {
     var sheet = buildSheetData();
 
     try {
-        localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
-        window.loadJson = sheet;
+        persistSheetToLocalStorage(sheet);
         showSheetFeedback('Salvo no navegador');
     } catch (error) {
         showSheetFeedback('Falha ao salvar');
     }
+}
+
+function runAutoSave() {
+    var sheet = buildSheetData();
+
+    try {
+        persistSheetToLocalStorage(sheet);
+        var now = Date.now();
+        if ((now - LAST_AUTOSAVE_FEEDBACK_TS) >= AUTOSAVE_FEEDBACK_MIN_INTERVAL_MS) {
+            showSheetFeedback('Salvo automaticamente');
+            LAST_AUTOSAVE_FEEDBACK_TS = now;
+        }
+    } catch (error) {
+        showSheetFeedback('Falha no auto-save');
+    }
+}
+
+function scheduleAutoSave() {
+    clearTimeout(AUTO_SAVE_TIMER);
+    AUTO_SAVE_TIMER = setTimeout(runAutoSave, AUTO_SAVE_DEBOUNCE_MS);
+}
+
+function persistCurrentSheetSafely() {
+    if (skipUnloadSave) {
+        return;
+    }
+
+    try {
+        var sheet = buildSheetData();
+        persistSheetToLocalStorage(sheet);
+    } catch (error) {}
+}
+
+function clearSavedSheet(argument) {
+    skipUnloadSave = true;
+    localStorage.removeItem(DND_SHEET_STORAGE_KEY);
+    location.reload();
 }
 
 function exportSheet(argument) {
@@ -549,8 +596,7 @@ function importSheetFile(event) {
                 showSheetFeedback('JSON não é uma ficha válida');
                 return;
             }
-            localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
-            window.loadJson = sheet;
+            persistSheetToLocalStorage(sheet);
             showSheetFeedback('Importado com sucesso');
             setTimeout(function() {
                 location.reload();
@@ -569,3 +615,26 @@ function importSheetFile(event) {
 
     reader.readAsText(file);
 }
+
+$(document).ready(function() {
+    document.addEventListener('sheetChanged', scheduleAutoSave);
+
+    // Defer listener binding until initial scripted load is done.
+    setTimeout(function() {
+        $(document).on('input change', 'input, select, textarea', function(event) {
+            if ($(event.target).is('#import-sheet-input, [type="file"]')) {
+                return;
+            }
+
+            // Ignore synthetic events fired by scripts during form bootstrapping.
+            if (!event.originalEvent) {
+                return;
+            }
+
+            scheduleAutoSave();
+        });
+    }, 0);
+});
+
+window.addEventListener('beforeunload', persistCurrentSheetSafely);
+window.addEventListener('pagehide', persistCurrentSheetSafely);

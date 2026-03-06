@@ -17,21 +17,21 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 #### Criar sua própria ficha de personagem:
 1. Baixe ou clone o repositório.
 2. Preencha todos os campos, começando por Bônus de Proficiência e Atributos.
-3. Salve sua ficha (no menu).
+3. A ficha é salva automaticamente no navegador enquanto você edita.
 
-#### Salvar e carregar a ficha (novo fluxo):
+#### Salvar automaticamente e carregar a ficha:
 1. Clique nas barras de “hambúrguer” para abrir o menu.
-2. No menu suspenso `Options`, clique em `Save`.
-3. A ficha será salva no navegador via `localStorage` (chave `dnd_sheet_v1`).
-4. Ao atualizar a página, os dados salvos serão carregados automaticamente.
-5. Você também pode clicar em `Load Sheet` para recarregar a ficha salva.
-6. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
+2. Ao alterar qualquer campo, a ficha é salva automaticamente no `localStorage` (chave `dnd_sheet_v1`).
+3. Ao atualizar a página, os dados salvos são carregados automaticamente.
+4. Você também pode clicar em `Load Sheet` para recarregar a ficha salva.
+5. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
 
 #### Backup (Export/Import JSON):
 1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.
 2. Em `Options`, clique em `Import JSON` para carregar um backup local (`.json`).
 3. O `Import JSON` valida o formato mínimo da ficha; arquivos inválidos são rejeitados sem sobrescrever o que já está salvo.
 4. Após importar um arquivo válido, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
+5. `Clear Saved Sheet` remove a ficha salva localmente e recarrega a página usando o fallback padrão.
 
 #### Alterar imagens do Personagem e da Aliança:
 1. Envie suas imagens para a pasta `imgs`.
