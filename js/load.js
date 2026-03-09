@@ -28,21 +28,6 @@ if (localSheet) {
     window.loadJson = localSheet;
 }
 
-function loadNewSheet(argument) {
-    var storedSheet = getSheetFromLocalStorage();
-
-    if (storedSheet) {
-        window.loadJson = storedSheet;
-        if (typeof showSheetFeedback === 'function') {
-            showSheetFeedback('Carregado do navegador');
-        }
-    } else if (typeof showSheetFeedback === 'function') {
-        showSheetFeedback('Carregado arquivo padrao');
-    }
-
-    location.reload();
-}
-
 $(document).ready(function(argument) {
 
     //Change the title to the character name

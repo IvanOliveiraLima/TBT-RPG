@@ -23,8 +23,7 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 1. Clique nas barras de “hambúrguer” para abrir o menu.
 2. Ao alterar qualquer campo, a ficha é salva automaticamente no `localStorage` (chave `dnd_sheet_v1`).
 3. Ao atualizar a página, os dados salvos são carregados automaticamente.
-4. Você também pode clicar em `Load Sheet` para recarregar a ficha salva.
-5. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
+4. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
 
 #### Backup (Export/Import JSON):
 1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.
