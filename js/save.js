@@ -577,6 +577,26 @@ function clearSavedSheet(argument) {
     location.reload();
 }
 
+function getExportFilenameFromSheet(sheet) {
+    var rawName = '';
+
+    if (sheet && sheet.page1 && sheet.page1.basic_info && typeof sheet.page1.basic_info.char_name === 'string') {
+        rawName = sheet.page1.basic_info.char_name;
+    }
+
+    var sanitizedName = rawName
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[\/\\:\*\?"<>\|]/g, '-')
+        .trim();
+
+    if (!sanitizedName) {
+        return 'savedSheet.json';
+    }
+
+    return sanitizedName + '.json';
+}
+
 function exportSheet(argument) {
     var sheet = normalizeSheet(buildSheetData());
     var saveString = JSON.stringify(sheet, null, 2);
@@ -584,7 +604,7 @@ function exportSheet(argument) {
     var a = document.createElement("a"),
         url = URL.createObjectURL(file);
     a.href = url;
-    a.download = 'savedSheet.json';
+    a.download = getExportFilenameFromSheet(sheet);
     document.body.appendChild(a);
     a.click();
     setTimeout(function() {
