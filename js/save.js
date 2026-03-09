@@ -620,9 +620,10 @@ function importSheetFile(event) {
             }
             persistSheetToLocalStorage(sheet);
             showSheetFeedback('Importado com sucesso');
-            setTimeout(function() {
-                location.reload();
-            }, 200);
+            clearTimeout(AUTO_SAVE_TIMER);
+            AUTO_SAVE_TIMER = null;
+            skipUnloadSave = true;
+            location.reload();
         } catch (error) {
             showSheetFeedback('JSON invalido');
         } finally {
