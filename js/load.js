@@ -2,13 +2,22 @@
 var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
 window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
 
+function normalizeSheetOnLoad(sheet) {
+    if (typeof normalizeSheet === 'function') {
+        return normalizeSheet(sheet);
+    }
+    return sheet;
+}
+
+window.loadJson = normalizeSheetOnLoad(window.loadJson);
+
 function getSheetFromLocalStorage() {
     try {
         var stored = localStorage.getItem(DND_SHEET_STORAGE_KEY);
         if (!stored) {
             return null;
         }
-        return JSON.parse(stored);
+        return normalizeSheetOnLoad(JSON.parse(stored));
     } catch (error) {
         return null;
     }

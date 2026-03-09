@@ -66,6 +66,7 @@ function getSpells(spellLevel) {
 
 var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
 window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
+var CURRENT_SHEET_SCHEMA_VERSION = 1;
 var SHEET_FEEDBACK_TIMEOUT;
 var AUTO_SAVE_DEBOUNCE_MS = 800;
 var AUTO_SAVE_TIMER = null;
@@ -102,6 +103,26 @@ function parseSheetJsonText(text) {
     }
 
     return JSON.parse(trimmed);
+}
+
+function normalizeSheet(sheet) {
+    if (!isObject(sheet)) {
+        return sheet;
+    }
+
+    var version = sheet.schemaVersion;
+
+    if (version == null) {
+        sheet.schemaVersion = 1;
+        version = 1;
+    }
+
+    if (version === 1) {
+        return sheet;
+    }
+
+    // Future migration entry point, e.g. migrateV1ToV2(sheet)
+    return sheet;
 }
 
 function isObject(value) {
@@ -177,6 +198,7 @@ function isValidSheetSchema(sheet) {
 function buildSheetData() {
 
     var sheet = {
+        schemaVersion: CURRENT_SHEET_SCHEMA_VERSION,
         page1: {
             basic_info: {
                 char_name: $('#character-basic-info #basic-info input[name="char-name"]').val(),
@@ -508,7 +530,7 @@ function persistSheetToLocalStorage(sheet) {
 }
 
 function saveSheet(argument) {
-    var sheet = buildSheetData();
+    var sheet = normalizeSheet(buildSheetData());
 
     try {
         persistSheetToLocalStorage(sheet);
@@ -556,7 +578,7 @@ function clearSavedSheet(argument) {
 }
 
 function exportSheet(argument) {
-    var sheet = buildSheetData();
+    var sheet = normalizeSheet(buildSheetData());
     var saveString = JSON.stringify(sheet, null, 2);
     var file = new Blob([saveString], { type: 'application/json' });
     var a = document.createElement("a"),
@@ -591,7 +613,7 @@ function importSheetFile(event) {
 
     reader.onload = function(loadEvent) {
         try {
-            var sheet = parseSheetJsonText(loadEvent.target.result);
+            var sheet = normalizeSheet(parseSheetJsonText(loadEvent.target.result));
             if (!isValidSheetSchema(sheet)) {
                 showSheetFeedback('JSON não é uma ficha válida');
                 return;
