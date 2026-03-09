@@ -32,6 +32,7 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 3. O `Import JSON` valida o formato mínimo da ficha; arquivos inválidos são rejeitados sem sobrescrever o que já está salvo.
 4. Após importar um arquivo válido, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
 5. `Clear Saved Sheet` remove a ficha salva localmente e recarrega a página usando o fallback padrão.
+6. Fichas salvas/exportadas agora incluem `schemaVersion` para compatibilidade com futuras migrações de estrutura.
 
 #### Alterar imagens do Personagem e da Aliança:
 1. Envie suas imagens para a pasta `imgs`.
