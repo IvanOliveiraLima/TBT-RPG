@@ -118,6 +118,69 @@ function normalizeSheet(sheet) {
     }
 
     if (version === 1) {
+        if (isObject(sheet.page1) && isObject(sheet.page1.basic_info)) {
+            var basicInfo = sheet.page1.basic_info;
+            var rawLevel = String(basicInfo.level || '').trim();
+            var rawLevelTwo = String(basicInfo.level_two || '').trim();
+            var currentClass = String(basicInfo.char_class || '').trim();
+            var currentLevel = String(basicInfo.level || '').trim();
+
+            function parseLegacyClassLevel(value) {
+                var rawValue = String(value || '').trim();
+                var parsed = {
+                    charClass: '',
+                    level: ''
+                };
+
+                if (!rawValue) {
+                    return parsed;
+                }
+
+                var commaMatch = rawValue.match(/^(.*?),\s*(\d+)$/);
+                if (commaMatch) {
+                    parsed.charClass = commaMatch[1].trim();
+                    parsed.level = commaMatch[2].trim();
+                    return parsed;
+                }
+
+                var trailingLevelMatch = rawValue.match(/^(.*)\s+(\d+)$/);
+                if (trailingLevelMatch) {
+                    parsed.charClass = trailingLevelMatch[1].trim();
+                    parsed.level = trailingLevelMatch[2].trim();
+                    return parsed;
+                }
+
+                parsed.charClass = rawValue;
+                return parsed;
+            }
+
+            var parsedFromLevel = parseLegacyClassLevel(rawLevel);
+            if (!currentClass && parsedFromLevel.charClass) {
+                currentClass = parsedFromLevel.charClass;
+            }
+            if (parsedFromLevel.level && !/^\d+$/.test(currentLevel)) {
+                currentLevel = parsedFromLevel.level;
+            }
+
+            // Legacy compatibility: some sheets stored combined Class/Level in level_two.
+            if (!/^\d+$/.test(currentLevel) && rawLevelTwo) {
+                var parsedFromLevelTwo = parseLegacyClassLevel(rawLevelTwo);
+                if (parsedFromLevelTwo.charClass) {
+                    if (!currentClass) {
+                        currentClass = parsedFromLevelTwo.charClass;
+                    } else if (currentClass !== parsedFromLevelTwo.charClass) {
+                        currentClass = currentClass + ' / ' + parsedFromLevelTwo.charClass;
+                    }
+                }
+                if (parsedFromLevelTwo.level) {
+                    currentLevel = parsedFromLevelTwo.level;
+                }
+            }
+
+            basicInfo.char_class = currentClass;
+            basicInfo.level = currentLevel;
+        }
+
         return sheet;
     }
 
@@ -152,7 +215,15 @@ function isValidSheetSchema(sheet) {
         return false;
     }
 
-    if (!hasKeys(sheet.page1.basic_info, ['char_name', 'level', 'level_two'])) {
+    if (!hasKeys(sheet.page1.basic_info, ['char_name'])) {
+        return false;
+    }
+
+    var basicInfo = sheet.page1.basic_info;
+    var hasNewClassLevel = ('char_class' in basicInfo) && ('level' in basicInfo);
+    var hasLegacyClassLevel = ('level' in basicInfo) && ('level_two' in basicInfo);
+
+    if (!hasNewClassLevel && !hasLegacyClassLevel) {
         return false;
     }
 
@@ -202,16 +273,15 @@ function buildSheetData() {
         page1: {
             basic_info: {
                 char_name: $('#character-basic-info #basic-info input[name="char-name"]').val(),
+                char_class: $('#character-basic-info #basic-info input[name="char-class"]').val(),
                 level: $('#character-basic-info #basic-info input[name="level"]').val(),
-                level_two: $('#character-basic-info #basic-info input[name="level-two"]').val(),
             },
             character_info: {
                 race_class: $('#character-basic-info #character-info input[name="race-class"]').val(),
                 background: $('#character-basic-info #character-info input[name="background"]').val(),
                 player_name: $('#character-basic-info #character-info input[name="player-name"]').val(),
                 exp: $('#character-basic-info #character-info input[name="exp"]').val(),
-                alignment: $('#character-basic-info #character-info input[name="alignment"]').val(),
-                deity: $('#character-basic-info #character-info input[name="deity"]').val()
+                alignment: $('#character-basic-info #character-info input[name="alignment"]').val()
             },
             top_bar: {
                 proficiency: $('#page-1 #top-bar input[name="proficiency"]').val(),

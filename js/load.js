@@ -36,8 +36,8 @@ $(document).ready(function(argument) {
 
     //Load Basic Info
     $('#character-basic-info #basic-info input[name="char-name"]').val(loadJson.page1.basic_info.char_name);
+    $('#character-basic-info #basic-info input[name="char-class"]').val(loadJson.page1.basic_info.char_class);
     $('#character-basic-info #basic-info input[name="level"]').val(loadJson.page1.basic_info.level);
-    $('#character-basic-info #basic-info input[name="level-two"]').val(loadJson.page1.basic_info.level_two);
 
     //Load Character Info
     $('#character-basic-info #character-info input[name="race-class"]').val(loadJson.page1.character_info.race_class);
@@ -45,7 +45,6 @@ $(document).ready(function(argument) {
     $('#character-basic-info #character-info input[name="player-name"]').val(loadJson.page1.character_info.player_name);
     $('#character-basic-info #character-info input[name="exp"]').val(loadJson.page1.character_info.exp);
     $('#character-basic-info #character-info input[name="alignment"]').val(loadJson.page1.character_info.alignment);
-    $('#character-basic-info #character-info input[name="deity"]').val(loadJson.page1.character_info.deity);
 
     //Load Info Bar
     $('#page-1 #top-bar input[name="proficiency"]').val(loadJson.page1.top_bar.proficiency);
