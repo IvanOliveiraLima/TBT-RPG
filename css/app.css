@@ -104,7 +104,11 @@ textarea {
 /* Page 1 */
 
 #prof-traits-container {
-    padding-right: 16px;
+    padding-right: 0;
+}
+
+#proficiencies {
+    padding-right: 8px;
 }
 
 #basic-info input,
@@ -284,7 +288,20 @@ textarea {
 }
 
 #features-container {
+    padding-left: 8px;
     min-width: 350px;
+}
+
+#attacks-container {
+    clear: both;
+}
+
+@media (max-width: 992px) {
+    #proficiencies,
+    #features-container {
+        padding-left: 0;
+        padding-right: 0;
+    }
 }
 
 #attacks-spells table#attacks {
