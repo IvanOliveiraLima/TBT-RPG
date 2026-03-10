@@ -60,6 +60,10 @@ function resolveInitialSheet() {
     return loadFallbackSheet();
 }
 
+function setFormFieldsEnabled(enabled) {
+    $('input, select, textarea').prop('disabled', !enabled);
+}
+
 function applyLoadedSheet() {
 
     //Change the title to the character name
@@ -420,12 +424,16 @@ function applyLoadedSheet() {
 }
 
 $(document).ready(function(argument) {
+    setFormFieldsEnabled(false);
+
     resolveInitialSheet()
         .then(function(sheet) {
             window.loadJson = sheet;
             applyLoadedSheet();
+            setFormFieldsEnabled(true);
         })
         .catch(function(error) {
+            setFormFieldsEnabled(true);
             if (typeof showSheetFeedback === 'function') {
                 showSheetFeedback('Falha ao carregar ficha padrao');
             }
