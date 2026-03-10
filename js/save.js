@@ -120,45 +120,65 @@ function normalizeSheet(sheet) {
     if (version === 1) {
         if (isObject(sheet.page1) && isObject(sheet.page1.basic_info)) {
             var basicInfo = sheet.page1.basic_info;
-            var legacyClass = '';
-            var legacyLevel = '';
-            var levelValue = String(basicInfo.level || '').trim();
+            var rawLevel = String(basicInfo.level || '').trim();
+            var rawLevelTwo = String(basicInfo.level_two || '').trim();
+            var currentClass = String(basicInfo.char_class || '').trim();
+            var currentLevel = String(basicInfo.level || '').trim();
 
-            // Backward compatibility for old "Class/Level" combined value.
-            if (!basicInfo.char_class && levelValue) {
-                var commaMatch = levelValue.match(/^(.*?),\s*(\d+)$/);
+            function parseLegacyClassLevel(value) {
+                var rawValue = String(value || '').trim();
+                var parsed = {
+                    charClass: '',
+                    level: ''
+                };
+
+                if (!rawValue) {
+                    return parsed;
+                }
+
+                var commaMatch = rawValue.match(/^(.*?),\s*(\d+)$/);
                 if (commaMatch) {
-                    legacyClass = commaMatch[1].trim();
-                    legacyLevel = commaMatch[2].trim();
-                } else {
-                    var trailingLevelMatch = levelValue.match(/^(.*)\s+(\d+)$/);
-                    if (trailingLevelMatch) {
-                        legacyClass = trailingLevelMatch[1].trim();
-                        legacyLevel = trailingLevelMatch[2].trim();
-                    } else {
-                        legacyClass = levelValue;
+                    parsed.charClass = commaMatch[1].trim();
+                    parsed.level = commaMatch[2].trim();
+                    return parsed;
+                }
+
+                var trailingLevelMatch = rawValue.match(/^(.*)\s+(\d+)$/);
+                if (trailingLevelMatch) {
+                    parsed.charClass = trailingLevelMatch[1].trim();
+                    parsed.level = trailingLevelMatch[2].trim();
+                    return parsed;
+                }
+
+                parsed.charClass = rawValue;
+                return parsed;
+            }
+
+            var parsedFromLevel = parseLegacyClassLevel(rawLevel);
+            if (!currentClass && parsedFromLevel.charClass) {
+                currentClass = parsedFromLevel.charClass;
+            }
+            if (parsedFromLevel.level && !/^\d+$/.test(currentLevel)) {
+                currentLevel = parsedFromLevel.level;
+            }
+
+            // Legacy compatibility: some sheets stored combined Class/Level in level_two.
+            if (!/^\d+$/.test(currentLevel) && rawLevelTwo) {
+                var parsedFromLevelTwo = parseLegacyClassLevel(rawLevelTwo);
+                if (parsedFromLevelTwo.charClass) {
+                    if (!currentClass) {
+                        currentClass = parsedFromLevelTwo.charClass;
+                    } else if (currentClass !== parsedFromLevelTwo.charClass) {
+                        currentClass = currentClass + ' / ' + parsedFromLevelTwo.charClass;
                     }
                 }
-            }
-
-            if (!basicInfo.char_class) {
-                basicInfo.char_class = legacyClass;
-            }
-
-            if (basicInfo.level_two && typeof basicInfo.level_two === 'string' && basicInfo.level_two.trim()) {
-                if (basicInfo.char_class) {
-                    basicInfo.char_class = basicInfo.char_class + ' / ' + basicInfo.level_two.trim();
-                } else {
-                    basicInfo.char_class = basicInfo.level_two.trim();
+                if (parsedFromLevelTwo.level) {
+                    currentLevel = parsedFromLevelTwo.level;
                 }
             }
 
-            if (legacyLevel && (!basicInfo.level || !String(basicInfo.level).trim() || !/^\d+$/.test(String(basicInfo.level).trim()))) {
-                basicInfo.level = legacyLevel;
-            }
-
-            basicInfo.char_class = String(basicInfo.char_class || '').trim();
-            basicInfo.level = String(basicInfo.level || '').trim();
+            basicInfo.char_class = currentClass;
+            basicInfo.level = currentLevel;
         }
 
         return sheet;
