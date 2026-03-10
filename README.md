@@ -24,6 +24,7 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 2. Ao alterar qualquer campo, a ficha é salva automaticamente no `localStorage` (chave `dnd_sheet_v1`).
 3. Ao atualizar a página, os dados salvos são carregados automaticamente.
 4. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
+5. O cabeçalho principal agora usa campos separados para `Class` e `Level`, e o campo `Deity` foi removido dessa área.
 
 #### Backup (Export/Import JSON):
 1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.

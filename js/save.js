@@ -118,6 +118,49 @@ function normalizeSheet(sheet) {
     }
 
     if (version === 1) {
+        if (isObject(sheet.page1) && isObject(sheet.page1.basic_info)) {
+            var basicInfo = sheet.page1.basic_info;
+            var legacyClass = '';
+            var legacyLevel = '';
+            var levelValue = String(basicInfo.level || '').trim();
+
+            // Backward compatibility for old "Class/Level" combined value.
+            if (!basicInfo.char_class && levelValue) {
+                var commaMatch = levelValue.match(/^(.*?),\s*(\d+)$/);
+                if (commaMatch) {
+                    legacyClass = commaMatch[1].trim();
+                    legacyLevel = commaMatch[2].trim();
+                } else {
+                    var trailingLevelMatch = levelValue.match(/^(.*)\s+(\d+)$/);
+                    if (trailingLevelMatch) {
+                        legacyClass = trailingLevelMatch[1].trim();
+                        legacyLevel = trailingLevelMatch[2].trim();
+                    } else {
+                        legacyClass = levelValue;
+                    }
+                }
+            }
+
+            if (!basicInfo.char_class) {
+                basicInfo.char_class = legacyClass;
+            }
+
+            if (basicInfo.level_two && typeof basicInfo.level_two === 'string' && basicInfo.level_two.trim()) {
+                if (basicInfo.char_class) {
+                    basicInfo.char_class = basicInfo.char_class + ' / ' + basicInfo.level_two.trim();
+                } else {
+                    basicInfo.char_class = basicInfo.level_two.trim();
+                }
+            }
+
+            if (legacyLevel && (!basicInfo.level || !String(basicInfo.level).trim() || !/^\d+$/.test(String(basicInfo.level).trim()))) {
+                basicInfo.level = legacyLevel;
+            }
+
+            basicInfo.char_class = String(basicInfo.char_class || '').trim();
+            basicInfo.level = String(basicInfo.level || '').trim();
+        }
+
         return sheet;
     }
 
@@ -152,7 +195,15 @@ function isValidSheetSchema(sheet) {
         return false;
     }
 
-    if (!hasKeys(sheet.page1.basic_info, ['char_name', 'level', 'level_two'])) {
+    if (!hasKeys(sheet.page1.basic_info, ['char_name'])) {
+        return false;
+    }
+
+    var basicInfo = sheet.page1.basic_info;
+    var hasNewClassLevel = ('char_class' in basicInfo) && ('level' in basicInfo);
+    var hasLegacyClassLevel = ('level' in basicInfo) && ('level_two' in basicInfo);
+
+    if (!hasNewClassLevel && !hasLegacyClassLevel) {
         return false;
     }
 
@@ -202,16 +253,15 @@ function buildSheetData() {
         page1: {
             basic_info: {
                 char_name: $('#character-basic-info #basic-info input[name="char-name"]').val(),
+                char_class: $('#character-basic-info #basic-info input[name="char-class"]').val(),
                 level: $('#character-basic-info #basic-info input[name="level"]').val(),
-                level_two: $('#character-basic-info #basic-info input[name="level-two"]').val(),
             },
             character_info: {
                 race_class: $('#character-basic-info #character-info input[name="race-class"]').val(),
                 background: $('#character-basic-info #character-info input[name="background"]').val(),
                 player_name: $('#character-basic-info #character-info input[name="player-name"]').val(),
                 exp: $('#character-basic-info #character-info input[name="exp"]').val(),
-                alignment: $('#character-basic-info #character-info input[name="alignment"]').val(),
-                deity: $('#character-basic-info #character-info input[name="deity"]').val()
+                alignment: $('#character-basic-info #character-info input[name="alignment"]').val()
             },
             top_bar: {
                 proficiency: $('#page-1 #top-bar input[name="proficiency"]').val(),
