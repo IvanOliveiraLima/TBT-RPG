@@ -228,32 +228,6 @@ function applyLoadedSheet() {
             `);
     });
 
-    //Load Charges
-    $('#page-1 #charges #charge-1 input[name="charge-1"]').val(loadJson.page1.charges.charge_1.name);
-    $.each(loadJson.page1.charges.charge_1.total, function(index, value) {
-        $('#page-1 #charges #charge-1 input[name="' + value + '"]').prop("checked", true);
-    });
-    $('#page-1 #charges #charge-2 input[name="charge-2"]').val(loadJson.page1.charges.charge_2.name);
-    $.each(loadJson.page1.charges.charge_2.total, function(index, value) {
-        $('#page-1 #charges #charge-2 input[name="' + value + '"]').prop("checked", true);
-    });
-    $('#page-1 #charges #charge-3 input[name="charge-3"]').val(loadJson.page1.charges.charge_3.name);
-    $.each(loadJson.page1.charges.charge_3.total, function(index, value) {
-        $('#page-1 #charges #charge-3 input[name="' + value + '"]').prop("checked", true);
-    });
-    $('#page-1 #charges #charge-4 input[name="charge-4"]').val(loadJson.page1.charges.charge_4.name);
-    $.each(loadJson.page1.charges.charge_4.total, function(index, value) {
-        $('#page-1 #charges #charge-4 input[name="' + value + '"]').prop("checked", true);
-    });
-    $('#page-1 #charges #charge-5 input[name="charge-5"]').val(loadJson.page1.charges.charge_5.name);
-    $.each(loadJson.page1.charges.charge_5.total, function(index, value) {
-        $('#page-1 #charges #charge-5 input[name="' + value + '"]').prop("checked", true);
-    });
-    $('#page-1 #charges #charge-6 input[name="charge-6"]').val(loadJson.page1.charges.charge_6.name);
-    $.each(loadJson.page1.charges.charge_6.total, function(index, value) {
-        $('#page-1 #charges #charge-6 input[name="' + value + '"]').prop("checked", true);
-    });
-
     //Load Feats and Traits
     $('#page-1 #features textarea[name="features"]').val(loadJson.page1.features);
 

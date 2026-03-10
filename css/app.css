@@ -283,14 +283,6 @@ textarea {
     text-align: center;
 }
 
-#charges input {
-    border-bottom: 1px solid black;
-}
-
-#charges div {
-    padding-bottom: 8px;
-}
-
 #features-container {
     min-width: 350px;
 }
