@@ -1,6 +1,7 @@
 // garante que a key existe mesmo se load.js vier antes de save.js
 var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
 window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
+var FALLBACK_SHEET_PATH = 'sheet/savedSheet.json';
 
 function normalizeSheetOnLoad(sheet) {
     if (typeof normalizeSheet === 'function') {
@@ -9,7 +10,21 @@ function normalizeSheetOnLoad(sheet) {
     return sheet;
 }
 
-window.loadJson = normalizeSheetOnLoad(window.loadJson);
+function parseFallbackSheetText(text) {
+    if (typeof parseSheetJsonText === 'function') {
+        return parseSheetJsonText(text);
+    }
+
+    var trimmed = String(text || '').trim();
+    var prefix = 'var loadJson = ';
+    if (trimmed.indexOf(prefix) === 0) {
+        trimmed = trimmed.substring(prefix.length).trim();
+        if (trimmed.charAt(trimmed.length - 1) === ';') {
+            trimmed = trimmed.substring(0, trimmed.length - 1);
+        }
+    }
+    return JSON.parse(trimmed);
+}
 
 function getSheetFromLocalStorage() {
     try {
@@ -23,12 +38,29 @@ function getSheetFromLocalStorage() {
     }
 }
 
-var localSheet = getSheetFromLocalStorage();
-if (localSheet) {
-    window.loadJson = localSheet;
+function loadFallbackSheet() {
+    return fetch(FALLBACK_SHEET_PATH, { cache: 'no-cache' })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('Fallback sheet not found');
+            }
+            return response.text();
+        })
+        .then(function(text) {
+            return normalizeSheetOnLoad(parseFallbackSheetText(text));
+        });
 }
 
-$(document).ready(function(argument) {
+function resolveInitialSheet() {
+    var localSheet = getSheetFromLocalStorage();
+    if (localSheet) {
+        return Promise.resolve(localSheet);
+    }
+
+    return loadFallbackSheet();
+}
+
+function applyLoadedSheet() {
 
     //Change the title to the character name
     if (loadJson.page1.basic_info.char_name)
@@ -385,4 +417,18 @@ $(document).ready(function(argument) {
 
 
 
+}
+
+$(document).ready(function(argument) {
+    resolveInitialSheet()
+        .then(function(sheet) {
+            window.loadJson = sheet;
+            applyLoadedSheet();
+        })
+        .catch(function(error) {
+            if (typeof showSheetFeedback === 'function') {
+                showSheetFeedback('Falha ao carregar ficha padrao');
+            }
+            console.error(error);
+        });
 });
