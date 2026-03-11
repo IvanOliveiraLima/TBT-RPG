@@ -15,16 +15,6 @@ function getAttacks() {
     return attacks;
 }
 
-function getCharges(charge) {
-    var charges = [];
-    $('#page-1 #charges #charge-' + charge + ' input[type="checkbox"]').each(function() {
-        if ($(this).prop('checked') == true) {
-            charges.push($(this).prop('name'));
-        }
-    });
-    return charges;
-}
-
 function getEquipment(argument) {
     var equ = {
         col_1: [],
@@ -211,7 +201,7 @@ function isValidSheetSchema(sheet) {
         return false;
     }
 
-    if (!hasKeys(sheet.page1, ['basic_info', 'character_info', 'top_bar', 'attributes', 'saves_skills', 'status', 'proficiencies', 'attacks_spells', 'charges'])) {
+    if (!hasKeys(sheet.page1, ['basic_info', 'character_info', 'top_bar', 'attributes', 'saves_skills', 'status', 'proficiencies', 'attacks_spells'])) {
         return false;
     }
 
@@ -232,10 +222,6 @@ function isValidSheetSchema(sheet) {
     }
 
     if (!hasKeys(sheet.page1.status, ['death_saves', 'hit_dice'])) {
-        return false;
-    }
-
-    if (!hasKeys(sheet.page1.charges, ['charge_1', 'charge_2', 'charge_3', 'charge_4', 'charge_5', 'charge_6'])) {
         return false;
     }
 
@@ -456,32 +442,6 @@ function buildSheetData() {
                 languages: $('#page-1 #proficiencies #languages textarea[name="languages"]').val()
             },
             attacks_spells: getAttacks(),
-            charges: {
-                charge_1: {
-                    name: $('#page-1 #charges input[name="charge-1"]').val(),
-                    total: getCharges(1)
-                },
-                charge_2: {
-                    name: $('#page-1 #charges input[name="charge-2"]').val(),
-                    total: getCharges(2)
-                },
-                charge_3: {
-                    name: $('#page-1 #charges input[name="charge-3"]').val(),
-                    total: getCharges(3)
-                },
-                charge_4: {
-                    name: $('#page-1 #charges input[name="charge-4"]').val(),
-                    total: getCharges(4)
-                },
-                charge_5: {
-                    name: $('#page-1 #charges input[name="charge-5"]').val(),
-                    total: getCharges(5)
-                },
-                charge_6: {
-                    name: $('#page-1 #charges input[name="charge-6"]').val(),
-                    total: getCharges(6)
-                }
-            },
             features: $('#page-1 #features textarea[name="features"]').val()
         },
         page2: {
