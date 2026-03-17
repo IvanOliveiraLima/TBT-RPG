@@ -71,6 +71,8 @@ var IMAGE_MAX_WIDTH_BY_KIND = {
     character: 600,
     symbol: 300
 };
+var IMAGE_ADJUST_STATE = null;
+var IMAGE_ADJUST_HANDLERS_BOUND = false;
 window.sheetImages = window.sheetImages || {
     character: '',
     symbol: ''
@@ -206,6 +208,243 @@ function resizeImageDataUrl(dataUrl, maxWidth, mimeType, onSuccess, onError) {
     image.src = dataUrl;
 }
 
+function getImageAdjustTargetDimensions(kind) {
+    var fallback = kind === 'symbol' ? {
+        width: 240,
+        height: 90
+    } : {
+        width: 360,
+        height: 300
+    };
+
+    var selector = kind === 'symbol' ? '#page-4 #allies-organizations #alli-img' : '#page-4 #apperance #char-img';
+    var element = $(selector);
+    var width = Math.round(element.outerWidth() || fallback.width);
+    var height = Math.round(element.outerHeight() || fallback.height);
+
+    if (width <= 0) {
+        width = fallback.width;
+    }
+    if (height <= 0) {
+        height = fallback.height;
+    }
+
+    return {
+        width: width,
+        height: height
+    };
+}
+
+function clampImageAdjustOffsets(state) {
+    var minOffsetX = state.viewportWidth - state.drawWidth;
+    var minOffsetY = state.viewportHeight - state.drawHeight;
+
+    if (state.drawWidth <= state.viewportWidth) {
+        state.offsetX = (state.viewportWidth - state.drawWidth) / 2;
+    } else {
+        state.offsetX = Math.min(0, Math.max(minOffsetX, state.offsetX));
+    }
+
+    if (state.drawHeight <= state.viewportHeight) {
+        state.offsetY = (state.viewportHeight - state.drawHeight) / 2;
+    } else {
+        state.offsetY = Math.min(0, Math.max(minOffsetY, state.offsetY));
+    }
+}
+
+function renderImageAdjustPreview() {
+    if (!IMAGE_ADJUST_STATE) {
+        return;
+    }
+
+    IMAGE_ADJUST_STATE.drawWidth = IMAGE_ADJUST_STATE.sourceWidth * IMAGE_ADJUST_STATE.scale;
+    IMAGE_ADJUST_STATE.drawHeight = IMAGE_ADJUST_STATE.sourceHeight * IMAGE_ADJUST_STATE.scale;
+
+    clampImageAdjustOffsets(IMAGE_ADJUST_STATE);
+
+    $('#image-adjust-preview').css({
+        width: IMAGE_ADJUST_STATE.drawWidth + 'px',
+        height: IMAGE_ADJUST_STATE.drawHeight + 'px',
+        left: IMAGE_ADJUST_STATE.offsetX + 'px',
+        top: IMAGE_ADJUST_STATE.offsetY + 'px'
+    });
+}
+
+function closeImageAdjustModal(cancelled) {
+    var previousState = IMAGE_ADJUST_STATE;
+    IMAGE_ADJUST_STATE = null;
+    $('#image-adjust-modal').hide();
+    $('#image-adjust-viewport').removeClass('dragging');
+
+    if (cancelled && previousState && typeof previousState.onCancel === 'function') {
+        previousState.onCancel();
+    }
+}
+
+function applyAdjustedImageFromModal() {
+    if (!IMAGE_ADJUST_STATE) {
+        return;
+    }
+
+    var canvas = document.createElement('canvas');
+    canvas.width = IMAGE_ADJUST_STATE.outputWidth;
+    canvas.height = IMAGE_ADJUST_STATE.outputHeight;
+
+    var context = canvas.getContext('2d');
+    if (!context) {
+        showSheetFeedback('Falha ao processar imagem');
+        closeImageAdjustModal(true);
+        return;
+    }
+
+    var sx = -IMAGE_ADJUST_STATE.offsetX / IMAGE_ADJUST_STATE.scale;
+    var sy = -IMAGE_ADJUST_STATE.offsetY / IMAGE_ADJUST_STATE.scale;
+    var sw = IMAGE_ADJUST_STATE.viewportWidth / IMAGE_ADJUST_STATE.scale;
+    var sh = IMAGE_ADJUST_STATE.viewportHeight / IMAGE_ADJUST_STATE.scale;
+
+    context.drawImage(IMAGE_ADJUST_STATE.image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    var finalDataUrl;
+    if (IMAGE_ADJUST_STATE.mimeType === 'image/jpeg' || IMAGE_ADJUST_STATE.mimeType === 'image/webp') {
+        finalDataUrl = canvas.toDataURL(IMAGE_ADJUST_STATE.mimeType, 0.9);
+    } else {
+        finalDataUrl = canvas.toDataURL(IMAGE_ADJUST_STATE.mimeType);
+    }
+
+    if (typeof IMAGE_ADJUST_STATE.onApply === 'function') {
+        IMAGE_ADJUST_STATE.onApply(finalDataUrl);
+    }
+
+    closeImageAdjustModal(false);
+}
+
+function bindImageAdjustHandlers() {
+    if (IMAGE_ADJUST_HANDLERS_BOUND) {
+        return;
+    }
+    IMAGE_ADJUST_HANDLERS_BOUND = true;
+
+    $('#image-adjust-cancel').on('click', function() {
+        closeImageAdjustModal(true);
+    });
+
+    $('#image-adjust-apply').on('click', function() {
+        applyAdjustedImageFromModal();
+    });
+
+    $('#image-adjust-zoom').on('input', function() {
+        if (!IMAGE_ADJUST_STATE) {
+            return;
+        }
+
+        var zoomFactor = parseFloat($(this).val()) || 1;
+        IMAGE_ADJUST_STATE.scale = IMAGE_ADJUST_STATE.baseScale * zoomFactor;
+        renderImageAdjustPreview();
+    });
+
+    $('#image-adjust-viewport').on('mousedown', function(event) {
+        if (!IMAGE_ADJUST_STATE) {
+            return;
+        }
+        event.preventDefault();
+        IMAGE_ADJUST_STATE.dragging = true;
+        IMAGE_ADJUST_STATE.dragStartX = event.clientX;
+        IMAGE_ADJUST_STATE.dragStartY = event.clientY;
+        IMAGE_ADJUST_STATE.dragStartOffsetX = IMAGE_ADJUST_STATE.offsetX;
+        IMAGE_ADJUST_STATE.dragStartOffsetY = IMAGE_ADJUST_STATE.offsetY;
+        $('#image-adjust-viewport').addClass('dragging');
+    });
+
+    $(document).on('mousemove', function(event) {
+        if (!IMAGE_ADJUST_STATE || !IMAGE_ADJUST_STATE.dragging) {
+            return;
+        }
+
+        var deltaX = event.clientX - IMAGE_ADJUST_STATE.dragStartX;
+        var deltaY = event.clientY - IMAGE_ADJUST_STATE.dragStartY;
+        IMAGE_ADJUST_STATE.offsetX = IMAGE_ADJUST_STATE.dragStartOffsetX + deltaX;
+        IMAGE_ADJUST_STATE.offsetY = IMAGE_ADJUST_STATE.dragStartOffsetY + deltaY;
+        renderImageAdjustPreview();
+    });
+
+    $(document).on('mouseup', function() {
+        if (!IMAGE_ADJUST_STATE) {
+            return;
+        }
+        IMAGE_ADJUST_STATE.dragging = false;
+        $('#image-adjust-viewport').removeClass('dragging');
+    });
+
+    $('#image-adjust-modal').on('click', function(event) {
+        if (event.target === this) {
+            closeImageAdjustModal(true);
+        }
+    });
+
+    $(document).on('keydown', function(event) {
+        if (event.key === 'Escape' && IMAGE_ADJUST_STATE) {
+            closeImageAdjustModal(true);
+        }
+    });
+}
+
+function openImageAdjustModal(kind, dataUrl, mimeType, onApply, onCancel) {
+    bindImageAdjustHandlers();
+
+    var image = new Image();
+    image.onload = function() {
+        var targetDimensions = getImageAdjustTargetDimensions(kind);
+        var maxModalWidth = 560;
+        var maxModalHeight = 340;
+        var displayScale = Math.min(1, maxModalWidth / targetDimensions.width, maxModalHeight / targetDimensions.height);
+        var viewportWidth = Math.max(120, Math.round(targetDimensions.width * displayScale));
+        var viewportHeight = Math.max(90, Math.round(targetDimensions.height * displayScale));
+
+        var baseScale = Math.max(viewportWidth / image.width, viewportHeight / image.height);
+        var outputWidth = Math.min(IMAGE_MAX_WIDTH_BY_KIND[kind] || 600, image.width);
+        var outputHeight = Math.max(1, Math.round(outputWidth * (targetDimensions.height / targetDimensions.width)));
+
+        IMAGE_ADJUST_STATE = {
+            kind: kind,
+            image: image,
+            mimeType: mimeType,
+            sourceWidth: image.width,
+            sourceHeight: image.height,
+            viewportWidth: viewportWidth,
+            viewportHeight: viewportHeight,
+            outputWidth: outputWidth,
+            outputHeight: outputHeight,
+            baseScale: baseScale,
+            scale: baseScale,
+            drawWidth: image.width * baseScale,
+            drawHeight: image.height * baseScale,
+            offsetX: (viewportWidth - (image.width * baseScale)) / 2,
+            offsetY: (viewportHeight - (image.height * baseScale)) / 2,
+            dragging: false,
+            onApply: onApply,
+            onCancel: onCancel
+        };
+
+        $('#image-adjust-preview').attr('src', dataUrl);
+        $('#image-adjust-viewport').css({
+            width: viewportWidth + 'px',
+            height: viewportHeight + 'px'
+        });
+        $('#image-adjust-zoom').val('1');
+        renderImageAdjustPreview();
+        $('#image-adjust-modal').css('display', 'flex');
+    };
+
+    image.onerror = function() {
+        if (typeof onCancel === 'function') {
+            onCancel();
+        }
+        showSheetFeedback('Falha ao processar imagem');
+    };
+
+    image.src = dataUrl;
+}
+
 function handleSheetImageUpload(event, kind) {
     var input = event.target;
     var file = input.files && input.files[0];
@@ -232,10 +471,14 @@ function handleSheetImageUpload(event, kind) {
 
     reader.onload = function(loadEvent) {
         resizeImageDataUrl(loadEvent.target.result, maxWidth, outputMimeType, function(resizedDataUrl) {
-            setSheetImage(kind, resizedDataUrl);
-            showSheetFeedback('Imagem atualizada');
-            document.dispatchEvent(new Event('sheetChanged'));
-            input.value = '';
+            openImageAdjustModal(kind, resizedDataUrl, outputMimeType, function(finalDataUrl) {
+                setSheetImage(kind, finalDataUrl);
+                showSheetFeedback('Imagem atualizada');
+                document.dispatchEvent(new Event('sheetChanged'));
+                input.value = '';
+            }, function() {
+                input.value = '';
+            });
         }, function() {
             showSheetFeedback('Falha ao processar imagem');
             input.value = '';
