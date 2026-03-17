@@ -63,8 +63,6 @@ var AUTO_SAVE_TIMER = null;
 var LAST_AUTOSAVE_FEEDBACK_TS = 0;
 var AUTOSAVE_FEEDBACK_MIN_INTERVAL_MS = 4000;
 var skipUnloadSave = false;
-var DEFAULT_CHARACTER_IMAGE_PATH = 'imgs/character.jpeg';
-var DEFAULT_SYMBOL_IMAGE_PATH = 'imgs/symbol.jpeg';
 var MAX_IMAGE_UPLOAD_BYTES = 2 * 1024 * 1024;
 var ACCEPTED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 var IMAGE_MAX_WIDTH_BY_KIND = {
@@ -99,11 +97,34 @@ function ensureSheetImagesState() {
 
 function updateSheetImagePreviews(images) {
     var safeImages = images || ensureSheetImagesState();
-    var characterSource = safeImages.character || DEFAULT_CHARACTER_IMAGE_PATH;
-    var symbolSource = safeImages.symbol || DEFAULT_SYMBOL_IMAGE_PATH;
+    var characterSource = safeImages.character || '';
+    var symbolSource = safeImages.symbol || '';
+    var characterElement = $('#page-4 #apperance #char-img');
+    var symbolElement = $('#page-4 #allies-organizations #alli-img');
 
-    $('#page-4 #apperance #char-img').css('background-image', 'url("' + characterSource + '")');
-    $('#page-4 #allies-organizations #alli-img').css('background-image', 'url("' + symbolSource + '")');
+    if (characterSource) {
+        characterElement
+            .removeClass('image-empty')
+            .text('')
+            .css('background-image', 'url("' + characterSource + '")');
+    } else {
+        characterElement
+            .addClass('image-empty')
+            .text('No character image')
+            .css('background-image', 'none');
+    }
+
+    if (symbolSource) {
+        symbolElement
+            .removeClass('image-empty')
+            .text('')
+            .css('background-image', 'url("' + symbolSource + '")');
+    } else {
+        symbolElement
+            .addClass('image-empty')
+            .text('No symbol uploaded')
+            .css('background-image', 'none');
+    }
 }
 
 function applyImagesFromSheet(sheet) {
