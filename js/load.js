@@ -1,29 +1,12 @@
 // garante que a key existe mesmo se load.js vier antes de save.js
 var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
 window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
-var FALLBACK_SHEET_PATH = 'sheet/savedSheet.json';
 
 function normalizeSheetOnLoad(sheet) {
     if (typeof normalizeSheet === 'function') {
         return normalizeSheet(sheet);
     }
     return sheet;
-}
-
-function parseFallbackSheetText(text) {
-    if (typeof parseSheetJsonText === 'function') {
-        return parseSheetJsonText(text);
-    }
-
-    var trimmed = String(text || '').trim();
-    var prefix = 'var loadJson = ';
-    if (trimmed.indexOf(prefix) === 0) {
-        trimmed = trimmed.substring(prefix.length).trim();
-        if (trimmed.charAt(trimmed.length - 1) === ';') {
-            trimmed = trimmed.substring(0, trimmed.length - 1);
-        }
-    }
-    return JSON.parse(trimmed);
 }
 
 function getSheetFromLocalStorage() {
@@ -38,17 +21,16 @@ function getSheetFromLocalStorage() {
     }
 }
 
-function loadFallbackSheet() {
-    return fetch(FALLBACK_SHEET_PATH, { cache: 'no-cache' })
-        .then(function(response) {
-            if (!response.ok) {
-                throw new Error('Fallback sheet not found');
-            }
-            return response.text();
-        })
-        .then(function(text) {
-            return normalizeSheetOnLoad(parseFallbackSheetText(text));
-        });
+function createBlankSheetOnLoad() {
+    if (typeof createEmptySheet === 'function') {
+        return normalizeSheetOnLoad(createEmptySheet());
+    }
+
+    if (typeof buildSheetData === 'function') {
+        return normalizeSheetOnLoad(buildSheetData());
+    }
+
+    return null;
 }
 
 function resolveInitialSheet() {
@@ -57,7 +39,7 @@ function resolveInitialSheet() {
         return Promise.resolve(localSheet);
     }
 
-    return loadFallbackSheet();
+    return Promise.resolve(createBlankSheetOnLoad());
 }
 
 function setFormFieldsEnabled(enabled) {
