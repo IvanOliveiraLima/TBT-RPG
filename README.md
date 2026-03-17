@@ -24,15 +24,16 @@ Este projeto foi um fork de [aqui](https://github.com/Chee32/5e-Character-Sheet)
 2. Ao alterar qualquer campo, a ficha é salva automaticamente no `localStorage` (chave `dnd_sheet_v1`).
 3. Ao atualizar a página, os dados salvos são carregados automaticamente.
 4. Se não houver nada salvo no navegador, a ficha padrão de `sheet/savedSheet.json` será usada como fallback.
-5. O cabeçalho principal agora usa campos separados para `Class` e `Level`, e o campo `Deity` foi removido dessa área.
-6. A seção `Class Resources, Ammo, & Charges` foi removida da página principal; dados antigos desse bloco são ignorados na interface.
+5. Em `Options`, `New Blank Sheet` limpa os dados atuais e recarrega uma ficha totalmente em branco salva no navegador.
+6. O cabeçalho principal agora usa campos separados para `Class` e `Level`, e o campo `Deity` foi removido dessa área.
+7. A seção `Class Resources, Ammo, & Charges` foi removida da página principal; dados antigos desse bloco são ignorados na interface.
 
 #### Backup (Export/Import JSON):
 1. Em `Options`, clique em `Export JSON` para baixar um backup da ficha atual.
 2. Em `Options`, clique em `Import JSON` para carregar um backup local (`.json`).
 3. O `Import JSON` valida o formato mínimo da ficha; arquivos inválidos são rejeitados sem sobrescrever o que já está salvo.
 4. Após importar um arquivo válido, os dados são salvos no `localStorage` e a página é recarregada automaticamente.
-5. `Clear Saved Sheet` remove a ficha salva localmente e recarrega a página usando o fallback padrão.
+5. `New Blank Sheet` remove a ficha atual e inicia uma ficha nova em branco sem depender do arquivo fallback.
 6. Fichas salvas/exportadas agora incluem `schemaVersion` para compatibilidade com futuras migrações de estrutura.
 
 #### Alterar imagens do Personagem e da Aliança:

@@ -1027,6 +1027,41 @@ function buildSheetData() {
     return sheet;
 }
 
+function createEmptySheet() {
+    var template = buildSheetData();
+
+    function cloneAsEmpty(value) {
+        if (Array.isArray(value)) {
+            return [];
+        }
+
+        if (isObject(value)) {
+            var emptyObject = {};
+            Object.keys(value).forEach(function(key) {
+                emptyObject[key] = cloneAsEmpty(value[key]);
+            });
+            return emptyObject;
+        }
+
+        if (typeof value === 'boolean') {
+            return false;
+        }
+
+        return '';
+    }
+
+    var emptySheet = cloneAsEmpty(template);
+    emptySheet.schemaVersion = CURRENT_SHEET_SCHEMA_VERSION;
+
+    if (!isObject(emptySheet.images)) {
+        emptySheet.images = {};
+    }
+    emptySheet.images.character = '';
+    emptySheet.images.symbol = '';
+
+    return normalizeSheet(emptySheet);
+}
+
 function persistSheetToLocalStorage(sheet) {
     localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
     window.loadJson = sheet;
@@ -1075,8 +1110,16 @@ function persistCurrentSheetSafely() {
 }
 
 function clearSavedSheet(argument) {
+    var confirmed = window.confirm('This will clear all current sheet data and uploaded images from this browser. Continue?');
+    if (!confirmed) {
+        return;
+    }
+
     skipUnloadSave = true;
+    clearTimeout(AUTO_SAVE_TIMER);
+    AUTO_SAVE_TIMER = null;
     localStorage.removeItem(DND_SHEET_STORAGE_KEY);
+    persistSheetToLocalStorage(createEmptySheet());
     location.reload();
 }
 
