@@ -133,7 +133,7 @@ textarea {
 
 .class-list-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 88px 40px;
+    grid-template-columns: minmax(0, 1fr) 72px 46px;
     column-gap: 8px;
     width: 100%;
     padding: 0 0 2px 0;
@@ -141,7 +141,7 @@ textarea {
 
 .class-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 88px 40px;
+    grid-template-columns: minmax(0, 1fr) 72px 46px;
     column-gap: 8px;
     align-items: center;
     width: 100%;
@@ -156,13 +156,23 @@ textarea {
 }
 
 .class-row .class-level-wrap input {
+    width: 100%;
+    max-width: 72px;
+    box-sizing: border-box;
     text-align: center;
+}
+
+.class-row .class-remove-wrap {
+    width: 46px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .remove-class-row {
     height: 34px;
-    width: 40px;
-    min-width: 40px;
+    width: 36px;
+    min-width: 36px;
     padding: 0;
     line-height: 1;
 }
@@ -194,11 +204,11 @@ textarea {
 
 @media (max-width: 600px) {
     .class-list-head {
-        grid-template-columns: minmax(0, 1fr) 78px 36px;
+        grid-template-columns: minmax(0, 1fr) 68px 42px;
     }
 
     .class-row {
-        grid-template-columns: minmax(0, 1fr) 78px 36px;
+        grid-template-columns: minmax(0, 1fr) 68px 42px;
     }
 }
 

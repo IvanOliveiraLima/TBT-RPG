@@ -212,12 +212,14 @@ function createClassRow(name, level) {
     var row = $('<div class="class-row"></div>');
     var className = $('<div class="class-name-wrap"><input type="text" name="class-name" list="dnd-class-suggestions" placeholder="Class"></div>');
     var classLevel = $('<div class="class-level-wrap"><input type="number" min="0" step="1" name="class-level" placeholder="Lv"></div>');
+    var removeWrap = $('<div class="class-remove-wrap"></div>');
     var removeButton = $('<button type="button" class="remove-class-row w3-button w3-blue-gray w3-round" aria-label="Remove class row">-</button>');
 
     className.find('input').val(String(name || '').trim());
     classLevel.find('input').val(String(level || '').trim());
+    removeWrap.append(removeButton);
 
-    row.append(className).append(classLevel).append(removeButton);
+    row.append(className).append(classLevel).append(removeWrap);
     return row;
 }
 
