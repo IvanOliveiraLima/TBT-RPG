@@ -24,6 +24,7 @@ A aplicação roda inteiramente no navegador e utiliza:
 - Importação e exportação de ficha em JSON
 - Criação rápida de ficha em branco
 - Upload de imagens com ajuste (zoom + posição)
+- Suporte a multiclasse com nível por classe e nível total automático
 - Layout responsivo
 - Versionamento de schema (`schemaVersion`)
 - Compatibilidade com fichas antigas
@@ -123,6 +124,8 @@ Isso permite:
 
 - Compatibilidade com versões antigas
 - Futuras migrações de estrutura
+
+`basic_info.classes` armazena a lista de classes com níveis individuais, e `basic_info.total_level` mantém o nível total calculado automaticamente.
 
 ## Observações Importantes
 

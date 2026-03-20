@@ -54,8 +54,19 @@ function applyLoadedSheet() {
 
     //Load Basic Info
     $('#character-basic-info #basic-info input[name="char-name"]').val(loadJson.page1.basic_info.char_name);
-    $('#character-basic-info #basic-info input[name="char-class"]').val(loadJson.page1.basic_info.char_class);
-    $('#character-basic-info #basic-info input[name="level"]').val(loadJson.page1.basic_info.level);
+    var loadedClasses = loadJson.page1.basic_info.classes;
+    if (!Array.isArray(loadedClasses) || !loadedClasses.length) {
+        loadedClasses = [{
+            name: loadJson.page1.basic_info.char_class || '',
+            level: loadJson.page1.basic_info.level || ''
+        }];
+    }
+    if (typeof renderClassRows === 'function') {
+        renderClassRows(loadedClasses);
+    }
+    if (typeof updateClassTotalLevel === 'function') {
+        updateClassTotalLevel();
+    }
 
     //Load Character Info
     $('#character-basic-info #character-info input[name="race-class"]').val(loadJson.page1.character_info.race_class);

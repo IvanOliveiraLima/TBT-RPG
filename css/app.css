@@ -116,6 +116,50 @@ textarea {
     border-bottom: 1px solid gray;
 }
 
+#class-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.class-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.class-row .class-name-wrap {
+    flex: 1 1 auto;
+}
+
+.class-row .class-level-wrap {
+    width: 90px;
+}
+
+.class-row .class-level-wrap input {
+    text-align: center;
+}
+
+.remove-class-row {
+    height: 34px;
+    min-width: 36px;
+    padding: 0 8px;
+}
+
+.class-list-actions {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.class-total-row {
+    width: 140px;
+}
+
+.class-total-row input {
+    text-align: center;
+    background-color: #f5f5f5;
+}
+
 #basic-info {
     margin-bottom: 16px;
 }

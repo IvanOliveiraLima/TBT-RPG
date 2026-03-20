@@ -70,13 +70,17 @@
                     <input type="text" name="char-name" />
                     <span class="label">Character Name</span>
                 </div>
-                <div class="w3-col w3-padding m6 l4">
-                    <input type="text" name="char-class" list="dnd-class-suggestions">
-                    <span class="label">Class</span>
-                </div>
-                <div class="w3-col w3-padding m6 l4">
-                    <input type="text" name="level">
-                    <span class="label">Level</span>
+                <div class="w3-col w3-padding m12 l8">
+                    <div id="class-list-container">
+                        <div id="class-rows"></div>
+                        <div class="class-list-actions">
+                            <button type="button" id="add-class-row" class="w3-button w3-blue-gray w3-round">+ Add Class</button>
+                        </div>
+                        <div class="class-total-row">
+                            <input type="text" id="total-level" readonly>
+                            <span class="label">Total Level</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <datalist id="dnd-class-suggestions">

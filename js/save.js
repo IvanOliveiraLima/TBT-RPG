@@ -75,6 +75,215 @@ window.sheetImages = window.sheetImages || {
     character: '',
     symbol: ''
 };
+var CLASS_ROWS_SELECTOR = '#character-basic-info #basic-info #class-rows';
+var CLASS_ROW_NAME_SELECTOR = 'input[name="class-name"]';
+var CLASS_ROW_LEVEL_SELECTOR = 'input[name="class-level"]';
+
+function parseLegacyClassLevel(value) {
+    var rawValue = String(value || '').trim();
+    var parsed = {
+        charClass: '',
+        level: ''
+    };
+
+    if (!rawValue) {
+        return parsed;
+    }
+
+    var commaMatch = rawValue.match(/^(.*?),\s*(\d+)$/);
+    if (commaMatch) {
+        parsed.charClass = commaMatch[1].trim();
+        parsed.level = commaMatch[2].trim();
+        return parsed;
+    }
+
+    var trailingLevelMatch = rawValue.match(/^(.*)\s+(\d+)$/);
+    if (trailingLevelMatch) {
+        parsed.charClass = trailingLevelMatch[1].trim();
+        parsed.level = trailingLevelMatch[2].trim();
+        return parsed;
+    }
+
+    parsed.charClass = rawValue;
+    return parsed;
+}
+
+function sanitizeClassEntry(entry) {
+    var safeEntry = isObject(entry) ? entry : {};
+    var className = String(safeEntry.name || safeEntry.char_class || '').trim();
+    var classLevel = String(safeEntry.level || '').trim();
+
+    if (/^\d+$/.test(className) && !classLevel) {
+        classLevel = className;
+        className = '';
+    }
+
+    return {
+        name: className,
+        level: classLevel
+    };
+}
+
+function normalizeBasicInfoClasses(basicInfo) {
+    var normalizedClasses = [];
+
+    if (Array.isArray(basicInfo.classes)) {
+        for (var i = 0; i < basicInfo.classes.length; i++) {
+            var entry = sanitizeClassEntry(basicInfo.classes[i]);
+            if (entry.name || entry.level) {
+                normalizedClasses.push(entry);
+            }
+        }
+    }
+
+    if (!normalizedClasses.length) {
+        var rawLevel = String(basicInfo.level || '').trim();
+        var rawLevelTwo = String(basicInfo.level_two || '').trim();
+        var currentClass = String(basicInfo.char_class || '').trim();
+        var currentLevel = rawLevel;
+        var parsedFromLevel = parseLegacyClassLevel(rawLevel);
+
+        if (!currentClass && parsedFromLevel.charClass) {
+            currentClass = parsedFromLevel.charClass;
+        }
+        if (parsedFromLevel.level && !/^\d+$/.test(currentLevel)) {
+            currentLevel = parsedFromLevel.level;
+        }
+
+        if (!/^\d+$/.test(currentLevel) && rawLevelTwo) {
+            var parsedFromLevelTwo = parseLegacyClassLevel(rawLevelTwo);
+            if (parsedFromLevelTwo.charClass) {
+                if (!currentClass) {
+                    currentClass = parsedFromLevelTwo.charClass;
+                } else if (currentClass !== parsedFromLevelTwo.charClass) {
+                    currentClass = currentClass + ' / ' + parsedFromLevelTwo.charClass;
+                }
+            }
+            if (parsedFromLevelTwo.level) {
+                currentLevel = parsedFromLevelTwo.level;
+            }
+        }
+
+        normalizedClasses.push({
+            name: currentClass,
+            level: currentLevel
+        });
+    }
+
+    if (!normalizedClasses.length) {
+        normalizedClasses.push({
+            name: '',
+            level: ''
+        });
+    }
+
+    return normalizedClasses;
+}
+
+function calculateTotalClassLevel(classes) {
+    var total = 0;
+
+    for (var i = 0; i < classes.length; i++) {
+        var level = String(classes[i].level || '').trim();
+        if (/^\d+$/.test(level)) {
+            total += parseInt(level, 10);
+        }
+    }
+
+    return total;
+}
+
+function updateClassTotalLevel() {
+    var classes = getClassesFromForm();
+    var total = calculateTotalClassLevel(classes);
+    $('#character-basic-info #basic-info #total-level').val(total ? String(total) : '');
+}
+
+function createClassRow(name, level) {
+    var row = $('<div class="class-row"></div>');
+    var className = $('<div class="class-name-wrap"><input type="text" name="class-name" list="dnd-class-suggestions"><span class="label">Class</span></div>');
+    var classLevel = $('<div class="class-level-wrap"><input type="number" min="0" step="1" name="class-level"><span class="label">Level</span></div>');
+    var removeButton = $('<button type="button" class="remove-class-row w3-button w3-blue-gray w3-round" aria-label="Remove class row">-</button>');
+
+    className.find('input').val(String(name || '').trim());
+    classLevel.find('input').val(String(level || '').trim());
+
+    row.append(className).append(classLevel).append(removeButton);
+    return row;
+}
+
+function addClassRow(name, level, shouldDispatchEvent) {
+    var row = createClassRow(name, level);
+    $(CLASS_ROWS_SELECTOR).append(row);
+    updateClassTotalLevel();
+
+    if (shouldDispatchEvent) {
+        document.dispatchEvent(new Event('sheetChanged'));
+    }
+}
+
+function removeClassRow(button) {
+    var rows = $(CLASS_ROWS_SELECTOR).children('.class-row');
+    if (rows.length <= 1) {
+        rows.find(CLASS_ROW_NAME_SELECTOR).val('');
+        rows.find(CLASS_ROW_LEVEL_SELECTOR).val('');
+    } else {
+        $(button).closest('.class-row').remove();
+    }
+
+    updateClassTotalLevel();
+    document.dispatchEvent(new Event('sheetChanged'));
+}
+
+function renderClassRows(classes) {
+    var rowsContainer = $(CLASS_ROWS_SELECTOR);
+    if (!rowsContainer.length) {
+        return;
+    }
+
+    rowsContainer.empty();
+
+    var normalized = Array.isArray(classes) ? classes : [];
+    if (!normalized.length) {
+        normalized = [{
+            name: '',
+            level: ''
+        }];
+    }
+
+    for (var i = 0; i < normalized.length; i++) {
+        var entry = sanitizeClassEntry(normalized[i]);
+        addClassRow(entry.name, entry.level, false);
+    }
+
+    updateClassTotalLevel();
+}
+
+function getClassesFromForm() {
+    var classes = [];
+
+    $(CLASS_ROWS_SELECTOR).find('.class-row').each(function() {
+        var name = $(this).find(CLASS_ROW_NAME_SELECTOR).val();
+        var level = $(this).find(CLASS_ROW_LEVEL_SELECTOR).val();
+        var entry = sanitizeClassEntry({
+            name: name,
+            level: level
+        });
+
+        if (entry.name || entry.level) {
+            classes.push(entry);
+        }
+    });
+
+    if (!classes.length) {
+        classes.push({
+            name: '',
+            level: ''
+        });
+    }
+
+    return classes;
+}
 
 function ensureSheetImagesState() {
     if (!isObject(window.sheetImages)) {
@@ -566,65 +775,16 @@ function normalizeSheet(sheet) {
     if (version === 1) {
         if (isObject(sheet.page1) && isObject(sheet.page1.basic_info)) {
             var basicInfo = sheet.page1.basic_info;
-            var rawLevel = String(basicInfo.level || '').trim();
-            var rawLevelTwo = String(basicInfo.level_two || '').trim();
-            var currentClass = String(basicInfo.char_class || '').trim();
-            var currentLevel = String(basicInfo.level || '').trim();
+            basicInfo.classes = normalizeBasicInfoClasses(basicInfo);
+            basicInfo.total_level = calculateTotalClassLevel(basicInfo.classes);
 
-            function parseLegacyClassLevel(value) {
-                var rawValue = String(value || '').trim();
-                var parsed = {
-                    charClass: '',
-                    level: ''
-                };
-
-                if (!rawValue) {
-                    return parsed;
-                }
-
-                var commaMatch = rawValue.match(/^(.*?),\s*(\d+)$/);
-                if (commaMatch) {
-                    parsed.charClass = commaMatch[1].trim();
-                    parsed.level = commaMatch[2].trim();
-                    return parsed;
-                }
-
-                var trailingLevelMatch = rawValue.match(/^(.*)\s+(\d+)$/);
-                if (trailingLevelMatch) {
-                    parsed.charClass = trailingLevelMatch[1].trim();
-                    parsed.level = trailingLevelMatch[2].trim();
-                    return parsed;
-                }
-
-                parsed.charClass = rawValue;
-                return parsed;
+            if (basicInfo.classes.length > 0) {
+                basicInfo.char_class = basicInfo.classes[0].name || '';
+            } else {
+                basicInfo.char_class = '';
             }
 
-            var parsedFromLevel = parseLegacyClassLevel(rawLevel);
-            if (!currentClass && parsedFromLevel.charClass) {
-                currentClass = parsedFromLevel.charClass;
-            }
-            if (parsedFromLevel.level && !/^\d+$/.test(currentLevel)) {
-                currentLevel = parsedFromLevel.level;
-            }
-
-            // Legacy compatibility: some sheets stored combined Class/Level in level_two.
-            if (!/^\d+$/.test(currentLevel) && rawLevelTwo) {
-                var parsedFromLevelTwo = parseLegacyClassLevel(rawLevelTwo);
-                if (parsedFromLevelTwo.charClass) {
-                    if (!currentClass) {
-                        currentClass = parsedFromLevelTwo.charClass;
-                    } else if (currentClass !== parsedFromLevelTwo.charClass) {
-                        currentClass = currentClass + ' / ' + parsedFromLevelTwo.charClass;
-                    }
-                }
-                if (parsedFromLevelTwo.level) {
-                    currentLevel = parsedFromLevelTwo.level;
-                }
-            }
-
-            basicInfo.char_class = currentClass;
-            basicInfo.level = currentLevel;
+            basicInfo.level = String(basicInfo.total_level || '');
         }
 
         if (!isObject(sheet.images)) {
@@ -678,10 +838,11 @@ function isValidSheetSchema(sheet) {
     }
 
     var basicInfo = sheet.page1.basic_info;
+    var hasClassesArray = Array.isArray(basicInfo.classes);
     var hasNewClassLevel = ('char_class' in basicInfo) && ('level' in basicInfo);
     var hasLegacyClassLevel = ('level' in basicInfo) && ('level_two' in basicInfo);
 
-    if (!hasNewClassLevel && !hasLegacyClassLevel) {
+    if (!hasClassesArray && !hasNewClassLevel && !hasLegacyClassLevel) {
         return false;
     }
 
@@ -722,14 +883,19 @@ function isValidSheetSchema(sheet) {
 
 function buildSheetData() {
     var sheetImages = ensureSheetImagesState();
+    var classes = getClassesFromForm();
+    var totalLevel = calculateTotalClassLevel(classes);
+    var firstClass = classes.length ? classes[0].name : '';
 
     var sheet = {
         schemaVersion: CURRENT_SHEET_SCHEMA_VERSION,
         page1: {
             basic_info: {
                 char_name: $('#character-basic-info #basic-info input[name="char-name"]').val(),
-                char_class: $('#character-basic-info #basic-info input[name="char-class"]').val(),
-                level: $('#character-basic-info #basic-info input[name="level"]').val(),
+                classes: classes,
+                total_level: totalLevel,
+                char_class: firstClass,
+                level: String(totalLevel || ''),
             },
             character_info: {
                 race_class: $('#character-basic-info #character-info input[name="race-class"]').val(),
@@ -1206,7 +1372,21 @@ function importSheetFile(event) {
 }
 
 $(document).ready(function() {
+    renderClassRows([]);
+
     updateSheetImagePreviews(ensureSheetImagesState());
+
+    $('#add-class-row').on('click', function() {
+        addClassRow('', '', true);
+    });
+
+    $(document).on('click', '.remove-class-row', function() {
+        removeClassRow(this);
+    });
+
+    $(document).on('input change', CLASS_ROWS_SELECTOR + ' ' + CLASS_ROW_LEVEL_SELECTOR, function() {
+        updateClassTotalLevel();
+    });
 
     $('#character-image-input').on('change', function(event) {
         handleSheetImageUpload(event, 'character');
