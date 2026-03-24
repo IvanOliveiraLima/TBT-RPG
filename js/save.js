@@ -196,30 +196,59 @@ function calculateTotalClassLevel(classes) {
 function updateClassTotalLevel() {
     var classes = getClassesFromForm();
     var total = calculateTotalClassLevel(classes);
-    $('#character-basic-info #basic-info #total-level').val(total ? String(total) : '');
+    document.querySelector('#character-basic-info #basic-info #total-level').value = total ? String(total) : '';
 }
 
 function refreshClassRowActions() {
-    var rows = $(CLASS_ROWS_SELECTOR).children('.class-row');
+    var rows = document.querySelectorAll(CLASS_ROWS_SELECTOR + ' > .class-row');
     var disableRemove = rows.length <= 1;
 
-    rows.find('.remove-class-row')
-        .prop('disabled', disableRemove)
-        .toggleClass('disabled', disableRemove);
+    rows.forEach(function(row) {
+        var btn = row.querySelector('.remove-class-row');
+        if (btn) {
+            btn.disabled = disableRemove;
+            btn.classList.toggle('disabled', disableRemove);
+        }
+    });
 }
 
 function createClassRow(name, level) {
-    var row = $('<div class="class-row"></div>');
-    var className = $('<div class="class-name-wrap"><input type="text" name="class-name" list="dnd-class-suggestions" placeholder="Class"></div>');
-    var classLevel = $('<div class="class-level-wrap"><input type="number" min="0" step="1" name="class-level" placeholder="Lv"></div>');
-    var removeWrap = $('<div class="class-remove-wrap"></div>');
-    var removeButton = $('<button type="button" class="remove-class-row w3-button w3-blue-gray w3-round" aria-label="Remove class row">-</button>');
+    var row = document.createElement('div');
+    row.className = 'class-row';
 
-    className.find('input').val(String(name || '').trim());
-    classLevel.find('input').val(String(level || '').trim());
-    removeWrap.append(removeButton);
+    var nameWrap = document.createElement('div');
+    nameWrap.className = 'class-name-wrap';
+    var nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.name = 'class-name';
+    nameInput.setAttribute('list', 'dnd-class-suggestions');
+    nameInput.placeholder = 'Class';
+    nameInput.value = String(name || '').trim();
+    nameWrap.appendChild(nameInput);
 
-    row.append(className).append(classLevel).append(removeWrap);
+    var levelWrap = document.createElement('div');
+    levelWrap.className = 'class-level-wrap';
+    var levelInput = document.createElement('input');
+    levelInput.type = 'number';
+    levelInput.min = '0';
+    levelInput.step = '1';
+    levelInput.name = 'class-level';
+    levelInput.placeholder = 'Lv';
+    levelInput.value = String(level || '').trim();
+    levelWrap.appendChild(levelInput);
+
+    var removeWrap = document.createElement('div');
+    removeWrap.className = 'class-remove-wrap';
+    var removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'remove-class-row w3-button w3-blue-gray w3-round';
+    removeButton.setAttribute('aria-label', 'Remove class row');
+    removeButton.textContent = '-';
+    removeWrap.appendChild(removeButton);
+
+    row.appendChild(nameWrap);
+    row.appendChild(levelWrap);
+    row.appendChild(removeWrap);
     return row;
 }
 
