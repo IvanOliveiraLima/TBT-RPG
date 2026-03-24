@@ -254,7 +254,7 @@ function createClassRow(name, level) {
 
 function addClassRow(name, level, shouldDispatchEvent) {
     var row = createClassRow(name, level);
-    $(CLASS_ROWS_SELECTOR).append(row);
+    document.querySelector(CLASS_ROWS_SELECTOR).appendChild(row);
     updateClassTotalLevel();
     refreshClassRowActions();
 
@@ -264,7 +264,7 @@ function addClassRow(name, level, shouldDispatchEvent) {
 }
 
 function removeClassRow(button) {
-    var rows = $(CLASS_ROWS_SELECTOR).children('.class-row');
+    var rows = document.querySelectorAll(CLASS_ROWS_SELECTOR + ' > .class-row');
     if (rows.length <= 1) {
         return;
     }
@@ -273,7 +273,7 @@ function removeClassRow(button) {
     if (!confirmed) {
         return;
     } else {
-        $(button).closest('.class-row').remove();
+        button.closest('.class-row').remove();
     }
 
     updateClassTotalLevel();
@@ -282,12 +282,12 @@ function removeClassRow(button) {
 }
 
 function renderClassRows(classes) {
-    var rowsContainer = $(CLASS_ROWS_SELECTOR);
-    if (!rowsContainer.length) {
+    var rowsContainer = document.querySelector(CLASS_ROWS_SELECTOR);
+    if (!rowsContainer) {
         return;
     }
 
-    rowsContainer.empty();
+    rowsContainer.innerHTML = '';
 
     var normalized = Array.isArray(classes) ? classes : [];
     if (!normalized.length) {
