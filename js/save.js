@@ -539,19 +539,22 @@ function renderImageAdjustPreview() {
 
     clampImageAdjustOffsets(IMAGE_ADJUST_STATE);
 
-    $('#image-adjust-preview').css({
-        width: IMAGE_ADJUST_STATE.drawWidth + 'px',
-        height: IMAGE_ADJUST_STATE.drawHeight + 'px',
-        left: IMAGE_ADJUST_STATE.offsetX + 'px',
-        top: IMAGE_ADJUST_STATE.offsetY + 'px'
-    });
+    var preview = document.querySelector('#image-adjust-preview');
+    if (preview) {
+        preview.style.width = IMAGE_ADJUST_STATE.drawWidth + 'px';
+        preview.style.height = IMAGE_ADJUST_STATE.drawHeight + 'px';
+        preview.style.left = IMAGE_ADJUST_STATE.offsetX + 'px';
+        preview.style.top = IMAGE_ADJUST_STATE.offsetY + 'px';
+    }
 }
 
 function closeImageAdjustModal(cancelled) {
     var previousState = IMAGE_ADJUST_STATE;
     IMAGE_ADJUST_STATE = null;
-    $('#image-adjust-modal').hide();
-    $('#image-adjust-viewport').removeClass('dragging');
+    var modal = document.querySelector('#image-adjust-modal');
+    if (modal) modal.style.display = 'none';
+    var viewport = document.querySelector('#image-adjust-viewport');
+    if (viewport) viewport.classList.remove('dragging');
 
     if (cancelled && previousState && typeof previousState.onCancel === 'function') {
         previousState.onCancel();
@@ -601,25 +604,25 @@ function bindImageAdjustHandlers() {
     }
     IMAGE_ADJUST_HANDLERS_BOUND = true;
 
-    $('#image-adjust-cancel').on('click', function() {
+    document.querySelector('#image-adjust-cancel').addEventListener('click', function() {
         closeImageAdjustModal(true);
     });
 
-    $('#image-adjust-apply').on('click', function() {
+    document.querySelector('#image-adjust-apply').addEventListener('click', function() {
         applyAdjustedImageFromModal();
     });
 
-    $('#image-adjust-zoom').on('input', function() {
+    document.querySelector('#image-adjust-zoom').addEventListener('input', function() {
         if (!IMAGE_ADJUST_STATE) {
             return;
         }
-
-        var zoomFactor = parseFloat($(this).val()) || 1;
+        var zoomFactor = parseFloat(this.value) || 1;
         IMAGE_ADJUST_STATE.scale = IMAGE_ADJUST_STATE.baseScale * zoomFactor;
         renderImageAdjustPreview();
     });
 
-    $('#image-adjust-viewport').on('mousedown', function(event) {
+    var viewport = document.querySelector('#image-adjust-viewport');
+    viewport.addEventListener('mousedown', function(event) {
         if (!IMAGE_ADJUST_STATE) {
             return;
         }
@@ -629,14 +632,13 @@ function bindImageAdjustHandlers() {
         IMAGE_ADJUST_STATE.dragStartY = event.clientY;
         IMAGE_ADJUST_STATE.dragStartOffsetX = IMAGE_ADJUST_STATE.offsetX;
         IMAGE_ADJUST_STATE.dragStartOffsetY = IMAGE_ADJUST_STATE.offsetY;
-        $('#image-adjust-viewport').addClass('dragging');
+        viewport.classList.add('dragging');
     });
 
-    $(document).on('mousemove', function(event) {
+    document.addEventListener('mousemove', function(event) {
         if (!IMAGE_ADJUST_STATE || !IMAGE_ADJUST_STATE.dragging) {
             return;
         }
-
         var deltaX = event.clientX - IMAGE_ADJUST_STATE.dragStartX;
         var deltaY = event.clientY - IMAGE_ADJUST_STATE.dragStartY;
         IMAGE_ADJUST_STATE.offsetX = IMAGE_ADJUST_STATE.dragStartOffsetX + deltaX;
@@ -644,21 +646,21 @@ function bindImageAdjustHandlers() {
         renderImageAdjustPreview();
     });
 
-    $(document).on('mouseup', function() {
+    document.addEventListener('mouseup', function() {
         if (!IMAGE_ADJUST_STATE) {
             return;
         }
         IMAGE_ADJUST_STATE.dragging = false;
-        $('#image-adjust-viewport').removeClass('dragging');
+        viewport.classList.remove('dragging');
     });
 
-    $('#image-adjust-modal').on('click', function(event) {
+    document.querySelector('#image-adjust-modal').addEventListener('click', function(event) {
         if (event.target === this) {
             closeImageAdjustModal(true);
         }
     });
 
-    $(document).on('keydown', function(event) {
+    document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape' && IMAGE_ADJUST_STATE) {
             closeImageAdjustModal(true);
         }
