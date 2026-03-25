@@ -1,45 +1,16 @@
-// garante que a key existe mesmo se load.js vier antes de save.js
-var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
-window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
+import { loadCharacter } from './modules/storage.js';
+import { normalizeSheet, createEmptySheet, buildSheetData, renderClassRows, updateClassTotalLevel, applyImagesFromSheet, showSheetFeedback } from './save.js';
+import { updateSpellSlots } from './changes.js';
 
-function normalizeSheetOnLoad(sheet) {
-    if (typeof normalizeSheet === 'function') {
-        return normalizeSheet(sheet);
-    }
-    return sheet;
-}
-
-function getSheetFromLocalStorage() {
-    try {
-        var stored = localStorage.getItem(DND_SHEET_STORAGE_KEY);
-        if (!stored) {
-            return null;
-        }
-        return normalizeSheetOnLoad(JSON.parse(stored));
-    } catch (error) {
-        return null;
-    }
-}
-
-function createBlankSheetOnLoad() {
-    if (typeof createEmptySheet === 'function') {
-        return normalizeSheetOnLoad(createEmptySheet());
-    }
-
-    if (typeof buildSheetData === 'function') {
-        return normalizeSheetOnLoad(buildSheetData());
-    }
-
-    return null;
-}
+var loadJson = null;
 
 function resolveInitialSheet() {
-    var localSheet = getSheetFromLocalStorage();
-    if (localSheet) {
-        return Promise.resolve(localSheet);
+    var stored = loadCharacter();
+    if (stored) {
+        return Promise.resolve(normalizeSheet(stored));
     }
 
-    return Promise.resolve(createBlankSheetOnLoad());
+    return Promise.resolve(normalizeSheet(createEmptySheet()));
 }
 
 function setFormFieldsEnabled(enabled) {
@@ -61,12 +32,8 @@ function applyLoadedSheet() {
             level: loadJson.page1.basic_info.level || ''
         }];
     }
-    if (typeof renderClassRows === 'function') {
-        renderClassRows(loadedClasses);
-    }
-    if (typeof updateClassTotalLevel === 'function') {
-        updateClassTotalLevel();
-    }
+    renderClassRows(loadedClasses);
+    updateClassTotalLevel();
 
     //Load Character Info
     document.querySelector('#character-basic-info #character-info input[name="race-class"]').value = loadJson.page1.character_info.race_class;
@@ -270,9 +237,7 @@ function applyLoadedSheet() {
 
     //Load Backstory
     document.querySelector('#page-4 #backstory textarea[name="backstory"]').value = loadJson.page4.backstory;
-    if (typeof applyImagesFromSheet === 'function') {
-        applyImagesFromSheet(loadJson);
-    }
+    applyImagesFromSheet(loadJson);
 
     //Load allies/organizations
     document.querySelector('#page-4 #allies-organizations input[name="name"]').value = loadJson.page4.allies_organizations.name;
@@ -398,15 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     resolveInitialSheet()
         .then(function(sheet) {
-            window.loadJson = sheet;
+            loadJson = sheet;
             applyLoadedSheet();
             setFormFieldsEnabled(true);
         })
         .catch(function(error) {
             setFormFieldsEnabled(true);
-            if (typeof showSheetFeedback === 'function') {
-                showSheetFeedback('Falha ao carregar ficha padrao');
-            }
+            showSheetFeedback('Falha ao carregar ficha padrao');
             console.error(error);
         });
 });
