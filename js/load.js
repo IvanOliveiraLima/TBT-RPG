@@ -1,5 +1,5 @@
 import { loadCharacter } from './modules/storage.js';
-import { normalizeSheet, createEmptySheet, buildSheetData, renderClassRows, updateClassTotalLevel, applyImagesFromSheet, showSheetFeedback } from './save.js';
+import { normalizeSheet, createEmptySheet, renderClassRows, updateClassTotalLevel, applyImagesFromSheet, showSheetFeedback } from './save.js';
 import { updateSpellSlots } from './changes.js';
 
 var loadJson = null;
@@ -177,7 +177,7 @@ function applyLoadedSheet() {
     document.querySelector('#page-1 #proficiencies #languages textarea[name="languages"]').value = loadJson.page1.proficiencies.languages;
 
     //Load Attacks
-    loadJson.page1.attacks_spells.forEach(function(value, index) {
+    loadJson.page1.attacks_spells.forEach(function(value) {
         document.querySelector('#page-1 #attacks-spells #attacks tbody').insertAdjacentHTML('beforeend', `
             <tr>                    <td><input type="text" name="name" value="` + value.name + `"/></td>
                 <td><input type="text" name="stat" value="` + value.stat + `"/></td>
