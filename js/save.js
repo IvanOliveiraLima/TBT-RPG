@@ -1,3 +1,6 @@
+import { isObject, hasKeys, parseLegacyClassLevel, sanitizeClassEntry, calculateTotalClassLevel, getExportFilenameFromSheet } from './modules/utils.js';
+import { saveCharacter, clearCharacter } from './modules/storage.js';
+
 function getAttacks() {
     var attacks = [];
     document.querySelectorAll('#page-1 #attacks-spells #attacks tr').forEach(function(row) {
@@ -54,8 +57,6 @@ function getSpells(spellLevel) {
     return spells;
 }
 
-var DND_SHEET_STORAGE_KEY = window.DND_SHEET_STORAGE_KEY || 'dnd_sheet_v1';
-window.DND_SHEET_STORAGE_KEY = DND_SHEET_STORAGE_KEY;
 var CURRENT_SHEET_SCHEMA_VERSION = 1;
 var SHEET_FEEDBACK_TIMEOUT;
 var AUTO_SAVE_DEBOUNCE_MS = 800;
@@ -71,58 +72,13 @@ var IMAGE_MAX_WIDTH_BY_KIND = {
 };
 var IMAGE_ADJUST_STATE = null;
 var IMAGE_ADJUST_HANDLERS_BOUND = false;
-window.sheetImages = window.sheetImages || {
+var sheetImages = {
     character: '',
     symbol: ''
 };
 var CLASS_ROWS_SELECTOR = '#character-basic-info #basic-info #class-rows';
 var CLASS_ROW_NAME_SELECTOR = 'input[name="class-name"]';
 var CLASS_ROW_LEVEL_SELECTOR = 'input[name="class-level"]';
-
-function parseLegacyClassLevel(value) {
-    var rawValue = String(value || '').trim();
-    var parsed = {
-        charClass: '',
-        level: ''
-    };
-
-    if (!rawValue) {
-        return parsed;
-    }
-
-    var commaMatch = rawValue.match(/^(.*?),\s*(\d+)$/);
-    if (commaMatch) {
-        parsed.charClass = commaMatch[1].trim();
-        parsed.level = commaMatch[2].trim();
-        return parsed;
-    }
-
-    var trailingLevelMatch = rawValue.match(/^(.*)\s+(\d+)$/);
-    if (trailingLevelMatch) {
-        parsed.charClass = trailingLevelMatch[1].trim();
-        parsed.level = trailingLevelMatch[2].trim();
-        return parsed;
-    }
-
-    parsed.charClass = rawValue;
-    return parsed;
-}
-
-function sanitizeClassEntry(entry) {
-    var safeEntry = isObject(entry) ? entry : {};
-    var className = String(safeEntry.name || safeEntry.char_class || '').trim();
-    var classLevel = String(safeEntry.level || '').trim();
-
-    if (/^\d+$/.test(className) && !classLevel) {
-        classLevel = className;
-        className = '';
-    }
-
-    return {
-        name: className,
-        level: classLevel
-    };
-}
 
 function normalizeBasicInfoClasses(basicInfo) {
     var normalizedClasses = [];
@@ -180,20 +136,7 @@ function normalizeBasicInfoClasses(basicInfo) {
     return normalizedClasses;
 }
 
-function calculateTotalClassLevel(classes) {
-    var total = 0;
-
-    for (var i = 0; i < classes.length; i++) {
-        var level = String(classes[i].level || '').trim();
-        if (/^\d+$/.test(level)) {
-            total += parseInt(level, 10);
-        }
-    }
-
-    return total;
-}
-
-function updateClassTotalLevel() {
+export function updateClassTotalLevel() {
     var classes = getClassesFromForm();
     var total = calculateTotalClassLevel(classes);
     document.querySelector('#character-basic-info #basic-info #total-level').value = total ? String(total) : '';
@@ -281,7 +224,7 @@ function removeClassRow(button) {
     document.dispatchEvent(new Event('sheetChanged'));
 }
 
-function renderClassRows(classes) {
+export function renderClassRows(classes) {
     var rowsContainer = document.querySelector(CLASS_ROWS_SELECTOR);
     if (!rowsContainer) {
         return;
@@ -333,22 +276,15 @@ function getClassesFromForm() {
 }
 
 function ensureSheetImagesState() {
-    if (!isObject(window.sheetImages)) {
-        window.sheetImages = {
-            character: '',
-            symbol: ''
-        };
+    if (typeof sheetImages.character !== 'string') {
+        sheetImages.character = '';
     }
 
-    if (typeof window.sheetImages.character !== 'string') {
-        window.sheetImages.character = '';
+    if (typeof sheetImages.symbol !== 'string') {
+        sheetImages.symbol = '';
     }
 
-    if (typeof window.sheetImages.symbol !== 'string') {
-        window.sheetImages.symbol = '';
-    }
-
-    return window.sheetImages;
+    return sheetImages;
 }
 
 function updateSheetImagePreviews(images) {
@@ -383,7 +319,7 @@ function updateSheetImagePreviews(images) {
     }
 }
 
-function applyImagesFromSheet(sheet) {
+export function applyImagesFromSheet(sheet) {
     var images = ensureSheetImagesState();
     images.character = '';
     images.symbol = '';
@@ -777,7 +713,7 @@ function resetSheetImage(kind) {
     document.dispatchEvent(new Event('sheetChanged'));
 }
 
-function showSheetFeedback(message) {
+export function showSheetFeedback(message) {
     var feedback = document.getElementById('sheet-feedback');
     if (!feedback) {
         feedback = document.createElement('div');
@@ -808,7 +744,7 @@ function parseSheetJsonText(text) {
     return JSON.parse(trimmed);
 }
 
-function normalizeSheet(sheet) {
+export function normalizeSheet(sheet) {
     if (!isObject(sheet)) {
         return sheet;
     }
@@ -852,24 +788,6 @@ function normalizeSheet(sheet) {
 
     // Future migration entry point, e.g. migrateV1ToV2(sheet)
     return sheet;
-}
-
-function isObject(value) {
-    return value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function hasKeys(source, keys) {
-    if (!isObject(source)) {
-        return false;
-    }
-
-    for (var i = 0; i < keys.length; i++) {
-        if (!(keys[i] in source)) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 function isValidSheetSchema(sheet) {
@@ -929,7 +847,7 @@ function isValidSheetSchema(sheet) {
     return true;
 }
 
-function buildSheetData() {
+export function buildSheetData() {
     var sheetImages = ensureSheetImagesState();
     var classes = getClassesFromForm();
     var totalLevel = calculateTotalClassLevel(classes);
@@ -1241,7 +1159,7 @@ function buildSheetData() {
     return sheet;
 }
 
-function createEmptySheet() {
+export function createEmptySheet() {
     var template = buildSheetData();
 
     function cloneAsEmpty(value) {
@@ -1277,11 +1195,10 @@ function createEmptySheet() {
 }
 
 function persistSheetToLocalStorage(sheet) {
-    localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
-    window.loadJson = sheet;
+    saveCharacter(sheet);
 }
 
-function saveSheet(argument) {
+export function saveSheet(argument) {
     var sheet = normalizeSheet(buildSheetData());
 
     try {
@@ -1323,7 +1240,7 @@ function persistCurrentSheetSafely() {
     } catch (error) {}
 }
 
-function clearSavedSheet(argument) {
+export function clearSavedSheet(argument) {
     var confirmed = window.confirm('This will clear all current sheet data and uploaded images from this browser. Continue?');
     if (!confirmed) {
         return;
@@ -1332,32 +1249,12 @@ function clearSavedSheet(argument) {
     skipUnloadSave = true;
     clearTimeout(AUTO_SAVE_TIMER);
     AUTO_SAVE_TIMER = null;
-    localStorage.removeItem(DND_SHEET_STORAGE_KEY);
+    clearCharacter();
     persistSheetToLocalStorage(createEmptySheet());
     location.reload();
 }
 
-function getExportFilenameFromSheet(sheet) {
-    var rawName = '';
-
-    if (sheet && sheet.page1 && sheet.page1.basic_info && typeof sheet.page1.basic_info.char_name === 'string') {
-        rawName = sheet.page1.basic_info.char_name;
-    }
-
-    var sanitizedName = rawName
-        .trim()
-        .replace(/\s+/g, ' ')
-        .replace(/[\/\\:\*\?"<>\|]/g, '-')
-        .trim();
-
-    if (!sanitizedName) {
-        return 'savedSheet.json';
-    }
-
-    return sanitizedName + '.json';
-}
-
-function exportSheet(argument) {
+export function exportSheet(argument) {
     var sheet = normalizeSheet(buildSheetData());
     var saveString = JSON.stringify(sheet, null, 2);
     var file = new Blob([saveString], { type: 'application/json' });
@@ -1374,14 +1271,14 @@ function exportSheet(argument) {
     showSheetFeedback('JSON exportado');
 }
 
-function openImportDialog(argument) {
+export function openImportDialog(argument) {
     var input = document.getElementById('import-sheet-input');
     if (input) {
         input.click();
     }
 }
 
-function importSheetFile(event) {
+export function importSheetFile(event) {
     var input = event.target;
     var file = input.files && input.files[0];
 
