@@ -15,15 +15,21 @@ function w3_close() {
     document.getElementById("mySidebar").style.display = "none";
 }
 
-$(document).ready(function() {
-    $(".expando").click(function() {
-        $(this).next().slideToggle();
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.expando').forEach(function(el) {
+        el.addEventListener('click', function() {
+            var next = this.nextElementSibling;
+            if (next) {
+                next.style.display = next.style.display === 'none' ? '' : 'none';
+            }
+        });
     });
-});
 
-$(document).ready(function() {
-    $("#scroll-to-top").click(function() {
-        $("html, body").animate({ scrollTop: 0 }, 1000);
-        return false;
-    });
+    var scrollTop = document.getElementById('scroll-to-top');
+    if (scrollTop) {
+        scrollTop.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return false;
+        });
+    }
 });

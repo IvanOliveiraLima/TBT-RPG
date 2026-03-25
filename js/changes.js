@@ -112,19 +112,18 @@ var SKILL_NAME_TO_KEY = {
     "Survival": "survival"
 };
 
-function lock(argument) {
+function lock() {
     LOCKED = !LOCKED;
-    if (LOCKED)
-        $('#menu-options #lock').text('Locked');
-    else
-        $('#menu-options #lock').text('Unlocked');
-
-    $('#menu-options #lock').toggleClass('locked');
-    $('#menu-options #lock').toggleClass('unlocked');
+    var lockEl = document.querySelector('#menu-options #lock');
+    if (lockEl) {
+        lockEl.textContent = LOCKED ? 'Locked' : 'Unlocked';
+        lockEl.classList.toggle('locked');
+        lockEl.classList.toggle('unlocked');
+    }
 }
 
 function getSkillProfCheckbox(skillKey) {
-    return $('#page-1 #saves-skills #skills #' + skillKey + '-skill input[name="prof"]');
+    return document.querySelector('#page-1 #saves-skills #skills #' + skillKey + '-skill input[name="prof"]');
 }
 
 function refreshAllSkillDerivedValues() {
@@ -146,8 +145,9 @@ function applyBackgroundSkillProficiencies(backgroundValue) {
     // Remove only proficiencies that were auto-applied previously.
     BACKGROUND_AUTO_APPLIED_SKILL_KEYS.forEach(function(skillKey) {
         var checkbox = getSkillProfCheckbox(skillKey);
-        if (checkbox.data('bgAuto') === true) {
-            checkbox.prop('checked', false).removeData('bgAuto');
+        if (checkbox && checkbox.dataset.bgAuto === 'true') {
+            checkbox.checked = false;
+            delete checkbox.dataset.bgAuto;
         }
     });
     BACKGROUND_AUTO_APPLIED_SKILL_KEYS = [];
@@ -179,15 +179,19 @@ function applyBackgroundSkillProficiencies(backgroundValue) {
         }
 
         var checkbox = getSkillProfCheckbox(skillKey);
-        if (!checkbox.prop('checked')) {
-            checkbox.prop('checked', true);
-            checkbox.data('bgAuto', true);
+        if (!checkbox) {
+            return;
+        }
+
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            checkbox.dataset.bgAuto = 'true';
             BACKGROUND_AUTO_APPLIED_SKILL_KEYS.push(skillKey);
             return;
         }
 
         // If already checked manually, keep it checked but do not mark as auto-managed.
-        checkbox.removeData('bgAuto');
+        delete checkbox.dataset.bgAuto;
         BACKGROUND_AUTO_APPLIED_SKILL_KEYS.push(skillKey);
     });
 
@@ -263,422 +267,364 @@ function updateMod(att, score) {
             break;
     }
 
-    $('#attributes input[name="' + att + '-mod"]').val(value);
+    document.querySelector('#attributes input[name="' + att + '-mod"]').value = value;
 }
 
 function updateSaves() {
 
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
 
-    if ($('#saves #str-save input[name="prof"]').prop("checked") == true) {
-        var strProf = prof;
-    } else {
-        var strProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="str-mod"]').val()) || 0;
+    var strProf = document.querySelector('#saves #str-save input[name="prof"]').checked ? prof : 0;
+    var base = parseInt(document.querySelector('#attributes input[name="str-mod"]').value) || 0;
     var save = ((base + strProf) < 0 ? "" : "+") + (base + strProf);
-    $('#saves input[name="str-save"]').val(save);
+    document.querySelector('#saves input[name="str-save"]').value = save;
 
-    if ($('#saves #dex-save input[name="prof"]').prop("checked") == true) {
-        var dexProf = prof;
-    } else {
-        var dexProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="dex-mod"]').val()) || 0;
-    var save = ((base + dexProf) < 0 ? "" : "+") + (base + dexProf);
-    $('#saves input[name="dex-save"]').val(save);
+    var dexProf = document.querySelector('#saves #dex-save input[name="prof"]').checked ? prof : 0;
+    base = parseInt(document.querySelector('#attributes input[name="dex-mod"]').value) || 0;
+    save = ((base + dexProf) < 0 ? "" : "+") + (base + dexProf);
+    document.querySelector('#saves input[name="dex-save"]').value = save;
 
-    if ($('#saves #con-save input[name="prof"]').prop("checked") == true) {
-        var conProf = prof;
-    } else {
-        var conProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="con-mod"]').val()) || 0;
-    var save = ((base + conProf) < 0 ? "" : "+") + (base + conProf);
-    $('#saves input[name="con-save"]').val(save);
+    var conProf = document.querySelector('#saves #con-save input[name="prof"]').checked ? prof : 0;
+    base = parseInt(document.querySelector('#attributes input[name="con-mod"]').value) || 0;
+    save = ((base + conProf) < 0 ? "" : "+") + (base + conProf);
+    document.querySelector('#saves input[name="con-save"]').value = save;
 
-    if ($('#saves #int-save input[name="prof"]').prop("checked") == true) {
-        var intProf = prof;
-    } else {
-        var intProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="int-mod"]').val()) || 0;
-    var save = ((base + intProf) < 0 ? "" : "+") + (base + intProf);
-    $('#saves input[name="int-save"]').val(save);
+    var intProf = document.querySelector('#saves #int-save input[name="prof"]').checked ? prof : 0;
+    base = parseInt(document.querySelector('#attributes input[name="int-mod"]').value) || 0;
+    save = ((base + intProf) < 0 ? "" : "+") + (base + intProf);
+    document.querySelector('#saves input[name="int-save"]').value = save;
 
-    if ($('#saves #wis-save input[name="prof"]').prop("checked") == true) {
-        var wisProf = prof;
-    } else {
-        var wisProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="wis-mod"]').val()) || 0;
-    var save = ((base + wisProf) < 0 ? "" : "+") + (base + wisProf);
-    $('#saves input[name="wis-save"]').val(save);
+    var wisProf = document.querySelector('#saves #wis-save input[name="prof"]').checked ? prof : 0;
+    base = parseInt(document.querySelector('#attributes input[name="wis-mod"]').value) || 0;
+    save = ((base + wisProf) < 0 ? "" : "+") + (base + wisProf);
+    document.querySelector('#saves input[name="wis-save"]').value = save;
 
-    if ($('#saves #cha-save input[name="prof"]').prop("checked") == true) {
-        var chaProf = prof;
-    } else {
-        var chaProf = 0;
-    }
-    var base = parseInt($('#attributes input[name="cha-mod"]').val()) || 0;
-    var save = ((base + chaProf) < 0 ? "" : "+") + (base + chaProf);
-    $('#saves input[name="cha-save"]').val(save);
+    var chaProf = document.querySelector('#saves #cha-save input[name="prof"]').checked ? prof : 0;
+    base = parseInt(document.querySelector('#attributes input[name="cha-mod"]').value) || 0;
+    save = ((base + chaProf) < 0 ? "" : "+") + (base + chaProf);
+    document.querySelector('#saves input[name="cha-save"]').value = save;
 }
 
 function updateSpells() {
-    var att = $('#saves-skills select[name="spell-att"]').val();
+    var att = document.querySelector('#saves-skills select[name="spell-att"]').value;
 
     if (att == 'none') {
-        $('#top-bar input[name="spell-dc"]').val('Na');
-        $('#spell-info input[name="dc"]').val('Na');
+        document.querySelector('#top-bar input[name="spell-dc"]').value = 'Na';
+        document.querySelector('#spell-info input[name="dc"]').value = 'Na';
         return;
     }
 
-    var base = parseInt($('#attributes input[name="' + att + '-mod"]').val()) || 0;
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="' + att + '-mod"]').value) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
 
     //Update DC
     var dc = 8 + base + prof;
-    $('#top-bar input[name="spell-dc"]').val(dc);
-    $('#spell-info input[name="dc"]').val(dc);
+    document.querySelector('#top-bar input[name="spell-dc"]').value = dc;
+    document.querySelector('#spell-info input[name="dc"]').value = dc;
 
     //Update Spell Bonus
     var bonus = base + prof;
-    $('#spell-info input[name="bonus"]').val("+" + bonus);
+    document.querySelector('#spell-info input[name="bonus"]').value = "+" + bonus;
 
     //Update Spell Attribute
-    $('#spell-info input[name="att"]').val(att);
+    document.querySelector('#spell-info input[name="att"]').value = att;
 }
 
 function updateStrSkills() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="str-mod"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="str-mod"]').value) || 0;
 
-    if ($('#skills #athletics-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #athletics-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #athletics-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #athletics-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #athletics-skill input[type="text"]').val(skill);
+    document.querySelector('#skills #athletics-skill input[type="text"]').value = skill;
 }
 
 function updateDexSkills() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="dex-mod"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="dex-mod"]').value) || 0;
 
-    if ($('#skills #acrobatics-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #acrobatics-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #acrobatics-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #acrobatics-skill input[type="text"]').val(skill);
-
-    if ($('#skills #sleight-hand-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-    if ($('#skills #sleight-hand-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #acrobatics-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #sleight-hand-skill input[type="text"]').val(skill);
+    document.querySelector('#skills #acrobatics-skill input[type="text"]').value = skill;
 
-    if ($('#skills #stealth-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #sleight-hand-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #stealth-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #sleight-hand-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #stealth-skill input[type="text"]').val(skill);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #sleight-hand-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #stealth-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #stealth-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
+    }
+
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #stealth-skill input[type="text"]').value = skill;
 }
 
 function updateIntSkills() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="int-mod"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="int-mod"]').value) || 0;
 
-    if ($('#skills #arcana-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #arcana-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #arcana-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #arcana-skill input[type="text"]').val(skill);
-
-    if ($('#skills #history-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-    if ($('#skills #history-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #arcana-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #history-skill input[type="text"]').val(skill);
+    document.querySelector('#skills #arcana-skill input[type="text"]').value = skill;
 
-    if ($('#skills #investigation-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #history-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #investigation-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #investigation-skill input[type="text"]').val(skill);
-
-    if ($('#skills #religion-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-    if ($('#skills #religion-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #history-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #religion-skill input[type="text"]').val(skill);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #history-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #investigation-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #investigation-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
+    }
+
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #investigation-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #religion-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #religion-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
+    }
+
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #religion-skill input[type="text"]').value = skill;
 
 }
 
 function updateWisSkills() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="wis-mod"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="wis-mod"]').value) || 0;
 
-    if ($('#skills #animal-handling-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #animal-handling-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-
-    if ($('#skills #animal-handling-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-
-    $('#skills #animal-handling-skill input[type="text"]').val(skill);
-
-    if ($('#skills #insight-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-
-    if ($('#skills #insight-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #animal-handling-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #animal-handling-skill input[type="text"]').value = skill;
 
-    $('#skills #insight-skill input[type="text"]').val(skill);
-
-    if ($('#skills #medicine-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #insight-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #insight-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    if ($('#skills #medicine-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #insight-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #medicine-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #medicine-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #medicine-skill input[type="text"]').value = skill;
 
-    $('#skills #medicine-skill input[type="text"]').val(skill);
-
-    if ($('#skills #nature-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #nature-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #nature-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #nature-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #nature-skill input[type="text"]').val(skill);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #nature-skill input[type="text"]').value = skill;
 
-    if ($('#skills #perception-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #perception-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #perception-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    if ($('#skills #perception-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #perception-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #survival-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #survival-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-
-    $('#skills #perception-skill input[type="text"]').val(skill);
-
-    if ($('#skills #survival-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-
-    if ($('#skills #survival-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-
-    $('#skills #survival-skill input[type="text"]').val(skill);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #survival-skill input[type="text"]').value = skill;
 
 }
 
 function updateChaSkills() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="cha-mod"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="cha-mod"]').value) || 0;
 
-    if ($('#skills #deception-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #deception-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #deception-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #deception-skill input[type="text"]').val(skill);
-
-    if ($('#skills #intimidation-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-    if ($('#skills #intimidation-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #deception-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #intimidation-skill input[type="text"]').val(skill);
+    document.querySelector('#skills #deception-skill input[type="text"]').value = skill;
 
-    if ($('#skills #performance-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    skillProf = 0;
+    if (document.querySelector('#skills #intimidation-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-    if ($('#skills #performance-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
-    }
-
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #performance-skill input[type="text"]').val(skill);
-
-    if ($('#skills #persuasion-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
-    }
-    if ($('#skills #persuasion-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #intimidation-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
-    var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
-    $('#skills #persuasion-skill input[type="text"]').val(skill);
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #intimidation-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #performance-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #performance-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
+    }
+
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #performance-skill input[type="text"]').value = skill;
+
+    skillProf = 0;
+    if (document.querySelector('#skills #persuasion-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
+    }
+    if (document.querySelector('#skills #persuasion-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
+    }
+
+    skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
+    document.querySelector('#skills #persuasion-skill input[type="text"]').value = skill;
 
 }
 
 
 function updateStrMisc() {
-    var base = parseInt($('#attributes input[name="str-mod"]').val()) || 0;
-    var score = parseInt($('#attributes input[name="str"]').val()) || 0;
+    var score = parseInt(document.querySelector('#attributes input[name="str"]').value) || 0;
 
-    $('#encumberance input[name="base-encumberance"]').val(score * 5);
-    $('#encumberance input[name="encumbered-encumberance"]').val(score * 10);
-    $('#encumberance input[name="h-encumbered-encumberance"]').val(score * 15);
-    $('#encumberance input[name="push-encumberance"]').val(score * 30);
+    document.querySelector('#encumberance input[name="base-encumberance"]').value = score * 5;
+    document.querySelector('#encumberance input[name="encumbered-encumberance"]').value = score * 10;
+    document.querySelector('#encumberance input[name="h-encumbered-encumberance"]').value = score * 15;
+    document.querySelector('#encumberance input[name="push-encumberance"]').value = score * 30;
 
 }
 
 function updateDexMisc() {
-    var base = parseInt($('#attributes input[name="dex-mod"]').val()) || 0;
-    var score = parseInt($('#attributes input[name="dex"]').val()) || 0;
-
+    // intentionally empty
 }
 
 function updateWisMisc() {
-    var prof = parseInt($('#top-bar input[name="proficiency"]').val()) || 0;
-    var base = parseInt($('#attributes input[name="wis-mod"]').val()) || 0;
-    var score = parseInt($('#attributes input[name="wis"]').val()) || 0;
+    var prof = parseInt(document.querySelector('#top-bar input[name="proficiency"]').value) || 0;
+    var base = parseInt(document.querySelector('#attributes input[name="wis-mod"]').value) || 0;
 
-    if ($('#skills #perception-skill input[name="prof"]').prop("checked") == true) {
-        var skillProf = prof;
-    } else {
-        var skillProf = 0;
+    var skillProf = 0;
+    if (document.querySelector('#skills #perception-skill input[name="prof"]').checked == true) {
+        skillProf = prof;
     }
-
-    if ($('#skills #perception-skill input[name="expr"]').prop("checked") == true) {
-        var skillProf = prof * 2;
+    if (document.querySelector('#skills #perception-skill input[name="expr"]').checked == true) {
+        skillProf = prof * 2;
     }
 
     var skill = ((base + skillProf) < 0 ? "" : "+") + (base + skillProf);
 
-    $('#top-bar input[name="passive-perception"]').val(10 + parseInt(skill));
+    document.querySelector('#top-bar input[name="passive-perception"]').value = 10 + parseInt(skill);
 }
 
-function calculateTotalWeight(argument) {
+function calculateTotalWeight() {
     var total = 0;
-    $('#equipment input[name="weight"]').each(function(argument) {
-        total += parseFloat($(this).val()) || 0;
+    document.querySelectorAll('#equipment input[name="weight"]').forEach(function(el) {
+        total += parseFloat(el.value) || 0;
     });
 
-    $('#equipment input[name="total-weight"]').val(total.toFixed(2));
+    document.querySelector('#equipment input[name="total-weight"]').value = total.toFixed(2);
 }
 
-function calculateTotalCurrency(argument) {
+function calculateTotalCurrency() {
     var total = 0;
-    var base = $('#equipment #currancy select[name="base"]').val();
+    var base = document.querySelector('#equipment #currancy select[name="base"]').value;
 
-    $('#equipment #currancy input:not([name="total"])').each(function(argument) {
-        switch ($(this).attr("name")) {
+    document.querySelectorAll('#equipment #currancy input:not([name="total"])').forEach(function(el) {
+        switch (el.getAttribute('name')) {
             case 'copper':
-                var copper = parseInt($(this).val()) || 0;
+                var copper = parseInt(el.value) || 0;
                 var modifier = cacluateCurrencyMod('copper', base);
                 total += copper * modifier;
                 break;
             case 'silver':
-                var silver = parseInt($(this).val()) || 0;
+                var silver = parseInt(el.value) || 0;
                 var modifier = cacluateCurrencyMod('silver', base);
                 total += silver * modifier;
                 break;
             case 'gold':
-                var gold = parseInt($(this).val()) || 0;
+                var gold = parseInt(el.value) || 0;
                 var modifier = cacluateCurrencyMod('gold', base);
                 total += gold * modifier;
                 break;
             case 'electrum':
-                var electrum = parseInt($(this).val()) || 0;
+                var electrum = parseInt(el.value) || 0;
                 var modifier = cacluateCurrencyMod('electrum', base);
                 total += electrum * modifier;
                 break;
             case 'platinum':
-                var platinum = parseInt($(this).val()) || 0;
+                var platinum = parseInt(el.value) || 0;
                 var modifier = cacluateCurrencyMod('platinum', base);
                 total += platinum * modifier;
                 break;
@@ -687,7 +633,7 @@ function calculateTotalCurrency(argument) {
 
     total = total.toFixed(2);
 
-    $('#equipment #currancy input[name="total"]').val(total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,"));
+    document.querySelector('#equipment #currancy input[name="total"]').value = total.toString().replace(/(\d)(?=(\d\d\d)+(?!\d))/g, "$1,");
 }
 
 function cacluateCurrencyMod(coin, base) {
@@ -696,182 +642,144 @@ function cacluateCurrencyMod(coin, base) {
             switch (base) {
                 case 'c':
                     return 1;
-                    break;
                 case 's':
                     return 1 / 10;
-                    break;
                 case 'g':
                     return 1 / 100;
-                    break;
                 case 'e':
                     return 1 / 50;
-                    break;
                 case 'p':
                     return 1 / 1000;
-                    break;
             }
             break;
         case 'silver':
             switch (base) {
                 case 'c':
                     return 10;
-                    break;
                 case 's':
                     return 1;
-                    break;
                 case 'g':
                     return 1 / 10;
-                    break;
                 case 'e':
                     return 1 / 5;
-                    break;
                 case 'p':
                     return 1 / 100;
-                    break;
             }
             break;
         case 'gold':
             switch (base) {
                 case 'c':
-                    return 100
-                    break;
+                    return 100;
                 case 's':
                     return 10;
-                    break;
                 case 'g':
                     return 1;
-                    break;
                 case 'e':
                     return 2;
-                    break;
                 case 'p':
                     return 1 / 10;
-                    break;
             }
             break;
         case 'electrum':
             switch (base) {
                 case 'c':
                     return 50;
-                    break;
                 case 's':
                     return 5;
-                    break;
                 case 'g':
                     return 1 / 2;
-                    break;
                 case 'e':
                     return 1;
-                    break;
                 case 'p':
                     return 1 / 20;
-                    break;
             }
             break;
         case 'platinum':
             switch (base) {
                 case 'c':
                     return 1000;
-                    break;
                 case 's':
                     return 100;
-                    break;
                 case 'g':
                     return 10;
-                    break;
                 case 'e':
                     return 20;
-                    break;
                 case 'p':
                     return 1;
-                    break;
             }
             break;
     }
 }
 
 function updateSpellSlots(total) {
-    var totalSlots = parseInt(total.val()) || 0;
-    var number = total.attr('name').substring(-1);
-    var slots = total.parent().parent().find('div#slots');
-    slots.empty();
+    var totalSlots = parseInt(total.value) || 0;
+    var number = total.getAttribute('name').substring(-1);
+    var slotsContainer = total.parentElement.parentElement.querySelector('div#slots');
+    if (!slotsContainer) return;
+    slotsContainer.innerHTML = '';
 
     for (var i = totalSlots - 1; i >= 0; i--) {
-        slots.append('<input type="checkbox" name="slot-' + number + '">')
+        slotsContainer.insertAdjacentHTML('beforeend', '<input type="checkbox" name="slot-' + number + '">');
     }
 }
 
-$('document').ready(function(argument) {
+document.addEventListener('DOMContentLoaded', function() {
     //Run when strength changes
-    $('#attributes input[name="str"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('str', $('#attributes input[name="str"]').val());
+    document.querySelector('#attributes input[name="str"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('str', document.querySelector('#attributes input[name="str"]').value);
         updateStrSkills();
         updateStrMisc();
     });
 
     //Run when dexterity changes
-    $('#attributes input[name="dex"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('dex', $('#attributes input[name="dex"]').val());
+    document.querySelector('#attributes input[name="dex"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('dex', document.querySelector('#attributes input[name="dex"]').value);
         updateDexSkills();
         updateDexMisc();
     });
 
     //Run when constitution changes
-    $('#attributes input[name="con"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('con', $('#attributes input[name="con"]').val());
+    document.querySelector('#attributes input[name="con"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('con', document.querySelector('#attributes input[name="con"]').value);
     });
 
     //Run when intelligence changes
-    $('#attributes input[name="int"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('int', $('#attributes input[name="int"]').val());
+    document.querySelector('#attributes input[name="int"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('int', document.querySelector('#attributes input[name="int"]').value);
         updateIntSkills();
     });
 
     //Run when wisdom changes
-    $('#attributes input[name="wis"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('wis', $('#attributes input[name="wis"]').val());
+    document.querySelector('#attributes input[name="wis"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('wis', document.querySelector('#attributes input[name="wis"]').value);
         updateWisSkills();
         updateWisMisc();
     });
 
     //Run when charisma changes
-    $('#attributes input[name="cha"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateMod('cha', $('#attributes input[name="cha"]').val());
+    document.querySelector('#attributes input[name="cha"]').addEventListener('input', function() {
+        if (LOCKED) return;
+        updateMod('cha', document.querySelector('#attributes input[name="cha"]').value);
         updateChaSkills();
     });
 
     //Run misc att changes
-    $('#attributes input').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
-        updateSaves();
-        updateSpells();
+    document.querySelectorAll('#attributes input').forEach(function(el) {
+        el.addEventListener('input', function() {
+            if (LOCKED) return;
+            updateSaves();
+            updateSpells();
+        });
     });
 
     //Run when proficience changes
-    $('#top-bar input[name="proficiency"]').on('input', function(argument) {
-        if (LOCKED)
-            return;
-
+    document.querySelector('#top-bar input[name="proficiency"]').addEventListener('input', function() {
+        if (LOCKED) return;
         updateStrSkills();
         updateStrMisc();
         updateDexSkills();
@@ -885,23 +793,18 @@ $('document').ready(function(argument) {
     });
 
     //Run save prof changes
-    $('#saves input[name="prof"]').each(function(index) {
-        $(this).change(function(argument) {
-            if (LOCKED)
-                return;
-
+    document.querySelectorAll('#saves input[name="prof"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+            if (LOCKED) return;
             updateSaves();
         });
     });
 
     //Run skill prof/exp changes
-    $('#skills input[name="prof"]').each(function(index) {
-        $(this).change(function(argument) {
-            if (LOCKED)
-                return;
-
-            $(this).removeData('bgAuto');
-
+    document.querySelectorAll('#skills input[name="prof"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+            if (LOCKED) return;
+            delete this.dataset.bgAuto;
             updateStrSkills();
             updateStrMisc();
             updateDexSkills();
@@ -913,11 +816,9 @@ $('document').ready(function(argument) {
         });
     });
 
-    $('#skills input[name="expr"]').each(function(index) {
-        $(this).change(function(argument) {
-            if (LOCKED)
-                return;
-
+    document.querySelectorAll('#skills input[name="expr"]').forEach(function(el) {
+        el.addEventListener('change', function() {
+            if (LOCKED) return;
             updateStrSkills();
             updateStrMisc();
             updateDexSkills();
@@ -930,57 +831,45 @@ $('document').ready(function(argument) {
     });
 
     //Run background auto proficiency changes (user-driven only)
-    $('#character-info input[name="background"]').on('change', function(event) {
-        if (!event.originalEvent) {
+    document.querySelector('#character-info input[name="background"]').addEventListener('change', function(event) {
+        if (!event.isTrusted) {
             return;
         }
-
-        applyBackgroundSkillProficiencies($(this).val());
+        applyBackgroundSkillProficiencies(this.value);
     });
 
     //Run misc changes
-    $('#saves-skills select[name="spell-att"]').change(function(argument) {
-        if (LOCKED)
-            return;
-
+    document.querySelector('#saves-skills select[name="spell-att"]').addEventListener('change', function() {
+        if (LOCKED) return;
         updateSpells();
     });
 
     //Run weight changes
-    $('#equipment input[name="weight"]').each(function(argument) {
-        $(this).keyup(function(argument) {
-            if (LOCKED)
-                return;
-
+    document.querySelectorAll('#equipment input[name="weight"]').forEach(function(el) {
+        el.addEventListener('keyup', function() {
+            if (LOCKED) return;
             calculateTotalWeight();
         });
     });
 
     //Run currency changes
-    $('#equipment #currancy input:not([name="total"])').each(function(argument) {
-        $(this).keyup(function(argument) {
-            if (LOCKED)
-                return;
-
+    document.querySelectorAll('#equipment #currancy input:not([name="total"])').forEach(function(el) {
+        el.addEventListener('keyup', function() {
+            if (LOCKED) return;
             calculateTotalCurrency();
         });
     });
 
-    $('#equipment #currancy select[name="base"]').change(function(argument) {
-        if (LOCKED)
-            return;
-
+    document.querySelector('#equipment #currancy select[name="base"]').addEventListener('change', function() {
+        if (LOCKED) return;
         calculateTotalCurrency();
     });
 
     //Update Spell Slots
-    $('#spells #total-slots input').each(function(argument) {
-        $(this).keyup(function(argument) {
-            if (LOCKED)
-                return;
-
-            updateSpellSlots($(this));
+    document.querySelectorAll('#spells #total-slots input').forEach(function(el) {
+        el.addEventListener('keyup', function() {
+            if (LOCKED) return;
+            updateSpellSlots(this);
         });
     });
-
-})
+});

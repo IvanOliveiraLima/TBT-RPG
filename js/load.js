@@ -43,7 +43,7 @@ function resolveInitialSheet() {
 }
 
 function setFormFieldsEnabled(enabled) {
-    $('input, select, textarea').prop('disabled', !enabled);
+    document.querySelectorAll('input, select, textarea').forEach(function(el) { el.disabled = !enabled; });
 }
 
 function applyLoadedSheet() {
@@ -53,7 +53,7 @@ function applyLoadedSheet() {
         document.title = loadJson.page1.basic_info.char_name;
 
     //Load Basic Info
-    $('#character-basic-info #basic-info input[name="char-name"]').val(loadJson.page1.basic_info.char_name);
+    document.querySelector('#character-basic-info #basic-info input[name="char-name"]').value = loadJson.page1.basic_info.char_name;
     var loadedClasses = loadJson.page1.basic_info.classes;
     if (!Array.isArray(loadedClasses) || !loadedClasses.length) {
         loadedClasses = [{
@@ -69,149 +69,149 @@ function applyLoadedSheet() {
     }
 
     //Load Character Info
-    $('#character-basic-info #character-info input[name="race-class"]').val(loadJson.page1.character_info.race_class);
-    $('#character-basic-info #character-info input[name="background"]').val(loadJson.page1.character_info.background);
-    $('#character-basic-info #character-info input[name="player-name"]').val(loadJson.page1.character_info.player_name);
-    $('#character-basic-info #character-info input[name="exp"]').val(loadJson.page1.character_info.exp);
-    $('#character-basic-info #character-info input[name="alignment"]').val(loadJson.page1.character_info.alignment);
+    document.querySelector('#character-basic-info #character-info input[name="race-class"]').value = loadJson.page1.character_info.race_class;
+    document.querySelector('#character-basic-info #character-info input[name="background"]').value = loadJson.page1.character_info.background;
+    document.querySelector('#character-basic-info #character-info input[name="player-name"]').value = loadJson.page1.character_info.player_name;
+    document.querySelector('#character-basic-info #character-info input[name="exp"]').value = loadJson.page1.character_info.exp;
+    document.querySelector('#character-basic-info #character-info input[name="alignment"]').value = loadJson.page1.character_info.alignment;
 
     //Load Info Bar
-    $('#page-1 #top-bar input[name="proficiency"]').val(loadJson.page1.top_bar.proficiency);
-    $('#page-1 #top-bar input[name="initiative"]').val(loadJson.page1.top_bar.initiative);
-    $('#page-1 #top-bar input[name="passive-perception"]').val(loadJson.page1.top_bar.passive_perception);
-    $('#page-1 #top-bar input[name="ac"]').val(loadJson.page1.top_bar.ac);
-    $('#page-1 #top-bar input[name="speed"]').val(loadJson.page1.top_bar.speed);
-    $('#page-1 #top-bar input[name="spell-dc"]').val(loadJson.page1.top_bar.spell_dc);
-    $('#page-1 #top-bar input[name="insperation"]').val(loadJson.page1.top_bar.insperation);
+    document.querySelector('#page-1 #top-bar input[name="proficiency"]').value = loadJson.page1.top_bar.proficiency;
+    document.querySelector('#page-1 #top-bar input[name="initiative"]').value = loadJson.page1.top_bar.initiative;
+    document.querySelector('#page-1 #top-bar input[name="passive-perception"]').value = loadJson.page1.top_bar.passive_perception;
+    document.querySelector('#page-1 #top-bar input[name="ac"]').value = loadJson.page1.top_bar.ac;
+    document.querySelector('#page-1 #top-bar input[name="speed"]').value = loadJson.page1.top_bar.speed;
+    document.querySelector('#page-1 #top-bar input[name="spell-dc"]').value = loadJson.page1.top_bar.spell_dc;
+    document.querySelector('#page-1 #top-bar input[name="insperation"]').value = loadJson.page1.top_bar.insperation;
 
     //Load Attributes
-    $('#page-1 #attributes input[name="str"]').val(loadJson.page1.attributes.str);
-    $('#page-1 #attributes input[name="str-mod"]').val(loadJson.page1.attributes.str_mod);
-    $('#page-1 #attributes input[name="dex"]').val(loadJson.page1.attributes.dex);
-    $('#page-1 #attributes input[name="dex-mod"]').val(loadJson.page1.attributes.dex_mod);
-    $('#page-1 #attributes input[name="con"]').val(loadJson.page1.attributes.con);
-    $('#page-1 #attributes input[name="con-mod"]').val(loadJson.page1.attributes.con_mod);
-    $('#page-1 #attributes input[name="int"]').val(loadJson.page1.attributes.int);
-    $('#page-1 #attributes input[name="int-mod"]').val(loadJson.page1.attributes.int_mod);
-    $('#page-1 #attributes input[name="wis"]').val(loadJson.page1.attributes.wis);
-    $('#page-1 #attributes input[name="wis-mod"]').val(loadJson.page1.attributes.wis_mod);
-    $('#page-1 #attributes input[name="cha"]').val(loadJson.page1.attributes.cha);
-    $('#page-1 #attributes input[name="cha-mod"]').val(loadJson.page1.attributes.cha_mod);
+    document.querySelector('#page-1 #attributes input[name="str"]').value = loadJson.page1.attributes.str;
+    document.querySelector('#page-1 #attributes input[name="str-mod"]').value = loadJson.page1.attributes.str_mod;
+    document.querySelector('#page-1 #attributes input[name="dex"]').value = loadJson.page1.attributes.dex;
+    document.querySelector('#page-1 #attributes input[name="dex-mod"]').value = loadJson.page1.attributes.dex_mod;
+    document.querySelector('#page-1 #attributes input[name="con"]').value = loadJson.page1.attributes.con;
+    document.querySelector('#page-1 #attributes input[name="con-mod"]').value = loadJson.page1.attributes.con_mod;
+    document.querySelector('#page-1 #attributes input[name="int"]').value = loadJson.page1.attributes.int;
+    document.querySelector('#page-1 #attributes input[name="int-mod"]').value = loadJson.page1.attributes.int_mod;
+    document.querySelector('#page-1 #attributes input[name="wis"]').value = loadJson.page1.attributes.wis;
+    document.querySelector('#page-1 #attributes input[name="wis-mod"]').value = loadJson.page1.attributes.wis_mod;
+    document.querySelector('#page-1 #attributes input[name="cha"]').value = loadJson.page1.attributes.cha;
+    document.querySelector('#page-1 #attributes input[name="cha-mod"]').value = loadJson.page1.attributes.cha_mod;
 
     //Load Skills and Saves	
-    $('#page-1 #saves-skills select[name="spell-att"]').val(loadJson.page1.saves_skills.spell_casting);
-    if (!$('#saves-skills select[name="spell-att"]').val()) {
-        $('#saves-skills select[name="spell-att"]').val('none').change();
+    document.querySelector('#page-1 #saves-skills select[name="spell-att"]').value = loadJson.page1.saves_skills.spell_casting;
+    if (!document.querySelector('#saves-skills select[name="spell-att"]').value) {
+        document.querySelector('#saves-skills select[name="spell-att"]').value = 'none'.change();
     }
 
-    $('#page-1 #saves-skills #saves input[name="str-save"]').val(loadJson.page1.saves_skills.saves.str_save.val);
-    $('#page-1 #saves-skills #saves #str-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.str_save.prof);
-    $('#page-1 #saves-skills #saves input[name="dex-save"]').val(loadJson.page1.saves_skills.saves.dex_save.val);
-    $('#page-1 #saves-skills #saves #dex-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.dex_save.prof);
-    $('#page-1 #saves-skills #saves input[name="con-save"]').val(loadJson.page1.saves_skills.saves.con_save.val);
-    $('#page-1 #saves-skills #saves #con-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.con_save.prof);
-    $('#page-1 #saves-skills #saves input[name="int-save"]').val(loadJson.page1.saves_skills.saves.int_save.val);
-    $('#page-1 #saves-skills #saves #int-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.int_save.prof);
-    $('#page-1 #saves-skills #saves input[name="wis-save"]').val(loadJson.page1.saves_skills.saves.wis_save.val);
-    $('#page-1 #saves-skills #saves #wis-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.wis_save.prof);
-    $('#page-1 #saves-skills #saves input[name="cha-save"]').val(loadJson.page1.saves_skills.saves.cha_save.val);
-    $('#page-1 #saves-skills #saves #cha-save input[name="prof"]').prop("checked", loadJson.page1.saves_skills.saves.cha_save.prof);
+    document.querySelector('#page-1 #saves-skills #saves input[name="str-save"]').value = loadJson.page1.saves_skills.saves.str_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #str-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.str_save.prof;
+    document.querySelector('#page-1 #saves-skills #saves input[name="dex-save"]').value = loadJson.page1.saves_skills.saves.dex_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #dex-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.dex_save.prof;
+    document.querySelector('#page-1 #saves-skills #saves input[name="con-save"]').value = loadJson.page1.saves_skills.saves.con_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #con-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.con_save.prof;
+    document.querySelector('#page-1 #saves-skills #saves input[name="int-save"]').value = loadJson.page1.saves_skills.saves.int_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #int-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.int_save.prof;
+    document.querySelector('#page-1 #saves-skills #saves input[name="wis-save"]').value = loadJson.page1.saves_skills.saves.wis_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #wis-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.wis_save.prof;
+    document.querySelector('#page-1 #saves-skills #saves input[name="cha-save"]').value = loadJson.page1.saves_skills.saves.cha_save.val;
+    document.querySelector('#page-1 #saves-skills #saves #cha-save input[name="prof"]').checked = loadJson.page1.saves_skills.saves.cha_save.prof;
 
-    $('#page-1 #saves-skills #skills input[name="acrobatics-skill"]').val(loadJson.page1.saves_skills.skills.acrobatics.val);
-    $('#page-1 #saves-skills #skills #acrobatics-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.acrobatics.prof);
-    $('#page-1 #saves-skills #skills #acrobatics-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.acrobatics.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="acrobatics-skill"]').value = loadJson.page1.saves_skills.skills.acrobatics.val;
+    document.querySelector('#page-1 #saves-skills #skills #acrobatics-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.acrobatics.prof;
+    document.querySelector('#page-1 #saves-skills #skills #acrobatics-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.acrobatics.expr;
 
-    $('#page-1 #saves-skills #skills input[name="animal-handling-skill"]').val(loadJson.page1.saves_skills.skills.animal_handling.val);
-    $('#page-1 #saves-skills #skills #animal-handling-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.animal_handling.prof);
-    $('#page-1 #saves-skills #skills #animal-handling-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.animal_handling.expr)
+    document.querySelector('#page-1 #saves-skills #skills input[name="animal-handling-skill"]').value = loadJson.page1.saves_skills.skills.animal_handling.val;
+    document.querySelector('#page-1 #saves-skills #skills #animal-handling-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.animal_handling.prof;
+    document.querySelector('#page-1 #saves-skills #skills #animal-handling-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.animal_handling.expr
 
-    $('#page-1 #saves-skills #skills input[name="arcana-skill"]').val(loadJson.page1.saves_skills.skills.arcana.val);
-    $('#page-1 #saves-skills #skills #arcana-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.arcana.prof);
-    $('#page-1 #saves-skills #skills #arcana-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.arcana.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="arcana-skill"]').value = loadJson.page1.saves_skills.skills.arcana.val;
+    document.querySelector('#page-1 #saves-skills #skills #arcana-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.arcana.prof;
+    document.querySelector('#page-1 #saves-skills #skills #arcana-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.arcana.expr;
 
-    $('#page-1 #saves-skills #skills input[name="athletics-skill"]').val(loadJson.page1.saves_skills.skills.athletics.val);
-    $('#page-1 #saves-skills #skills #athletics-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.athletics.prof);
-    $('#page-1 #saves-skills #skills #athletics-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.athletics.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="athletics-skill"]').value = loadJson.page1.saves_skills.skills.athletics.val;
+    document.querySelector('#page-1 #saves-skills #skills #athletics-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.athletics.prof;
+    document.querySelector('#page-1 #saves-skills #skills #athletics-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.athletics.expr;
 
-    $('#page-1 #saves-skills #skills input[name="deception-skill"]').val(loadJson.page1.saves_skills.skills.deception.val);
-    $('#page-1 #saves-skills #skills #deception-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.deception.prof);
-    $('#page-1 #saves-skills #skills #deception-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.deception.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="deception-skill"]').value = loadJson.page1.saves_skills.skills.deception.val;
+    document.querySelector('#page-1 #saves-skills #skills #deception-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.deception.prof;
+    document.querySelector('#page-1 #saves-skills #skills #deception-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.deception.expr;
 
-    $('#page-1 #saves-skills #skills input[name="history-skill"]').val(loadJson.page1.saves_skills.skills.history.val);
-    $('#page-1 #saves-skills #skills #history-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.history.prof);
-    $('#page-1 #saves-skills #skills #history-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.history.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="history-skill"]').value = loadJson.page1.saves_skills.skills.history.val;
+    document.querySelector('#page-1 #saves-skills #skills #history-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.history.prof;
+    document.querySelector('#page-1 #saves-skills #skills #history-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.history.expr;
 
-    $('#page-1 #saves-skills #skills input[name="insight-skill"]').val(loadJson.page1.saves_skills.skills.insight.val);
-    $('#page-1 #saves-skills #skills #insight-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.insight.prof);
-    $('#page-1 #saves-skills #skills #insight-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.insight.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="insight-skill"]').value = loadJson.page1.saves_skills.skills.insight.val;
+    document.querySelector('#page-1 #saves-skills #skills #insight-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.insight.prof;
+    document.querySelector('#page-1 #saves-skills #skills #insight-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.insight.expr;
 
-    $('#page-1 #saves-skills #skills input[name="intimidation-skill"]').val(loadJson.page1.saves_skills.skills.intimidation.val);
-    $('#page-1 #saves-skills #skills #intimidation-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.intimidation.prof);
-    $('#page-1 #saves-skills #skills #intimidation-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.intimidation.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="intimidation-skill"]').value = loadJson.page1.saves_skills.skills.intimidation.val;
+    document.querySelector('#page-1 #saves-skills #skills #intimidation-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.intimidation.prof;
+    document.querySelector('#page-1 #saves-skills #skills #intimidation-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.intimidation.expr;
 
-    $('#page-1 #saves-skills #skills input[name="investigation-skill"]').val(loadJson.page1.saves_skills.skills.investigation.val);
-    $('#page-1 #saves-skills #skills #investigation-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.investigation.prof);
-    $('#page-1 #saves-skills #skills #investigation-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.investigation.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="investigation-skill"]').value = loadJson.page1.saves_skills.skills.investigation.val;
+    document.querySelector('#page-1 #saves-skills #skills #investigation-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.investigation.prof;
+    document.querySelector('#page-1 #saves-skills #skills #investigation-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.investigation.expr;
 
-    $('#page-1 #saves-skills #skills input[name="medicine-skill"]').val(loadJson.page1.saves_skills.skills.medicine.val);
-    $('#page-1 #saves-skills #skills #medicine-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.medicine.prof);
-    $('#page-1 #saves-skills #skills #medicine-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.medicine.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="medicine-skill"]').value = loadJson.page1.saves_skills.skills.medicine.val;
+    document.querySelector('#page-1 #saves-skills #skills #medicine-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.medicine.prof;
+    document.querySelector('#page-1 #saves-skills #skills #medicine-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.medicine.expr;
 
-    $('#page-1 #saves-skills #skills input[name="nature-skill"]').val(loadJson.page1.saves_skills.skills.nature.val);
-    $('#page-1 #saves-skills #skills #nature-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.nature.prof);
-    $('#page-1 #saves-skills #skills #nature-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.nature.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="nature-skill"]').value = loadJson.page1.saves_skills.skills.nature.val;
+    document.querySelector('#page-1 #saves-skills #skills #nature-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.nature.prof;
+    document.querySelector('#page-1 #saves-skills #skills #nature-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.nature.expr;
 
-    $('#page-1 #saves-skills #skills input[name="perception-skill"]').val(loadJson.page1.saves_skills.skills.perception.val);
-    $('#page-1 #saves-skills #skills #perception-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.perception.prof);
-    $('#page-1 #saves-skills #skills #perception-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.perception.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="perception-skill"]').value = loadJson.page1.saves_skills.skills.perception.val;
+    document.querySelector('#page-1 #saves-skills #skills #perception-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.perception.prof;
+    document.querySelector('#page-1 #saves-skills #skills #perception-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.perception.expr;
 
-    $('#page-1 #saves-skills #skills input[name="performance-skill"]').val(loadJson.page1.saves_skills.skills.performance.val);
-    $('#page-1 #saves-skills #skills #performance-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.performance.prof);
-    $('#page-1 #saves-skills #skills #performance-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.performance.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="performance-skill"]').value = loadJson.page1.saves_skills.skills.performance.val;
+    document.querySelector('#page-1 #saves-skills #skills #performance-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.performance.prof;
+    document.querySelector('#page-1 #saves-skills #skills #performance-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.performance.expr;
 
-    $('#page-1 #saves-skills #skills input[name="persuasion-skill"]').val(loadJson.page1.saves_skills.skills.persuasion.val);
-    $('#page-1 #saves-skills #skills #persuasion-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.persuasion.prof);
-    $('#page-1 #saves-skills #skills #persuasion-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.persuasion.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="persuasion-skill"]').value = loadJson.page1.saves_skills.skills.persuasion.val;
+    document.querySelector('#page-1 #saves-skills #skills #persuasion-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.persuasion.prof;
+    document.querySelector('#page-1 #saves-skills #skills #persuasion-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.persuasion.expr;
 
-    $('#page-1 #saves-skills #skills input[name="religion-skill"]').val(loadJson.page1.saves_skills.skills.religion.val);
-    $('#page-1 #saves-skills #skills #religion-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.religion.prof);
-    $('#page-1 #saves-skills #skills #religion-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.religion.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="religion-skill"]').value = loadJson.page1.saves_skills.skills.religion.val;
+    document.querySelector('#page-1 #saves-skills #skills #religion-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.religion.prof;
+    document.querySelector('#page-1 #saves-skills #skills #religion-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.religion.expr;
 
-    $('#page-1 #saves-skills #skills input[name="sleight-hand-skill"]').val(loadJson.page1.saves_skills.skills.sleight_hand.val);
-    $('#page-1 #saves-skills #skills #sleight-hand-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.sleight_hand.prof);
-    $('#page-1 #saves-skills #skills #sleight-hand-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.sleight_hand.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="sleight-hand-skill"]').value = loadJson.page1.saves_skills.skills.sleight_hand.val;
+    document.querySelector('#page-1 #saves-skills #skills #sleight-hand-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.sleight_hand.prof;
+    document.querySelector('#page-1 #saves-skills #skills #sleight-hand-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.sleight_hand.expr;
 
-    $('#page-1 #saves-skills #skills input[name="stealth-skill"]').val(loadJson.page1.saves_skills.skills.stealth.val);
-    $('#page-1 #saves-skills #skills #stealth-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.stealth.prof);
-    $('#page-1 #saves-skills #skills #stealth-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.stealth.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="stealth-skill"]').value = loadJson.page1.saves_skills.skills.stealth.val;
+    document.querySelector('#page-1 #saves-skills #skills #stealth-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.stealth.prof;
+    document.querySelector('#page-1 #saves-skills #skills #stealth-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.stealth.expr;
 
-    $('#page-1 #saves-skills #skills input[name="survival-skill"]').val(loadJson.page1.saves_skills.skills.survival.val);
-    $('#page-1 #saves-skills #skills #survival-skill input[name="prof"]').prop("checked", loadJson.page1.saves_skills.skills.survival.prof);
-    $('#page-1 #saves-skills #skills #survival-skill input[name="expr"]').prop("checked", loadJson.page1.saves_skills.skills.survival.expr);
+    document.querySelector('#page-1 #saves-skills #skills input[name="survival-skill"]').value = loadJson.page1.saves_skills.skills.survival.val;
+    document.querySelector('#page-1 #saves-skills #skills #survival-skill input[name="prof"]').checked = loadJson.page1.saves_skills.skills.survival.prof;
+    document.querySelector('#page-1 #saves-skills #skills #survival-skill input[name="expr"]').checked = loadJson.page1.saves_skills.skills.survival.expr;
 
     //Load Status
-    $('#page-1 #status #conditions textarea[name="conditions"]').val(loadJson.page1.status.conditions);
-    $('#page-1 #status #boons textarea[name="boons"]').val(loadJson.page1.status.boons);
-    $('#page-1 #status #death-saves input[name="success-1"]').prop("checked", loadJson.page1.status.death_saves.success.one);
-    $('#page-1 #status #death-saves input[name="success-2"]').prop("checked", loadJson.page1.status.death_saves.success.two);
-    $('#page-1 #status #death-saves input[name="success-3"]').prop("checked", loadJson.page1.status.death_saves.success.three);
-    $('#page-1 #status #death-saves input[name="failure-1"]').prop("checked", loadJson.page1.status.death_saves.failure.one);
-    $('#page-1 #status #death-saves input[name="failure-2"]').prop("checked", loadJson.page1.status.death_saves.failure.two);
-    $('#page-1 #status #death-saves input[name="failure-3"]').prop("checked", loadJson.page1.status.death_saves.failure.three);
-    $('#page-1 #status #hit-dice input[name="hit-dice"]').val(loadJson.page1.status.hit_dice.type);
-    $('#page-1 #status #hit-dice input[name="current-hd"]').val(loadJson.page1.status.hit_dice.current_hd);
-    $('#page-1 #status #hit-points input[name="temp-health"]').val(loadJson.page1.status.temp_health);
-    $('#page-1 #status #hit-points input[name="current-health"]').val(loadJson.page1.status.current_health);
-    $('#page-1 #status #hit-points input[name="max-health"]').val(loadJson.page1.status.max_health);
+    document.querySelector('#page-1 #status #conditions textarea[name="conditions"]').value = loadJson.page1.status.conditions;
+    document.querySelector('#page-1 #status #boons textarea[name="boons"]').value = loadJson.page1.status.boons;
+    document.querySelector('#page-1 #status #death-saves input[name="success-1"]').checked = loadJson.page1.status.death_saves.success.one;
+    document.querySelector('#page-1 #status #death-saves input[name="success-2"]').checked = loadJson.page1.status.death_saves.success.two;
+    document.querySelector('#page-1 #status #death-saves input[name="success-3"]').checked = loadJson.page1.status.death_saves.success.three;
+    document.querySelector('#page-1 #status #death-saves input[name="failure-1"]').checked = loadJson.page1.status.death_saves.failure.one;
+    document.querySelector('#page-1 #status #death-saves input[name="failure-2"]').checked = loadJson.page1.status.death_saves.failure.two;
+    document.querySelector('#page-1 #status #death-saves input[name="failure-3"]').checked = loadJson.page1.status.death_saves.failure.three;
+    document.querySelector('#page-1 #status #hit-dice input[name="hit-dice"]').value = loadJson.page1.status.hit_dice.type;
+    document.querySelector('#page-1 #status #hit-dice input[name="current-hd"]').value = loadJson.page1.status.hit_dice.current_hd;
+    document.querySelector('#page-1 #status #hit-points input[name="temp-health"]').value = loadJson.page1.status.temp_health;
+    document.querySelector('#page-1 #status #hit-points input[name="current-health"]').value = loadJson.page1.status.current_health;
+    document.querySelector('#page-1 #status #hit-points input[name="max-health"]').value = loadJson.page1.status.max_health;
 
     //Load Proficiencies
-    $('#page-1 #proficiencies #weapons-armor textarea[name="weapons-armor"]').val(loadJson.page1.proficiencies.weapon_armor);
-    $('#page-1 #proficiencies #tools textarea[name="tools"]').val(loadJson.page1.proficiencies.tools);
-    $('#page-1 #proficiencies #languages textarea[name="languages"]').val(loadJson.page1.proficiencies.languages);
+    document.querySelector('#page-1 #proficiencies #weapons-armor textarea[name="weapons-armor"]').value = loadJson.page1.proficiencies.weapon_armor;
+    document.querySelector('#page-1 #proficiencies #tools textarea[name="tools"]').value = loadJson.page1.proficiencies.tools;
+    document.querySelector('#page-1 #proficiencies #languages textarea[name="languages"]').value = loadJson.page1.proficiencies.languages;
 
     //Load Attacks
-    $.each(loadJson.page1.attacks_spells, function(index, value) {
-        $('#page-1 #attacks-spells #attacks tbody').append(`
+    loadJson.page1.attacks_spells.forEach(function(value, index) {
+        document.querySelector('#page-1 #attacks-spells #attacks tbody').insertAdjacentHTML('beforeend', `
             <tr>                    <td><input type="text" name="name" value="` + value.name + `"/></td>
                 <td><input type="text" name="stat" value="` + value.stat + `"/></td>
                 <td><input type="text" name="toHit" value="` + value.toHit + `"/></td>
@@ -222,178 +222,178 @@ function applyLoadedSheet() {
     });
 
     //Load Feats and Traits
-    $('#page-1 #features textarea[name="features"]').val(loadJson.page1.features);
+    document.querySelector('#page-1 #features textarea[name="features"]').value = loadJson.page1.features;
 
     //Load Equipment
-    $.each(loadJson.page2.equipment.val.col_1, function(index, value) {
+    loadJson.page2.equipment.val.col_1.forEach(function(value, index) {
         var child = index + 2;
-        $('#page-2 #equipment .col-1 tr:nth-child(' + child + ') input[name="name"]').val(value.name);
-        $('#page-2 #equipment .col-1 tr:nth-child(' + child + ') input[name="weight"]').val(value.weight);
+        document.querySelector('#page-2 #equipment .col-1 tr:nth-child(' + child + ') input[name="name"]').value = value.name;
+        document.querySelector('#page-2 #equipment .col-1 tr:nth-child(' + child + ') input[name="weight"]').value = value.weight;
     });
 
-    $.each(loadJson.page2.equipment.val.col_2, function(index, value) {
+    loadJson.page2.equipment.val.col_2.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-2 #equipment .col-2 tr:nth-child(' + child + ') input[name="name"]').val(value.name);
-        $('#page-2 #equipment .col-2 tr:nth-child(' + child + ') input[name="weight"]').val(value.weight);
+        document.querySelector('#page-2 #equipment .col-2 tr:nth-child(' + child + ') input[name="name"]').value = value.name;
+        document.querySelector('#page-2 #equipment .col-2 tr:nth-child(' + child + ') input[name="weight"]').value = value.weight;
     });
 
-    $('#page-2 #equipment tr#total input[name="total-weight"').val(loadJson.page2.equipment.total_weight);
+    document.querySelector('#page-2 #equipment tr#total input[name="total-weight"').value = loadJson.page2.equipment.total_weight;
 
-    $('#page-2 #currancy input[name="copper"]').val(loadJson.page2.equipment.currency.copper);
-    $('#page-2 #currancy input[name="silver"]').val(loadJson.page2.equipment.currency.silver);
-    $('#page-2 #currancy input[name="gold"]').val(loadJson.page2.equipment.currency.gold);
-    $('#page-2 #currancy input[name="electrum"]').val(loadJson.page2.equipment.currency.electrum);
-    $('#page-2 #currancy input[name="platinum"]').val(loadJson.page2.equipment.currency.platinum);
-    $('#page-2 #currancy input[name="total"]').val(loadJson.page2.equipment.currency.total);
-    $('#page-2 #currancy select[name="base"]').val(loadJson.page2.equipment.currency.base);
+    document.querySelector('#page-2 #currancy input[name="copper"]').value = loadJson.page2.equipment.currency.copper;
+    document.querySelector('#page-2 #currancy input[name="silver"]').value = loadJson.page2.equipment.currency.silver;
+    document.querySelector('#page-2 #currancy input[name="gold"]').value = loadJson.page2.equipment.currency.gold;
+    document.querySelector('#page-2 #currancy input[name="electrum"]').value = loadJson.page2.equipment.currency.electrum;
+    document.querySelector('#page-2 #currancy input[name="platinum"]').value = loadJson.page2.equipment.currency.platinum;
+    document.querySelector('#page-2 #currancy input[name="total"]').value = loadJson.page2.equipment.currency.total;
+    document.querySelector('#page-2 #currancy select[name="base"]').value = loadJson.page2.equipment.currency.base;
 
-    $('#page-2 #encumberance input[name="base-encumberance"]').val(loadJson.page2.equipment.encumberance.base);
-    $('#page-2 #encumberance input[name="encumbered-encumberance"]').val(loadJson.page2.equipment.encumberance.encumbered);
-    $('#page-2 #encumberance input[name="h-encumbered-encumberance"]').val(loadJson.page2.equipment.encumberance.h_encumbered);
-    $('#page-2 #encumberance input[name="push-encumberance"]').val(loadJson.page2.equipment.encumberance.push);
+    document.querySelector('#page-2 #encumberance input[name="base-encumberance"]').value = loadJson.page2.equipment.encumberance.base;
+    document.querySelector('#page-2 #encumberance input[name="encumbered-encumberance"]').value = loadJson.page2.equipment.encumberance.encumbered;
+    document.querySelector('#page-2 #encumberance input[name="h-encumbered-encumberance"]').value = loadJson.page2.equipment.encumberance.h_encumbered;
+    document.querySelector('#page-2 #encumberance input[name="push-encumberance"]').value = loadJson.page2.equipment.encumberance.push;
 
     //Load Mount
-    $('#page-2 #mount-pet input[name="mount-name"]').val(loadJson.page2.mount_pet.name);
-    $('#page-2 #mount-pet input[name="mount-type"]').val(loadJson.page2.mount_pet.type);
-    $('#page-2 #mount-pet input[name="mount-health"]').val(loadJson.page2.mount_pet.health);
-    $('#page-2 #mount-pet input[name="mount-ac"]').val(loadJson.page2.mount_pet.ac);
-    $('#page-2 #mount-pet input[name="mount-speed"]').val(loadJson.page2.mount_pet.speed);
-    $('#page-2 #mount-pet textarea[name="mount-notes"]').val(loadJson.page2.mount_pet.notes);
+    document.querySelector('#page-2 #mount-pet input[name="mount-name"]').value = loadJson.page2.mount_pet.name;
+    document.querySelector('#page-2 #mount-pet input[name="mount-type"]').value = loadJson.page2.mount_pet.type;
+    document.querySelector('#page-2 #mount-pet input[name="mount-health"]').value = loadJson.page2.mount_pet.health;
+    document.querySelector('#page-2 #mount-pet input[name="mount-ac"]').value = loadJson.page2.mount_pet.ac;
+    document.querySelector('#page-2 #mount-pet input[name="mount-speed"]').value = loadJson.page2.mount_pet.speed;
+    document.querySelector('#page-2 #mount-pet textarea[name="mount-notes"]').value = loadJson.page2.mount_pet.notes;
 
     //Load Mount 2
-    $('#page-2 #mount-pet input[name="mount-name-2"]').val(loadJson.page2.mount_pet2.name2);
-    $('#page-2 #mount-pet input[name="mount-type-2"]').val(loadJson.page2.mount_pet2.type2);
-    $('#page-2 #mount-pet input[name="mount-health-2"]').val(loadJson.page2.mount_pet2.health2);
-    $('#page-2 #mount-pet input[name="mount-ac-2"]').val(loadJson.page2.mount_pet2.ac2);
-    $('#page-2 #mount-pet input[name="mount-speed-2"]').val(loadJson.page2.mount_pet2.speed2);
-    $('#page-2 #mount-pet textarea[name="mount-notes-2"]').val(loadJson.page2.mount_pet2.notes2);
+    document.querySelector('#page-2 #mount-pet input[name="mount-name-2"]').value = loadJson.page2.mount_pet2.name2;
+    document.querySelector('#page-2 #mount-pet input[name="mount-type-2"]').value = loadJson.page2.mount_pet2.type2;
+    document.querySelector('#page-2 #mount-pet input[name="mount-health-2"]').value = loadJson.page2.mount_pet2.health2;
+    document.querySelector('#page-2 #mount-pet input[name="mount-ac-2"]').value = loadJson.page2.mount_pet2.ac2;
+    document.querySelector('#page-2 #mount-pet input[name="mount-speed-2"]').value = loadJson.page2.mount_pet2.speed2;
+    document.querySelector('#page-2 #mount-pet textarea[name="mount-notes-2"]').value = loadJson.page2.mount_pet2.notes2;
 
     //Load Backstory
-    $('#page-4 #backstory textarea[name="backstory"]').val(loadJson.page4.backstory);
+    document.querySelector('#page-4 #backstory textarea[name="backstory"]').value = loadJson.page4.backstory;
     if (typeof applyImagesFromSheet === 'function') {
         applyImagesFromSheet(loadJson);
     }
 
     //Load allies/organizations
-    $('#page-4 #allies-organizations input[name="name"]').val(loadJson.page4.allies_organizations.name);
-    $('#page-4 #allies-organizations textarea[name="allies-organizations"]').val(loadJson.page4.allies_organizations.val);
+    document.querySelector('#page-4 #allies-organizations input[name="name"]').value = loadJson.page4.allies_organizations.name;
+    document.querySelector('#page-4 #allies-organizations textarea[name="allies-organizations"]').value = loadJson.page4.allies_organizations.val;
 
     //Load Personality
-    $('#personality #personality-traits textarea[name="personality-traits"]').val(loadJson.page4.personality.personality_traits);
-    $('#personality #ideals textarea[name="ideals"]').val(loadJson.page4.personality.ideals);
-    $('#personality #bonds textarea[name="bonds"]').val(loadJson.page4.personality.bonds);
-    $('#personality #flaws textarea[name="flaws"]').val(loadJson.page4.personality.flaws);
+    document.querySelector('#personality #personality-traits textarea[name="personality-traits"]').value = loadJson.page4.personality.personality_traits;
+    document.querySelector('#personality #ideals textarea[name="ideals"]').value = loadJson.page4.personality.ideals;
+    document.querySelector('#personality #bonds textarea[name="bonds"]').value = loadJson.page4.personality.bonds;
+    document.querySelector('#personality #flaws textarea[name="flaws"]').value = loadJson.page4.personality.flaws;
 
     //Load Notes
-    $('#page-5 #notes-1 textarea[name="notes-1"]').val(loadJson.page5.notes_1);
-    $('#page-5 #notes-2 textarea[name="notes-2"]').val(loadJson.page5.notes_2);
+    document.querySelector('#page-5 #notes-1 textarea[name="notes-1"]').value = loadJson.page5.notes_1;
+    document.querySelector('#page-5 #notes-2 textarea[name="notes-2"]').value = loadJson.page5.notes_2;
 
     //Load Spell Info
-    $('#page-3 #spell-info input[name="class"]').val(loadJson.page3.spell_info.class);
-    $('#page-3 #spell-info input[name="att"]').val(loadJson.page3.spell_info.att);
-    $('#page-3 #spell-info input[name="dc"]').val(loadJson.page3.spell_info.dc);
-    $('#page-3 #spell-info input[name="bonus"]').val(loadJson.page3.spell_info.bonus);
+    document.querySelector('#page-3 #spell-info input[name="class"]').value = loadJson.page3.spell_info.class;
+    document.querySelector('#page-3 #spell-info input[name="att"]').value = loadJson.page3.spell_info.att;
+    document.querySelector('#page-3 #spell-info input[name="dc"]').value = loadJson.page3.spell_info.dc;
+    document.querySelector('#page-3 #spell-info input[name="bonus"]').value = loadJson.page3.spell_info.bonus;
 
     //Load Spells
-    $.each(loadJson.page3.spells.cantrips.spells, function(index, value) {
+    loadJson.page3.spells.cantrips.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #cantrips .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #cantrips .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
-    $('#page-3 #spells #level-1 input[name="total-1"]').val(loadJson.page3.spells.level_1.total);
+    document.querySelector('#page-3 #spells #level-1 input[name="total-1"]').value = loadJson.page3.spells.level_1.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-1 input[name="total-1"]'));
-    $.each(loadJson.page3.spells.level_1.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-1 input[name="total-1"]'));
+    loadJson.page3.spells.level_1.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-1 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-1 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
-    });
-
-
-    $('#page-3 #spells #level-2 input[name="total-2"]').val(loadJson.page3.spells.level_2.total);
-    //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-2 input[name="total-2"]'));
-    $.each(loadJson.page3.spells.level_2.spells, function(index, value) {
-        var child = index + 1;
-        $('#page-3 #spells #level-2 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-2 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-1 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-1 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-3 input[name="total-3"]').val(loadJson.page3.spells.level_3.total);
+    document.querySelector('#page-3 #spells #level-2 input[name="total-2"]').value = loadJson.page3.spells.level_2.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-3 input[name="total-3"]'));
-    $.each(loadJson.page3.spells.level_3.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-2 input[name="total-2"]'));
+    loadJson.page3.spells.level_2.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-3 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-3 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-2 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-2 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-4 input[name="total-4"]').val(loadJson.page3.spells.level_4.total);
+    document.querySelector('#page-3 #spells #level-3 input[name="total-3"]').value = loadJson.page3.spells.level_3.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-4 input[name="total-4"]'));
-    $.each(loadJson.page3.spells.level_4.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-3 input[name="total-3"]'));
+    loadJson.page3.spells.level_3.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-4 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-4 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-3 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-3 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-5 input[name="total-5"]').val(loadJson.page3.spells.level_5.total);
+    document.querySelector('#page-3 #spells #level-4 input[name="total-4"]').value = loadJson.page3.spells.level_4.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-5 input[name="total-5"]'));
-    $.each(loadJson.page3.spells.level_5.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-4 input[name="total-4"]'));
+    loadJson.page3.spells.level_4.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-5 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-5 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-4 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-4 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-6 input[name="total-6"]').val(loadJson.page3.spells.level_6.total);
+    document.querySelector('#page-3 #spells #level-5 input[name="total-5"]').value = loadJson.page3.spells.level_5.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-6 input[name="total-6"]'));
-    $.each(loadJson.page3.spells.level_6.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-5 input[name="total-5"]'));
+    loadJson.page3.spells.level_5.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-6 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-6 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-5 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-5 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-7 input[name="total-7"]').val(loadJson.page3.spells.level_7.total);
+    document.querySelector('#page-3 #spells #level-6 input[name="total-6"]').value = loadJson.page3.spells.level_6.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-7 input[name="total-7"]'));
-    $.each(loadJson.page3.spells.level_7.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-6 input[name="total-6"]'));
+    loadJson.page3.spells.level_6.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-7 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-7 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-6 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-6 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-8 input[name="total-8"]').val(loadJson.page3.spells.level_8.total);
+    document.querySelector('#page-3 #spells #level-7 input[name="total-7"]').value = loadJson.page3.spells.level_7.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-8 input[name="total-8"]'));
-    $.each(loadJson.page3.spells.level_8.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-7 input[name="total-7"]'));
+    loadJson.page3.spells.level_7.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-8 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-8 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-7 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-7 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
-    $('#page-3 #spells #level-9 input[name="total-9"]').val(loadJson.page3.spells.level_9.total);
+    document.querySelector('#page-3 #spells #level-8 input[name="total-8"]').value = loadJson.page3.spells.level_8.total;
     //In changes.js
-    updateSpellSlots($('#page-3 #spells #level-9 input[name="total-9"]'));
-    $.each(loadJson.page3.spells.level_9.spells, function(index, value) {
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-8 input[name="total-8"]'));
+    loadJson.page3.spells.level_8.spells.forEach(function(value, index) {
         var child = index + 1;
-        $('#page-3 #spells #level-9 .spells .spell:nth-child(' + child + ') input[name="preped"]').prop("checked", value.preped);
-        $('#page-3 #spells #level-9 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').val(value.spell_name);
+        document.querySelector('#page-3 #spells #level-8 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-8 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
+    });
+
+
+    document.querySelector('#page-3 #spells #level-9 input[name="total-9"]').value = loadJson.page3.spells.level_9.total;
+    //In changes.js
+    updateSpellSlots(document.querySelector('#page-3 #spells #level-9 input[name="total-9"]'));
+    loadJson.page3.spells.level_9.spells.forEach(function(value, index) {
+        var child = index + 1;
+        document.querySelector('#page-3 #spells #level-9 .spells .spell:nth-child(' + child + ') input[name="preped"]').checked = value.preped;
+        document.querySelector('#page-3 #spells #level-9 .spells .spell:nth-child(' + child + ') input[name="spell-name"]').value = value.spell_name;
     });
 
 
 
 }
 
-$(document).ready(function(argument) {
+document.addEventListener('DOMContentLoaded', function() {
     setFormFieldsEnabled(false);
 
     resolveInitialSheet()

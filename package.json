@@ -1,0 +1,22 @@
+{
+  "name": "dnd-5e-character-sheet",
+  "version": "1.0.0",
+  "description": "Uma ficha de personagem moderna, offline e com persistência automática para Dungeons & Dragons 5e.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:38849/git/IvanOliveiraLima/DnD-5e-Character-Sheet"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^8.0.2"
+  }
+}
