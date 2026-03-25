@@ -21,7 +21,7 @@ export function loadCharacter() {
             return null;
         }
         return JSON.parse(stored);
-    } catch (e) {
+    } catch (_e) {
         return null;
     }
 }
