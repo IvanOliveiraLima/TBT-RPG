@@ -1,4 +1,4 @@
-function openPage(pageName) {
+export function openPage(pageName) {
     var i;
     var x = document.getElementsByClassName("page");
     for (i = 0; i < x.length; i++) {
@@ -7,11 +7,11 @@ function openPage(pageName) {
     document.getElementById(pageName).style.display = "";
 }
 
-function w3_open() {
+export function w3_open() {
     document.getElementById("mySidebar").style.display = "block";
 }
 
-function w3_close() {
+export function w3_close() {
     document.getElementById("mySidebar").style.display = "none";
 }
 

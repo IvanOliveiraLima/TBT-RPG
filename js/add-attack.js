@@ -1,4 +1,4 @@
-function att_attack() {
+export function att_attack() {
 	var name = document.querySelector('#attack-form input[name="name"]').value;
 	var stat = document.querySelector('#attack-form select[name="stat"]').value;
 	var base = parseInt(document.querySelector('#attributes input[name="' + stat + '-mod"]').value) || 0;
