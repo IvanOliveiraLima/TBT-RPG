@@ -428,30 +428,31 @@ function calculateTotalCurrency() {
     var base = document.querySelector('#equipment #currancy select[name="base"]').value;
 
     document.querySelectorAll('#equipment #currancy input:not([name="total"])').forEach(function(el) {
+        var modifier;
         switch (el.getAttribute('name')) {
             case 'copper':
                 var copper = parseInt(el.value) || 0;
-                var modifier = cacluateCurrencyMod('copper', base);
+                modifier = cacluateCurrencyMod('copper', base);
                 total += copper * modifier;
                 break;
             case 'silver':
                 var silver = parseInt(el.value) || 0;
-                var modifier = cacluateCurrencyMod('silver', base);
+                modifier = cacluateCurrencyMod('silver', base);
                 total += silver * modifier;
                 break;
             case 'gold':
                 var gold = parseInt(el.value) || 0;
-                var modifier = cacluateCurrencyMod('gold', base);
+                modifier = cacluateCurrencyMod('gold', base);
                 total += gold * modifier;
                 break;
             case 'electrum':
                 var electrum = parseInt(el.value) || 0;
-                var modifier = cacluateCurrencyMod('electrum', base);
+                modifier = cacluateCurrencyMod('electrum', base);
                 total += electrum * modifier;
                 break;
             case 'platinum':
                 var platinum = parseInt(el.value) || 0;
-                var modifier = cacluateCurrencyMod('platinum', base);
+                modifier = cacluateCurrencyMod('platinum', base);
                 total += platinum * modifier;
                 break;
         }

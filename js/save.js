@@ -1237,7 +1237,7 @@ function persistCurrentSheetSafely() {
     try {
         var sheet = normalizeSheet(buildSheetData());
         persistSheetToLocalStorage(sheet);
-    } catch (error) {}
+    } catch (_error) { /* intentional: best-effort save on unload */ }
 }
 
 export function clearSavedSheet(argument) {

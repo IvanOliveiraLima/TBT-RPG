@@ -86,7 +86,7 @@ export function getExportFilenameFromSheet(sheet) {
     var sanitizedName = rawName
         .trim()
         .replace(/\s+/g, ' ')
-        .replace(/[\/\\:\*\?"<>\|]/g, '-')
+        .replace(/[/\\:*?"<>|]/g, '-')
         .trim();
 
     return sanitizedName ? sanitizedName + '.json' : 'savedSheet.json';
