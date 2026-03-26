@@ -1,34 +1,61 @@
-// All localStorage read/write operations for the character sheet.
+// Character sheet storage using IndexedDB via the idb wrapper.
 
-export var DND_SHEET_STORAGE_KEY = 'dnd_sheet_v1';
+import { openDB } from 'idb';
 
-/**
- * Persist a sheet object to localStorage.
- * @param {object} sheet
- */
-export function saveCharacter(sheet) {
-    localStorage.setItem(DND_SHEET_STORAGE_KEY, JSON.stringify(sheet));
-}
+const DB_NAME = 'dnd-character-sheet';
+const DB_VERSION = 1;
+const STORE_NAME = 'characters';
+const ACTIVE_ID = 'active';
 
-/**
- * Load the raw sheet object from localStorage, or null if absent/invalid.
- * @returns {object|null}
- */
-export function loadCharacter() {
-    try {
-        var stored = localStorage.getItem(DND_SHEET_STORAGE_KEY);
-        if (!stored) {
-            return null;
-        }
-        return JSON.parse(stored);
-    } catch (_e) {
-        return null;
+let dbPromise = null;
+
+function getDB() {
+    if (!dbPromise) {
+        dbPromise = openDB(DB_NAME, DB_VERSION, {
+            upgrade(db) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        });
     }
+    return dbPromise;
+}
+
+function migrateSchema(data) {
+    if (!data) return null;
+
+    // v1 → v2: adiciona campo 'id' se não existir
+    if (!data.schemaVersion || data.schemaVersion < 2) {
+        data.id = data.id || ACTIVE_ID;
+        data.schemaVersion = 2;
+    }
+
+    return data;
 }
 
 /**
- * Remove the saved sheet from localStorage.
+ * Persist the active character to IndexedDB.
+ * @param {object} data
  */
-export function clearCharacter() {
-    localStorage.removeItem(DND_SHEET_STORAGE_KEY);
+export async function saveCharacter(data) {
+    const db = await getDB();
+    await db.put(STORE_NAME, { id: ACTIVE_ID, ...data });
+}
+
+/**
+ * Load the active character from IndexedDB, or null if absent.
+ * Applies schema migration before returning.
+ * @returns {Promise<object|null>}
+ */
+export async function loadCharacter() {
+    const db = await getDB();
+    const record = await db.get(STORE_NAME, ACTIVE_ID);
+    return migrateSchema(record || null);
+}
+
+/**
+ * Remove the active character from IndexedDB.
+ */
+export async function clearCharacter() {
+    const db = await getDB();
+    await db.delete(STORE_NAME, ACTIVE_ID);
 }

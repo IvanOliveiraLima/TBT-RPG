@@ -1,40 +1,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DND_SHEET_STORAGE_KEY, saveCharacter, loadCharacter, clearCharacter } from '../js/modules/storage.js';
 
 // ---------------------------------------------------------------------------
-// localStorage mock
+// idb mock — shared in-memory store
 // ---------------------------------------------------------------------------
 
-const localStorageMock = (() => {
-    let store = {};
-    return {
-        getItem: vi.fn(key => store[key] ?? null),
-        setItem: vi.fn((key, value) => { store[key] = String(value); }),
-        removeItem: vi.fn(key => { delete store[key]; }),
-        clear: vi.fn(() => { store = {}; }),
+const mockStore = vi.hoisted(() => new Map());
+
+vi.mock('idb', () => {
+    const mockDb = {
+        put: vi.fn((storeName, record) => {
+            mockStore.set(record.id, { ...record });
+            return Promise.resolve(record.id);
+        }),
+        get: vi.fn((storeName, key) => Promise.resolve(mockStore.get(key))),
+        delete: vi.fn((storeName, key) => {
+            mockStore.delete(key);
+            return Promise.resolve();
+        }),
     };
-})();
-
-Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
-
-beforeEach(() => {
-    localStorageMock.clear();
-    vi.clearAllMocks();
+    return {
+        openDB: vi.fn(() => Promise.resolve(mockDb)),
+    };
 });
 
-// ---------------------------------------------------------------------------
-// DND_SHEET_STORAGE_KEY
-// ---------------------------------------------------------------------------
+import { saveCharacter, loadCharacter, clearCharacter } from '../js/modules/storage.js';
 
-describe('DND_SHEET_STORAGE_KEY', () => {
-    it('is a non-empty string', () => {
-        expect(typeof DND_SHEET_STORAGE_KEY).toBe('string');
-        expect(DND_SHEET_STORAGE_KEY.length).toBeGreaterThan(0);
-    });
-
-    it('has the expected value', () => {
-        expect(DND_SHEET_STORAGE_KEY).toBe('dnd_sheet_v1');
-    });
+beforeEach(() => {
+    mockStore.clear();
+    vi.clearAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -42,23 +35,23 @@ describe('DND_SHEET_STORAGE_KEY', () => {
 // ---------------------------------------------------------------------------
 
 describe('saveCharacter', () => {
-    it('calls localStorage.setItem with the correct key', () => {
+    it('persists the sheet so loadCharacter returns it', async () => {
         const sheet = { page1: { basic_info: { char_name: 'Legolas' } } };
-        saveCharacter(sheet);
-        expect(localStorageMock.setItem).toHaveBeenCalledWith(DND_SHEET_STORAGE_KEY, expect.any(String));
+        await saveCharacter(sheet);
+        const loaded = await loadCharacter();
+        expect(loaded).toMatchObject(sheet);
     });
 
-    it('serialises the sheet as JSON', () => {
-        const sheet = { hp: 42 };
-        saveCharacter(sheet);
-        const [, stored] = localStorageMock.setItem.mock.calls[0];
-        expect(JSON.parse(stored)).toEqual(sheet);
+    it('overwrites a previous save', async () => {
+        await saveCharacter({ hp: 10 });
+        await saveCharacter({ hp: 20 });
+        const loaded = await loadCharacter();
+        expect(loaded.hp).toBe(20);
     });
 
-    it('overwrites a previous save', () => {
-        saveCharacter({ hp: 10 });
-        saveCharacter({ hp: 20 });
-        expect(localStorageMock.setItem).toHaveBeenCalledTimes(2);
+    it('always saves under the active id', async () => {
+        await saveCharacter({ name: 'Frodo' });
+        expect(mockStore.has('active')).toBe(true);
     });
 });
 
@@ -67,25 +60,40 @@ describe('saveCharacter', () => {
 // ---------------------------------------------------------------------------
 
 describe('loadCharacter', () => {
-    it('returns null when nothing is stored', () => {
-        expect(loadCharacter()).toBeNull();
+    it('returns null when nothing is stored', async () => {
+        expect(await loadCharacter()).toBeNull();
     });
 
-    it('returns the parsed object after a save', () => {
+    it('returns the saved object after saveCharacter', async () => {
         const sheet = { page1: { basic_info: { char_name: 'Gandalf' } } };
-        saveCharacter(sheet);
-        expect(loadCharacter()).toEqual(sheet);
+        await saveCharacter(sheet);
+        const loaded = await loadCharacter();
+        expect(loaded).toMatchObject(sheet);
     });
 
-    it('returns null when the stored value is invalid JSON', () => {
-        localStorageMock.setItem(DND_SHEET_STORAGE_KEY, 'not-json{{{');
-        expect(loadCharacter()).toBeNull();
+    it('applies schema migration: adds id and bumps schemaVersion to 2', async () => {
+        mockStore.set('active', { schemaVersion: 1, hp: 30 });
+        const loaded = await loadCharacter();
+        expect(loaded.id).toBe('active');
+        expect(loaded.schemaVersion).toBe(2);
     });
 
-    it('returns null when stored value is an empty string', () => {
-        localStorageMock.setItem(DND_SHEET_STORAGE_KEY, '');
-        // setItem stores String('') — getItem returns '' which is falsy → null
-        expect(loadCharacter()).toBeNull();
+    it('applies schema migration when schemaVersion is absent', async () => {
+        mockStore.set('active', { hp: 30 });
+        const loaded = await loadCharacter();
+        expect(loaded.schemaVersion).toBe(2);
+    });
+
+    it('does not downgrade schemaVersion when already at 2', async () => {
+        mockStore.set('active', { id: 'active', schemaVersion: 2, hp: 10 });
+        const loaded = await loadCharacter();
+        expect(loaded.schemaVersion).toBe(2);
+    });
+
+    it('preserves existing id when migrating', async () => {
+        mockStore.set('active', { id: 'active', schemaVersion: 1, hp: 5 });
+        const loaded = await loadCharacter();
+        expect(loaded.id).toBe('active');
     });
 });
 
@@ -94,14 +102,13 @@ describe('loadCharacter', () => {
 // ---------------------------------------------------------------------------
 
 describe('clearCharacter', () => {
-    it('calls localStorage.removeItem with the correct key', () => {
-        clearCharacter();
-        expect(localStorageMock.removeItem).toHaveBeenCalledWith(DND_SHEET_STORAGE_KEY);
+    it('makes loadCharacter return null after clearing', async () => {
+        await saveCharacter({ hp: 99 });
+        await clearCharacter();
+        expect(await loadCharacter()).toBeNull();
     });
 
-    it('makes loadCharacter return null after clearing', () => {
-        saveCharacter({ hp: 99 });
-        clearCharacter();
-        expect(loadCharacter()).toBeNull();
+    it('does not throw when nothing is stored', async () => {
+        await expect(clearCharacter()).resolves.toBeUndefined();
     });
 });

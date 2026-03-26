@@ -4,13 +4,13 @@ import { updateSpellSlots } from './changes.js';
 
 var loadJson = null;
 
-function resolveInitialSheet() {
-    var stored = loadCharacter();
+async function resolveInitialSheet() {
+    var stored = await loadCharacter();
     if (stored) {
-        return Promise.resolve(normalizeSheet(stored));
+        return normalizeSheet(stored);
     }
 
-    return Promise.resolve(normalizeSheet(createEmptySheet()));
+    return normalizeSheet(createEmptySheet());
 }
 
 function setFormFieldsEnabled(enabled) {
