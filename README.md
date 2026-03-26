@@ -18,8 +18,8 @@ Este projeto tem como objetivo oferecer uma ficha de personagem:
 
 A aplicação roda inteiramente no navegador e utiliza:
 
-- HTML, CSS (W3.css) e JavaScript
-- jQuery para manipulação da ficha
+- HTML, CSS (W3.css) e JavaScript vanilla (sem frameworks)
+- Vite como bundler e ferramenta de build
 - `localStorage` para persistência de dados
 
 ## Funcionalidades Principais
@@ -37,43 +37,63 @@ A aplicação roda inteiramente no navegador e utiliza:
 
 ### 1. Iniciar o projeto
 
-Clone o repositório ou baixe os arquivos:
+Clone o repositório:
 
 ```bash
 git clone <repo>
+cd <repo>
 ```
 
-Abra o arquivo `index.html` no navegador
-ou rode um servidor local (recomendado):
+Instale as dependências:
 
 ```bash
-python3 -m http.server 8000
+npm install
+```
+
+Inicie o servidor de desenvolvimento:
+
+```bash
+npm run dev
 ```
 
 Acesse:
 
-```text
-http://localhost:8000
+```
+http://localhost:5173
 ```
 
-### 2. Criar uma ficha
+### 2. Build para produção
+
+```bash
+npm run build
+```
+
+Os arquivos otimizados serão gerados na pasta `dist/`.
+
+Para visualizar o build localmente:
+
+```bash
+npm run preview
+```
+
+### 3. Criar uma ficha
 
 - Preencha os campos normalmente
 - A ficha é salva automaticamente no navegador
 
-### 3. Salvamento automático
+### 4. Salvamento automático
 
 - Qualquer alteração é salva automaticamente no `localStorage`
 - Ao recarregar a página, a ficha é restaurada
 - Se não houver dados salvos, uma ficha em branco será carregada
 
-### 4. Nova ficha (limpar tudo)
+### 5. Nova ficha (limpar tudo)
 
 - Menu -> `Options` -> `New Blank Sheet`
 - Remove todos os dados atuais
 - Inicia uma nova ficha vazia
 
-### 5. Backup (Import/Export)
+### 6. Backup (Import/Export)
 
 #### Exportar
 
@@ -89,7 +109,7 @@ http://localhost:8000
 - Substitui os dados atuais
 - Recarrega automaticamente a ficha
 
-### 6. Imagens (Character Appearance e Symbol)
+### 7. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -102,19 +122,62 @@ As imagens:
 - Entram no JSON exportado
 - São restauradas ao importar
 
-Formatos suportados:
+Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
-- `jpg`, `jpeg`, `png`, `webp`
+Limite: `2MB` por imagem
 
-Limite:
-
-- `2MB` por imagem
-
-### 7. Lock da ficha
+### 8. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos
 - Permite edição totalmente manual
+
+## Estrutura do Projeto
+
+```
+/
+├── index.html
+├── vite.config.js
+├── eslint.config.js
+├── css/
+│   ├── w3.css
+│   └── app.css
+├── js/
+│   ├── main.js           # Entry point
+│   ├── app.js            # Navegação entre páginas
+│   ├── changes.js        # Event handlers e cálculos
+│   ├── save.js           # Serialização da ficha
+│   ├── load.js           # Carregamento e população da UI
+│   ├── add-attack.js     # Gerenciamento de ataques e magias
+│   ├── extra.js          # Utilitários
+│   └── modules/
+│       ├── calculations.js   # Funções de cálculo puras (D&D)
+│       ├── storage.js        # Wrapper do localStorage
+│       └── utils.js          # Funções utilitárias puras
+└── tests/
+    ├── calculations.test.js
+    ├── storage.test.js
+    └── utils.test.js
+```
+
+## Scripts Disponíveis
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Inicia o servidor de desenvolvimento |
+| `npm run build` | Gera o build de produção em `dist/` |
+| `npm run preview` | Visualiza o build localmente |
+| `npm run lint` | Executa o ESLint |
+| `npm run test` | Executa os testes unitários |
+| `npm run test:watch` | Executa os testes em modo watch |
+
+## Qualidade de Código
+
+O projeto conta com:
+
+- **ESLint** — análise estática com regras para JavaScript moderno
+- **Vitest** — testes unitários para funções de cálculo, armazenamento e utilitários
+- **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
 
 ## Estrutura de Dados
 
@@ -124,10 +187,7 @@ As fichas utilizam o campo:
 "schemaVersion": 1
 ```
 
-Isso permite:
-
-- Compatibilidade com versões antigas
-- Futuras migrações de estrutura
+Isso permite compatibilidade com versões antigas e futuras migrações de estrutura.
 
 `basic_info.classes` armazena a lista de classes com níveis individuais, e `basic_info.total_level` mantém o nível total calculado automaticamente.
 
@@ -141,15 +201,13 @@ Alguns campos são intencionalmente manuais:
 - Hit Points
 - Max Health
 
-Isso acontece porque dependem de regras específicas (classe, itens, etc.).
+Isso acontece porque dependem de regras específicas de classe, itens e builds.
 
 ## Créditos
 
 Este projeto é um fork de:
 
 - https://github.com/lckynmbsrn/DnD-5e-Character-Sheet
-
-Créditos ao autor original e ao trabalho com jQuery que serviu de base.
 
 ## Contribuição
 
