@@ -20,7 +20,7 @@ A aplicação roda inteiramente no navegador e utiliza:
 
 - HTML, CSS (W3.css) e JavaScript vanilla (sem frameworks)
 - Vite como bundler e ferramenta de build
-- `localStorage` para persistência de dados
+- `IndexedDB` para persistência de dados (sem limite prático de tamanho)
 
 ## Funcionalidades Principais
 
@@ -76,24 +76,33 @@ Para visualizar o build localmente:
 npm run preview
 ```
 
-### 3. Criar uma ficha
+### 3. Instalar como app (PWA)
+
+O app pode ser instalado diretamente no celular ou desktop:
+
+- **Chrome/Android**: acesse o site e toque em "Adicionar à tela inicial"
+- **Chrome/Desktop**: clique no ícone de instalar na barra de endereço
+
+O app instalado funciona offline e se comporta como um aplicativo nativo.
+
+### 4. Criar uma ficha
 
 - Preencha os campos normalmente
 - A ficha é salva automaticamente no navegador
 
-### 4. Salvamento automático
+### 5. Salvamento automático
 
-- Qualquer alteração é salva automaticamente no `localStorage`
+- Qualquer alteração é salva automaticamente no `IndexedDB`
 - Ao recarregar a página, a ficha é restaurada
 - Se não houver dados salvos, uma ficha em branco será carregada
 
-### 5. Nova ficha (limpar tudo)
+### 6. Nova ficha (limpar tudo)
 
 - Menu -> `Options` -> `New Blank Sheet`
 - Remove todos os dados atuais
 - Inicia uma nova ficha vazia
 
-### 6. Backup (Import/Export)
+### 7. Backup (Import/Export)
 
 #### Exportar
 
@@ -109,7 +118,7 @@ npm run preview
 - Substitui os dados atuais
 - Recarrega automaticamente a ficha
 
-### 7. Imagens (Character Appearance e Symbol)
+### 8. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -126,7 +135,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 8. Lock da ficha
+### 9. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos
