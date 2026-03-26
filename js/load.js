@@ -66,9 +66,10 @@ function applyLoadedSheet() {
     document.querySelector('#page-1 #attributes input[name="cha-mod"]').value = loadJson.page1.attributes.cha_mod;
 
     //Load Skills and Saves	
-    document.querySelector('#page-1 #saves-skills select[name="spell-att"]').value = loadJson.page1.saves_skills.spell_casting;
-    if (!document.querySelector('#saves-skills select[name="spell-att"]').value) {
-        document.querySelector('#saves-skills select[name="spell-att"]').value = 'none'.change();
+    var spellAttEl = document.querySelector('#page-1 #saves-skills select[name="spell-att"]');
+    if (spellAttEl) {
+        spellAttEl.value = loadJson.page1.saves_skills.spell_casting || 'none';
+        spellAttEl.dispatchEvent(new Event('change'));
     }
 
     document.querySelector('#page-1 #saves-skills #saves input[name="str-save"]').value = loadJson.page1.saves_skills.saves.str_save.val;

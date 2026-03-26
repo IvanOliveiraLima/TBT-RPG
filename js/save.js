@@ -1062,7 +1062,7 @@ export function buildSheetData() {
                     base: document.querySelector('#page-2 #encumberance input[name="base-encumberance"]').value,
                     encumbered: document.querySelector('#page-2 #encumberance input[name="encumbered-encumberance"]').value,
                     h_encumbered: document.querySelector('#page-2 #encumberance input[name="h-encumbered-encumberance"]').value,
-                    push: document.querySelector('#encumberance input[name="push-encumberance"]').value
+                    push: document.querySelector('#page-2 #encumberance input[name="push-encumberance"]').value
                 }
             },
             attacks_spells: getAttacks(),
