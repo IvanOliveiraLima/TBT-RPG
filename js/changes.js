@@ -135,8 +135,8 @@ function updateSpells() {
     var att = document.querySelector('#saves-skills select[name="spell-att"]').value;
 
     if (att == 'none') {
-        document.querySelector('#top-bar input[name="spell-dc"]').value = 'Na';
-        document.querySelector('#spell-info input[name="dc"]').value = 'Na';
+        document.querySelector('#top-bar input[name="spell-dc"]').value = '';
+        document.querySelector('#spell-info input[name="dc"]').value = '';
         return;
     }
 
@@ -475,7 +475,70 @@ export function updateSpellSlots(total) {
     }
 }
 
+var NUMERIC_FIELD_SELECTORS = [
+    '#hit-points input[name="temp-health"]',
+    '#hit-points input[name="current-health"]',
+    '#hit-points input[name="max-health"]',
+    '#top-bar input[name="proficiency"]',
+    '#top-bar input[name="initiative"]',
+    '#top-bar input[name="ac"]',
+    '#top-bar input[name="speed"]',
+    '#attributes input[name="str"]',
+    '#attributes input[name="dex"]',
+    '#attributes input[name="con"]',
+    '#attributes input[name="int"]',
+    '#attributes input[name="wis"]',
+    '#attributes input[name="cha"]',
+    '#saves input[name="str-save"]',
+    '#saves input[name="dex-save"]',
+    '#saves input[name="con-save"]',
+    '#saves input[name="int-save"]',
+    '#saves input[name="wis-save"]',
+    '#saves input[name="cha-save"]',
+    '#skills #athletics-skill input[type="text"]',
+    '#skills #acrobatics-skill input[type="text"]',
+    '#skills #sleight-hand-skill input[type="text"]',
+    '#skills #stealth-skill input[type="text"]',
+    '#skills #arcana-skill input[type="text"]',
+    '#skills #history-skill input[type="text"]',
+    '#skills #investigation-skill input[type="text"]',
+    '#skills #religion-skill input[type="text"]',
+    '#skills #animal-handling-skill input[type="text"]',
+    '#skills #insight-skill input[type="text"]',
+    '#skills #medicine-skill input[type="text"]',
+    '#skills #nature-skill input[type="text"]',
+    '#skills #perception-skill input[type="text"]',
+    '#skills #survival-skill input[type="text"]',
+    '#skills #deception-skill input[type="text"]',
+    '#skills #intimidation-skill input[type="text"]',
+    '#skills #performance-skill input[type="text"]',
+    '#skills #persuasion-skill input[type="text"]'
+];
+
+function isValidNumericInput(value) {
+    return /^[+-]?\d*$/.test(value);
+}
+
+function bindNumericValidation(el) {
+    el.dataset.lastValidNumericValue = el.value;
+    el.addEventListener('input', function() {
+        if (isValidNumericInput(this.value)) {
+            this.dataset.lastValidNumericValue = this.value;
+        } else {
+            this.value = this.dataset.lastValidNumericValue;
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    //Bind numeric validation to stat/skill/save fields
+    NUMERIC_FIELD_SELECTORS.forEach(function(selector) {
+        var el = document.querySelector(selector);
+        if (el) {
+            bindNumericValidation(el);
+        }
+    });
+
     //Run when strength changes
     document.querySelector('#attributes input[name="str"]').addEventListener('input', function() {
         if (LOCKED) return;
