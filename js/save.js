@@ -1194,26 +1194,26 @@ export function createEmptySheet() {
     return normalizeSheet(emptySheet);
 }
 
-function persistSheetToLocalStorage(sheet) {
-    saveCharacter(sheet);
+async function persistSheetToStorage(sheet) {
+    await saveCharacter(sheet);
 }
 
-export function saveSheet() {
+export async function saveSheet() {
     var sheet = normalizeSheet(buildSheetData());
 
     try {
-        persistSheetToLocalStorage(sheet);
+        await persistSheetToStorage(sheet);
         showSheetFeedback('Salvo no navegador');
     } catch (_error) {
         showSheetFeedback('Falha ao salvar');
     }
 }
 
-function runAutoSave() {
+async function runAutoSave() {
     var sheet = normalizeSheet(buildSheetData());
 
     try {
-        persistSheetToLocalStorage(sheet);
+        await persistSheetToStorage(sheet);
         var now = Date.now();
         if ((now - LAST_AUTOSAVE_FEEDBACK_TS) >= AUTOSAVE_FEEDBACK_MIN_INTERVAL_MS) {
             showSheetFeedback('Salvo automaticamente');
@@ -1236,11 +1236,11 @@ function persistCurrentSheetSafely() {
 
     try {
         var sheet = normalizeSheet(buildSheetData());
-        persistSheetToLocalStorage(sheet);
+        persistSheetToStorage(sheet).catch(function() { /* best-effort */ });
     } catch (_error) { /* intentional: best-effort save on unload */ }
 }
 
-export function clearSavedSheet() {
+export async function clearSavedSheet() {
     var confirmed = window.confirm('This will clear all current sheet data and uploaded images from this browser. Continue?');
     if (!confirmed) {
         return;
@@ -1249,8 +1249,8 @@ export function clearSavedSheet() {
     skipUnloadSave = true;
     clearTimeout(AUTO_SAVE_TIMER);
     AUTO_SAVE_TIMER = null;
-    clearCharacter();
-    persistSheetToLocalStorage(createEmptySheet());
+    await clearCharacter();
+    await persistSheetToStorage(createEmptySheet());
     location.reload();
 }
 
@@ -1295,12 +1295,13 @@ export function importSheetFile(event) {
                 showSheetFeedback('JSON não é uma ficha válida');
                 return;
             }
-            persistSheetToLocalStorage(sheet);
+            persistSheetToStorage(sheet).then(function() {
+                clearTimeout(AUTO_SAVE_TIMER);
+                AUTO_SAVE_TIMER = null;
+                skipUnloadSave = true;
+                location.reload();
+            });
             showSheetFeedback('Importado com sucesso');
-            clearTimeout(AUTO_SAVE_TIMER);
-            AUTO_SAVE_TIMER = null;
-            skipUnloadSave = true;
-            location.reload();
         } catch (_error) {
             showSheetFeedback('JSON invalido');
         } finally {
