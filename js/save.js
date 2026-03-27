@@ -1196,7 +1196,8 @@ export function createEmptySheet() {
 }
 
 async function persistSheetToStorage(sheet) {
-    await saveCharacter(sheet);
+    var activeId = sessionStorage.getItem('activeCharacterId');
+    await saveCharacter({ ...sheet, id: activeId || sheet.id || 'active' });
 }
 
 export async function saveSheet() {

@@ -5,7 +5,8 @@ import { updateSpellSlots } from './changes.js';
 var loadJson = null;
 
 async function resolveInitialSheet() {
-    var stored = await loadCharacter();
+    var activeId = sessionStorage.getItem('activeCharacterId');
+    var stored = await loadCharacter(activeId || 'active');
     if (stored) {
         return normalizeSheet(stored);
     }

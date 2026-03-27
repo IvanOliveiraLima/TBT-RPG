@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/character-select.css">
     <!-- Scripts -->
     <script type="module" src="/js/main.js"></script>
 </head>
@@ -25,6 +26,7 @@
 -->
     <div class="w3-sidebar w3-bar-block w3-border-right w3-flat-clouds w3-animate-left" style="display:none" id="mySidebar">
         <button onclick="w3_close()" class="w3-bar-item w3-large w3-button w3-hover-blue-gray">Close &times;</button>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="goToCharacterSelect()">&#8592; My Characters</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-1'); w3_close()">Attributes</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-4'); w3_close()">Backstory</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-2'); w3_close()">Inv. & NPCs</a>
@@ -53,7 +55,20 @@
         <button id="menu-btn" class="w3-button w3-xlarge w3-blue-gray w3-display-topleft w3-margin w3-round" onclick="w3_open()" aria-label="Open menu">☰</button>
         <button id="scroll-to-top" class="w3-button w3-xlarge w3-blue-gray w3-round">^</button>
     </div>
-    <div onclick="w3_close()">
+    <!-- Character Selection Screen -->
+    <div id="character-select-screen" style="display:none">
+        <div class="select-header">
+            <h1>My Characters</h1>
+            <div class="select-global-actions">
+                <button class="w3-button w3-blue-gray w3-round btn-export-all">Export All</button>
+                <button class="w3-button w3-round btn-import-all">Import</button>
+                <input id="import-all-input" type="file" accept=".json,application/json" style="display:none" />
+            </div>
+        </div>
+        <div class="character-grid"></div>
+    </div>
+
+    <div id="sheet-wrapper" onclick="w3_close()">
         <!-- Header -->
         <!-- Header -->
         <!-- Header -->
