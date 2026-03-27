@@ -13,9 +13,14 @@ import { openPage, w3_open, w3_close } from './app.js';
 import { att_attack } from './add-attack.js';
 import { exportSheet, openImportDialog, clearSavedSheet, importSheetFile, saveSheet } from './save.js';
 import { lock } from './changes.js';
-import { loadCharacter, saveCharacter } from './modules/storage.js';
+import { loadCharacter, saveCharacter, generateId } from './modules/storage.js';
+import { initCharacterSelect } from './modules/character-select.js';
 
-// Migrate data from localStorage (legacy) to IndexedDB on first run.
+// ---------------------------------------------------------------------------
+// Migration helpers
+// ---------------------------------------------------------------------------
+
+// Migrate data from localStorage (legacy v0) to IndexedDB on first run.
 async function migrateFromLocalStorage() {
     var legacy = localStorage.getItem('dnd_sheet_v1');
     if (!legacy) return;
@@ -33,7 +38,74 @@ async function migrateFromLocalStorage() {
     }
 }
 
+// Migrate the legacy 'active' record to a proper char_* ID.
+async function migrateActiveCharacter() {
+    var legacy = await loadCharacter('active');
+    if (!legacy) return;
+
+    var newId = generateId();
+    await saveCharacter({ ...legacy, id: newId });
+    // Remove the old 'active' record by importing clearCharacter inline to avoid circular dep
+    var { clearCharacter } = await import('./modules/storage.js');
+    await clearCharacter('active');
+    console.info('Migrated active character to', newId);
+    return newId;
+}
+
+// ---------------------------------------------------------------------------
+// Screen visibility helpers
+// ---------------------------------------------------------------------------
+
+function showSheet() {
+    var wrapper = document.getElementById('sheet-wrapper');
+    var select = document.getElementById('character-select-screen');
+    if (wrapper) wrapper.style.display = '';
+    if (select) select.style.display = 'none';
+}
+
+function showCharacterSelect() {
+    var wrapper = document.getElementById('sheet-wrapper');
+    var select = document.getElementById('character-select-screen');
+    if (wrapper) wrapper.style.display = 'none';
+    if (select) {
+        select.style.display = '';
+        initCharacterSelect(select);
+    }
+}
+
+// Called by the sidebar "← My Characters" link
+window.goToCharacterSelect = function() {
+    sessionStorage.removeItem('activeCharacterId');
+    w3_close();
+    showCharacterSelect();
+};
+
+// ---------------------------------------------------------------------------
+// Boot sequence
+// ---------------------------------------------------------------------------
+
 await migrateFromLocalStorage();
+
+var migratedId = await migrateActiveCharacter();
+
+var activeId = sessionStorage.getItem('activeCharacterId') || migratedId || null;
+
+if (!activeId) {
+    showCharacterSelect();
+} else {
+    var character = await loadCharacter(activeId);
+    if (character) {
+        // Patch load.js: make it load by the active ID instead of 'active'
+        sessionStorage.setItem('activeCharacterId', activeId);
+        showSheet();
+    } else {
+        showCharacterSelect();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Global handlers for inline onclick attributes in HTML
+// ---------------------------------------------------------------------------
 
 window.openPage = openPage;
 window.w3_open = w3_open;
