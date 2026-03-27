@@ -807,6 +807,69 @@ td {
 }
 
 
+/* Modernização visual */
+
+body {
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.w3-card, .w3-card-2 {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+input[type="text"],
+textarea,
+select {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    background: #fff;
+}
+
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #607d8b;
+    box-shadow: 0 0 0 2px rgba(96,125,139,0.2);
+}
+
+.w3-button.w3-blue-gray {
+    border-radius: 6px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: opacity 0.15s;
+}
+
+.w3-button.w3-blue-gray:hover {
+    opacity: 0.88;
+}
+
+.label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #546e7a;
+}
+
+.expando {
+    width: 100%;
+    text-align: left;
+    font-weight: 600;
+    border-radius: 6px 6px 0 0;
+}
+
+#mySidebar {
+    width: min(280px, 85vw);
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+}
+
+
 /* w3 custom css */
 
 .w3-card {
