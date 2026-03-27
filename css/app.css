@@ -352,11 +352,40 @@ textarea {
     min-width: 0;
 }
 
+#saves-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+}
+
 #saves-skills>div {
-    /*min-height: 240px;*/
-    min-width: 290px;
     border-right: 1px solid #ccc!important;
     border-top: 1px solid #ccc!important;
+    min-width: 0;
+}
+
+#saves {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#saves .box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+#skills {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+@media (max-width: 600px) {
+    #skills {
+        flex: 1 1 45%;
+    }
 }
 
 #death-saves {
