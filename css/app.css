@@ -609,6 +609,21 @@ td {
     border-bottom: 1px solid black;
 }
 
+@media (max-width: 600px) {
+    #mount-pet .w3-col {
+        width: 100% !important;
+    }
+
+    #mount-pet .w3-right-align {
+        width: 100% !important;
+        text-align: left;
+    }
+
+    #mount-pet [id="mount-notes"] {
+        width: 100% !important;
+    }
+}
+
 #currancy input,
 #encumberance input {
     width: 25%;
