@@ -183,7 +183,9 @@ textarea {
 }
 
 .class-row input[name="class-level"] {
-    width: 64px;
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
     text-align: center;
 }
 
@@ -277,9 +279,9 @@ textarea {
     }
 
     .class-row input[name="class-level"] {
-        grid-column: 1;
+        width: 48px !important;
         grid-row: 2;
-        width: 80px;
+        grid-column: 1;
     }
 
     .class-row button {

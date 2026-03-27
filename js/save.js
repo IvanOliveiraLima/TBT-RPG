@@ -174,6 +174,7 @@ function createClassRow(name, level) {
     var levelInput = document.createElement('input');
     levelInput.type = 'number';
     levelInput.min = '0';
+    levelInput.max = '20';
     levelInput.step = '1';
     levelInput.name = 'class-level';
     levelInput.placeholder = 'Lv';
