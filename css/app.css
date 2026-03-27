@@ -493,6 +493,28 @@ textarea {
 #attacks-spells table#attacks {
     width: 100%;
     max-width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+#attacks-spells table#attacks th,
+#attacks-spells table#attacks td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 6px 4px;
+}
+
+@media (max-width: 600px) {
+    #attack-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #attack-form .w3-rest {
+        width: 100% !important;
+    }
 }
 
 tbody {
