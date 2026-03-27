@@ -180,12 +180,14 @@ function applyLoadedSheet() {
     //Load Attacks
     loadJson.page1.attacks_spells.forEach(function(value) {
         document.querySelector('#page-1 #attacks-spells #attacks tbody').insertAdjacentHTML('beforeend', `
-            <tr>                    <td><input type="text" name="name" value="` + value.name + `"/></td>
-                <td><input type="text" name="stat" value="` + value.stat + `"/></td>
-                <td><input type="text" name="toHit" value="` + value.toHit + `"/></td>
-                <td><input type="text" name="damage" value="` + value.damage + `"/></td>
-                <td><input type="text" name="damage_type" value="` + value.damage_type + `"/></td>
-                <td><button>X</button></td>                </tr>
+            <tr>
+                <td data-label="Name"><input type="text" name="name" value="` + value.name + `"/></td>
+                <td data-label="Base Stat"><input type="text" name="stat" value="` + value.stat + `"/></td>
+                <td data-label="Bonus/DC"><input type="text" name="toHit" value="` + value.toHit + `"/></td>
+                <td data-label="Damage"><input type="text" name="damage" value="` + value.damage + `"/></td>
+                <td data-label="Damage Type"><input type="text" name="damage_type" value="` + value.damage_type + `"/></td>
+                <td><button>X</button></td>
+            </tr>
             `);
     });
 

@@ -22,11 +22,11 @@ export function att_attack() {
 	document.querySelector('#attacks tbody').insertAdjacentHTML('beforeend',
 		`
 		<tr>
-			<td><input type="text" name="name" value="` + name + `"/></td>
-			<td><input type="text" name="stat" value="` + stat + `"/></td>
-			<td><input type="text" name="toHit" value="` + (to_hit ? to_hit : dc) + `"/></td>
-			<td><input type="text" name="damage" value="` + damage + `"/></td>
-			<td><input type="text" name="damage_type" value="` + damage_type + `"/></td>
+			<td data-label="Name"><input type="text" name="name" value="` + name + `"/></td>
+			<td data-label="Base Stat"><input type="text" name="stat" value="` + stat + `"/></td>
+			<td data-label="Bonus/DC"><input type="text" name="toHit" value="` + (to_hit ? to_hit : dc) + `"/></td>
+			<td data-label="Damage"><input type="text" name="damage" value="` + damage + `"/></td>
+			<td data-label="Damage Type"><input type="text" name="damage_type" value="` + damage_type + `"/></td>
 			<td><button>X</button></td>
 		</tr>
 		`
