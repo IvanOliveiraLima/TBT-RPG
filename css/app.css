@@ -460,7 +460,7 @@ textarea {
 
 #features-container {
     padding-left: 8px;
-    min-width: 350px;
+    min-width: 0;
 }
 
 #attacks-container {
@@ -472,6 +472,21 @@ textarea {
     #features-container {
         padding-left: 0;
         padding-right: 0;
+    }
+}
+
+#prof textarea,
+#features textarea,
+#notes-page textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    #prof-traits-container .w3-col {
+        width: 100% !important;
     }
 }
 
