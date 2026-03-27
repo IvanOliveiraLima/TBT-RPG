@@ -149,18 +149,34 @@ textarea {
 
 .class-list-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 72px 46px;
-    column-gap: 8px;
+    grid-template-columns: 1fr 64px 32px;
+    gap: 6px;
+    align-items: center;
     width: 100%;
     padding: 0 0 2px 0;
 }
 
 .class-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 72px 46px;
-    column-gap: 8px;
+    grid-template-columns: 1fr 64px 32px;
+    gap: 6px;
     align-items: center;
     width: 100%;
+}
+
+.class-row input[name="class-name"] {
+    width: 100%;
+    min-width: 0;
+}
+
+.class-row input[name="class-level"] {
+    width: 64px;
+    text-align: center;
+}
+
+#add-class-row {
+    width: auto !important;
+    align-self: flex-start;
 }
 
 .class-row .class-name-wrap {
@@ -219,14 +235,6 @@ textarea {
 }
 
 @media (max-width: 600px) {
-    .class-list-head {
-        grid-template-columns: minmax(0, 1fr) 68px 42px;
-    }
-
-    .class-row {
-        grid-template-columns: minmax(0, 1fr) 68px 42px;
-    }
-
     #basic-info .w3-col {
         width: 100% !important;
     }
@@ -234,10 +242,6 @@ textarea {
     #class-list-container {
         width: 100%;
         max-width: 100%;
-    }
-
-    .class-list-actions .w3-button {
-        width: 100%;
     }
 
     .class-total-row {
