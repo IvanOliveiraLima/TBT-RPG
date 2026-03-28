@@ -1,5 +1,5 @@
 import { isObject, hasKeys, parseLegacyClassLevel, sanitizeClassEntry, calculateTotalClassLevel, getExportFilenameFromSheet } from './modules/utils.js';
-import { saveCharacter, clearCharacter } from './modules/storage.js';
+import { saveCharacter, clearCharacter, generateId } from './modules/storage.js';
 
 function getAttacks() {
     var attacks = [];
@@ -1251,8 +1251,14 @@ export async function clearSavedSheet() {
     skipUnloadSave = true;
     clearTimeout(AUTO_SAVE_TIMER);
     AUTO_SAVE_TIMER = null;
-    await clearCharacter();
-    await persistSheetToStorage(createEmptySheet());
+
+    var activeId = sessionStorage.getItem('activeCharacterId');
+    if (activeId) await clearCharacter(activeId);
+
+    var newId = generateId();
+    sessionStorage.setItem('activeCharacterId', newId);
+    var emptySheet = createEmptySheet();
+    await saveCharacter({ ...emptySheet, id: newId });
     location.reload();
 }
 
