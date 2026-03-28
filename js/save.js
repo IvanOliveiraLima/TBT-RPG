@@ -1227,6 +1227,7 @@ async function runAutoSave() {
 }
 
 function scheduleAutoSave() {
+    if (!sessionStorage.getItem('activeCharacterId')) return;
     clearTimeout(AUTO_SAVE_TIMER);
     AUTO_SAVE_TIMER = setTimeout(runAutoSave, AUTO_SAVE_DEBOUNCE_MS);
 }
