@@ -18,7 +18,9 @@ function setFormFieldsEnabled(enabled) {
     document.querySelectorAll('input, select, textarea').forEach(function(el) { el.disabled = !enabled; });
 }
 
-function applyLoadedSheet() {
+export async function applyLoadedSheet(sheet) {
+    setFormFieldsEnabled(false);
+    loadJson = normalizeSheet(sheet);
 
     //Change the title to the character name
     if (loadJson.page1.basic_info.char_name)
@@ -257,6 +259,8 @@ function applyLoadedSheet() {
     document.querySelector('#page-5 #notes-1 textarea[name="notes-1"]').value = loadJson.page5.notes_1;
     document.querySelector('#page-5 #notes-2 textarea[name="notes-2"]').value = loadJson.page5.notes_2;
 
+    setFormFieldsEnabled(true);
+
     //Load Spell Info
     document.querySelector('#page-3 #spell-info input[name="class"]').value = loadJson.page3.spell_info.class;
     document.querySelector('#page-3 #spell-info input[name="att"]').value = loadJson.page3.spell_info.att;
@@ -362,18 +366,3 @@ function applyLoadedSheet() {
 
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    setFormFieldsEnabled(false);
-
-    resolveInitialSheet()
-        .then(function(sheet) {
-            loadJson = sheet;
-            applyLoadedSheet();
-            setFormFieldsEnabled(true);
-        })
-        .catch(function(error) {
-            setFormFieldsEnabled(true);
-            showSheetFeedback('Falha ao carregar ficha padrao');
-            console.error(error);
-        });
-});

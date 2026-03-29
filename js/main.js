@@ -7,11 +7,11 @@
 import './extra.js';
 import './add-attack.js';
 import './app.js';
-import './load.js';
+import { applyLoadedSheet } from './load.js';
 
 import { openPage, w3_open, w3_close } from './app.js';
 import { att_attack } from './add-attack.js';
-import { exportSheet, openImportDialog, clearSavedSheet, importSheetFile, saveSheet } from './save.js';
+import { exportSheet, openImportDialog, clearSavedSheet, importSheetFile, saveSheet, cancelAutoSave } from './save.js';
 import { lock } from './changes.js';
 import { loadCharacter, saveCharacter, generateId } from './modules/storage.js';
 import { initCharacterSelect } from './modules/character-select.js';
@@ -75,6 +75,7 @@ function showCharacterSelect() {
 
 // Called by the sidebar "← My Characters" link
 window.goToCharacterSelect = function() {
+    cancelAutoSave();
     sessionStorage.removeItem('activeCharacterId');
     w3_close();
     showCharacterSelect();
@@ -85,20 +86,20 @@ window.goToCharacterSelect = function() {
 // ---------------------------------------------------------------------------
 
 await migrateFromLocalStorage();
+await migrateActiveCharacter();
 
-var migratedId = await migrateActiveCharacter();
-
-var activeId = sessionStorage.getItem('activeCharacterId') || migratedId || null;
+var activeId = sessionStorage.getItem('activeCharacterId') || null;
 
 if (!activeId) {
     showCharacterSelect();
 } else {
     var character = await loadCharacter(activeId);
     if (character) {
-        // Patch load.js: make it load by the active ID instead of 'active'
         sessionStorage.setItem('activeCharacterId', activeId);
+        await applyLoadedSheet(character);
         showSheet();
     } else {
+        sessionStorage.removeItem('activeCharacterId');
         showCharacterSelect();
     }
 }

@@ -1,6 +1,8 @@
 import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter } from './storage.js';
+import { createEmptySheet, blockUnloadSave } from '../save.js';
 
 var container = null;
+var selectInitialized = false;
 
 function formatDate(ts) {
     if (!ts) return '';
@@ -61,12 +63,15 @@ async function refresh() {
 
 async function createNewCharacter() {
     var id = generateId();
-    await saveCharacter({ id: id, schemaVersion: 2 });
+    var emptySheet = createEmptySheet();
+    await saveCharacter({ ...emptySheet, id: id, schemaVersion: 2, updatedAt: Date.now() });
+    blockUnloadSave();
     sessionStorage.setItem('activeCharacterId', id);
     location.reload();
 }
 
 function openCharacter(id) {
+    blockUnloadSave();
     sessionStorage.setItem('activeCharacterId', id);
     location.reload();
 }
@@ -118,7 +123,17 @@ async function handleImportFile(event) {
 export function initCharacterSelect(screenElement) {
     container = screenElement;
 
-    // Wire global action buttons
+    if (selectInitialized) {
+        return refresh();
+    }
+    selectInitialized = true;
+
+    // Reset buttons before adding listeners to prevent duplicates
+    var btnExport = container.querySelector('.btn-export-all');
+    var btnImport = container.querySelector('.btn-import-all');
+    if (btnExport) { btnExport.replaceWith(btnExport.cloneNode(true)); }
+    if (btnImport) { btnImport.replaceWith(btnImport.cloneNode(true)); }
+
     container.querySelector('.btn-export-all').addEventListener('click', handleExportAll);
     container.querySelector('.btn-import-all').addEventListener('click', handleImportClick);
     container.querySelector('#import-all-input').addEventListener('change', handleImportFile);
