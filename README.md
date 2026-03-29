@@ -15,6 +15,7 @@ Este projeto tem como objetivo oferecer uma ficha de personagem:
 - Com salvamento automático
 - Com importação/exportação de dados
 - Com suporte a imagens diretamente pelo navegador
+- Suporte a múltiplos personagens com tela de seleção
 
 A aplicação roda inteiramente no navegador e utiliza:
 
@@ -32,6 +33,8 @@ A aplicação roda inteiramente no navegador e utiliza:
 - Layout responsivo
 - Versionamento de schema (`schemaVersion`)
 - Compatibilidade com fichas antigas
+- Gerenciamento de múltiplos personagens (criar, abrir, duplicar, excluir)
+- Export/import em lote de todos os personagens
 
 ## Como Usar
 
@@ -118,7 +121,26 @@ O app instalado funciona offline e se comporta como um aplicativo nativo.
 - Substitui os dados atuais
 - Recarrega automaticamente a ficha
 
-### 8. Imagens (Character Appearance e Symbol)
+### 8. Múltiplos personagens
+
+Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
+
+- **Criar:** clique em "+ New Character"
+- **Abrir:** clique em "Open" no card do personagem
+- **Duplicar:** clique no ícone de duplicar no card
+- **Excluir:** clique no "✕" vermelho no card
+- **Voltar:** clique em "← My Characters" no menu lateral
+
+#### Export em lote
+- Na tela "My Characters", clique em **Export All**
+- Baixa um único JSON com todos os personagens
+
+#### Import em lote
+- Na tela "My Characters", clique em **Import**
+- Escolha um arquivo JSON exportado anteriormente
+- Selecione **Replace** para substituir tudo ou **Merge** para mesclar com os existentes
+
+### 9. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -135,7 +157,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 9. Lock da ficha
+### 10. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos
