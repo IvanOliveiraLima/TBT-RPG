@@ -1245,9 +1245,8 @@ export function blockUnloadSave() {
 }
 
 function persistCurrentSheetSafely() {
-    if (skipUnloadSave) {
-        return;
-    }
+    if (skipUnloadSave) return;
+    if (!sessionStorage.getItem('activeCharacterId')) return;
 
     try {
         var sheet = normalizeSheet(buildSheetData());
