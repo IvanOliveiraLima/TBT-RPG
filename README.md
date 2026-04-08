@@ -35,6 +35,7 @@ A aplicação roda inteiramente no navegador e utiliza:
 - Compatibilidade com fichas antigas
 - Gerenciamento de múltiplos personagens (criar, abrir, duplicar, excluir)
 - Export/import em lote de todos os personagens
+- Geração automática de personagem com IA (descreva e a IA preenche a ficha)
 
 ## Como Usar
 
@@ -140,6 +141,15 @@ Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
 - Escolha um arquivo JSON exportado anteriormente
 - Selecione **Replace** para substituir tudo ou **Merge** para mesclar com os existentes
 
+### 8. Gerar personagem com IA
+
+- Abra um personagem e clique em "✨ Generate with AI" no menu lateral
+- Descreva seu personagem em até 1000 caracteres
+- Clique em "Generate" e aguarde alguns segundos
+- A IA preenche automaticamente: nome, raça, background, alinhamento, classe, atributos, perícias, proficiências, traços de personalidade e história
+
+A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o usuário, sem necessidade de conta ou chave de API.
+
 ### 9. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
@@ -157,7 +167,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 10. Lock da ficha
+### 9. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos

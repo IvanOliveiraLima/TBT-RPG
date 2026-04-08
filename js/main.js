@@ -15,6 +15,7 @@ import { exportSheet, openImportDialog, clearSavedSheet, importSheetFile, saveSh
 import { lock } from './changes.js';
 import { loadCharacter, saveCharacter, generateId } from './modules/storage.js';
 import { initCharacterSelect } from './modules/character-select.js';
+import { openAiModal, closeAiModal, runAiGenerate } from './modules/ai-modal.js';
 
 // ---------------------------------------------------------------------------
 // Migration helpers
@@ -118,3 +119,6 @@ window.clearSavedSheet = clearSavedSheet;
 window.importSheetFile = importSheetFile;
 window.saveSheet = saveSheet;
 window.lock = lock;
+window.openAiModal = openAiModal;
+window.closeAiModal = closeAiModal;
+window.runAiGenerate = runAiGenerate;
