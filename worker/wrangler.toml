@@ -1,0 +1,7 @@
+name = "dnd-ai-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+account_id = "9a5e1d11528c182c98ba55f6df46c06d"
+
+[ai]
+binding = "AI"
