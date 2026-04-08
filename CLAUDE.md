@@ -15,9 +15,17 @@ npm run test:watch # Run tests in watch mode
 
 CI runs `npm ci && npm run lint && npm run test && npm run build` on PRs to `main-dev` and `master`.
 
+To redeploy the Cloudflare Worker (manual step — not in CI):
+
+```bash
+cd worker && npm run deploy
+```
+
+If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.js](worker/src/index.js) before redeploying.
+
 ## Architecture
 
-**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable.
+**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4).
 
 ### Module responsibilities
 
@@ -33,6 +41,9 @@ CI runs `npm ci && npm run lint && npm run test && npm run build` on PRs to `mai
 | `js/modules/calculations.js` | Pure D&D math (ability modifiers, currency conversion) |
 | `js/modules/character-select.js` | Character select screen: create, open, duplicate, delete, import/export |
 | `js/modules/utils.js` | Pure helpers: parsers, validators, D&D lookup tables |
+| `js/modules/ai-generate.js` | Fetch wrapper for the Cloudflare Worker AI endpoint |
+| `js/modules/ai-modal.js` | AI generation modal: open/close/submit, apply generated data to DOM |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3 8B), handles CORS |
 
 ### Data flow
 
