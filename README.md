@@ -141,7 +141,7 @@ Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
 - Escolha um arquivo JSON exportado anteriormente
 - Selecione **Replace** para substituir tudo ou **Merge** para mesclar com os existentes
 
-### 8. Gerar personagem com IA
+### 9. Gerar personagem com IA
 
 - Abra um personagem e clique em "✨ Generate with AI" no menu lateral
 - Descreva seu personagem em até 1000 caracteres
@@ -150,7 +150,7 @@ Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
 
 A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o usuário, sem necessidade de conta ou chave de API.
 
-### 9. Imagens (Character Appearance e Symbol)
+### 10. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -167,7 +167,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 9. Lock da ficha
+### 11. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos
@@ -192,9 +192,17 @@ Limite: `2MB` por imagem
 │   ├── add-attack.js     # Gerenciamento de ataques e magias
 │   ├── extra.js          # Utilitários
 │   └── modules/
-│       ├── calculations.js   # Funções de cálculo puras (D&D)
-│       ├── storage.js        # Wrapper do localStorage
-│       └── utils.js          # Funções utilitárias puras
+│       ├── calculations.js       # Funções de cálculo puras (D&D)
+│       ├── storage.js            # Wrapper do IndexedDB
+│       ├── utils.js              # Funções utilitárias puras
+│       ├── character-select.js   # Tela de seleção de personagens
+│       ├── ai-generate.js        # Cliente do Cloudflare Worker
+│       ├── ai-modal.js           # Modal de geração com IA
+│       └── settings.js           # Configurações (chave de API futura)
+├── worker/
+│   ├── src/
+│   │   └── index.js          # Cloudflare Worker — proxy para Workers AI
+│   └── wrangler.toml         # Configuração do Cloudflare
 └── tests/
     ├── calculations.test.js
     ├── storage.test.js
