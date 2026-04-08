@@ -1,5 +1,5 @@
 // URL do Worker — substitua pela URL gerada após o deploy
-const WORKER_URL = 'https://dnd-ai-worker.ivanoliveiralima.workers.dev'
+const WORKER_URL = 'https://dnd-ai-worker.ivanoliveira-estudos.workers.dev'
 
 export async function generateCharacter(description) {
   const response = await fetch(WORKER_URL, {
