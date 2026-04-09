@@ -85,6 +85,23 @@ function getCorsHeaders(request) {
   }
 }
 
+function validateCharacterJSON(data) {
+  if (!data || typeof data !== 'object') return false
+
+  const requiredStrings = ['char_name', 'race', 'background', 'alignment',
+    'str', 'dex', 'con', 'int', 'wis', 'cha', 'max_health', 'speed']
+
+  for (const field of requiredStrings) {
+    if (!data[field] && data[field] !== '0') return false
+  }
+
+  if (!Array.isArray(data.classes) || !data.classes.length) return false
+  if (typeof data.proficiencies !== 'object') return false
+  if (typeof data.skills !== 'object') return false
+
+  return true
+}
+
 export default {
   async fetch(request, env) {
     // Handle CORS preflight
@@ -155,6 +172,12 @@ export default {
           status: 500,
           headers: getCorsHeaders(request)
         })
+      }
+
+      if (!validateCharacterJSON(character)) {
+        return new Response(JSON.stringify({
+          error: 'AI returned incomplete character data. Please try again.'
+        }), { status: 500, headers: getCorsHeaders(request) })
       }
 
       return new Response(JSON.stringify({ character }), {
