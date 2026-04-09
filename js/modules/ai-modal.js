@@ -26,7 +26,7 @@ export function closeAiModal() {
 export async function runAiGenerate() {
   const description = document.getElementById('ai-description-input')?.value?.trim()
   if (!description || description.length < 10) {
-    showError('Please write at least a short description of your character.')
+    showError('Please write at least a short description.', true)
     return
   }
 
@@ -45,17 +45,19 @@ export async function runAiGenerate() {
     if (window.showSheetFeedback) window.showSheetFeedback('Character generated! Review and save.')
     document.dispatchEvent(new Event('sheetChanged'))
   } catch (err) {
-    showError(err.message || 'Generation failed. Please try again.')
+    showError(err.message || 'Generation failed. Please try again.', false)
   } finally {
     btn.disabled = false
     if (loading) loading.style.display = 'none'
   }
 }
 
-function showError(message) {
+function showError(message, isUserError = false) {
   const error = document.getElementById('ai-generate-error')
   if (error) {
-    error.textContent = message
+    error.textContent = isUserError
+      ? message
+      : message + ' If the problem persists, try rephrasing your description.'
     error.style.display = 'block'
   }
 }

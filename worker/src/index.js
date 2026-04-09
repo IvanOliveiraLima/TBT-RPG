@@ -143,7 +143,7 @@ export default {
 
     const allowed = await checkRateLimit(request)
     if (!allowed) {
-      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute.' }), {
+      return new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute before generating again.' }), {
         status: 429,
         headers: getCorsHeaders(request)
       })
@@ -168,7 +168,7 @@ export default {
       try {
         character = JSON.parse(clean)
       } catch {
-        return new Response(JSON.stringify({ error: 'AI returned invalid JSON', raw: text }), {
+        return new Response(JSON.stringify({ error: 'The character generation was incomplete. Please try again.' }), {
           status: 500,
           headers: getCorsHeaders(request)
         })
@@ -176,7 +176,7 @@ export default {
 
       if (!validateCharacterJSON(character)) {
         return new Response(JSON.stringify({
-          error: 'AI returned incomplete character data. Please try again.'
+          error: 'The AI could not generate a complete character. Try describing your character in more detail and try again.'
         }), { status: 500, headers: getCorsHeaders(request) })
       }
 
@@ -185,7 +185,7 @@ export default {
         headers: getCorsHeaders(request)
       })
     } catch (err) {
-      return new Response(JSON.stringify({ error: 'AI generation failed', detail: err.message }), {
+      return new Response(JSON.stringify({ error: 'Character generation failed. Please try again in a few moments.' }), {
         status: 500,
         headers: getCorsHeaders(request)
       })
