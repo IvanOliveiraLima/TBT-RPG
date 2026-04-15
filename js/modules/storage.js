@@ -79,6 +79,15 @@ export async function listCharacters() {
 }
 
 /**
+ * Lista todos os personagens (sem filtrar por 'active'), para uso no sync.
+ * @returns {Promise<Array>}
+ */
+export async function listAllCharacters() {
+  const db = await getDB()
+  return db.getAll(STORE)
+}
+
+/**
  * Delete a character by ID.
  * @param {string} id
  */
