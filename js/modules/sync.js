@@ -1,6 +1,6 @@
 import { supabase, isSupabaseEnabled } from './supabase.js'
 import { getCurrentUser, isLoggedIn } from './auth.js'
-import { listAllCharacters, saveCharacter, loadCharacter } from './storage.js'
+import { listAllCharacters, saveCharacter, loadCharacter, getDeletedIds, clearTombstone } from './storage.js'
 
 // Upload de imagem para o Supabase Storage
 async function uploadImage(userId, characterId, kind, dataUrl) {
@@ -98,22 +98,34 @@ export async function syncAll() {
 
   setSyncStatus('syncing')
   try {
-    const [localChars, remoteRows] = await Promise.all([
+    const [localChars, remoteRows, deletedRecords] = await Promise.all([
       listAllCharacters(),
-      pullCharacters()
+      pullCharacters(),
+      getDeletedIds()
     ])
 
     const remoteMap = new Map(remoteRows.map(r => [r.id, r]))
     const localMap = new Map(localChars.map(c => [c.id, c]))
+    const deletedIds = new Set(deletedRecords.map(d => d.id))
 
-    // Personagens remotos mais recentes → salvar local
+    // Deletar do Supabase os personagens marcados como excluídos
+    for (const { id } of deletedRecords) {
+      if (remoteMap.has(id)) {
+        const { error } = await supabase.from('characters').delete().eq('id', id)
+        if (!error) await clearTombstone(id)
+      } else {
+        await clearTombstone(id) // já não existe no remoto
+      }
+    }
+
+    // Personagens remotos mais recentes → salvar local (ignorar excluídos)
     for (const remote of remoteRows) {
+      if (deletedIds.has(remote.id)) continue
       const local = localMap.get(remote.id)
       const remoteTs = new Date(remote.updated_at).getTime()
       const localTs = local?.updatedAt || 0
 
       if (remoteTs > localTs) {
-        // Baixar imagens de volta para base64
         const remoteData = remote.data
         if (remoteData.images?.character?.startsWith('http')) {
           remoteData.images.character = await downloadImage(remoteData.images.character) || remoteData.images.character
@@ -125,8 +137,9 @@ export async function syncAll() {
       }
     }
 
-    // Personagens locais mais recentes ou inexistentes no remoto → push
+    // Personagens locais → push (ignorar excluídos)
     for (const local of localChars) {
+      if (deletedIds.has(local.id)) continue
       const remote = remoteMap.get(local.id)
       const localTs = local.updatedAt || 0
       const remoteTs = remote ? new Date(remote.updated_at).getTime() : 0

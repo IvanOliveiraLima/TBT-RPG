@@ -3,8 +3,9 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'dnd-character-sheet';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE = 'characters';
+const TOMBSTONE_STORE = 'deleted_characters';
 
 function getDB() {
     return openDB(DB_NAME, DB_VERSION, {
@@ -12,8 +13,26 @@ function getDB() {
             if (!db.objectStoreNames.contains(STORE)) {
                 db.createObjectStore(STORE, { keyPath: 'id' });
             }
+            if (!db.objectStoreNames.contains(TOMBSTONE_STORE)) {
+                db.createObjectStore(TOMBSTONE_STORE, { keyPath: 'id' });
+            }
         }
     });
+}
+
+export async function markAsDeleted(id) {
+    const db = await getDB();
+    await db.put(TOMBSTONE_STORE, { id, deletedAt: Date.now() });
+}
+
+export async function getDeletedIds() {
+    const db = await getDB();
+    return db.getAll(TOMBSTONE_STORE);
+}
+
+export async function clearTombstone(id) {
+    const db = await getDB();
+    await db.delete(TOMBSTONE_STORE, id);
 }
 
 function migrateSchema(data) {

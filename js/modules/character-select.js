@@ -1,4 +1,4 @@
-import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter } from './storage.js';
+import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter, markAsDeleted } from './storage.js';
 import { createEmptySheet, blockUnloadSave } from '../save.js';
 
 var container = null;
@@ -83,6 +83,7 @@ async function handleDuplicate(id) {
 
 async function handleDelete(id, name) {
     if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return;
+    await markAsDeleted(id);
     await deleteCharacter(id);
     await refresh();
 }
