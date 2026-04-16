@@ -67,6 +67,7 @@ function showSheet() {
     var select = document.getElementById('character-select-screen');
     if (wrapper) wrapper.style.display = '';
     if (select) select.style.display = 'none';
+    document.querySelectorAll('.sheet-only').forEach(el => el.style.display = '');
 }
 
 function showCharacterSelect() {
@@ -77,6 +78,7 @@ function showCharacterSelect() {
         select.style.display = '';
         initCharacterSelect(select);
     }
+    document.querySelectorAll('.sheet-only').forEach(el => el.style.display = 'none');
 }
 
 // Called by the sidebar "← My Characters" link

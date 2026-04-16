@@ -140,6 +140,13 @@ export function initCharacterSelect(screenElement) {
     container.querySelector('.btn-import-all').addEventListener('click', handleImportClick);
     container.querySelector('#import-all-input').addEventListener('change', handleImportFile);
 
+    // Close sidebar when clicking outside it on the character select screen
+    screenElement.addEventListener('click', (e) => {
+        if (e.target === screenElement || e.target.closest('.character-grid') || e.target.closest('.character-card')) {
+            if (window.w3_close) window.w3_close();
+        }
+    });
+
     // Wire card actions via delegation
     document.addEventListener('syncCompleted', () => { refresh() })
 

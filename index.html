@@ -4,6 +4,7 @@
 <head>
     <title>Default Character</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="/DnD-5e-Character-Sheet/icons/icon-192.png">
     <!-- CSS -->
     <link rel="stylesheet" href="css/w3.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -26,13 +27,13 @@
 -->
     <div class="w3-sidebar w3-bar-block w3-border-right w3-flat-clouds w3-animate-left" style="display:none" id="mySidebar">
         <button onclick="w3_close()" class="w3-bar-item w3-large w3-button w3-hover-blue-gray">Close &times;</button>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="goToCharacterSelect()">&#8592; My Characters</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-1'); w3_close()">Attributes</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-4'); w3_close()">Backstory</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-2'); w3_close()">Inv. & NPCs</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-3'); w3_close()">Spell Sheet</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openPage('page-5'); w3_close()">Notes</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAiModal(); w3_close()">&#10024; Generate with AI</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="goToCharacterSelect()">&#8592; My Characters</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-1'); w3_close()">Attributes</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-4'); w3_close()">Backstory</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-2'); w3_close()">Inv. & NPCs</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-3'); w3_close()">Spell Sheet</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-5'); w3_close()">Notes</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openAiModal(); w3_close()">&#10024; Generate with AI</a>
         <div id="auth-sidebar-item" style="visibility:hidden">
           <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAuthModal(); w3_close()" id="auth-sidebar-link">Sign in to sync</a>
           <div id="auth-user-info" style="display:none; padding: 8px 16px; font-size:0.8rem; color:#90a4ae;">
@@ -43,7 +44,7 @@
         <div id="sync-status" style="display:none; padding:4px 16px; font-size:0.75rem; color:#90a4ae;">
           <span id="sync-status-text">Synced</span>
         </div>
-        <div class="w3-dropdown-hover">
+        <div class="w3-dropdown-hover sheet-only">
             <button class="w3-button w3-hover-blue-gray">Options <i class="fa fa-caret-down"></i></button>
             <div id="menu-options" class="w3-dropdown-content w3-bar-block w3-animate-right">
                 <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="exportSheet(); w3_close()">Export JSON</a>
@@ -54,10 +55,7 @@
             </div>
         </div>
         <input id="import-sheet-input" type="file" accept=".json,application/json,.js,text/javascript" onchange="importSheetFile(event)" style="display:none" />
-        <div class="info w3-margin-top w3-border-top">
-            <div class="label">Info & Help</div>
-            <div class="w3-margin-top"><span class="auto-filled-border w3-round">Alt Color</span> = Auto-Filled</div>
-        </div>
+
     </div>
     <!-- Sidebar Button -->
     <!-- Sidebar Button -->
