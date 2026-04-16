@@ -8,8 +8,6 @@ import './extra.js';
 import './add-attack.js';
 import './app.js';
 import { applyLoadedSheet } from './load.js';
-import { applyTranslations, setLang } from './modules/i18n.js';
-
 import { openPage, w3_open, w3_close } from './app.js';
 import { att_attack } from './add-attack.js';
 import { exportSheet, openImportDialog, clearSavedSheet, importSheetFile, saveSheet, cancelAutoSave } from './save.js';
@@ -120,8 +118,6 @@ onAuthChange(async (user) => {
 // Boot sequence
 // ---------------------------------------------------------------------------
 
-applyTranslations();
-
 await migrateFromLocalStorage();
 await migrateActiveCharacter();
 await initAuth();
@@ -150,7 +146,6 @@ if (!activeId) {
 // Global handlers for inline onclick attributes in HTML
 // ---------------------------------------------------------------------------
 
-window.setLang = setLang;
 window.openPage = openPage;
 window.w3_open = w3_open;
 window.w3_close = w3_close;

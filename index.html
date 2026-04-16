@@ -28,38 +28,34 @@
 -->
     <div class="w3-sidebar w3-bar-block w3-border-right w3-flat-clouds w3-animate-left" style="display:none" id="mySidebar">
         <button onclick="w3_close()" class="w3-bar-item w3-large w3-button w3-hover-blue-gray">Close &times;</button>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="goToCharacterSelect()" data-i18n="my_characters">← My Characters</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-1'); w3_close()" data-i18n="attributes">Attributes</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-4'); w3_close()" data-i18n="backstory">Backstory</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-2'); w3_close()" data-i18n="inventory">Inv. & NPCs</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-3'); w3_close()" data-i18n="spells">Spell Sheet</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-5'); w3_close()" data-i18n="notes">Notes</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openAiModal(); w3_close()" data-i18n="generate_ai">✨ Generate with AI</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="goToCharacterSelect()">← My Characters</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-1'); w3_close()">Attributes</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-4'); w3_close()">Backstory</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-2'); w3_close()">Inv. & NPCs</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-3'); w3_close()">Spell Sheet</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-5'); w3_close()">Notes</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openAiModal(); w3_close()">✨ Generate with AI</a>
         <div id="auth-sidebar-item" style="visibility:hidden">
-          <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAuthModal(); w3_close()" id="auth-sidebar-link" data-i18n="sign_in">Sign in to sync</a>
+          <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAuthModal(); w3_close()" id="auth-sidebar-link">Sign in to sync</a>
           <div id="auth-user-info" style="display:none; padding: 8px 16px; font-size:0.8rem; color:#90a4ae;">
             <span id="auth-user-email"></span>
-            <a href="#" onclick="handleSignOut(); w3_close()" style="display:block; margin-top:4px; color:#ef9a9a;" data-i18n="sign_out">Sign out</a>
+            <a href="#" onclick="handleSignOut(); w3_close()" style="display:block; margin-top:4px; color:#ef9a9a;">Sign out</a>
           </div>
         </div>
         <div id="sync-status" style="display:none; padding:4px 16px; font-size:0.75rem; color:#90a4ae;">
           <span id="sync-status-text">Synced</span>
         </div>
         <div class="w3-dropdown-hover sheet-only">
-            <button class="w3-button w3-hover-blue-gray" data-i18n="options">Options</button>
+            <button class="w3-button w3-hover-blue-gray">Options</button>
             <div id="menu-options" class="w3-dropdown-content w3-bar-block w3-animate-right">
-                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="exportSheet(); w3_close()" data-i18n="export_json">Export JSON</a>
-                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openImportDialog(); w3_close()" data-i18n="import_json">Import JSON</a>
-                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="clearSavedSheet(); w3_close()" data-i18n="new_blank">New Blank Sheet</a>
-                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="lock()" data-i18n="lock_sheet">Lock/Unlock Sheet</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="exportSheet(); w3_close()">Export JSON</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openImportDialog(); w3_close()">Import JSON</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="clearSavedSheet(); w3_close()">New Blank Sheet</a>
+                <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="lock()">Lock/Unlock Sheet</a>
                 <div id="lock" class="unlocked w3-padding">Unlocked</div>
             </div>
         </div>
         <input id="import-sheet-input" type="file" accept=".json,application/json,.js,text/javascript" onchange="importSheetFile(event)" style="display:none" />
-        <div id="lang-selector" style="padding: 4px 8px; display: flex; gap: 4px;">
-          <button onclick="setLang('en'); w3_close()" id="lang-en" class="w3-button w3-round" style="flex:1; font-size:12px; padding:4px;">EN</button>
-          <button onclick="setLang('pt'); w3_close()" id="lang-pt" class="w3-button w3-round" style="flex:1; font-size:12px; padding:4px;">PT</button>
-        </div>
     </div>
     <!-- Sidebar Button -->
     <!-- Sidebar Button -->
@@ -71,10 +67,10 @@
     <!-- Character Selection Screen -->
     <div id="character-select-screen" style="display:none">
         <div class="select-header">
-            <h1 data-i18n="my_characters_title">My Characters</h1>
+            <h1>My Characters</h1>
             <div class="select-global-actions">
-                <button class="w3-button w3-blue-gray w3-round btn-export-all" data-i18n="export_all">Export All</button>
-                <button class="w3-button w3-round btn-import-all" data-i18n="import">Import</button>
+                <button class="w3-button w3-blue-gray w3-round btn-export-all">Export All</button>
+                <button class="w3-button w3-round btn-import-all">Import</button>
                 <input id="import-all-input" type="file" accept=".json,application/json" style="display:none" />
             </div>
         </div>
@@ -90,13 +86,13 @@
             <div id="basic-info" class="w3-col w3-card w3-round w3-margin-bottom">
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="char-name" />
-                    <span class="label" data-i18n="character_name">Character Name</span>
+                    <span class="label">Character Name</span>
                 </div>
                 <div class="w3-col w3-padding m12 l8">
                     <div id="class-list-container">
                         <div class="class-list-head" aria-hidden="true">
-                            <span class="label" data-i18n="class">Class</span>
-                            <span class="label" data-i18n="level">Level</span>
+                            <span class="label">Class</span>
+                            <span class="label">Level</span>
                             <span></span>
                         </div>
                         <div id="class-rows"></div>
@@ -105,7 +101,7 @@
                         </div>
                         <div class="class-total-row">
                             <input type="text" id="total-level" readonly>
-                            <span class="label" data-i18n="total_level">Total Level</span>
+                            <span class="label">Total Level</span>
                         </div>
                     </div>
                 </div>
@@ -129,23 +125,23 @@
             <div id="character-info" class="w3-col w3-card w3-round">
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="race-class" list="dnd-race-suggestions" />
-                    <span class="label" data-i18n="race">Race</span>
+                    <span class="label">Race</span>
                 </div>
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="background" list="dnd-background-suggestions" />
-                    <span class="label" data-i18n="background">Background</span>
+                    <span class="label">Background</span>
                 </div>
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="player-name" />
-                    <span class="label" data-i18n="player_name">Player Name</span>
+                    <span class="label">Player Name</span>
                 </div>
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="exp" />
-                    <span class="label" data-i18n="experience">Experience</span>
+                    <span class="label">Experience</span>
                 </div>
                 <div class="w3-col w3-padding m6 l4">
                     <input type="text" name="alignment" list="dnd-alignment-suggestions" />
-                    <span class="label" data-i18n="alignment">Alignment</span>
+                    <span class="label">Alignment</span>
                 </div>
             </div>
             <datalist id="dnd-alignment-suggestions">
@@ -350,37 +346,37 @@
         <div id="page-1" class="page w3-container w3-content w3-margin-top" onclick="w3_close()">
             <!-- Status & Life -->
             <div class="w3-col w3-margin-bottom w3-card w3-round">
-                <button class="expando w3-button w3-bar-block w3-left-align w3-blue-gray" data-i18n="status">Status</button>
+                <button class="expando w3-button w3-bar-block w3-left-align w3-blue-gray">Status</button>
                 <div id="status" class="w3-animate-opacity">
                     <div id="hit-points" class="w3-col w3-padding  m8 l4 w3-border-right">
                         <div id="temp-health" class="w3-col w3-padding">
                             <input type="text" name="temp-health" />
                             <br/>
-                            <span class="label w3-padding" data-i18n="temp_health">Temporary Health</span>
+                            <span class="label w3-padding">Temporary Health</span>
                         </div>
                         <div id="current-health" class="w3-col s6 m6 l6">
                             <input type="text" name="current-health" />
                             <br/>
-                            <span class="label" data-i18n="current_health">Current Health</span>
+                            <span class="label">Current Health</span>
                         </div>
                         <div id="max-health" class="w3-col s6 m6 l6">
                             <input type="text" name="max-health" />
                             <br/>
-                            <span class="label" data-i18n="max_health">Maximum Health</span>
+                            <span class="label">Maximum Health</span>
                         </div>
                     </div>
                     <div id="hit-dice" class="w3-col w3-padding m5 l2">
-                        <span class="label" data-i18n="hit_dice">Hit Dice</span>
+                        <span class="label">Hit Dice</span>
                         <div>
-                            <span class="sub-label" data-i18n="current">Current</span>
+                            <span class="sub-label">Current</span>
                             <input class="label" type="text" name="current-hd" />
                             <input type="text" name="hit-dice" />
                         </div>
                     </div>
                     <div id="death-saves" class="w3-col w3-padding m5 l2">
-                        <span class="label" data-i18n="death_saves">Death Saves</span>
+                        <span class="label">Death Saves</span>
                         <div id="successes">
-                            <span class="sub-label" data-i18n="success">Success</span>
+                            <span class="sub-label">Success</span>
                             <div id="success-num">
                                 <input class="w3-check" type="checkbox" name="success-1" />
                                 <input class="w3-check" type="checkbox" name="success-2" />
@@ -388,7 +384,7 @@
                             </div>
                         </div>
                         <div id="failures" class="">
-                            <span class="sub-label" data-i18n="failure">Failure</span>
+                            <span class="sub-label">Failure</span>
                             <div id="failure-num">
                                 <input class="w3-check" type="checkbox" name="failure-1" />
                                 <input class="w3-check" type="checkbox" name="failure-2" />
@@ -397,25 +393,25 @@
                         </div>
                     </div>
                     <div id="conditions" class="w3-col w3-padding m4 l2">
-                        <span class="label" data-i18n="conditions">Conditions</span>
+                        <span class="label">Conditions</span>
                         <textarea name="conditions" rows="5"></textarea>
                     </div>
                     <div id="boons" class="w3-col w3-padding m4 l2">
-                        <span class="label" data-i18n="boons">Boons</span>
+                        <span class="label">Boons</span>
                         <textarea name="boons" rows="5"></textarea>
                     </div>
                 </div>
             </div>
             <!-- Top Bar -->
             <div class="w3-col w3-margin-bottom">
-                <button class="expando w3-button w3-bar-block w3-left-align w3-blue-gray" data-i18n="attributes_section">Attributes</button>
+                <button class="expando w3-button w3-bar-block w3-left-align w3-blue-gray">Attributes</button>
                 <div id="top-bar" class="w3-col w3-center w3-card w3-round w3-animate-opacity">
                     <div class="w3-col w3-padding m4 l2">
                         <div class="input-frame">
                             <input type="text" name="proficiency" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="proficiency_bonus">Proficiency Bonus</span>
+                            <span class="label">Proficiency Bonus</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2">
@@ -423,7 +419,7 @@
                             <input type="text" name="initiative" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="initiative_bonus">Initiative Bonus</span>
+                            <span class="label">Initiative Bonus</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2">
@@ -431,7 +427,7 @@
                             <input class="auto-filled-border" type="text" name="passive-perception" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="passive_perception">Passive Perception</span>
+                            <span class="label">Passive Perception</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2">
@@ -439,7 +435,7 @@
                             <input type="text" name="ac" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="armor_class">Armor Class</span>
+                            <span class="label">Armor Class</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2">
@@ -447,7 +443,7 @@
                             <input type="text" name="speed" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="speed">Speed</span>
+                            <span class="label">Speed</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2">
@@ -455,7 +451,7 @@
                             <input class="auto-filled-border" type="text" name="spell-dc" maxlength="2" size="2" />
                         </div>
                         <div class="label-frame">
-                            <span class="label" data-i18n="spell_save_dc">Spell Save DC</span>
+                            <span class="label">Spell Save DC</span>
                         </div>
                     </div>
                     <div class="w3-col w3-padding m4 l2" style="display:none">
