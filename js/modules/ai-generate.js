@@ -16,3 +16,19 @@ export async function generateCharacter(description, lang = 'en') {
 
   return data.character
 }
+
+export async function translateFields(texts, targetLang) {
+  const response = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'translate', texts, targetLang })
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Translation failed')
+  }
+
+  return data.translated
+}

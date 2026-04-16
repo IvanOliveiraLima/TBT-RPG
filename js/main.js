@@ -16,7 +16,8 @@ import { loadCharacter, saveCharacter, generateId } from './modules/storage.js';
 import { initCharacterSelect } from './modules/character-select.js';
 import { openAiModal, closeAiModal, runAiGenerate } from './modules/ai-modal.js'
 import { initAuth, onAuthChange } from './modules/auth.js'
-import { applyTranslations, setLang } from './modules/i18n.js'
+import { applyTranslations, setLang, getLang } from './modules/i18n.js'
+import { translateSheet } from './modules/translate-modal.js'
 import { startAutoSync, stopAutoSync, cancelScheduledSync } from './modules/sync.js'
 import { openAuthModal, closeAuthModal, showSignIn, showSignUp,
   handleEmailSignIn, handleEmailSignUp, handleGoogleSignIn,
@@ -150,6 +151,10 @@ applyTranslations();
 // ---------------------------------------------------------------------------
 
 window.setLang = setLang;
+window.handleTranslateSheet = async function() {
+  const target = getLang() === 'pt' ? 'pt' : 'en'
+  await translateSheet(target)
+};
 window.openPage = openPage;
 window.w3_open = w3_open;
 window.w3_close = w3_close;
