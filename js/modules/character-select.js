@@ -1,6 +1,7 @@
 import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter, markAsDeleted } from './storage.js';
 import { isLoggedIn } from './auth.js';
 import { createEmptySheet, blockUnloadSave } from '../save.js';
+import { applyTranslations } from './i18n.js';
 var container = null;
 var selectInitialized = false;
 
@@ -59,6 +60,8 @@ async function refresh() {
     btnNew.textContent = '+ New Character';
     btnNew.addEventListener('click', createNewCharacter);
     grid.appendChild(btnNew);
+
+    applyTranslations();
 }
 
 async function createNewCharacter() {
