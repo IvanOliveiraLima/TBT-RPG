@@ -25,7 +25,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 
 ## Architecture
 
-**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4).
+**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4), sincronização em nuvem via Supabase (auth + PostgreSQL + Storage) (Fase 5).
 
 ### Module responsibilities
 
@@ -43,6 +43,10 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `js/modules/utils.js` | Pure helpers: parsers, validators, D&D lookup tables |
 | `js/modules/ai-generate.js` | Fetch wrapper for the Cloudflare Worker AI endpoint |
 | `js/modules/ai-modal.js` | AI generation modal: open/close/submit, apply generated data to DOM |
+| `js/modules/supabase.js` | Inicialização do cliente Supabase — null se variáveis não configuradas |
+| `js/modules/auth.js` | Autenticação: sign in/up/out, restauração de sessão, listeners de estado |
+| `js/modules/auth-modal.js` | Modal de login/cadastro, handlers de formulário |
+| `js/modules/sync.js` | Sync bidirecional IndexedDB ↔ Supabase, tombstones, debounce de 15s |
 | `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3 8B), handles CORS |
 
 ### Data flow
@@ -68,6 +72,9 @@ DOM → readFormValues() [save.js] → debounced saveCharacter() → IndexedDB
 - **Images:** Stored as data URLs inside the character JSON, max 2MB, capped at 600px (character) / 300px (symbol).
 - **Background skill proficiencies:** `BACKGROUND_FIXED_SKILLS_MAP` and `BACKGROUND_FLEXIBLE_SET` in `changes.js` auto-apply proficiency checkboxes when background changes, and undo them on background change.
 - **Inline `onclick`:** Many HTML elements use `onclick="..."` calling functions exposed on `window` in `main.js`. This is intentional — don't refactor to `addEventListener` in bulk.
+- **Sync offline-first:** IndexedDB é sempre a fonte primária. Supabase é camada opcional. App funciona sem credenciais configuradas.
+- **Tombstones:** exclusões enquanto logado criam registro em `deleted_characters` no IndexedDB. O sync propaga o delete para o Supabase e limpa o tombstone. Exclusões offline não geram tombstone.
+- **Variáveis de ambiente:** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` via `.env.local` (não commitado). Secrets configurados no GitHub Actions para CI e deploy.
 
 ### Testing
 

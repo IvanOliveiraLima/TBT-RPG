@@ -22,6 +22,7 @@ A aplicação roda inteiramente no navegador e utiliza:
 - HTML, CSS (W3.css) e JavaScript vanilla (sem frameworks)
 - Vite como bundler e ferramenta de build
 - `IndexedDB` para persistência de dados (sem limite prático de tamanho)
+- Supabase para sincronização em nuvem e autenticação (opcional)
 
 ## Funcionalidades Principais
 
@@ -36,6 +37,8 @@ A aplicação roda inteiramente no navegador e utiliza:
 - Gerenciamento de múltiplos personagens (criar, abrir, duplicar, excluir)
 - Export/import em lote de todos os personagens
 - Geração automática de personagem com IA (descreva e a IA preenche a ficha)
+- Sincronização automática em nuvem entre dispositivos (opcional, requer conta)
+- Autenticação com email e senha
 
 ## Como Usar
 
@@ -150,7 +153,32 @@ Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
 
 A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o usuário, sem necessidade de conta ou chave de API.
 
-### 10. Imagens (Character Appearance e Symbol)
+### 10. Sincronização em nuvem (opcional)
+
+A sincronização é completamente opcional — o app funciona 100% offline sem conta.
+
+#### Criar conta
+- No menu lateral, clique em **Sign in to sync**
+- Clique em **Create account** e informe email e senha
+- Confirme o email recebido na caixa de entrada
+
+#### Fazer login
+- No menu lateral, clique em **Sign in to sync**
+- Informe email e senha e clique em **Sign in**
+- Após o login, os personagens sincronizam automaticamente em background
+
+#### Comportamento do sync
+- Sincronização automática a cada 30 segundos quando logado
+- Alterações na ficha sincronizam 15 segundos após a última edição
+- Estratégia last-write-wins — o dado mais recente prevalece
+- Exclusões só propagam para a nuvem quando o usuário está logado
+- Ao fazer logout, dados locais permanecem intactos
+
+#### Imagens
+- Imagens dos personagens sincronizam via Supabase Storage
+- Limite de 50MB por conta
+
+### 11. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -167,7 +195,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 11. Lock da ficha
+### 12. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos

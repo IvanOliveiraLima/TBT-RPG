@@ -1,5 +1,6 @@
 import { isObject, hasKeys, parseLegacyClassLevel, sanitizeClassEntry, calculateTotalClassLevel, getExportFilenameFromSheet } from './modules/utils.js';
 import { saveCharacter, clearCharacter, generateId } from './modules/storage.js';
+import { scheduleSyncCharacter } from './modules/sync.js';
 
 function getAttacks() {
     var attacks = [];
@@ -1221,6 +1222,8 @@ async function runAutoSave() {
             showSheetFeedback('Salvo automaticamente');
             LAST_AUTOSAVE_FEEDBACK_TS = now;
         }
+        var activeId = sessionStorage.getItem('activeCharacterId');
+        if (activeId) scheduleSyncCharacter(activeId);
     } catch (_error) {
         showSheetFeedback('Falha no auto-save');
     }

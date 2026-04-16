@@ -1,4 +1,5 @@
-import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter } from './storage.js';
+import { listCharacters, deleteCharacter, duplicateCharacter, exportAllCharacters, importCharacters, generateId, saveCharacter, markAsDeleted } from './storage.js';
+import { isLoggedIn } from './auth.js';
 import { createEmptySheet, blockUnloadSave } from '../save.js';
 
 var container = null;
@@ -83,6 +84,7 @@ async function handleDuplicate(id) {
 
 async function handleDelete(id, name) {
     if (!window.confirm('Delete "' + name + '"? This cannot be undone.')) return;
+    if (isLoggedIn()) await markAsDeleted(id);
     await deleteCharacter(id);
     await refresh();
 }
@@ -139,6 +141,8 @@ export function initCharacterSelect(screenElement) {
     container.querySelector('#import-all-input').addEventListener('change', handleImportFile);
 
     // Wire card actions via delegation
+    document.addEventListener('syncCompleted', () => { refresh() })
+
     container.querySelector('.character-grid').addEventListener('click', function(e) {
         var card = e.target.closest('.character-card');
         if (!card) return;
