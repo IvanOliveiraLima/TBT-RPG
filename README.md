@@ -16,13 +16,18 @@ Este projeto tem como objetivo oferecer uma ficha de personagem:
 - Com importação/exportação de dados
 - Com suporte a imagens diretamente pelo navegador
 - Suporte a múltiplos personagens com tela de seleção
+- Interface bilíngue (EN/PT) com alternância rápida
 
 A aplicação roda inteiramente no navegador e utiliza:
 
 - HTML, CSS (W3.css) e JavaScript vanilla (sem frameworks)
 - Vite como bundler e ferramenta de build
-- `IndexedDB` para persistência de dados (sem limite prático de tamanho)
+- ES Modules organizados em `js/modules/`
+- `IndexedDB` (via `idb`) para persistência local (sem limite prático de tamanho)
+- PWA instalável (via `vite-plugin-pwa`) — funciona offline após primeira visita
+- Cloudflare Workers AI (Llama 3 8B) como backend da geração por IA — grátis para o usuário, sem chave de API
 - Supabase para sincronização em nuvem e autenticação (opcional)
+- ESLint, Vitest e CI via GitHub Actions
 
 ## Funcionalidades Principais
 
@@ -39,6 +44,8 @@ A aplicação roda inteiramente no navegador e utiliza:
 - Geração automática de personagem com IA (descreva e a IA preenche a ficha)
 - Sincronização automática em nuvem entre dispositivos (opcional, requer conta)
 - Autenticação com email e senha
+- Interface bilíngue com toggle EN/PT no menu lateral
+- Geração com IA com escolha de idioma (inglês ou português)
 
 ## Como Usar
 
@@ -149,6 +156,7 @@ Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
 - Abra um personagem e clique em "✨ Generate with AI" no menu lateral
 - Descreva seu personagem em até 1000 caracteres
 - Clique em "Generate" e aguarde alguns segundos
+- No modal, é possível escolher o idioma da geração (EN ou PT) antes de clicar em Generate — em PT, os campos de texto livre (personalidade, ideais, vínculos, defeitos, história) vêm em português
 - A IA preenche automaticamente: nome, raça, background, alinhamento, classe, atributos, perícias, proficiências, traços de personalidade e história
 
 A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o usuário, sem necessidade de conta ou chave de API.
@@ -178,7 +186,14 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 - Imagens dos personagens sincronizam via Supabase Storage
 - Limite de 50MB por conta
 
-### 11. Imagens (Character Appearance e Symbol)
+### 11. Idiomas (EN/PT)
+
+- No menu lateral, clique em **EN** ou **PT** para alternar o idioma da interface
+- O toggle aplica um dicionário PT-BR via DOM walker — não é necessário recarregar a página
+- A preferência é salva no navegador e restaurada em visitas futuras
+- Textos gerados pela IA podem ser produzidos já em português escolhendo o idioma no modal de geração (seção 9)
+
+### 12. Imagens (Character Appearance e Symbol)
 
 - Vá até a aba `Backstory`
 - Use os botões de upload
@@ -195,7 +210,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 12. Lock da ficha
+### 13. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
 - Desativa cálculos automáticos
@@ -208,29 +223,42 @@ Limite: `2MB` por imagem
 ├── index.html
 ├── vite.config.js
 ├── eslint.config.js
+├── CLAUDE.md
+├── public/
+│   ├── favicon.png
+│   └── icons/
+│       ├── icon.svg
+│       ├── icon-192.png
+│       └── icon-512.png
+├── scripts/
+│   └── generate-icons.js       # Gera PNGs a partir do SVG via sharp
 ├── css/
 │   ├── w3.css
 │   └── app.css
 ├── js/
-│   ├── main.js           # Entry point
-│   ├── app.js            # Navegação entre páginas
-│   ├── changes.js        # Event handlers e cálculos
-│   ├── save.js           # Serialização da ficha
-│   ├── load.js           # Carregamento e população da UI
-│   ├── add-attack.js     # Gerenciamento de ataques e magias
-│   ├── extra.js          # Utilitários
+│   ├── main.js
+│   ├── app.js
+│   ├── changes.js
+│   ├── save.js
+│   ├── load.js
+│   ├── add-attack.js
+│   ├── extra.js
 │   └── modules/
-│       ├── calculations.js       # Funções de cálculo puras (D&D)
-│       ├── storage.js            # Wrapper do IndexedDB
-│       ├── utils.js              # Funções utilitárias puras
-│       ├── character-select.js   # Tela de seleção de personagens
-│       ├── ai-generate.js        # Cliente do Cloudflare Worker
-│       ├── ai-modal.js           # Modal de geração com IA
-│       └── settings.js           # Configurações (chave de API futura)
+│       ├── calculations.js
+│       ├── storage.js
+│       ├── utils.js
+│       ├── character-select.js
+│       ├── ai-generate.js
+│       ├── ai-modal.js
+│       ├── i18n.js              # Sistema de traduções via DOM walker
+│       ├── supabase.js          # Cliente Supabase
+│       ├── auth.js              # Autenticação
+│       ├── auth-modal.js        # Modal de login/cadastro
+│       └── sync.js              # Sincronização IndexedDB ↔ Supabase
 ├── worker/
 │   ├── src/
-│   │   └── index.js          # Cloudflare Worker — proxy para Workers AI
-│   └── wrangler.toml         # Configuração do Cloudflare
+│   │   └── index.js
+│   └── wrangler.toml
 └── tests/
     ├── calculations.test.js
     ├── storage.test.js
@@ -255,6 +283,7 @@ O projeto conta com:
 - **ESLint** — análise estática com regras para JavaScript moderno
 - **Vitest** — testes unitários para funções de cálculo, armazenamento e utilitários
 - **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
+- **Segurança no Worker** — rate limiting, proteção contra prompt injection e validação estrutural do JSON retornado pela IA, com mensagens de erro amigáveis ao usuário final
 
 ## Estrutura de Dados
 

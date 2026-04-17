@@ -25,7 +25,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 
 ## Architecture
 
-**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4), sincronização em nuvem via Supabase (auth + PostgreSQL + Storage) (Fase 5).
+**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4), cloud sync via Supabase (auth + PostgreSQL + Storage) (Fase 5). Post-Phase 5 additions: D6 dice icon, bilingual UI (EN/PT) via DOM text walker, AI generation language toggle (EN/PT), and AI security hardening (rate limiting, prompt injection protection, JSON validation).
 
 ### Module responsibilities
 
@@ -43,6 +43,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `js/modules/utils.js` | Pure helpers: parsers, validators, D&D lookup tables |
 | `js/modules/ai-generate.js` | Fetch wrapper for the Cloudflare Worker AI endpoint |
 | `js/modules/ai-modal.js` | AI generation modal: open/close/submit, apply generated data to DOM |
+| `js/modules/i18n.js` | Dicionário PT-BR aplicado via DOM text walker — sem atributos `data-i18n` |
 | `js/modules/supabase.js` | Inicialização do cliente Supabase — null se variáveis não configuradas |
 | `js/modules/auth.js` | Autenticação: sign in/up/out, restauração de sessão, listeners de estado |
 | `js/modules/auth-modal.js` | Modal de login/cadastro, handlers de formulário |
@@ -73,6 +74,9 @@ DOM → readFormValues() [save.js] → debounced saveCharacter() → IndexedDB
 - **Background skill proficiencies:** `BACKGROUND_FIXED_SKILLS_MAP` and `BACKGROUND_FLEXIBLE_SET` in `changes.js` auto-apply proficiency checkboxes when background changes, and undo them on background change.
 - **Inline `onclick`:** Many HTML elements use `onclick="..."` calling functions exposed on `window` in `main.js`. This is intentional — don't refactor to `addEventListener` in bulk.
 - **Sync offline-first:** IndexedDB é sempre a fonte primária. Supabase é camada opcional. App funciona sem credenciais configuradas.
+- **Bilingual UI:** `i18n.js` walks the DOM replacing English text with PT-BR from a dictionary. No `data-i18n` attributes — it scans text nodes directly and is called explicitly at boot and after dynamic content renders.  Language preference persists in `localStorage`.
+- **AI language toggle:** The generation modal includes an EN/PT radio toggle that passes `lang` to the Worker. When `lang === 'pt'`, the Worker uses `SYSTEM_PROMPT_PT` to instruct Llama 3 to produce free-text fields (personality, ideals, bonds, flaws, backstory) in Brazilian Portuguese.
+- **Worker security hardening:** Rate limiting per IP, prompt injection protection on the user input, structural validation of the returned JSON via `validateCharacterJSON`, and user-friendly error messages. `max_tokens` kept at 1024 — occasional truncation is handled gracefully by the validator.
 - **Tombstones:** exclusões enquanto logado criam registro em `deleted_characters` no IndexedDB. O sync propaga o delete para o Supabase e limpa o tombstone. Exclusões offline não geram tombstone.
 - **Variáveis de ambiente:** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` via `.env.local` (não commitado). Secrets configurados no GitHub Actions para CI e deploy.
 
