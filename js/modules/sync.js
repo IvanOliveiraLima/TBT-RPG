@@ -32,14 +32,29 @@ async function downloadImage(url) {
   if (!url || url.startsWith('data:')) return url
   try {
     const res = await fetch(url)
+    if (!res.ok) {
+      console.warn('downloadImage failed:', res.status, url)
+      return null
+    }
     const blob = await res.blob()
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => resolve(null)
       reader.readAsDataURL(blob)
     })
-  } catch {
+  } catch (err) {
+    console.warn('downloadImage error:', err.message)
     return null
+  }
+}
+
+// Deleção de imagem do Supabase Storage (tenta todas as extensões possíveis)
+async function deleteStorageImage(userId, characterId, kind) {
+  const extensions = ['jpeg', 'jpg', 'png', 'webp']
+  for (const ext of extensions) {
+    const path = `${userId}/${characterId}/${kind}.${ext}`
+    await supabase.storage.from('character-images').remove([path])
   }
 }
 
@@ -48,17 +63,25 @@ export async function pushCharacter(character) {
   if (!isSupabaseEnabled() || !isLoggedIn()) return
   const user = getCurrentUser()
 
-  // Extrair imagens antes de salvar no banco
   const charCopy = { ...character }
   const images = charCopy.images || {}
 
+  // Imagem do personagem
   if (images.character?.startsWith('data:')) {
     const url = await uploadImage(user.id, character.id, 'character', images.character)
     if (url) charCopy.images = { ...images, character: url }
+  } else if (!images.character) {
+    // Imagem foi removida — deleta do Storage
+    await deleteStorageImage(user.id, character.id, 'character')
   }
+
+  // Símbolo
   if (images.symbol?.startsWith('data:')) {
     const url = await uploadImage(user.id, character.id, 'symbol', images.symbol)
     if (url) charCopy.images = { ...charCopy.images, symbol: url }
+  } else if (!images.symbol) {
+    // Símbolo foi removido — deleta do Storage
+    await deleteStorageImage(user.id, character.id, 'symbol')
   }
 
   const { error } = await supabase
@@ -111,6 +134,11 @@ export async function syncAll() {
     // Deletar do Supabase os personagens marcados como excluídos
     for (const { id } of deletedRecords) {
       if (remoteMap.has(id)) {
+        // Deleta imagens do Storage antes do registro
+        const user = getCurrentUser()
+        await deleteStorageImage(user.id, id, 'character')
+        await deleteStorageImage(user.id, id, 'symbol')
+
         const { error } = await supabase.from('characters').delete().eq('id', id)
         if (!error) await clearTombstone(id)
       } else {
@@ -128,10 +156,20 @@ export async function syncAll() {
       if (remoteTs > localTs) {
         const remoteData = remote.data
         if (remoteData.images?.character?.startsWith('http')) {
-          remoteData.images.character = await downloadImage(remoteData.images.character) || remoteData.images.character
+          const downloaded = await downloadImage(remoteData.images.character)
+          if (downloaded) {
+            remoteData.images.character = downloaded
+          } else {
+            console.warn('Could not download character image — keeping URL as fallback')
+          }
         }
         if (remoteData.images?.symbol?.startsWith('http')) {
-          remoteData.images.symbol = await downloadImage(remoteData.images.symbol) || remoteData.images.symbol
+          const downloaded = await downloadImage(remoteData.images.symbol)
+          if (downloaded) {
+            remoteData.images.symbol = downloaded
+          } else {
+            console.warn('Could not download symbol image — keeping URL as fallback')
+          }
         }
         await saveCharacter({ ...remoteData, updatedAt: remoteTs })
       }
