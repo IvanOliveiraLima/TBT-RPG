@@ -255,21 +255,8 @@ export function updateLangButtons() {
   const btnEn = document.getElementById('lang-btn-en')
   const btnPt = document.getElementById('lang-btn-pt')
   if (!btnEn || !btnPt) return
-  if (current === 'pt') {
-    btnPt.style.background = 'var(--color-background-info)'
-    btnPt.style.color = 'var(--color-text-info)'
-    btnPt.style.fontWeight = '500'
-    btnEn.style.background = ''
-    btnEn.style.color = ''
-    btnEn.style.fontWeight = ''
-  } else {
-    btnEn.style.background = 'var(--color-background-info)'
-    btnEn.style.color = 'var(--color-text-info)'
-    btnEn.style.fontWeight = '500'
-    btnPt.style.background = ''
-    btnPt.style.color = ''
-    btnPt.style.fontWeight = ''
-  }
+  btnEn.classList.toggle('lang-btn-active', current === 'en')
+  btnPt.classList.toggle('lang-btn-active', current === 'pt')
 }
 
 export function setLang(lang) {

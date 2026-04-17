@@ -1,5 +1,7 @@
 import { translateFields } from './ai-generate.js'
 
+let translating = false
+
 const TRANSLATABLE_FIELDS = [
   { selector: '#page-1 #proficiencies #weapons-armor textarea[name="weapons-armor"]', key: 'weapons_armor' },
   { selector: '#page-1 #proficiencies #tools textarea[name="tools"]', key: 'tools' },
@@ -16,8 +18,10 @@ const TRANSLATABLE_FIELDS = [
 ]
 
 export async function translateSheet(targetLang) {
+  if (translating) return
+  translating = true
   const btn = document.getElementById('translate-fields-btn')
-  if (btn) { btn.disabled = true; btn.textContent = '🌐 Translating...' }
+  if (btn) btn.textContent = '🌐 Translating...'
 
   try {
     const texts = {}
@@ -61,9 +65,7 @@ export async function translateSheet(targetLang) {
       err.message || (targetLang === 'pt' ? 'Falha na tradução' : 'Translation failed')
     )
   } finally {
-    if (btn) {
-      btn.disabled = false
-      btn.textContent = '🌐 Translate fields'
-    }
+    translating = false
+    if (btn) btn.textContent = '🌐 Translate fields'
   }
 }
