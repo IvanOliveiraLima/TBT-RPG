@@ -222,6 +222,8 @@ function walkAndReplace(root, dict) {
         // partial replacement of " Level" text nodes
         if (parent.classList && parent.classList.contains('level'))
           return NodeFilter.FILTER_REJECT
+        if (parent.id?.startsWith('lang-btn'))
+          return NodeFilter.FILTER_REJECT
         return NodeFilter.FILTER_ACCEPT
       }
     }
@@ -246,6 +248,15 @@ export function applyTranslations() {
   const dict = currentLang === 'en' ? {} : (translations[currentLang] || {})
   walkAndReplace(document.body, dict)
   walkAndReplacePlaceholders(document.body, dict)
+}
+
+export function updateLangButtons() {
+  const current = getLang()
+  const btnEn = document.getElementById('lang-btn-en')
+  const btnPt = document.getElementById('lang-btn-pt')
+  if (!btnEn || !btnPt) return
+  btnEn.classList.toggle('lang-btn-active', current === 'en')
+  btnPt.classList.toggle('lang-btn-active', current === 'pt')
 }
 
 export function setLang(lang) {
