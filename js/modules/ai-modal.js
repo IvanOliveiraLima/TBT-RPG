@@ -1,5 +1,6 @@
 import { generateCharacter } from './ai-generate.js'
 import { renderClassRows } from '../save.js'
+import { getLang } from './i18n.js'
 
 export function openAiModal() {
   const modal = document.getElementById('ai-generate-modal')
@@ -15,6 +16,13 @@ export function openAiModal() {
   }
   if (error) { error.style.display = 'none'; error.textContent = '' }
   if (counter) counter.textContent = '0 / 1000'
+
+  const currentLang = getLang()
+  const radioEn = document.getElementById('ai-lang-en')
+  const radioPt = document.getElementById('ai-lang-pt')
+  if (currentLang === 'pt' && radioPt) radioPt.checked = true
+  else if (radioEn) radioEn.checked = true
+
   if (modal) modal.style.display = 'flex'
 }
 
@@ -30,6 +38,8 @@ export async function runAiGenerate() {
     return
   }
 
+  const lang = document.querySelector('input[name="ai-lang"]:checked')?.value || 'en'
+
   const btn = document.getElementById('ai-generate-btn')
   const loading = document.getElementById('ai-generate-loading')
   const error = document.getElementById('ai-generate-error')
@@ -39,7 +49,7 @@ export async function runAiGenerate() {
   if (error) error.style.display = 'none'
 
   try {
-    const result = await generateCharacter(description)
+    const result = await generateCharacter(description, lang)
     applyGeneratedCharacter(result)
     closeAiModal()
     if (window.showSheetFeedback) window.showSheetFeedback('Character generated! Review and save.')

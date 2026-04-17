@@ -57,8 +57,8 @@
         </div>
         <input id="import-sheet-input" type="file" accept=".json,application/json,.js,text/javascript" onchange="importSheetFile(event)" style="display:none" />
         <div style="padding:4px 8px;display:flex;gap:4px;">
-          <button onclick="setLang('en');w3_close()" class="w3-button w3-round" style="flex:1;font-size:12px;padding:4px;">EN</button>
-          <button onclick="setLang('pt');w3_close()" class="w3-button w3-round" style="flex:1;font-size:12px;padding:4px;">PT</button>
+          <button id="lang-btn-en" onclick="setLang('en');w3_close()" class="w3-button w3-round" style="flex:1;font-size:12px;padding:4px;">EN</button>
+          <button id="lang-btn-pt" onclick="setLang('pt');w3_close()" class="w3-button w3-round" style="flex:1;font-size:12px;padding:4px;">PT</button>
         </div>
     </div>
     <!-- Sidebar Button -->
@@ -1786,6 +1786,15 @@
             placeholder="A grizzled dwarven fighter who lost his clan to a dragon attack and now seeks revenge while secretly fearing he is becoming the monster he hunts..."
             style="width:100%; box-sizing:border-box; margin-bottom:8px;"
             maxlength="1000"></textarea>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <span style="font-size:13px; color:#546e7a;">Generate in:</span>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="ai-lang" value="en" id="ai-lang-en" checked> English
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+              <input type="radio" name="ai-lang" value="pt" id="ai-lang-pt"> Português
+            </label>
+          </div>
           <div id="ai-char-counter" style="font-size:0.75rem; color:#888; text-align:right; margin-top:-6px; margin-bottom:8px;">0 / 1000</div>
           <div id="ai-generate-error" style="color:#c62828; font-size:0.85rem; display:none; margin-bottom:8px; padding:8px; background:#ffebee; border-radius:4px;"></div>
           <div style="display:flex; gap:8px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">

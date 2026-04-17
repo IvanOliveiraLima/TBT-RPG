@@ -47,6 +47,15 @@ Rules:
 - Write backstory in 2-3 sentences
 - All number values must be strings`
 
+const SYSTEM_PROMPT_PT = `Você é um assistente de criação de personagens para D&D 5e.
+Dado uma descrição de personagem, gere uma ficha completa como objeto JSON.
+Responda APENAS com JSON válido, sem markdown, sem explicações, sem blocos de código.
+
+IMPORTANTE: Gere os campos de texto livre (features, personality_traits, ideals, bonds, flaws, backstory)
+em português do Brasil. Traduza também os termos de jogo, nomes de habilidades, classes e raças para português.
+
+${SYSTEM_PROMPT}`
+
 const RATE_LIMIT_REQUESTS = 10
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 minuto
 
@@ -116,16 +125,18 @@ export default {
       })
     }
 
-    let description
+    let body
     try {
-      const body = await request.json()
-      description = body.description?.trim()
+      body = await request.json()
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
         status: 400,
         headers: getCorsHeaders(request)
       })
     }
+
+    const description = body.description?.trim()
+    const targetLang = body.lang === 'pt' ? 'pt' : 'en'
 
     if (!description || description.length < 10) {
       return new Response(JSON.stringify({ error: 'Description too short' }), {
@@ -150,9 +161,10 @@ export default {
     }
 
     try {
+      const systemPrompt = targetLang === 'pt' ? SYSTEM_PROMPT_PT : SYSTEM_PROMPT
       const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: description }
         ],
         max_tokens: 1024,

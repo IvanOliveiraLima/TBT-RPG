@@ -1116,3 +1116,9 @@ select:focus {
     color: #fff;
     background-color: #7f8c8d
 }
+
+.lang-btn-active {
+  background: var(--color-background-info) !important;
+  color: var(--color-text-info) !important;
+  font-weight: 500 !important;
+}
