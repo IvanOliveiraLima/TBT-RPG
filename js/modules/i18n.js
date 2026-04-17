@@ -222,6 +222,8 @@ function walkAndReplace(root, dict) {
         // partial replacement of " Level" text nodes
         if (parent.classList && parent.classList.contains('level'))
           return NodeFilter.FILTER_REJECT
+        if (parent.id?.startsWith('lang-btn'))
+          return NodeFilter.FILTER_REJECT
         return NodeFilter.FILTER_ACCEPT
       }
     }
