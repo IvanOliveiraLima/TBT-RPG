@@ -290,3 +290,144 @@ label:has(> [type="checkbox"]),
 label:has(> [type="radio"]) {
   cursor: pointer;
 }
+
+/* --------------------------------------------------------------------------
+   4. W3.CSS overrides — bring W3 buttons into TBT token system
+   All !important usages here override W3.CSS hover/color specificity.
+   -------------------------------------------------------------------------- */
+
+/* Generic w3-button → secondary */
+button.w3-button,
+a.w3-button,
+label.w3-button,
+input.w3-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  background: transparent;
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+button.w3-button:hover,
+a.w3-button:hover,
+label.w3-button:hover,
+input.w3-button:hover {
+  background: var(--color-bg-elevated) !important; /* override W3.CSS specificity */
+  border-color: var(--color-border-strong) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* w3-blue-gray → primary action style (ruby) */
+button.w3-button.w3-blue-gray,
+a.w3-button.w3-blue-gray,
+label.w3-button.w3-blue-gray {
+  background: var(--color-accent-ruby) !important;
+  border-color: var(--color-accent-ruby-hover) !important;
+  color: var(--color-text-primary) !important;
+  letter-spacing: 0.3px;
+}
+
+button.w3-button.w3-blue-gray:hover,
+a.w3-button.w3-blue-gray:hover,
+label.w3-button.w3-blue-gray:hover {
+  background: var(--color-accent-ruby-hover) !important;
+  border-color: var(--color-accent-ruby-hover) !important;
+  color: var(--color-text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* w3-hover-blue-gray (sidebar nav) → ghost-like */
+button.w3-button.w3-hover-blue-gray,
+a.w3-button.w3-hover-blue-gray {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-text-secondary) !important;
+  font-weight: var(--font-weight-regular);
+}
+
+button.w3-button.w3-hover-blue-gray:hover,
+a.w3-button.w3-hover-blue-gray:hover {
+  background: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* w3-light-grey → subtle cancel/remove */
+button.w3-button.w3-light-grey,
+a.w3-button.w3-light-grey {
+  background: transparent !important;
+  border-color: var(--color-border-subtle) !important;
+  color: var(--color-text-tertiary) !important;
+}
+
+button.w3-button.w3-light-grey:hover,
+a.w3-button.w3-light-grey:hover {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border-default) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* w3-red → danger */
+button.w3-button.w3-red,
+a.w3-button.w3-red {
+  background: transparent !important;
+  border-color: var(--color-border-subtle) !important;
+  color: var(--color-danger) !important;
+}
+
+button.w3-button.w3-red:hover,
+a.w3-button.w3-red:hover {
+  background: rgba(226, 75, 74, 0.1) !important;
+  border-color: var(--color-danger) !important;
+  color: var(--color-danger) !important;
+}
+
+/* Expando section headers — override blue-gray, must come after w3-blue-gray rule */
+button.expando.w3-button {
+  background: var(--color-bg-surface) !important;
+  border-color: var(--color-border-subtle) !important;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-serif);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  letter-spacing: normal;
+  opacity: 1 !important;
+}
+
+button.expando.w3-button:hover {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border-default) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* File input labels already handled by w3-blue-gray rule above */
+
+/* --------------------------------------------------------------------------
+   5. btn-new-character — override character-select.css light-theme values
+   -------------------------------------------------------------------------- */
+
+.btn-new-character {
+  border-color: var(--color-border-default) !important;
+  color: var(--color-text-tertiary) !important;
+  background: transparent !important;
+}
+
+.btn-new-character:hover {
+  border-color: var(--color-border-strong) !important;
+  color: var(--color-text-primary) !important;
+  background: var(--color-bg-elevated) !important;
+}
