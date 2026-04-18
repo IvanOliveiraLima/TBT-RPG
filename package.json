@@ -31,5 +31,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.103.2",
     "idb": "^8.0.3"
+  },
+  "overrides": {
+    "es-abstract": "1.23.10"
   }
 }
