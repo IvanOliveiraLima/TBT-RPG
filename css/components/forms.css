@@ -226,3 +226,67 @@ input[type="reset"]:disabled {
   border-color: var(--color-danger);
   color: var(--color-danger);
 }
+
+/* --------------------------------------------------------------------------
+   3. Checkbox & Radio — custom appearance
+   -------------------------------------------------------------------------- */
+
+[type="checkbox"],
+[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  border: 1.5px solid var(--color-border-default);
+  background: var(--color-bg-elevated);
+  cursor: pointer;
+  margin: 0;
+  box-shadow: none;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+[type="checkbox"] {
+  border-radius: var(--radius-sm);
+}
+
+[type="radio"] {
+  border-radius: var(--radius-full);
+}
+
+[type="checkbox"]:hover,
+[type="radio"]:hover {
+  border-color: var(--color-border-strong);
+}
+
+[type="checkbox"]:checked {
+  background: var(--color-accent-purple);
+  border-color: var(--color-accent-purple);
+  /* checkmark stroke color: --color-text-primary (#F4EFE0); CSS vars can't be used inside url() */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8'%3E%3Cpath fill='none' stroke='%23F4EFE0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 4l3 3 5-6'/%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+[type="radio"]:checked {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-accent-purple);
+  border-width: 5px;
+}
+
+[type="checkbox"]:focus-visible,
+[type="radio"]:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-purple-soft);
+}
+
+label:has(> [type="checkbox"]),
+label:has(> [type="radio"]) {
+  cursor: pointer;
+}
