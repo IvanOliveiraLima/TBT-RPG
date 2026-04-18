@@ -108,3 +108,121 @@ select {
   background-position: right var(--space-2) center;
   padding-right: var(--space-8);
 }
+
+/* --------------------------------------------------------------------------
+   2. Button base — default is secondary (least intrusive)
+   -------------------------------------------------------------------------- */
+
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  cursor: pointer;
+  border: 1px solid var(--color-border-default);
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+button:disabled,
+input[type="submit"]:disabled,
+input[type="button"]:disabled,
+input[type="reset"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   2a. Primary variant
+   -------------------------------------------------------------------------- */
+
+.btn-primary {
+  background: var(--color-accent-ruby);
+  border-color: var(--color-accent-ruby-hover);
+  color: var(--color-text-primary);
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-ruby-hover);
+  border-color: var(--color-accent-ruby-hover);
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.9);
+}
+
+/* --------------------------------------------------------------------------
+   2b. Secondary variant (explicit — same as default but semantic)
+   -------------------------------------------------------------------------- */
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   2c. Ghost variant
+   -------------------------------------------------------------------------- */
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+}
+
+.btn-ghost:hover {
+  background: var(--color-bg-elevated);
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   2d. Danger variant
+   -------------------------------------------------------------------------- */
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--color-border-subtle);
+  color: var(--color-danger);
+}
+
+.btn-danger:hover {
+  background: rgba(226, 75, 74, 0.1);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
