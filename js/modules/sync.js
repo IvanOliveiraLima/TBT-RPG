@@ -214,10 +214,10 @@ export async function syncAll() {
 // Sync automático em background
 let syncTimer = null
 
-export function startAutoSync(intervalMs = 30000) {
-  stopAutoSync()
-  syncAll() // sync imediato ao iniciar
-  syncTimer = setInterval(syncAll, intervalMs)
+export function startAutoSync() {
+  if (syncTimer !== null) return
+  syncAll().catch(() => {})
+  syncTimer = setInterval(() => { syncAll().catch(() => {}) }, 30000)
 }
 
 export function stopAutoSync() {

@@ -34,6 +34,7 @@ export async function initAuth() {
 
   // Escutar mudanças de auth
   supabase.auth.onAuthStateChange((_event, session) => {
+    if (_event === 'TOKEN_REFRESHED') return
     notifyListeners(session?.user ?? null)
   })
 }
