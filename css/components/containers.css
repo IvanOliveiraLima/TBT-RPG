@@ -6,19 +6,21 @@
 
 /* --------------------------------------------------------------------------
    1. W3.CSS card/panel/color-class neutralize
+   background-color (not background shorthand) — shorthand would reset
+   background-image to none and break elements that use it via inline style.
    -------------------------------------------------------------------------- */
 
 .w3-card,
 .w3-card-2,
 .w3-card-4 {
-  background: var(--color-bg-surface) !important;
+  background-color: var(--color-bg-surface) !important;
   border: 1px solid var(--color-border-subtle) !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: none !important;
 }
 
 .w3-panel {
-  background: var(--color-bg-surface) !important;
+  background-color: var(--color-bg-surface) !important;
   border: 1px solid var(--color-border-subtle) !important;
   border-radius: var(--radius-md) !important;
 }
@@ -27,7 +29,7 @@
 .w3-white,
 .w3-light-grey,
 .w3-flat-clouds {
-  background: var(--color-bg-surface) !important;
+  background-color: var(--color-bg-surface) !important;
   color: var(--color-text-primary) !important;
 }
 
@@ -92,7 +94,7 @@
 #attack-dice,
 #attack-bonus,
 #attack-dmg-type {
-  background: var(--color-bg-elevated) !important;
+  background-color: var(--color-bg-elevated) !important;
   border: 1px solid var(--color-border-subtle) !important;
   border-radius: var(--radius-md) !important;
   box-shadow: none !important;
@@ -117,7 +119,7 @@
    -------------------------------------------------------------------------- */
 
 #mySidebar {
-  background: var(--color-bg-surface) !important;
+  background-color: var(--color-bg-surface) !important;
   border-right: 1px solid var(--color-border-subtle) !important;
   color: var(--color-text-primary) !important;
 }
@@ -126,21 +128,21 @@
 #mySidebar .w3-button {
   padding: var(--space-3) var(--space-4) !important;
   color: var(--color-text-secondary) !important;
-  background: transparent !important;
+  background-color: transparent !important;
   transition:
-    background var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out);
 }
 
 #mySidebar .w3-bar-item:hover,
 #mySidebar .w3-button:hover {
-  background: var(--color-bg-elevated) !important;
+  background-color: var(--color-bg-elevated) !important;
   color: var(--color-text-primary) !important;
 }
 
 /* Sidebar dropdown */
 #menu-options {
-  background: var(--color-bg-elevated) !important;
+  background-color: var(--color-bg-elevated) !important;
   border: 1px solid var(--color-border-subtle) !important;
 }
 
@@ -155,14 +157,21 @@
 }
 
 /* --------------------------------------------------------------------------
-   9. Image empty states
+   9. Image empty states and portrait overrides
    -------------------------------------------------------------------------- */
 
 #apperance #char-img.image-empty,
 #allies-organizations #alli-img.image-empty {
-  background: var(--color-bg-elevated) !important;
+  background-color: var(--color-bg-elevated) !important;
   border: 1px dashed var(--color-border-default) !important;
   color: var(--color-text-muted) !important;
+}
+
+/* Character portrait and symbol — must not use background shorthand so the
+   background-image set via inline style by JS is never reset to none. */
+#char-img.w3-card,
+#alli-img.w3-card {
+  background-color: var(--color-bg-elevated) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -170,7 +179,7 @@
    -------------------------------------------------------------------------- */
 
 #sheet-feedback {
-  background: var(--color-bg-overlay) !important;
+  background-color: var(--color-bg-overlay) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
@@ -181,6 +190,6 @@
    -------------------------------------------------------------------------- */
 
 .info > div > span {
-  background: var(--color-bg-elevated) !important;
+  background-color: var(--color-bg-elevated) !important;
   color: var(--color-text-primary) !important;
 }
