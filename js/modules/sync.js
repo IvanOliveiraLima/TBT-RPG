@@ -187,6 +187,9 @@ export async function syncAll() {
           }
         }
         await saveCharacter({ ...remoteData, updatedAt: remoteTs })
+        if (remoteData.id === sessionStorage.getItem('activeCharacterId')) {
+          document.dispatchEvent(new CustomEvent('remoteSyncApplied', { detail: { sheet: remoteData } }))
+        }
       }
     }
 
