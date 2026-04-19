@@ -1385,6 +1385,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.addEventListener('sheetChanged', scheduleAutoSave);
 
+    document.addEventListener('remoteSyncApplied', function(e) {
+        applyImagesFromSheet(e.detail.sheet);
+    });
+
     // Defer listener binding until initial scripted load is done.
     setTimeout(function() {
         document.addEventListener('input', function(event) {

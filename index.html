@@ -30,7 +30,7 @@
 	page-4: Backstory
 	page-5: Notes
 -->
-    <div class="w3-sidebar w3-bar-block w3-border-right w3-flat-clouds w3-animate-left" style="display:none" id="mySidebar">
+    <div class="w3-sidebar w3-bar-block w3-border-right w3-animate-left" style="display:none" id="mySidebar">
         <button onclick="w3_close()" class="w3-bar-item w3-large w3-button w3-hover-blue-gray">Close &times;</button>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="goToCharacterSelect()">← My Characters</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-1'); w3_close()">Attributes</a>
@@ -41,12 +41,12 @@
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openAiModal(); w3_close()">✨ Generate with AI</a>
         <div id="auth-sidebar-item" style="visibility:hidden">
           <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAuthModal(); w3_close()" id="auth-sidebar-link">Sign in to sync</a>
-          <div id="auth-user-info" style="display:none; padding: 8px 16px; font-size:0.8rem; color:#90a4ae;">
+          <div id="auth-user-info" style="display:none; padding: 8px 16px; font-size:0.8rem;">
             <span id="auth-user-email"></span>
             <a href="#" onclick="handleSignOut(); w3_close()" style="display:block; margin-top:4px; color:#ef9a9a;">Sign out</a>
           </div>
         </div>
-        <div id="sync-status" style="display:none; padding:4px 16px; font-size:0.75rem; color:#90a4ae;">
+        <div id="sync-status" style="display:none; padding:4px 16px; font-size:0.75rem;">
           <span id="sync-status-text">Synced</span>
         </div>
         <div class="w3-dropdown-hover sheet-only">
@@ -1779,8 +1779,8 @@
     </div>
 
     <!-- AI Generate Modal -->
-    <div id="ai-generate-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
-      <div class="w3-card w3-round" style="width:min(560px,92vw); background:#fff;">
+    <div id="ai-generate-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; align-items:center; justify-content:center;">
+      <div class="w3-card w3-round" style="width:min(560px,92vw);">
         <div class="w3-blue-gray w3-padding">
           <h3 style="margin:0;">&#10024; Generate Character with AI</h3>
         </div>
@@ -1813,8 +1813,8 @@
       </div>
     </div>
 
-    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
-      <div class="w3-card w3-round" style="width:min(420px,92vw); background:#fff;">
+    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; align-items:center; justify-content:center;">
+      <div class="w3-card w3-round" style="width:min(420px,92vw);">
         <div class="w3-blue-gray w3-padding">
           <h3 style="margin:0;" id="auth-modal-title">Sign in</h3>
         </div>

@@ -61,7 +61,7 @@ export function generateId() {
  */
 export async function saveCharacter(data) {
     const db = await getDB();
-    await db.put(STORE, { ...data, updatedAt: Date.now() });
+    await db.put(STORE, { ...data, updatedAt: data.updatedAt ?? Date.now() });
 }
 
 /**

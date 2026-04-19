@@ -106,7 +106,7 @@ onAuthChange(async (user) => {
         if (sidebarLink) sidebarLink.style.display = 'none';
         if (userInfo) userInfo.style.display = 'block';
         if (emailSpan) emailSpan.textContent = user.email;
-        startAutoSync(30000);
+        startAutoSync();
     } else {
         if (sidebarLink) sidebarLink.style.display = 'block';
         if (userInfo) userInfo.style.display = 'none';

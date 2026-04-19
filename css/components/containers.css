@@ -1,0 +1,195 @@
+/* ==========================================================================
+   TBT-RPG — Containers, Cards, Sections, Sidebar, Header
+   All color/spacing/radius values reference tokens from tokens.css,
+   which is imported before this file via app.css.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. W3.CSS card/panel/color-class neutralize
+   background-color (not background shorthand) — shorthand would reset
+   background-image to none and break elements that use it via inline style.
+   -------------------------------------------------------------------------- */
+
+.w3-card,
+.w3-card-2,
+.w3-card-4 {
+  background-color: var(--color-bg-surface) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+}
+
+.w3-panel {
+  background-color: var(--color-bg-surface) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Neutralize W3 light color classes used on containers */
+.w3-white,
+.w3-light-grey,
+.w3-flat-clouds {
+  background-color: var(--color-bg-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Sheet header — #character-basic-info
+   -------------------------------------------------------------------------- */
+
+#character-basic-info {
+  background: linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg-surface));
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: var(--space-4);
+}
+
+/* Char name gets serif treatment */
+#basic-info input[name="char-name"] {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --------------------------------------------------------------------------
+   3. Page wrapper padding
+   -------------------------------------------------------------------------- */
+
+.page {
+  padding: var(--space-5);
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: var(--space-3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Labels — fix hardcoded #546e7a across the sheet
+   -------------------------------------------------------------------------- */
+
+.label {
+  color: var(--color-text-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Sub-container borders within #status and #saves-skills
+   -------------------------------------------------------------------------- */
+
+#status > div,
+#saves-skills > div {
+  border-right-color: var(--color-border-subtle) !important;
+  border-top-color: var(--color-border-subtle) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Attack form mini-cards
+   -------------------------------------------------------------------------- */
+
+#att-name,
+#attack-stack,
+#attack-type,
+#attack-prof,
+#attack-dc,
+#attack-dice,
+#attack-bonus,
+#attack-dmg-type {
+  background-color: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. Mobile attack card rows
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  #attacks tbody tr {
+    border-color: var(--color-border-subtle) !important;
+  }
+
+  #attacks td::before {
+    color: var(--color-text-muted) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Sidebar — #mySidebar
+   -------------------------------------------------------------------------- */
+
+#mySidebar {
+  background-color: var(--color-bg-surface) !important;
+  border-right: 1px solid var(--color-border-subtle) !important;
+  color: var(--color-text-primary) !important;
+}
+
+#mySidebar .w3-bar-item,
+#mySidebar .w3-button {
+  padding: var(--space-3) var(--space-4) !important;
+  color: var(--color-text-secondary) !important;
+  background-color: transparent !important;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+#mySidebar .w3-bar-item:hover,
+#mySidebar .w3-button:hover {
+  background-color: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Sidebar dropdown */
+#menu-options {
+  background-color: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+}
+
+/* Auth sidebar status text */
+#sync-status,
+#auth-user-info {
+  color: var(--color-text-muted) !important;
+}
+
+#auth-user-info a {
+  color: var(--color-danger) !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. Image empty states and portrait overrides
+   -------------------------------------------------------------------------- */
+
+#apperance #char-img.image-empty,
+#allies-organizations #alli-img.image-empty {
+  background-color: var(--color-bg-elevated) !important;
+  border: 1px dashed var(--color-border-default) !important;
+  color: var(--color-text-muted) !important;
+}
+
+/* Character portrait and symbol — must not use background shorthand so the
+   background-image set via inline style by JS is never reset to none. */
+#char-img.w3-card,
+#alli-img.w3-card {
+  background-color: var(--color-bg-elevated) !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. Sheet feedback toast
+   -------------------------------------------------------------------------- */
+
+#sheet-feedback {
+  background-color: var(--color-bg-overlay) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+/* --------------------------------------------------------------------------
+   11. .info helper
+   -------------------------------------------------------------------------- */
+
+.info > div > span {
+  background-color: var(--color-bg-elevated) !important;
+  color: var(--color-text-primary) !important;
+}

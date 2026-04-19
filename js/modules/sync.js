@@ -49,8 +49,19 @@ async function downloadImage(url) {
   }
 }
 
-// Deleção de imagem do Supabase Storage (tenta todas as extensões possíveis)
-async function deleteStorageImage(userId, characterId, kind) {
+// Deleção de imagem do Supabase Storage.
+// Se knownUrl for fornecido, extrai o path exato da URL e deleta apenas esse arquivo.
+// Fallback com múltiplas extensões só ocorre se o path não puder ser determinado.
+async function deleteStorageImage(userId, characterId, kind, knownUrl = null) {
+  if (knownUrl?.startsWith('http')) {
+    const marker = '/character-images/'
+    const idx = knownUrl.indexOf(marker)
+    if (idx !== -1) {
+      const path = decodeURIComponent(knownUrl.slice(idx + marker.length).split('?')[0])
+      await supabase.storage.from('character-images').remove([path])
+      return
+    }
+  }
   const extensions = ['jpeg', 'jpg', 'png', 'webp']
   for (const ext of extensions) {
     const path = `${userId}/${characterId}/${kind}.${ext}`
@@ -59,29 +70,32 @@ async function deleteStorageImage(userId, characterId, kind) {
 }
 
 // Push: envia personagem local → Supabase
-export async function pushCharacter(character) {
+// remoteRow: linha completa retornada por pullCharacters() para este personagem, ou null.
+// Usado para saber se havia imagem remota antes de tentar deletar do Storage.
+export async function pushCharacter(character, remoteRow = null) {
   if (!isSupabaseEnabled() || !isLoggedIn()) return
   const user = getCurrentUser()
 
   const charCopy = { ...character }
   const images = charCopy.images || {}
+  const remoteImages = remoteRow?.data?.images || {}
 
   // Imagem do personagem
   if (images.character?.startsWith('data:')) {
     const url = await uploadImage(user.id, character.id, 'character', images.character)
     if (url) charCopy.images = { ...images, character: url }
-  } else if (!images.character) {
-    // Imagem foi removida — deleta do Storage
-    await deleteStorageImage(user.id, character.id, 'character')
+  } else if (!images.character && remoteImages.character) {
+    // Imagem removida localmente e havia URL no remoto — deleta do Storage
+    await deleteStorageImage(user.id, character.id, 'character', remoteImages.character)
   }
 
   // Símbolo
   if (images.symbol?.startsWith('data:')) {
     const url = await uploadImage(user.id, character.id, 'symbol', images.symbol)
     if (url) charCopy.images = { ...charCopy.images, symbol: url }
-  } else if (!images.symbol) {
-    // Símbolo foi removido — deleta do Storage
-    await deleteStorageImage(user.id, character.id, 'symbol')
+  } else if (!images.symbol && remoteImages.symbol) {
+    // Símbolo removido localmente e havia URL no remoto — deleta do Storage
+    await deleteStorageImage(user.id, character.id, 'symbol', remoteImages.symbol)
   }
 
   const { error } = await supabase
@@ -136,8 +150,9 @@ export async function syncAll() {
       if (remoteMap.has(id)) {
         // Deleta imagens do Storage antes do registro
         const user = getCurrentUser()
-        await deleteStorageImage(user.id, id, 'character')
-        await deleteStorageImage(user.id, id, 'symbol')
+        const remoteRow = remoteMap.get(id)
+        await deleteStorageImage(user.id, id, 'character', remoteRow?.data?.images?.character || null)
+        await deleteStorageImage(user.id, id, 'symbol', remoteRow?.data?.images?.symbol || null)
 
         const { error } = await supabase.from('characters').delete().eq('id', id)
         if (!error) await clearTombstone(id)
@@ -172,6 +187,9 @@ export async function syncAll() {
           }
         }
         await saveCharacter({ ...remoteData, updatedAt: remoteTs })
+        if (remoteData.id === sessionStorage.getItem('activeCharacterId')) {
+          document.dispatchEvent(new CustomEvent('remoteSyncApplied', { detail: { sheet: remoteData } }))
+        }
       }
     }
 
@@ -182,8 +200,8 @@ export async function syncAll() {
       const localTs = local.updatedAt || 0
       const remoteTs = remote ? new Date(remote.updated_at).getTime() : 0
 
-      if (localTs >= remoteTs) {
-        await pushCharacter(local)
+      if (localTs > remoteTs) {
+        await pushCharacter(local, remote || null)
       }
     }
 
@@ -199,10 +217,10 @@ export async function syncAll() {
 // Sync automático em background
 let syncTimer = null
 
-export function startAutoSync(intervalMs = 30000) {
-  stopAutoSync()
-  syncAll() // sync imediato ao iniciar
-  syncTimer = setInterval(syncAll, intervalMs)
+export function startAutoSync() {
+  if (syncTimer !== null) return
+  syncAll().catch(() => {})
+  syncTimer = setInterval(() => { syncAll().catch(() => {}) }, 30000)
 }
 
 export function stopAutoSync() {
@@ -216,7 +234,10 @@ export function stopAutoSync() {
 export async function syncCharacterNow(characterId) {
   if (!isSupabaseEnabled() || !isLoggedIn()) return
   const character = await loadCharacter(characterId)
-  if (character) await pushCharacter(character)
+  if (!character) return
+  // Busca o estado remoto atual para decidir se deve deletar imagem do Storage
+  const { data: remoteRow } = await supabase.from('characters').select('*').eq('id', characterId).maybeSingle()
+  await pushCharacter(character, remoteRow || null)
 }
 
 // Push com debounce — evita requisições excessivas durante edição contínua

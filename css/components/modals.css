@@ -1,0 +1,115 @@
+/* ==========================================================================
+   TBT-RPG — Modals
+   All color/spacing/radius values reference tokens from tokens.css,
+   which is imported before this file via app.css.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Modal backdrops — #ai-generate-modal, #auth-modal
+   -------------------------------------------------------------------------- */
+
+#ai-generate-modal,
+#auth-modal {
+  background: var(--color-bg-overlay) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* --------------------------------------------------------------------------
+   2. Modal body — .w3-card inside modals
+   -------------------------------------------------------------------------- */
+
+#ai-generate-modal .w3-card,
+#auth-modal .w3-card {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   3. Modal header strip — .w3-blue-gray inside modal
+   -------------------------------------------------------------------------- */
+
+#ai-generate-modal .w3-blue-gray,
+#auth-modal .w3-blue-gray {
+  background: var(--color-bg-surface) !important;
+  border-bottom: 1px solid var(--color-border-subtle) !important;
+  color: var(--color-text-primary) !important;
+}
+
+#ai-generate-modal h3,
+#auth-modal h3 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. Error and success boxes inside modals
+   -------------------------------------------------------------------------- */
+
+#ai-generate-error,
+#auth-error,
+#auth-signup-error {
+  background: var(--color-accent-ruby-soft) !important;
+  color: var(--color-danger) !important;
+  border: 1px solid rgba(139, 26, 46, 0.4) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+#auth-signup-success {
+  background: rgba(93, 202, 165, 0.1) !important;
+  color: var(--color-success) !important;
+  border: 1px solid rgba(93, 202, 165, 0.4) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+/* Inline hint text colors within AI modal */
+#ai-generate-modal p {
+  color: var(--color-text-tertiary) !important;
+}
+
+#ai-generate-loading {
+  color: var(--color-text-muted) !important;
+}
+
+#ai-char-counter {
+  color: var(--color-text-muted) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Image adjust modal
+   -------------------------------------------------------------------------- */
+
+.image-adjust-modal {
+  background: var(--color-bg-overlay) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.image-adjust-dialog {
+  background: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.image-adjust-viewport {
+  background: var(--color-bg-base) !important;
+  border-radius: var(--radius-md);
+}
+
+.image-adjust-header {
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.image-adjust-actions {
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}

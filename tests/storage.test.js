@@ -75,11 +75,17 @@ describe('saveCharacter', () => {
         expect(loaded.hp).toBe(20);
     });
 
-    it('adds updatedAt timestamp', async () => {
+    it('adds updatedAt timestamp when not provided', async () => {
         const before = Date.now();
         await saveCharacter({ id: 'char_1' });
         const loaded = await loadCharacter('char_1');
         expect(loaded.updatedAt).toBeGreaterThanOrEqual(before);
+    });
+
+    it('preserves explicit updatedAt when provided', async () => {
+        await saveCharacter({ id: 'char_1', updatedAt: 12345 });
+        const loaded = await loadCharacter('char_1');
+        expect(loaded.updatedAt).toBe(12345);
     });
 
     it('backwards compat: saves under active when no id overridden', async () => {
