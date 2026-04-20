@@ -1,0 +1,226 @@
+/* ==========================================================================
+   TBT-RPG — Tables
+   Covers #attacks (Attributes tab) and the inventory table (Inv. & NPCs tab).
+   The Spell Sheet section uses a div-based grid layout, not a <table>.
+   Neither table uses W3.CSS table classes (.w3-table, .w3-table-all, etc.),
+   so no W3.CSS overrides are needed here.
+   All values reference tokens from tokens.css.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Base table
+   Replaces the old bare `table {}` rule in app.css (which had
+   border-collapse: separate; border-spacing: 2px — now collapsed cleanly).
+   -------------------------------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+/* --------------------------------------------------------------------------
+   2. Headers
+   -------------------------------------------------------------------------- */
+
+th {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  text-align: left;
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   3. Cells
+   -------------------------------------------------------------------------- */
+
+td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* --------------------------------------------------------------------------
+   4. Row hover — subtle feedback, one step above surface
+   -------------------------------------------------------------------------- */
+
+tbody tr {
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+tbody tr:hover {
+  background-color: var(--color-bg-elevated);
+}
+
+/* --------------------------------------------------------------------------
+   5. Inputs and selects inside table cells
+   "Invisible" until the user interacts — background-color (not background
+   shorthand) is used to avoid resetting background-image on selects,
+   which forms.css uses for the custom dropdown arrow SVG.
+   -------------------------------------------------------------------------- */
+
+td input,
+td select {
+  width: 100%;
+  min-width: 0;
+  background-color: transparent;
+  border: 1px solid transparent;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+td input:hover,
+td select:hover {
+  border-color: var(--color-border-subtle);
+}
+
+td input:focus,
+td select:focus {
+  background-color: var(--color-bg-elevated);
+  border-color: var(--color-accent-purple);
+  outline: none;
+}
+
+/* --------------------------------------------------------------------------
+   6. Row action buttons
+   Attacks rows use a bare <button>X</button> inside <td> — no .row-action
+   class. Styled via td button to keep JS untouched.
+   -------------------------------------------------------------------------- */
+
+td button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+td button:hover {
+  color: var(--color-danger);
+  background-color: rgba(226, 75, 74, 0.1);
+}
+
+/* --------------------------------------------------------------------------
+   7. Attacks table (#attacks) specifics
+   table-layout: fixed enforces the max-width: 90px cap per cell.
+   The overrides here use a more specific selector to win over the base rules.
+   -------------------------------------------------------------------------- */
+
+#attacks-spells table#attacks {
+  table-layout: fixed;
+}
+
+#attacks-spells #attacks th,
+#attacks-spells #attacks td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#attacks-spells #attacks td {
+  max-width: 90px;
+  text-align: center;
+}
+
+/* Attacks inputs: centered, near-full width, transparent border (base handles
+   the 1px transparent → border-subtle on hover via td input rule above). */
+#attacks-spells #attacks td input {
+  width: 90%;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   8. Inventory table (#equipment)
+   table-layout: fixed + inline <col> width percentages (89.99% / 9.99%)
+   handle column sizing. Horizontal scroll on mobile is provided by the
+   parent .col-1 via app.css: @media (max-width: 600px) .col-1 { overflow-x: auto }.
+   -------------------------------------------------------------------------- */
+
+#equipment table {
+  table-layout: fixed;
+}
+
+/* --------------------------------------------------------------------------
+   9. Mobile — attacks card layout
+   Decision: attacks has 6 columns (Name, Base Stat, Bonus/DC, Damage,
+   Damage Type, X). At 375px this is unreadable even with scroll — the card
+   layout (2-column grid with ::before labels from data-label) provides much
+   better UX. Inventory (2 cols) is already scrollable via .col-1.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  #attacks thead {
+    display: none !important;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+  }
+
+  #attacks tbody tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+
+  /* Cards don't use the generic row hover background — they have their own border */
+  #attacks tbody tr:hover {
+    background-color: var(--color-bg-elevated);
+  }
+
+  #attacks td {
+    display: flex;
+    flex-direction: column;
+    font-size: var(--font-size-sm);
+    overflow: visible;
+    white-space: normal;
+    border-bottom: none;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  #attacks td::before {
+    content: attr(data-label);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    color: var(--color-text-muted);
+    margin-bottom: 2px;
+  }
+
+  #attacks td:last-child {
+    grid-column: 1 / -1;
+    align-items: flex-end;
+  }
+
+  /* Inputs inside card cells: remove the border to keep the card clean */
+  #attacks td input {
+    border-color: transparent;
+    padding: 0;
+  }
+}
