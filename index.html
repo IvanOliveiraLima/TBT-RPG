@@ -38,7 +38,7 @@
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-2'); w3_close()">Inv. & NPCs</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-3'); w3_close()">Spell Sheet</a>
         <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openPage('page-5'); w3_close()">Notes</a>
-        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only" onclick="openAiModal(); w3_close()">✨ Generate with AI</a>
+        <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray sheet-only sparkle" onclick="openAiModal(); w3_close()">✦ Generate with AI</a>
         <div id="auth-sidebar-item" style="visibility:hidden">
           <a href="#" class="w3-bar-item w3-button w3-hover-blue-gray" onclick="openAuthModal(); w3_close()" id="auth-sidebar-link">Sign in to sync</a>
           <div id="auth-user-info" style="display:none; padding: 8px 16px; font-size:0.8rem;">
@@ -74,19 +74,92 @@
     </div>
     <!-- Character Selection Screen -->
     <div id="character-select-screen" style="display:none">
-        <div class="select-header">
-            <h1>My Characters</h1>
-            <div class="select-global-actions">
-                <button class="w3-button w3-blue-gray w3-round btn-export-all">Export All</button>
-                <button class="w3-button w3-round btn-import-all">Import</button>
-                <input id="import-all-input" type="file" accept=".json,application/json" style="display:none" />
+        <!-- Hero section -->
+        <div class="select-hero noise-grain">
+            <div class="select-hero-logo-row">
+                <svg class="d20-icon" viewBox="0 0 48 48" width="46" height="46" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="d20g" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#8B6FC5" />
+                            <stop offset="55%" stop-color="#5B3FA8" />
+                            <stop offset="100%" stop-color="#8B1A2E" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="24,3 44,15 44,33 24,45 4,33 4,15"
+                        fill="url(#d20g)" stroke="#D4A017" stroke-width="1.2" />
+                    <polygon points="24,3 44,15 24,26 4,15"
+                        fill="rgba(255,255,255,0.08)" />
+                    <text x="24" y="30" text-anchor="middle"
+                        font-family="'Cinzel', serif" font-size="14" font-weight="700"
+                        fill="#D4A017">T</text>
+                </svg>
+                <div class="select-hero-brand">
+                    <div class="select-hero-wordmark">TBT<span class="gold-dot">·</span>RPG</div>
+                    <div class="select-hero-brand-sub">Mesa virtual · fichas sincronizadas</div>
+                </div>
             </div>
+            <h2 class="select-hero-tagline" data-i18n="hero.tagline">Sua ficha,<br><span class="select-hero-tagline-gold">facilitada.</span></h2>
+            <p class="select-hero-desc" data-i18n="hero.desc">Gerencie seus personagens de D&amp;D em qualquer dispositivo.</p>
+            <div class="select-hero-orb" aria-hidden="true"></div>
         </div>
-        <div class="character-grid"></div>
+        <!-- Characters list -->
+        <div class="select-chars-section">
+            <div class="select-section-header">
+                <div class="select-section-title" data-i18n="select.myChars">Meus Personagens</div>
+                <div class="select-global-actions">
+                    <button class="w3-button w3-round btn-export-all" data-i18n="select.exportAll">⬆ Exportar</button>
+                    <button class="w3-button w3-round btn-import-all" data-i18n="select.import">⬇ Importar</button>
+                    <input id="import-all-input" type="file" accept=".json,application/json" style="display:none" />
+                </div>
+            </div>
+            <div class="character-grid"></div>
+        </div>
     </div>
 
     <div id="sheet-wrapper" onclick="w3_close()">
-        <!-- Header -->
+        <!-- Mobile header — sticky top, mobile only -->
+        <div id="mobile-header" class="sheet-only" style="display:none">
+            <button class="mobile-menu-btn" onclick="w3_open()" aria-label="Open menu">☰</button>
+            <div class="mobile-header-info">
+                <div class="mobile-char-name" id="mobile-char-name"></div>
+                <div class="mobile-char-sub" id="mobile-char-sub"></div>
+            </div>
+            <button class="mobile-ai-btn sparkle" onclick="openAiModal()" aria-label="Generate with AI">✦</button>
+        </div>
+        <!-- Tab bar — sticky bottom, mobile only -->
+        <nav id="tab-bar" class="sheet-only" style="display:none" role="tablist" aria-label="Sheet sections">
+            <button class="tab-item active" data-tab="status" role="tab" aria-selected="true">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 21s-7-5.5-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 11-7 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+                <span class="tab-label" data-i18n="tab.status">Status</span>
+            </button>
+            <button class="tab-item" data-tab="combat" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M14.5 3.5 3.5 14.5 9.5 20.5 20.5 9.5 14.5 3.5z M6.5 17.5 8.5 19.5 M11 13 14 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="tab-label" data-i18n="tab.combat">Combate</span>
+            </button>
+            <button class="tab-item" data-tab="spells" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M5 19l2.5-2.5M16.5 7.5 19 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+                </svg>
+                <span class="tab-label" data-i18n="tab.spells">Magias</span>
+            </button>
+            <button class="tab-item" data-tab="inv" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 7h16v12H4z M4 7l2-3h12l2 3 M10 11h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+                <span class="tab-label" data-i18n="tab.inv">Inv</span>
+            </button>
+            <button class="tab-item" data-tab="lore" role="tab" aria-selected="false">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 4h10l6 6v10H4z M14 4v6h6 M8 14h8 M8 18h8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg>
+                <span class="tab-label" data-i18n="tab.lore">Lore</span>
+            </button>
+        </nav>
         <!-- Header -->
         <!-- Header -->
         <!-- Basic Info -->
@@ -371,6 +444,13 @@
                             <input type="text" name="max-health" />
                             <br/>
                             <span class="label">Maximum Health</span>
+                        </div>
+                        <!-- HP bar visual -->
+                        <div class="w3-col w3-padding" style="padding-top:4px">
+                            <div id="hp-bar-wrap">
+                                <div id="hp-bar-fill"></div>
+                                <div id="hp-bar-temp"></div>
+                            </div>
                         </div>
                     </div>
                     <div id="hit-dice" class="w3-col w3-padding m5 l2">

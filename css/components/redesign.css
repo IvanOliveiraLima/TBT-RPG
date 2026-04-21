@@ -1,0 +1,476 @@
+/* ==========================================================================
+   TBT-RPG — Visual Redesign
+   Textures, animations, tab bar, mobile header, stat chips, HP bar.
+   All values reference tokens from tokens.css (loaded via app.css).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Global — scrollbar, body
+   -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-default); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-strong); }
+
+/* --------------------------------------------------------------------------
+   2. Texture utility classes
+   -------------------------------------------------------------------------- */
+
+.parchment-texture {
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(212,160,23,0.05), transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139,26,46,0.08), transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(91,63,168,0.04), transparent 60%);
+}
+
+.noise-grain {
+  position: relative;
+}
+.noise-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+/* --------------------------------------------------------------------------
+   3. Animations
+   -------------------------------------------------------------------------- */
+
+@keyframes hp-pulse-low {
+  0%, 100% { box-shadow: 0 0 12px rgba(226, 75, 74, 0.4); }
+  50%       { box-shadow: 0 0 28px rgba(226, 75, 74, 0.75); }
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.15); }
+}
+
+.sparkle {
+  animation: sparkle-pulse 2.4s ease-in-out infinite;
+}
+
+/* --------------------------------------------------------------------------
+   4. Mobile header — sticky top, shown only on ≤600px when sheet is open
+   -------------------------------------------------------------------------- */
+
+#mobile-header {
+  /* hidden by default; shown via JS (.sheet-only) on mobile only */
+}
+
+@media (max-width: 600px) {
+  #mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-sticky);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    background: rgba(15, 13, 20, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  #mobile-header .mobile-menu-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-subtle);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  #mobile-header .mobile-header-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #mobile-header .mobile-char-name {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #mobile-header .mobile-char-sub {
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    margin-top: 1px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #mobile-header .mobile-ai-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--color-border-subtle);
+    color: var(--color-accent-gold);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Push page content below fixed mobile header */
+  #sheet-wrapper {
+    padding-top: 56px;
+  }
+
+  /* Hide legacy desktop menu button on mobile */
+  #menu-btn {
+    display: none !important;
+  }
+}
+
+@media (min-width: 601px) {
+  #mobile-header {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Tab bar — sticky bottom, shown only on ≤600px when sheet is open
+   -------------------------------------------------------------------------- */
+
+#tab-bar {
+  /* hidden by default */
+}
+
+@media (max-width: 600px) {
+  #tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 6px 4px 10px;
+    background: rgba(15, 13, 20, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  #tab-bar .tab-item {
+    background: transparent;
+    border: none;
+    padding: 6px 4px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    position: relative;
+    transition: color var(--duration-base) var(--ease-out);
+  }
+
+  #tab-bar .tab-item.active {
+    color: var(--color-accent-gold);
+  }
+
+  #tab-bar .tab-item.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-accent-gold);
+    box-shadow: 0 0 8px rgba(212, 160, 23, 0.5);
+  }
+
+  #tab-bar .tab-item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  #tab-bar .tab-label {
+    font-size: 10px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: 0.3px;
+    line-height: 1;
+  }
+
+  #tab-bar .tab-item.active .tab-label {
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Push page content above fixed tab bar */
+  .page {
+    padding-bottom: 80px !important;
+  }
+
+  /* Move scroll-to-top above tab bar */
+  #scroll-to-top {
+    bottom: 76px !important;
+  }
+}
+
+@media (min-width: 601px) {
+  #tab-bar {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Stat chips — upgrade existing #attributes section
+   -------------------------------------------------------------------------- */
+
+#attributes {
+  display: grid !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  gap: 6px !important;
+  padding: 10px !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+@media (max-width: 600px) {
+  #attributes {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* Each stat column becomes a card */
+#attributes > div[id] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 10px 6px 8px !important;
+  background: linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg-surface)) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  transition: border-color var(--duration-base) var(--ease-out) !important;
+  min-width: 0 !important;
+}
+
+#attributes > div[id]:hover {
+  border-color: var(--color-border-strong) !important;
+}
+
+/* Label — small allcaps at top */
+#attributes > div[id] > .label {
+  order: 1 !important;
+  font-size: 9px !important;
+  font-weight: var(--font-weight-semibold) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  color: var(--color-text-muted) !important;
+  margin-bottom: 2px !important;
+}
+
+/* att-mod = big serif modifier */
+#attributes .att-mod {
+  order: 2 !important;
+  font-family: var(--font-serif) !important;
+  font-size: 30px !important;
+  font-weight: var(--font-weight-semibold) !important;
+  color: var(--color-text-primary) !important;
+  text-align: center !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* att = small base value below divider */
+#attributes .att {
+  order: 3 !important;
+  font-size: 12px !important;
+  color: var(--color-text-tertiary) !important;
+  text-align: center !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--color-border-subtle) !important;
+  box-shadow: none !important;
+  padding: 4px 0 0 !important;
+  margin-top: 2px !important;
+}
+
+#attributes .att:focus,
+#attributes .att-mod:focus {
+  outline: none !important;
+  border-color: var(--color-border-strong) !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. HP bar visual
+   -------------------------------------------------------------------------- */
+
+#hp-bar-wrap {
+  margin-top: 8px;
+  border-radius: var(--radius-full);
+  height: 14px;
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+#hp-bar-fill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 0%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-success), rgba(93, 202, 165, 0.85));
+  transition: width 400ms var(--ease-out), background 300ms var(--ease-out);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+#hp-bar-fill.hp-low {
+  background: linear-gradient(90deg, var(--color-danger), rgba(226, 75, 74, 0.85));
+  animation: hp-pulse-low 1.8s ease-in-out infinite;
+}
+
+#hp-bar-fill.hp-mid {
+  background: linear-gradient(90deg, var(--color-accent-gold), rgba(212, 160, 23, 0.85));
+}
+
+#hp-bar-temp {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-accent-purple),
+    var(--color-accent-purple) 4px,
+    var(--color-accent-purple-hover) 4px,
+    var(--color-accent-purple-hover) 8px
+  );
+  opacity: 0.8;
+}
+
+/* --------------------------------------------------------------------------
+   8. Section card headers — upgrade existing expando sections
+   -------------------------------------------------------------------------- */
+
+.expando {
+  font-family: var(--font-serif) !important;
+  font-size: 13px !important;
+  font-weight: var(--font-weight-semibold) !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  color: var(--color-text-primary) !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--color-border-subtle) !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.expando::after {
+  content: '▸';
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+/* --------------------------------------------------------------------------
+   9. Tag pill component
+   -------------------------------------------------------------------------- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.3px;
+}
+
+.tag--purple {
+  background: rgba(91, 63, 168, 0.18);
+  color: #B5A5E8;
+  border: 1px solid rgba(91, 63, 168, 0.35);
+}
+
+.tag--ruby {
+  background: rgba(139, 26, 46, 0.2);
+  color: #E89BA8;
+  border: 1px solid rgba(139, 26, 46, 0.4);
+}
+
+.tag--gold {
+  background: rgba(212, 160, 23, 0.15);
+  color: #E8C569;
+  border: 1px solid rgba(212, 160, 23, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   10. Pip (proficiency dot) component
+   -------------------------------------------------------------------------- */
+
+.pip {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border-default);
+  vertical-align: middle;
+}
+
+.pip.pip--filled {
+  background: var(--color-accent-purple);
+  border-color: var(--color-accent-purple);
+  box-shadow: 0 0 6px rgba(91, 63, 168, 0.5);
+}
+
+.pip.pip--expert {
+  background: var(--color-accent-ruby);
+  border-color: var(--color-accent-ruby);
+  box-shadow: 0 0 6px rgba(139, 26, 46, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   11. Mobile sheet — adjust character-basic-info
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  #character-basic-info {
+    padding-left: 0 !important;
+    margin-top: 0 !important;
+  }
+}

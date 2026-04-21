@@ -10,7 +10,7 @@ const translations = {
     'Backstory': 'História',
     'Spell Sheet': 'Magias',
     'Notes': 'Notas',
-    '✨ Generate with AI': '✨ Gerar com IA',
+    '✦ Generate with AI': '✦ Gerar com IA',
     'Sign in to sync': 'Entrar para sincronizar',
     'Sign out': 'Sair',
     'Options': 'Opções',

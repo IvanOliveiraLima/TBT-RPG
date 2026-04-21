@@ -15,20 +15,56 @@ function renderCard(char) {
     card.className = 'character-card';
     card.dataset.id = char.id;
 
-    var meta = [char.race, char.class, char.level ? 'Level ' + char.level : ''].filter(Boolean).join(' · ');
-    var updated = char.updatedAt ? 'Last edited ' + formatDate(char.updatedAt) : '';
+    // Extract fields from nested schema (schemaVersion 1+)
+    var basicInfo  = char.page1?.basic_info   || {};
+    var charInfo   = char.page1?.character_info || {};
+    var statusInfo = char.page1?.status        || {};
+
+    var name      = basicInfo.char_name  || char.name  || 'Unnamed';
+    var charClass = basicInfo.char_class || char.class  || '';
+    var level     = basicInfo.total_level != null ? basicInfo.total_level : (char.level || '');
+    var race      = charInfo.race_class   || char.race  || '';
+
+    var currentHp = parseFloat(statusInfo.current_health ?? '') || 0;
+    var maxHp     = parseFloat(statusInfo.max_health     ?? '') || 0;
+    var hpPct     = maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 0;
+    var hpColor   = hpPct < 30 ? 'hp-low' : hpPct < 60 ? 'hp-mid' : '';
+
+    var classPart = charClass && level ? charClass + ' ' + level : charClass;
+    var metaParts = [race, classPart].filter(Boolean);
+    var updated   = char.updatedAt ? 'Last edited ' + formatDate(char.updatedAt) : '';
+
+    // Portrait: use character image if available, else first letter of name
+    var initial   = escapeHtml((name || 'X')[0].toUpperCase());
+    var portraitStyle = char.images?.character
+        ? `background-image:url('${escapeHtml(char.images.character)}'); background-size:cover; background-position:center;`
+        : '';
+
+    var hpDisplay = maxHp > 0
+        ? `<div class="char-hp-value">
+               <div class="char-hp-label">HP</div>
+               <div class="char-hp-number">${currentHp}<span class="hp-max">/${maxHp}</span></div>
+           </div>`
+        : '';
 
     card.innerHTML = `
-        <p class="char-name" title="${escapeHtml(char.name)}">${escapeHtml(char.name)}</p>
-        <div class="char-meta">
-            ${meta ? escapeHtml(meta) + '<br>' : ''}
-            ${updated}
+        <div class="char-portrait" style="${portraitStyle}">
+            ${char.images?.character ? '' : initial}
+            ${level ? `<div class="char-portrait-level">${escapeHtml(String(level))}</div>` : ''}
         </div>
-        <div class="card-actions">
-            <button class="w3-button w3-blue-gray w3-round btn-open" style="flex:1">Open</button>
-            <button class="w3-button w3-round btn-duplicate" title="Duplicate">⧉</button>
-            <button class="w3-button w3-red w3-round btn-delete" title="Delete">✕</button>
+        <div class="char-card-body">
+            <p class="char-name" title="${escapeHtml(name)}">${escapeHtml(name)}</p>
+            <div class="char-meta">
+                ${metaParts.map(escapeHtml).join(' · ')}${updated ? '<br>' + updated : ''}
+            </div>
+            ${maxHp > 0 ? `<div class="char-hp-bar"><div class="char-hp-bar-fill ${hpColor}" style="width:${hpPct}%"></div></div>` : ''}
+            <div class="card-actions">
+                <button class="w3-button w3-blue-gray w3-round btn-open" style="flex:1" data-i18n="card.open">Open</button>
+                <button class="w3-button w3-round btn-duplicate" title="Duplicate">⧉</button>
+                <button class="w3-button w3-red w3-round btn-delete" title="Delete">✕</button>
+            </div>
         </div>
+        ${hpDisplay}
     `;
     return card;
 }

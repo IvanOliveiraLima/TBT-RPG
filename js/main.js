@@ -18,6 +18,7 @@ import { openAiModal, closeAiModal, runAiGenerate } from './modules/ai-modal.js'
 import { initAuth, onAuthChange } from './modules/auth.js'
 import { applyTranslations, setLang, updateLangButtons } from './modules/i18n.js'
 import { startAutoSync, stopAutoSync, cancelScheduledSync } from './modules/sync.js'
+import { initTabNav, updateMobileHeader, updateHpBar } from './modules/tab-nav.js'
 import { openAuthModal, closeAuthModal, showSignIn, showSignUp,
   handleEmailSignIn, handleEmailSignUp, handleGoogleSignIn,
   handleSignOut, handleForgotPassword } from './modules/auth-modal.js';
@@ -137,6 +138,8 @@ if (!activeId) {
         sessionStorage.setItem('activeCharacterId', activeId);
         await applyLoadedSheet(character);
         showSheet();
+        updateMobileHeader();
+        updateHpBar();
     } else {
         sessionStorage.removeItem('activeCharacterId');
         showCharacterSelect();
@@ -145,6 +148,7 @@ if (!activeId) {
 
 applyTranslations();
 updateLangButtons();
+initTabNav();
 
 // ---------------------------------------------------------------------------
 // Global handlers for inline onclick attributes in HTML
