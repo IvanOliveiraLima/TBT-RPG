@@ -358,3 +358,93 @@ describe('adaptCharacter — full fixture', () => {
     expect(result.images.symbol).toBeUndefined()
   })
 })
+
+describe('adaptCharacter — inspiration', () => {
+  it('absent insperation field → inspiration false', () => {
+    const result = adaptCharacter(emptyChar())
+    expect(result.inspiration).toBe(false)
+  })
+
+  it('empty string → inspiration false', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: '' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(false)
+  })
+
+  it('"false" string → inspiration false', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: 'false' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(false)
+  })
+
+  it('"0" string → inspiration false', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: '0' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(false)
+  })
+
+  it('"true" string → inspiration true', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: 'true' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(true)
+  })
+
+  it('"1" string → inspiration true', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: '1' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(true)
+  })
+
+  it('any non-empty non-false string (e.g. "yes") → inspiration true', () => {
+    const raw: V1Character = { page1: { top_bar: { insperation: 'yes' } } }
+    const result = adaptCharacter(raw)
+    expect(result.inspiration).toBe(true)
+  })
+})
+
+describe('adaptCharacter — class hit die', () => {
+  it('Monk class gets d8', () => {
+    const result = adaptCharacter(fullChar)
+    expect(result.classes[0]?.hitDie).toBe(8)
+  })
+
+  it('Barbarian class gets d12', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { classes: [{ name: 'Barbarian', level: '3' }] } },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.classes[0]?.hitDie).toBe(12)
+  })
+
+  it('Wizard class gets d6', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { char_class: 'Wizard', level: '7' } },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.classes[0]?.hitDie).toBe(6)
+  })
+
+  it('unknown homebrew class gets d8 fallback', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { classes: [{ name: 'Homebrew', level: '4' }] } },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.classes[0]?.hitDie).toBe(8)
+  })
+
+  it('multi-class gets correct hit die per class', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: {
+          classes: [
+            { name: 'Fighter', level: '5' },
+            { name: 'Wizard', level: '3' },
+          ],
+        },
+      },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.classes[0]?.hitDie).toBe(10) // Fighter
+    expect(result.classes[1]?.hitDie).toBe(6)  // Wizard
+  })
+})

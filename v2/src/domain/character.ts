@@ -113,6 +113,7 @@ export interface Character {
   speed: number
   passivePerception: number  // derived: 10 + perception skill bonus
   spellSaveDC: number        // 0 if not a caster (stored from top_bar)
+  inspiration: boolean       // v1 stores as string in top_bar.insperation (typo preserved in raw)
 
   // Saving throws & skills
   savingThrows: SavingThrowState[]
