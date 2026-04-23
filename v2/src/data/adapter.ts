@@ -34,6 +34,7 @@ import {
   skillBonus,
   passivePerception,
 } from '@/domain/calculations'
+import { getHitDie } from '@/domain/classes'
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -55,6 +56,18 @@ function parseFloatSafe(val: string | number | null | undefined): number {
 /** Trim a string value, default to ''. */
 function str(val: string | null | undefined): string {
   return (val ?? '').trim()
+}
+
+/**
+ * Converts a v1 inspiration value to boolean.
+ * v1 stores inspiration as a text input .value (string).
+ * Any non-empty, non-"false", non-"0" string is treated as true.
+ * Also handles true/false boolean in case records were programmatically set.
+ */
+function parseBoolean(val: string | boolean | null | undefined): boolean {
+  if (typeof val === 'boolean') return val
+  const s = str(String(val ?? ''))
+  return s !== '' && s !== 'false' && s !== '0'
 }
 
 /** Deterministic id for items that have no id in v1. */
@@ -93,26 +106,21 @@ function mapSpellAbility(raw: string | undefined): AbilityKey {
  */
 function adaptClasses(raw: V1Character): ClassEntry[] {
   const bi = raw.page1?.basic_info
-  const DEFAULT_HIT_DIE = 8
 
   if (Array.isArray(bi?.classes) && (bi.classes as V1ClassEntry[]).length > 0) {
     const result = (bi.classes as V1ClassEntry[])
-      .map((c) => ({
-        name:   str(c.name),
-        level:  parseIntSafe(c.level),
-        hitDie: DEFAULT_HIT_DIE,
-      }))
+      .map((c) => {
+        const name = str(c.name)
+        return { name, level: parseIntSafe(c.level), hitDie: getHitDie(name) }
+      })
       .filter((c) => c.name !== '' || c.level > 0)
 
     if (result.length > 0) return result
   }
 
   // Legacy fallback: single class from char_class + level fields
-  return [{
-    name:   str(bi?.char_class),
-    level:  parseIntSafe(bi?.level),
-    hitDie: DEFAULT_HIT_DIE,
-  }]
+  const name = str(bi?.char_class)
+  return [{ name, level: parseIntSafe(bi?.level), hitDie: getHitDie(name) }]
 }
 
 /**
@@ -348,6 +356,17 @@ function adaptDeathSaves(raw: V1Character): { successes: number; failures: numbe
  *
  * This function is the only permitted entry point for v1 → domain conversion.
  * All UI components must work with Character, never V1Character.
+ *
+ * v1 fields intentionally discarded:
+ * - page2.mount_pet / mount_pet2 — feature discontinued in v2
+ * - page1.character_info.player_name — not part of the character's own domain model
+ * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
+ * - page1.top_bar.passive_perception — recalculated via passivePerception()
+ * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
+ * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
+ *
+ * v1 fields with typo preserved in raw schema but corrected in domain:
+ * - top_bar.insperation → Character.inspiration (string → boolean)
  */
 export function adaptCharacter(raw: V1Character): Character {
   const classes   = adaptClasses(raw)
@@ -420,6 +439,8 @@ export function adaptCharacter(raw: V1Character): Character {
     speed:            parseIntSafe(tb?.speed),
     passivePerception: passPerc,
     spellSaveDC:      parseIntSafe(tb?.spell_dc),
+    // v1 stores as top_bar.insperation (typo preserved in raw schema)
+    inspiration:      parseBoolean(tb?.insperation),
 
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
     skills,

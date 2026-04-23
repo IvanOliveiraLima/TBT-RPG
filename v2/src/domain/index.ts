@@ -12,6 +12,8 @@ export type {
   Character,
 } from './character'
 
+export { CLASS_HIT_DIE, getHitDie } from './classes'
+
 export {
   abilityModifier,
   proficiencyBonus,
