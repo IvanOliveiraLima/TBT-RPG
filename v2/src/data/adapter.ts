@@ -4,18 +4,39 @@
  * This is the single place in v2 that knows about the v1 page1/page2/page3...
  * nesting. Every UI component consumes Character; none should touch V1Character.
  *
+ * v1 fields intentionally discarded:
+ * - page2.mount_pet / mount_pet2 — feature discontinued in v2
+ * - page1.character_info.player_name — not part of the character's own domain model
+ * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
+ * - page1.top_bar.passive_perception — recalculated via passivePerception()
+ * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
+ * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
+ *
+ * v1 fields with typo/rename preserved in raw schema but corrected in domain:
+ * - top_bar.insperation → Character.inspiration (string → boolean)
+ * - personality.personality_traits → personality.traits
+ *
  * Decisions baked in:
- * - HP current empty/zero with max filled → current = max (full HP assumption)
- * - Skill/save bonuses recalculated from ability scores (not stored val field)
- * - Class hit die defaults to d8 — v1 does not store per-class die size
+ * - HP current empty/zero with max filled → current = max (full HP)
+ * - Class hit die defaults via getHitDie() (d8 fallback for homebrew)
  * - features[] defaults to [] — v1 has no structured features array
  * - Inventory quantity defaults to 1 — v1 does not track quantity
  * - Attack proficient defaults to false — not stored in v1
  * - Attack rollType defaults to 'attack' — not stored in v1
+ * - Spell slots: no "used" tracking in v1 — current = max at all times
  * - createdAt falls back to updatedAt — v1 has no createdAt field
  */
 
-import type { V1Character, V1ClassEntry, V1Saves, V1Skills } from './schema-v1'
+import type {
+  V1Character,
+  V1ClassEntry,
+  V1Saves,
+  V1Skills,
+  V1AttackEntry,
+  V1SpellEntry,
+  V1SpellLevelBlock,
+  V1EquipmentRow,
+} from './schema-v1'
 import type {
   Character,
   AbilityKey,
@@ -38,7 +59,6 @@ import { getHitDie } from '@/domain/classes'
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
-/** Safe integer parse — returns 0 for empty/NaN values. */
 function parseIntSafe(val: string | number | boolean | null | undefined): number {
   if (typeof val === 'number') return isNaN(val) ? 0 : Math.floor(val)
   if (typeof val === 'boolean') return val ? 1 : 0
@@ -46,23 +66,21 @@ function parseIntSafe(val: string | number | boolean | null | undefined): number
   return isNaN(n) ? 0 : n
 }
 
-/** Safe float parse — returns 0 for empty/NaN values. */
 function parseFloatSafe(val: string | number | null | undefined): number {
   if (typeof val === 'number') return isNaN(val) ? 0 : val
   const n = parseFloat(String(val ?? ''))
   return isNaN(n) ? 0 : n
 }
 
-/** Trim a string value, default to ''. */
 function str(val: string | null | undefined): string {
   return (val ?? '').trim()
 }
 
 /**
  * Converts a v1 inspiration value to boolean.
- * v1 stores inspiration as a text input .value (string).
+ * v1 stores top_bar.insperation as a text input .value (string).
  * Any non-empty, non-"false", non-"0" string is treated as true.
- * Also handles true/false boolean in case records were programmatically set.
+ * Also handles true/false boolean for programmatically-set records.
  */
 function parseBoolean(val: string | boolean | null | undefined): boolean {
   if (typeof val === 'boolean') return val
@@ -70,20 +88,22 @@ function parseBoolean(val: string | boolean | null | undefined): boolean {
   return s !== '' && s !== 'false' && s !== '0'
 }
 
-/** Deterministic id for items that have no id in v1. */
+/** Safe array coercion — returns the value if array, otherwise []. */
+function toArray<T>(val: unknown): T[] {
+  return Array.isArray(val) ? (val as T[]) : []
+}
+
 function itemId(prefix: string, index: number): string {
   return `${prefix}_${index}`
 }
 
 const VALID_ABILITY_KEYS = new Set<string>(['str', 'dex', 'con', 'int', 'wis', 'cha'])
 
-/** Convert a raw ability key string to a typed AbilityKey or ''. */
 function toAbilityKey(raw: string | undefined): AbilityKey | '' {
   const normalized = str(raw).toLowerCase()
   return VALID_ABILITY_KEYS.has(normalized) ? (normalized as AbilityKey) : ''
 }
 
-/** Map spell ability raw text (may be full name or abbreviation) to AbilityKey. */
 const SPELL_ABILITY_MAP: Record<string, AbilityKey> = {
   str: 'str', strength: 'str',
   dex: 'dex', dexterity: 'dex',
@@ -101,8 +121,7 @@ function mapSpellAbility(raw: string | undefined): AbilityKey {
 
 /**
  * Adapts v1 classes to domain ClassEntry[].
- * v1 stores level as a string; domain uses number.
- * v1 has no per-class hit die — defaults to d8.
+ * v1 stores level as string; hit die looked up case-insensitively.
  */
 function adaptClasses(raw: V1Character): ClassEntry[] {
   const bi = raw.page1?.basic_info
@@ -118,15 +137,10 @@ function adaptClasses(raw: V1Character): ClassEntry[] {
     if (result.length > 0) return result
   }
 
-  // Legacy fallback: single class from char_class + level fields
   const name = str(bi?.char_class)
   return [{ name, level: parseIntSafe(bi?.level), hitDie: getHitDie(name) }]
 }
 
-/**
- * Adapts v1 attributes to domain Abilities.
- * v1 stores all scores as strings from DOM inputs.
- */
 function adaptAbilities(raw: V1Character): Abilities {
   const a = raw.page1?.attributes
   return {
@@ -140,9 +154,10 @@ function adaptAbilities(raw: V1Character): Abilities {
 }
 
 /**
- * Adapts HP from v1 status.
- * If current_health is blank but max_health is set, treats the character as at
- * full HP (consistent with creating a new character via v1 UI).
+ * Adapts HP.
+ * If current_health is absent or blank, treats character as at full HP
+ * (consistent with how v1 initialises a new character).
+ * HP current explicitly set to "0" IS preserved as 0.
  */
 function adaptHp(raw: V1Character): { current: number; max: number; temp: number } {
   const st = raw.page1?.status
@@ -162,10 +177,6 @@ const SAVE_ABILITY_PAIRS: [keyof V1Saves, AbilityKey][] = [
   ['cha_save', 'cha'],
 ]
 
-/**
- * Adapts saving throws.
- * Recalculates bonus from ability scores + proficiency (ignores stored val).
- */
 function adaptSavingThrows(
   raw: V1Character,
   abilities: Abilities,
@@ -182,7 +193,6 @@ function adaptSavingThrows(
   })
 }
 
-/** D&D 5e skill → governing ability mapping. */
 const SKILL_ABILITY_MAP: Record<string, AbilityKey> = {
   acrobatics:      'dex',
   animal_handling: 'wis',
@@ -204,10 +214,6 @@ const SKILL_ABILITY_MAP: Record<string, AbilityKey> = {
   survival:        'wis',
 }
 
-/**
- * Adapts skills from v1 saves_skills.skills.
- * Recalculates bonus from ability scores + proficiency + expertise.
- */
 function adaptSkills(
   raw: V1Character,
   abilities: Abilities,
@@ -215,8 +221,8 @@ function adaptSkills(
 ): SkillState[] {
   const v1Skills = raw.page1?.saves_skills?.skills as V1Skills | undefined
   return (Object.keys(SKILL_ABILITY_MAP) as (keyof V1Skills)[]).map((name) => {
-    const entry    = v1Skills?.[name]
-    const ability  = SKILL_ABILITY_MAP[name as string]!
+    const entry     = v1Skills?.[name]
+    const ability   = SKILL_ABILITY_MAP[name as string]!
     const proficient = entry?.prof ?? false
     const expertise  = entry?.expr ?? false
     return {
@@ -230,11 +236,14 @@ function adaptSkills(
 }
 
 /**
- * Adapts attacks from v1 attacks_spells.attacks.
- * rollType and proficient cannot be derived from v1 — defaults to 'attack' / false.
+ * Adapts attacks.
+ *
+ * v1 stores page1.attacks_spells as a FLAT array of attack objects (confirmed
+ * from js/save.js buildSheetData and real DB exports). toArray() guards against
+ * undefined or non-array values in legacy/malformed records.
  */
 function adaptAttacks(raw: V1Character): Attack[] {
-  const v1Attacks = raw.page1?.attacks_spells?.attacks ?? []
+  const v1Attacks = toArray<V1AttackEntry>(raw.page1?.attacks_spells)
   return v1Attacks.map((a, i) => ({
     id:         itemId('atk', i),
     name:       str(a.name),
@@ -248,44 +257,60 @@ function adaptAttacks(raw: V1Character): Attack[] {
 }
 
 /**
- * Adapts spell slots from v1 page3.spell_info (slot_1..slot_9).
- * current = total - used (slots expended during the session).
+ * Adapts spell slots.
+ *
+ * Real v1 schema: slots are in page3.spells.level_N.total (a string).
+ * There is NO "used" tracking in v1 — current always equals max at load time.
+ * Slots with empty or "0" total are excluded.
  */
 function adaptSpellSlots(raw: V1Character): SpellSlot[] {
-  const info = raw.page3?.spell_info
-  if (!info) return []
+  const spells = raw.page3?.spells
+  if (!spells) return []
 
   const slots: SpellSlot[] = []
   for (let level = 1; level <= 9; level++) {
-    const key = `slot_${level}` as keyof typeof info
-    const slot = info[key] as { total?: string; used?: string } | undefined
-    if (!slot) continue
-    const max  = parseIntSafe(slot.total)
-    const used = parseIntSafe(slot.used)
-    if (max > 0) slots.push({ level, current: Math.max(0, max - used), max })
+    const key = `level_${level}` as keyof typeof spells
+    const block = spells[key] as V1SpellLevelBlock | undefined
+    if (!block || typeof block !== 'object' || Array.isArray(block)) continue
+
+    const max = parseIntSafe(block.total)
+    if (max > 0) slots.push({ level, current: max, max })
   }
   return slots
 }
 
 /**
- * Adapts known spells from v1 page3.spells.
- * Cantrips → level 0; level_1..level_9 → their numeric level.
+ * Adapts known spells.
+ *
+ * Real v1 schema (verified from js/save.js + real DB exports):
+ *   cantrips: { spells: SpellEntry[] }          ← object, NOT flat array
+ *   level_N:  { total: string, spells: SpellEntry[] }
+ *
+ * toArray() guards against non-array .spells fields in malformed records.
+ * Empty spell_name entries are filtered out.
  */
 function adaptSpellKnown(raw: V1Character): SpellKnown[] {
   const spells = raw.page3?.spells
-  if (!spells) return []
+  if (!spells || typeof spells !== 'object' || Array.isArray(spells)) return []
 
   const known: SpellKnown[] = []
 
-  for (const s of spells.cantrips ?? []) {
-    const name = str(s.spell_name)
-    if (name) known.push({ level: 0, name })
+  // Cantrips — nested under .spells (not a flat array)
+  const cantripBlock = spells.cantrips
+  if (cantripBlock && typeof cantripBlock === 'object' && !Array.isArray(cantripBlock)) {
+    for (const s of toArray<V1SpellEntry>(cantripBlock.spells)) {
+      const name = str(s.spell_name)
+      if (name) known.push({ level: 0, name })
+    }
   }
 
+  // Leveled spells (1–9)
   for (let level = 1; level <= 9; level++) {
-    const key = `level_${level}` as keyof typeof spells
-    const arr = spells[key] as typeof spells.cantrips | undefined
-    for (const s of arr ?? []) {
+    const key   = `level_${level}` as keyof typeof spells
+    const block = spells[key] as V1SpellLevelBlock | undefined
+    if (!block || typeof block !== 'object' || Array.isArray(block)) continue
+
+    for (const s of toArray<V1SpellEntry>(block.spells)) {
       const name = str(s.spell_name)
       if (name) {
         known.push({
@@ -301,7 +326,7 @@ function adaptSpellKnown(raw: V1Character): SpellKnown[] {
 }
 
 /**
- * Adapts inventory from v1 equipment columns (col_1 + col_2).
+ * Adapts inventory from both equipment columns.
  * v1 does not track quantity — defaults to 1.
  */
 function adaptInventory(raw: V1Character): InventoryItem[] {
@@ -310,7 +335,7 @@ function adaptInventory(raw: V1Character): InventoryItem[] {
 
   const items: InventoryItem[] = []
   let i = 0
-  for (const col of [eq.col_1 ?? [], eq.col_2 ?? []]) {
+  for (const col of [toArray<V1EquipmentRow>(eq.col_1), toArray<V1EquipmentRow>(eq.col_2)]) {
     for (const item of col) {
       const name = str(item.name)
       if (name) {
@@ -326,7 +351,6 @@ function adaptInventory(raw: V1Character): InventoryItem[] {
   return items
 }
 
-/** Adapts currency from v1 equipment.currency (all stored as strings). */
 function adaptCurrency(raw: V1Character) {
   const c = raw.page2?.equipment?.currency
   return {
@@ -338,10 +362,6 @@ function adaptCurrency(raw: V1Character) {
   }
 }
 
-/**
- * Adapts death saves from v1 status.death_saves.
- * v1 stores six individual booleans (success_1/2/3, fail_1/2/3).
- */
 function adaptDeathSaves(raw: V1Character): { successes: number; failures: number } {
   const ds = raw.page1?.status?.death_saves
   const successes = [ds?.success_1, ds?.success_2, ds?.success_3].filter(Boolean).length
@@ -356,17 +376,6 @@ function adaptDeathSaves(raw: V1Character): { successes: number; failures: numbe
  *
  * This function is the only permitted entry point for v1 → domain conversion.
  * All UI components must work with Character, never V1Character.
- *
- * v1 fields intentionally discarded:
- * - page2.mount_pet / mount_pet2 — feature discontinued in v2
- * - page1.character_info.player_name — not part of the character's own domain model
- * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
- * - page1.top_bar.passive_perception — recalculated via passivePerception()
- * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
- * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
- *
- * v1 fields with typo preserved in raw schema but corrected in domain:
- * - top_bar.insperation → Character.inspiration (string → boolean)
  */
 export function adaptCharacter(raw: V1Character): Character {
   const classes   = adaptClasses(raw)
@@ -393,14 +402,17 @@ export function adaptCharacter(raw: V1Character): Character {
   const spellSlots = adaptSpellSlots(raw)
   const spellKnown = adaptSpellKnown(raw)
   const hasSpells  = spellSlots.length > 0 || spellKnown.length > 0
-  const spellAbilityRaw =
-    str(raw.page3?.spell_info?.spell_ability) ||
-    str(raw.page1?.saves_skills?.spell_casting)
+
+  // Spell ability: prefer page1.saves_skills.spell_casting (select element,
+  // stores "cha"/"int"/etc.). page3.spell_info.class is the class label ("Bard").
+  const spellAbilityRaw = str(raw.page1?.saves_skills?.spell_casting)
+
   const spells = hasSpells
     ? {
         ability:     mapSpellAbility(spellAbilityRaw),
-        attackBonus: parseIntSafe(raw.page3?.spell_info?.spell_atk_bonus),
-        saveDC:      parseIntSafe(raw.page3?.spell_info?.spell_save_dc),
+        // page3.spell_info.att = attack bonus; .dc = save DC (verified from load.js)
+        attackBonus: parseIntSafe(raw.page3?.spell_info?.att),
+        saveDC:      parseIntSafe(raw.page3?.spell_info?.dc),
         slots:       spellSlots,
         known:       spellKnown,
       }
@@ -439,7 +451,6 @@ export function adaptCharacter(raw: V1Character): Character {
     speed:            parseIntSafe(tb?.speed),
     passivePerception: passPerc,
     spellSaveDC:      parseIntSafe(tb?.spell_dc),
-    // v1 stores as top_bar.insperation (typo preserved in raw schema)
     inspiration:      parseBoolean(tb?.insperation),
 
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
@@ -461,9 +472,12 @@ export function adaptCharacter(raw: V1Character): Character {
 
     features: [],
 
-    backstory: str(p4?.personality?.backstory) || str(p4?.backstory),
+    // page4.backstory is the primary location (verified from real data).
+    // page4.personality does NOT have a backstory field.
+    backstory: str(p4?.backstory),
     personality: {
-      traits: str(p4?.personality?.traits),
+      // v1 uses "personality_traits" (not "traits") — verified from real DB exports
+      traits: str(p4?.personality?.personality_traits),
       ideals: str(p4?.personality?.ideals),
       bonds:  str(p4?.personality?.bonds),
       flaws:  str(p4?.personality?.flaws),
@@ -476,7 +490,6 @@ export function adaptCharacter(raw: V1Character): Character {
       ...(raw.images?.symbol    ? { symbol:    raw.images.symbol    } : {}),
     },
 
-    // v1 has no createdAt — use updatedAt as best approximation
     createdAt: raw.updatedAt ?? now,
     updatedAt: raw.updatedAt ?? now,
   }

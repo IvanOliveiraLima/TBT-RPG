@@ -77,16 +77,25 @@ export async function listCharacters(): Promise<Character[]> {
     for (const c of v1All) {
       if (c.id === 'active') continue       // skip legacy record
       if (!c.page1?.basic_info) continue    // skip malformed
-      map.set(c.id!, adaptCharacter(c))
+      try {
+        map.set(c.id!, adaptCharacter(c))
+      } catch (err) {
+        console.error(`[listCharacters] Failed to adapt v1 character ${c.id}:`, err)
+      }
     }
     for (const c of v2All) {
       if (c.id === 'active') continue
       if (!c.page1?.basic_info) continue
-      map.set(c.id!, adaptCharacter(c))
+      try {
+        map.set(c.id!, adaptCharacter(c))
+      } catch (err) {
+        console.error(`[listCharacters] Failed to adapt v2 character ${c.id}:`, err)
+      }
     }
 
     return [...map.values()].sort((a, b) => b.updatedAt - a.updatedAt)
-  } catch {
+  } catch (err) {
+    console.error('[listCharacters] Failed to read characters:', err)
     return []
   } finally {
     v1db?.close()

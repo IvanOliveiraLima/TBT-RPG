@@ -1,22 +1,24 @@
 /**
  * TypeScript types mirroring the v1 IndexedDB character schema verbatim.
  *
- * The v1 schema stores numeric fields as strings (HP, AC, ability scores, etc.)
- * because they come directly from DOM input values. These types reflect what is
- * actually persisted — not an idealised version.
+ * All fields optional to handle partial/legacy records. Types reflect what
+ * is ACTUALLY persisted — verified against js/save.js, js/load.js, and
+ * real character exports from the production v1 DB.
  *
- * Source of truth: js/save.js (buildSheetData) and js/modules/storage.js.
- *
- * All fields are optional to represent that any field may be absent in legacy
- * or partially-populated records.
+ * Notable v1 quirks documented here:
+ *  - page1.attacks_spells is a FLAT array of attacks, not a nested object
+ *  - page3.spells.cantrips is { spells: SpellEntry[] }, not SpellEntry[]
+ *  - page3.spells.level_N is { total: string, spells: SpellEntry[] }, not SpellEntry[]
+ *  - page3.spell_info uses "class", "att", "dc", "bonus" (not longer names)
+ *  - page4.personality uses "personality_traits" (not "traits")
+ *  - Spell slot usage is NOT stored; only total slots per level
  */
 
 /* ── Shared primitives ────────────────────────────────────────────────── */
 
-/** v1 class entry — level is stored as a string from a DOM input. */
 export interface V1ClassEntry {
-  name?: string
-  level?: string
+  name?:  string
+  level?: string  // stored as string from DOM input
 }
 
 export interface V1SkillEntry {
@@ -36,13 +38,13 @@ export interface V1BasicInfo {
   char_name?:   string
   classes?:     V1ClassEntry[]
   total_level?: number | string
-  char_class?:  string   // first class name, denormalised
+  char_class?:  string
   level?:       string
-  level_two?:   string   // legacy pre-multiclass field
+  level_two?:   string  // legacy pre-multiclass field
 }
 
 export interface V1CharacterInfo {
-  race_class?:  string   // race value; field name is "race_class" from v1
+  race_class?:  string  // stores the race value; field named "race_class" in v1
   background?:  string
   player_name?: string
   exp?:         string
@@ -56,7 +58,7 @@ export interface V1TopBar {
   ac?:                 string
   speed?:              string
   spell_dc?:           string
-  insperation?:        string  // intentional typo preserved from v1 field name
+  insperation?:        string  // typo preserved from v1 field name
 }
 
 export interface V1Attributes {
@@ -99,7 +101,7 @@ export interface V1Skills {
 }
 
 export interface V1SavesSkills {
-  spell_casting?: string
+  spell_casting?: string  // e.g. "cha", "int", "none", ""
   saves?:         V1Saves
   skills?:        V1Skills
 }
@@ -131,11 +133,6 @@ export interface V1AttackEntry {
   damage_type?: string
 }
 
-export interface V1AttacksSpells {
-  attacks?:      V1AttackEntry[]
-  spell_attack?: string
-}
-
 export interface V1Proficiencies {
   weapon_profs?:   string
   armor_profs?:    string
@@ -152,7 +149,11 @@ export interface V1Page1 {
   saves_skills?:   V1SavesSkills
   status?:         V1Status
   proficiencies?:  V1Proficiencies
-  attacks_spells?: V1AttacksSpells
+  /**
+   * Flat array of attack entries — NOT a nested { attacks: [] } object.
+   * Verified against js/save.js buildSheetData() and real DB exports.
+   */
+  attacks_spells?: V1AttackEntry[]
 }
 
 /* ── Page 2 ───────────────────────────────────────────────────────────── */
@@ -185,25 +186,38 @@ export interface V1SpellEntry {
   preped?:     boolean
 }
 
-export interface V1SpellSlotLevel {
-  total?: string
-  used?:  string
+/**
+ * Spell info block — field names confirmed from js/save.js and load.js.
+ * Note: "class" is the spellcasting class name, NOT an ability key.
+ * The spellcasting ability key is in page1.saves_skills.spell_casting.
+ * Spell slots are NOT stored here — they live in V1SpellLevelBlock.total.
+ */
+export interface V1SpellInfo {
+  class?: string  // e.g. "Bard", "Wizard" (the casting class label)
+  att?:   string  // spell attack bonus, e.g. "+6"
+  dc?:    string  // spell save DC, e.g. "14"
+  bonus?: string  // misc bonus field
 }
 
-export interface V1SpellInfo {
-  spell_ability?:   string
-  spell_save_dc?:   string
-  spell_atk_bonus?: string
-  slot_1?: V1SpellSlotLevel; slot_2?: V1SpellSlotLevel; slot_3?: V1SpellSlotLevel
-  slot_4?: V1SpellSlotLevel; slot_5?: V1SpellSlotLevel; slot_6?: V1SpellSlotLevel
-  slot_7?: V1SpellSlotLevel; slot_8?: V1SpellSlotLevel; slot_9?: V1SpellSlotLevel
+/** Cantrips block — spells are nested under .spells (not a flat array). */
+export interface V1SpellCantripsBlock {
+  spells?: V1SpellEntry[]
+}
+
+/**
+ * Leveled spell block — includes slot total AND spell list.
+ * v1 does NOT track used slots; current = max at session start.
+ */
+export interface V1SpellLevelBlock {
+  total?:  string          // slot count, e.g. "4" or ""
+  spells?: V1SpellEntry[]
 }
 
 export interface V1Spells {
-  cantrips?: V1SpellEntry[]
-  level_1?:  V1SpellEntry[]; level_2?: V1SpellEntry[]; level_3?: V1SpellEntry[]
-  level_4?:  V1SpellEntry[]; level_5?: V1SpellEntry[]; level_6?: V1SpellEntry[]
-  level_7?:  V1SpellEntry[]; level_8?: V1SpellEntry[]; level_9?: V1SpellEntry[]
+  cantrips?: V1SpellCantripsBlock
+  level_1?:  V1SpellLevelBlock; level_2?: V1SpellLevelBlock; level_3?: V1SpellLevelBlock
+  level_4?:  V1SpellLevelBlock; level_5?: V1SpellLevelBlock; level_6?: V1SpellLevelBlock
+  level_7?:  V1SpellLevelBlock; level_8?: V1SpellLevelBlock; level_9?: V1SpellLevelBlock
 }
 
 export interface V1Page3 {
@@ -213,21 +227,24 @@ export interface V1Page3 {
 
 /* ── Page 4 ───────────────────────────────────────────────────────────── */
 
+/**
+ * Personality block — uses "personality_traits" (not "traits").
+ * Backstory is NOT nested here; it lives at page4.backstory directly.
+ */
 export interface V1Personality {
-  traits?:    string
-  ideals?:    string
-  bonds?:     string
-  flaws?:     string
-  backstory?: string
+  personality_traits?: string  // verified field name from real v1 DB exports
+  ideals?:             string
+  bonds?:              string
+  flaws?:              string
 }
 
 export interface V1AlliesOrganizations {
-  name?:          string
-  symbol_image?:  string
+  name?:         string
+  symbol_image?: string
 }
 
 export interface V1Page4 {
-  backstory?:            string   // legacy top-level field
+  backstory?:            string
   allies_organizations?: V1AlliesOrganizations
   personality?:          V1Personality
 }

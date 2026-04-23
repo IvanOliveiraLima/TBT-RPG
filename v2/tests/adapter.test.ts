@@ -237,12 +237,12 @@ describe('adaptCharacter — spells', () => {
     expect(result.spells?.ability).toBe('cha')
   })
 
-  it('adapts spell slots with current = total - used', () => {
+  it('adapts spell slots — current equals max (v1 has no used tracking)', () => {
     const result = adaptCharacter(spellcaster)
     const slot1 = result.spells?.slots.find((s) => s.level === 1)
-    // slot_1: total 4, used 1 → current 3
+    // level_1.total = "4"; no used field in v1 → current = max
     expect(slot1?.max).toBe(4)
-    expect(slot1?.current).toBe(3)
+    expect(slot1?.current).toBe(4)
   })
 
   it('includes cantrips as level-0 spells', () => {
@@ -260,9 +260,9 @@ describe('adaptCharacter — spells', () => {
     expect(faeirieFire?.prepared).toBe(false)
   })
 
-  it('saveDC is read from spell_info (not recalculated)', () => {
+  it('saveDC is read from spell_info.dc (not recalculated)', () => {
     const result = adaptCharacter(spellcaster)
-    // fixture stores 14 in spell_save_dc
+    // fixture stores "14" in spell_info.dc
     expect(result.spells?.saveDC).toBe(14)
   })
 })
@@ -304,7 +304,7 @@ describe('adaptCharacter — full fixture', () => {
     expect(result.personality.ideals).toContain('Respect')
   })
 
-  it('backstory comes from personality.backstory (not legacy top-level)', () => {
+  it('backstory comes from page4.backstory (not personality)', () => {
     const result = adaptCharacter(fullChar)
     expect(result.backstory).toContain('monastery')
   })
@@ -399,6 +399,91 @@ describe('adaptCharacter — inspiration', () => {
     const raw: V1Character = { page1: { top_bar: { insperation: 'yes' } } }
     const result = adaptCharacter(raw)
     expect(result.inspiration).toBe(true)
+  })
+})
+
+describe('adaptCharacter — spell adapter defensiveness', () => {
+  it('undefined page3 → no crash, spells undefined', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { char_name: 'Test', classes: [{ name: 'Cleric', level: '3' }] } },
+      // page3 absent
+    }
+    expect(() => adaptCharacter(raw)).not.toThrow()
+    expect(adaptCharacter(raw).spells).toBeUndefined()
+  })
+
+  it('cantrips block with no .spells property → no crash', () => {
+    const raw: V1Character = {
+      page1: { saves_skills: { spell_casting: 'wis' } },
+      page3: {
+        spell_info: { dc: '13', att: '+5' },
+        spells: {
+          cantrips: {} as never, // object with no .spells inside
+          level_1: { total: '2', spells: [{ spell_name: 'Cure Wounds', preped: true }] },
+        },
+      },
+    }
+    expect(() => adaptCharacter(raw)).not.toThrow()
+    const result = adaptCharacter(raw)
+    // cantrips block empty → only level_1 spell present
+    expect(result.spells?.known.find((s) => s.name === 'Cure Wounds')).toBeDefined()
+    expect(result.spells?.known.filter((s) => s.level === 0)).toHaveLength(0)
+  })
+
+  it('cantrips block as flat array (old schema variant) → no crash, no cantrips', () => {
+    // Before the schema was corrected, cantrips was stored as SpellEntry[].
+    // The adapter guards against this — it should not crash and should skip the block.
+    const raw: V1Character = {
+      page1: { saves_skills: { spell_casting: 'wis' } },
+      page3: {
+        spell_info: { dc: '14', att: '+6' },
+        spells: {
+          cantrips: [{ spell_name: 'Sacred Flame' }] as never,
+          level_1: { total: '3', spells: [] },
+        },
+      },
+    }
+    expect(() => adaptCharacter(raw)).not.toThrow()
+    const result = adaptCharacter(raw)
+    expect(result.spells?.known.filter((s) => s.level === 0)).toHaveLength(0)
+  })
+
+  it('attacks_spells as undefined → empty attacks array, no crash', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { char_name: 'Pacifist', classes: [{ name: 'Monk', level: '1' }] } },
+      // attacks_spells absent
+    }
+    expect(() => adaptCharacter(raw)).not.toThrow()
+    expect(adaptCharacter(raw).attacks).toEqual([])
+  })
+
+  it('attacks_spells as legacy nested object → treated as non-array, empty attacks', () => {
+    // Some old fixtures used { attacks: [...] } instead of a flat array.
+    // toArray() should guard against this gracefully.
+    const raw: V1Character = {
+      page1: {
+        attacks_spells: { attacks: [{ name: 'Dagger' }] } as never,
+      },
+    }
+    expect(() => adaptCharacter(raw)).not.toThrow()
+    expect(adaptCharacter(raw).attacks).toEqual([])
+  })
+
+  it('real v1 spell structure round-trips correctly', () => {
+    const result = adaptCharacter(spellcaster)
+    expect(result.spells).toBeDefined()
+    // Cantrips
+    const cantrips = result.spells!.known.filter((s) => s.level === 0)
+    expect(cantrips.map((s) => s.name)).toEqual(['Vicious Mockery', 'Minor Illusion', 'Prestidigitation'])
+    // Level 1 spells
+    const lvl1 = result.spells!.known.filter((s) => s.level === 1)
+    expect(lvl1).toHaveLength(3)
+    // Level 3 slot count
+    const slot3 = result.spells!.slots.find((s) => s.level === 3)
+    expect(slot3?.max).toBe(2)
+    expect(slot3?.current).toBe(2)
+    // Empty level 4 slot not included
+    expect(result.spells!.slots.find((s) => s.level === 4)).toBeUndefined()
   })
 })
 

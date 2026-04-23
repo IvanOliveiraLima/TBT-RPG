@@ -88,12 +88,10 @@
       "language_profs": "Common, Elvish",
       "other_profs": ""
     },
-    "attacks_spells": {
-      "attacks": [
-        { "name": "Unarmed Strike", "stat": "str", "toHit": "+4", "damage": "1d6+1", "damage_type": "Bludgeoning" },
-        { "name": "Shortsword",     "stat": "dex", "toHit": "+6", "damage": "1d6+3", "damage_type": "Piercing"    }
-      ]
-    }
+    "attacks_spells": [
+      { "name": "Unarmed Strike", "stat": "str", "toHit": "+4", "damage": "1d6+1", "damage_type": "Bludgeoning" },
+      { "name": "Shortsword",     "stat": "dex", "toHit": "+6", "damage": "1d6+3", "damage_type": "Piercing"    }
+    ]
   },
   "page2": {
     "equipment": {
@@ -115,26 +113,32 @@
   },
   "page3": {
     "spell_info": {
-      "spell_ability": "",
-      "spell_save_dc": "",
-      "spell_atk_bonus": ""
+      "class": "",
+      "att": "",
+      "dc": "",
+      "bonus": ""
     },
     "spells": {
-      "cantrips": [],
-      "level_1": [], "level_2": [], "level_3": [],
-      "level_4": [], "level_5": [], "level_6": [],
-      "level_7": [], "level_8": [], "level_9": []
+      "cantrips": { "spells": [] },
+      "level_1": { "total": "", "spells": [] },
+      "level_2": { "total": "", "spells": [] },
+      "level_3": { "total": "", "spells": [] },
+      "level_4": { "total": "", "spells": [] },
+      "level_5": { "total": "", "spells": [] },
+      "level_6": { "total": "", "spells": [] },
+      "level_7": { "total": "", "spells": [] },
+      "level_8": { "total": "", "spells": [] },
+      "level_9": { "total": "", "spells": [] }
     }
   },
   "page4": {
-    "backstory": "",
+    "backstory": "Raised in a mountain monastery, Kanaan mastered the Way of the Open Hand before venturing into the world to seek balance.",
     "allies_organizations": { "name": "Monastério da Palma Aberta" },
     "personality": {
-      "traits": "I am always calm, no matter the situation.",
+      "personality_traits": "I am always calm, no matter the situation.",
       "ideals": "Respect. All people deserve to be treated with dignity.",
       "bonds": "My monastery is my true home.",
-      "flaws": "I am slow to trust those outside my order.",
-      "backstory": "Raised in a mountain monastery, Kanaan mastered the Way of the Open Hand before venturing into the world to seek balance."
+      "flaws": "I am slow to trust those outside my order."
     }
   },
   "page5": {
