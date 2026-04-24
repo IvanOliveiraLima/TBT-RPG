@@ -119,6 +119,14 @@ export function maxHpForClass(
 }
 
 /**
+ * Formats a signed integer for display: +0, +3, -1, etc.
+ */
+export function formatSigned(n: number): string {
+  if (n === 0) return '+0'
+  return n > 0 ? `+${n}` : `${n}`
+}
+
+/**
  * Converts an amount of one D&D currency denomination into another.
  * Returns the conversion rate (multiply source amount by this to get base units).
  *
