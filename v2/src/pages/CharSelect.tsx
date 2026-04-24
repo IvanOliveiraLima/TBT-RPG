@@ -88,15 +88,12 @@ function HpBar({ current, max }: { current: number; max: number }) {
 
 /* ── Character card ────────────────────────────────────────────────────── */
 function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
+  const navigate = useNavigate()
   const firstClass = ch.classes[0]
   const portrait = ch.images.character ?? null
 
   function handleClick() {
-    // Phase A: clicking a character redirects to v1
-    const goV1 = window.confirm(
-      `"${ch.name}" — a ficha completa ainda não está disponível na v2.\n\nAbrir na v1?`
-    )
-    if (goV1) window.open(V1_URL, '_blank')
+    navigate(`/character/${ch.id}`)
   }
 
   return (
