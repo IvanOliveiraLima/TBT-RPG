@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
 
@@ -32,7 +32,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
-  const navigate = useNavigate()
   const portrait = character.images.character
   const firstClass = character.classes[0]
 
@@ -46,27 +45,27 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
       height: '100%',
       fontFamily: T.sans,
     }}>
-      {/* Logo */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '4px 8px 18px',
-        borderBottom: `1px solid ${T.borderSubtle}`,
-        marginBottom: 14,
-      }}>
-        <button
-          onClick={() => navigate('/')}
-          aria-label="Voltar para lista"
-          style={{
-            width: 32, height: 32, borderRadius: 7,
-            background: `linear-gradient(135deg, ${T.purple}, ${T.ruby})`,
-            boxShadow: `0 0 12px ${T.purple}60`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: T.serif, fontWeight: 700, color: '#fff', fontSize: 16,
-            border: 'none', cursor: 'pointer', flexShrink: 0,
-          }}
-        >
+      {/* Logo — entire block is a link back to char select */}
+      <Link
+        to="/"
+        className="hover:opacity-80 transition-opacity"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '4px 8px 18px',
+          borderBottom: `1px solid ${T.borderSubtle}`,
+          marginBottom: 10,
+          textDecoration: 'none',
+        }}
+      >
+        <div style={{
+          width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+          background: `linear-gradient(135deg, ${T.purple}, ${T.ruby})`,
+          boxShadow: `0 0 12px ${T.purple}60`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: T.serif, fontWeight: 700, color: '#fff', fontSize: 16,
+        }}>
           T
-        </button>
+        </div>
         <div>
           <div style={{
             fontFamily: T.serif, fontSize: 13, fontWeight: 600,
@@ -76,7 +75,29 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
           </div>
           <div style={{ fontSize: 10, color: T.textMuted }}>v2 · beta</div>
         </div>
-      </div>
+      </Link>
+
+      {/* Back-to-list link */}
+      <Link
+        to="/"
+        className="flex items-center gap-2 hover:text-text-primary transition-colors"
+        style={{
+          color: T.textMuted,
+          textDecoration: 'none',
+          padding: '6px 10px',
+          fontSize: 12,
+          fontWeight: 500,
+          marginBottom: 12,
+          borderRadius: 6,
+        }}
+      >
+        {/* Arrow left */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M19 12H5M5 12l7 7M5 12l7-7"
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>Meus personagens</span>
+      </Link>
 
       {/* Character mini-card */}
       <div style={{

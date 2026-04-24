@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
 import { MobileHeader } from './MobileHeader'
@@ -18,7 +19,6 @@ const T = {
 } as const
 
 const DRAWER_ITEMS = [
-  'Meus personagens',
   'Exportar JSON',
   'Importar JSON',
   'Nova ficha',
@@ -35,6 +35,7 @@ interface MobileShellProps {
 
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div style={{
@@ -83,6 +84,28 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
             }}>
               TBT-RPG
             </div>
+
+            {/* Back to char select */}
+            <button
+              onClick={() => { navigate('/'); setDrawerOpen(false) }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: T.textSecondary,
+                padding: '10px 12px',
+                borderRadius: 8,
+                fontSize: 13, fontWeight: 500,
+                textAlign: 'left', cursor: 'pointer',
+                fontFamily: T.sans,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M19 12H5M5 12l7 7M5 12l7-7"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Meus personagens
+            </button>
 
             {DRAWER_ITEMS.map(item => (
               <button
