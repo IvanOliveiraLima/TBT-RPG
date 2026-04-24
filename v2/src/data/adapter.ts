@@ -362,6 +362,36 @@ function adaptCurrency(raw: V1Character) {
   }
 }
 
+/**
+ * Derives hit dice from the classes array.
+ *
+ * v1 stores hit_dice as a single {current_hd, max_hd, hd_die} block.
+ * In practice these fields are often blank/empty because many users never
+ * interact with the hit dice inputs. Instead we derive max and dieSize from
+ * the already-adapted classes (which are authoritative), and only use
+ * current_hd from v1 for single-class characters where it was explicitly set.
+ *
+ * For multiclass characters: one entry per class, current = max (v1 has no
+ * per-class current tracking).
+ */
+function adaptHitDice(
+  raw: V1Character,
+  classes: ClassEntry[],
+): { current: number; max: number; dieSize: number }[] {
+  if (classes.length === 0) return []
+
+  if (classes.length === 1) {
+    const cls = classes[0]!
+    const maxFromClass = cls.level
+    const currentRaw = parseIntSafe(raw.page1?.status?.hit_dice?.current_hd)
+    const current = currentRaw > 0 ? currentRaw : maxFromClass
+    return [{ current, max: maxFromClass, dieSize: cls.hitDie }]
+  }
+
+  // Multiclass: one entry per class; current = max since v1 has no per-class tracking
+  return classes.map((cls) => ({ current: cls.level, max: cls.level, dieSize: cls.hitDie }))
+}
+
 function adaptDeathSaves(raw: V1Character): { successes: number; failures: number } {
   const ds = raw.page1?.status?.death_saves
   const successes = [ds?.success_1, ds?.success_2, ds?.success_3].filter(Boolean).length
@@ -438,12 +468,8 @@ export function adaptCharacter(raw: V1Character): Character {
     abilities,
     proficiencyBonus: profBonus,
 
-    hp:       adaptHp(raw),
-    hitDice: [{
-      current: parseIntSafe(raw.page1?.status?.hit_dice?.current_hd),
-      max:     parseIntSafe(raw.page1?.status?.hit_dice?.max_hd),
-      dieSize: parseIntSafe(raw.page1?.status?.hit_dice?.hd_die) || 8,
-    }],
+    hp:         adaptHp(raw),
+    hitDice:    adaptHitDice(raw, classes),
     deathSaves: adaptDeathSaves(raw),
 
     ac:               parseIntSafe(tb?.ac),

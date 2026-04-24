@@ -533,3 +533,84 @@ describe('adaptCharacter — class hit die', () => {
     expect(result.classes[1]?.hitDie).toBe(6)  // Wizard
   })
 })
+
+describe('adaptCharacter — hit dice derivation from classes', () => {
+  it('Druid 5 with blank v1 hit_dice → hitDice[0] = { current:5, max:5, dieSize:8 }', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Druid', level: '5' }] },
+        // hit_dice fields absent (blank in real v1 data for many characters)
+      },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.hitDice).toHaveLength(1)
+    expect(result.hitDice[0]).toEqual({ current: 5, max: 5, dieSize: 8 })
+  })
+
+  it('Ranger 4 with blank v1 hit_dice → hitDice[0] = { current:4, max:4, dieSize:10 }', () => {
+    const raw: V1Character = {
+      page1: { basic_info: { classes: [{ name: 'Ranger', level: '4' }] } },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.hitDice[0]).toEqual({ current: 4, max: 4, dieSize: 10 })
+  })
+
+  it('uses current_hd from v1 when it is explicitly set', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Fighter', level: '5' }] },
+        status: { hit_dice: { current_hd: '3', max_hd: '5', hd_die: '10' } },
+      },
+    }
+    const result = adaptCharacter(raw)
+    // current comes from v1 (3 dice spent), max and dieSize from class
+    expect(result.hitDice[0]).toEqual({ current: 3, max: 5, dieSize: 10 })
+  })
+
+  it('falls back to max when current_hd is empty string', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Cleric', level: '6' }] },
+        status: { hit_dice: { current_hd: '', max_hd: '6', hd_die: '8' } },
+      },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.hitDice[0]).toEqual({ current: 6, max: 6, dieSize: 8 })
+  })
+
+  it('multiclass Fighter 3 / Rogue 2 → two hit dice entries', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: {
+          classes: [
+            { name: 'Fighter', level: '3' },
+            { name: 'Rogue', level: '2' },
+          ],
+        },
+      },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.hitDice).toHaveLength(2)
+    expect(result.hitDice[0]).toEqual({ current: 3, max: 3, dieSize: 10 }) // Fighter d10
+    expect(result.hitDice[1]).toEqual({ current: 2, max: 2, dieSize: 8 })  // Rogue d8
+  })
+
+  it('multiclass uses max for current (no per-class tracking in v1)', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: {
+          classes: [
+            { name: 'Wizard', level: '4' },
+            { name: 'Sorcerer', level: '4' },
+          ],
+        },
+        // even if current_hd set, multiclass ignores it
+        status: { hit_dice: { current_hd: '6' } },
+      },
+    }
+    const result = adaptCharacter(raw)
+    expect(result.hitDice).toHaveLength(2)
+    expect(result.hitDice[0]?.current).toBe(result.hitDice[0]?.max)
+    expect(result.hitDice[1]?.current).toBe(result.hitDice[1]?.max)
+  })
+})

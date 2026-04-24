@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { TabKey } from '@/components/sheet/types'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
+import { useCharacterStore } from '@/store/character'
 import { CombatTab } from '@/components/sheet/tabs/CombatTab'
 import { SpellsTab } from '@/components/sheet/tabs/SpellsTab'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
@@ -69,9 +70,15 @@ function TabSwitcher() {
 }
 
 describe('tab switching', () => {
-  it('starts on the Status tab showing its placeholder', () => {
+  afterEach(() => {
+    useCharacterStore.setState({ character: null, loading: false, error: null })
+  })
+
+  it('starts on the Status tab and renders HpBlock when store is populated', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     render(<TabSwitcher />)
-    expect(screen.getAllByText('Status & Atributos').length).toBeGreaterThanOrEqual(1)
+    // HpBlock renders "Hit Points" label
+    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Combate in the bottom tab bar shows Combat placeholder', () => {
@@ -118,7 +125,8 @@ describe('tab switching', () => {
     expect(screen.getAllByText('Mestre Kanaan').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('switching tabs back to Status shows Status placeholder again', () => {
+  it('switching tabs back to Status shows HpBlock content again', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     render(<TabSwitcher />)
     // Go to Combat
     const combateBtns = screen.getAllByText('Combate')
@@ -126,6 +134,7 @@ describe('tab switching', () => {
     // Then go back to Status via bottom tab bar
     const statusBtns = screen.getAllByText('Status')
     fireEvent.click(statusBtns[0]!)
-    expect(screen.getAllByText('Status & Atributos').length).toBeGreaterThanOrEqual(1)
+    // HpBlock is visible again
+    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
   })
 })
