@@ -104,6 +104,29 @@ export async function listCharacters(): Promise<Character[]> {
 }
 
 /**
+ * Fetch a single character by id. v2 wins on collision.
+ * Returns null if not found in either DB, or on adapter error.
+ */
+export async function getCharacter(id: string): Promise<Character | null> {
+  let v1db: IDBPDatabase | null = null
+  let v2db: IDBPDatabase | null = null
+  try {
+    ;[v1db, v2db] = await Promise.all([openV1(), openV2()])
+    const v2raw = await v2db.get(V2_STORE, id) as V1Character | undefined
+    if (v2raw) return adaptCharacter(v2raw)
+    const v1raw = await v1db.get(V1_STORE, id) as V1Character | undefined
+    if (v1raw) return adaptCharacter(v1raw)
+    return null
+  } catch (err) {
+    console.error('[getCharacter] Failed:', err)
+    return null
+  } finally {
+    v1db?.close()
+    v2db?.close()
+  }
+}
+
+/**
  * Copy a character from v1 → v2 DB. Call before first edit in v2.
  * Returns the domain Character if found, null otherwise.
  */
