@@ -1,25 +1,16 @@
-const T = {
-  textPrimary:  '#F4EFE0',
-  textMuted:    '#7A7788',
-  serif:        "'Cinzel', Georgia, serif",
-  sans:         "'Inter', system-ui, sans-serif",
-} as const
+import { useCharacterStore } from '@/store/character'
+import { HeroCard } from '../parts/HeroCard'
+import { HpBlock } from '../parts/HpBlock'
 
 export function StatusTab() {
+  const character = useCharacterStore((s) => s.character)
+  if (!character) return null
+
   return (
-    <div style={{
-      padding: 24,
-      textAlign: 'center',
-      fontFamily: T.sans,
-      color: T.textMuted,
-    }}>
-      <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, marginBottom: 8 }}>
-        Status &amp; Atributos
-      </p>
-      <p style={{ fontSize: 13 }}>Conteúdo em construção</p>
-      <p style={{ fontSize: 11, marginTop: 16, opacity: 0.7 }}>
-        Esta aba será implementada na próxima fase.
-      </p>
+    <div className="space-y-4">
+      <HeroCard character={character} />
+      <HpBlock character={character} />
+      {/* Atributos, Saves, Skills, Features — B.1b.2 */}
     </div>
   )
 }
