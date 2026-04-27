@@ -272,19 +272,40 @@ const SKILL_ABILITY_MAP: Record<string, AbilityKey> = {
   survival:        'wis',
 }
 
+const SKILL_DISPLAY_NAME_MAP: Record<string, string> = {
+  acrobatics:      'Acrobatics',
+  animal_handling: 'Animal Handling',
+  arcana:          'Arcana',
+  athletics:       'Athletics',
+  deception:       'Deception',
+  history:         'History',
+  insight:         'Insight',
+  intimidation:    'Intimidation',
+  investigation:   'Investigation',
+  medicine:        'Medicine',
+  nature:          'Nature',
+  perception:      'Perception',
+  performance:     'Performance',
+  persuasion:      'Persuasion',
+  religion:        'Religion',
+  sleight_of_hand: 'Sleight of Hand',
+  stealth:         'Stealth',
+  survival:        'Survival',
+}
+
 function adaptSkills(
   raw: V1Character,
   abilities: Abilities,
   profBonus: number,
 ): SkillState[] {
   const v1Skills = raw.page1?.saves_skills?.skills as V1Skills | undefined
-  return (Object.keys(SKILL_ABILITY_MAP) as (keyof V1Skills)[]).map((name) => {
-    const entry     = v1Skills?.[name]
-    const ability   = SKILL_ABILITY_MAP[name as string]!
+  return (Object.keys(SKILL_ABILITY_MAP) as (keyof V1Skills)[]).map((key) => {
+    const entry     = v1Skills?.[key]
+    const ability   = SKILL_ABILITY_MAP[key as string]!
     const proficient = entry?.prof ?? false
     const expertise  = entry?.expr ?? false
     return {
-      name:      name as string,
+      name:      SKILL_DISPLAY_NAME_MAP[key as string] ?? (key as string),
       ability,
       proficient,
       expertise,
@@ -479,7 +500,7 @@ export function adaptCharacter(raw: V1Character): Character {
   const p5    = raw.page5
 
   const skills     = adaptSkills(raw, abilities, profBonus)
-  const perception = skills.find((s) => s.name === 'perception')
+  const perception = skills.find((s) => s.name === 'Perception')
   const passPerc   = passivePerception(
     abilities.wis,
     perception?.proficient ?? false,
