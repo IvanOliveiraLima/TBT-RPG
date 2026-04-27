@@ -25,7 +25,7 @@
  * - features[] defaults to [] — v1 has no structured features array
  * - Inventory quantity defaults to 1 — v1 does not track quantity
  * - Attack proficient defaults to false — not stored in v1
- * - Attack rollType defaults to 'attack' — not stored in v1
+ * - Attack rollType detected from toHit pattern: "DC N" → 'dc', otherwise 'attack'
  * - Spell slots: no "used" tracking in v1 — current = max at all times
  * - createdAt falls back to updatedAt — v1 has no createdAt field
  */
@@ -272,25 +272,55 @@ const SKILL_ABILITY_MAP: Record<string, AbilityKey> = {
   survival:        'wis',
 }
 
+const SKILL_DISPLAY_NAME_MAP: Record<string, string> = {
+  acrobatics:      'Acrobatics',
+  animal_handling: 'Animal Handling',
+  arcana:          'Arcana',
+  athletics:       'Athletics',
+  deception:       'Deception',
+  history:         'History',
+  insight:         'Insight',
+  intimidation:    'Intimidation',
+  investigation:   'Investigation',
+  medicine:        'Medicine',
+  nature:          'Nature',
+  perception:      'Perception',
+  performance:     'Performance',
+  persuasion:      'Persuasion',
+  religion:        'Religion',
+  sleight_of_hand: 'Sleight of Hand',
+  stealth:         'Stealth',
+  survival:        'Survival',
+}
+
 function adaptSkills(
   raw: V1Character,
   abilities: Abilities,
   profBonus: number,
 ): SkillState[] {
   const v1Skills = raw.page1?.saves_skills?.skills as V1Skills | undefined
-  return (Object.keys(SKILL_ABILITY_MAP) as (keyof V1Skills)[]).map((name) => {
-    const entry     = v1Skills?.[name]
-    const ability   = SKILL_ABILITY_MAP[name as string]!
+  return (Object.keys(SKILL_ABILITY_MAP) as (keyof V1Skills)[]).map((key) => {
+    const entry     = v1Skills?.[key]
+    const ability   = SKILL_ABILITY_MAP[key as string]!
     const proficient = entry?.prof ?? false
     const expertise  = entry?.expr ?? false
     return {
-      name:      name as string,
+      name:      SKILL_DISPLAY_NAME_MAP[key as string] ?? (key as string),
       ability,
       proficient,
       expertise,
       bonus: skillBonus(abilities[ability], proficient, expertise, profBonus),
     }
   })
+}
+
+/**
+ * Detects whether a v1 toHit string represents a spell save DC ("DC 14", "dc 12")
+ * vs a normal attack roll bonus ("+5", "0").
+ */
+function detectRollType(toHit: string | undefined): 'attack' | 'dc' {
+  if (!toHit) return 'attack'
+  return /^DC\s*\d+/i.test(toHit) ? 'dc' : 'attack'
 }
 
 /**
@@ -306,10 +336,12 @@ function adaptAttacks(raw: V1Character): Attack[] {
     id:         itemId('atk', i),
     name:       str(a.name),
     baseStat:   toAbilityKey(a.stat),
-    bonus:      str(a.toHit),
+    bonus:      str(a.toHit),  // raw v1 string; can be "+5" or "DC 14"
     damage:     str(a.damage),
     damageType: str(a.damage_type),
-    rollType:   'attack' as const,
+    rollType:   detectRollType(a.toHit),
+    // v1 does not store proficiency on attacks — defaults to false on import.
+    // v2 edit mode (Phase C) will let users toggle this.
     proficient: false,
   }))
 }
@@ -479,7 +511,7 @@ export function adaptCharacter(raw: V1Character): Character {
   const p5    = raw.page5
 
   const skills     = adaptSkills(raw, abilities, profBonus)
-  const perception = skills.find((s) => s.name === 'perception')
+  const perception = skills.find((s) => s.name === 'Perception')
   const passPerc   = passivePerception(
     abilities.wis,
     perception?.proficient ?? false,

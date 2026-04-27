@@ -34,7 +34,7 @@ export interface SavingThrowState {
 }
 
 export interface SkillState {
-  name: string           // snake_case key, e.g. "acrobatics", "sleight_of_hand"
+  name: string           // display name, e.g. "Acrobatics", "Sleight of Hand"
   ability: AbilityKey
   proficient: boolean
   expertise: boolean

@@ -164,7 +164,7 @@ describe('adaptCharacter — skills', () => {
   it('proficient skill has correct bonus (ability mod + prof)', () => {
     const result = adaptCharacter(fullChar)
     // Monk: STR 12 (+1 mod), Athletics proficient, profBonus 3 → +4
-    const athletics = result.skills.find((s) => s.name === 'athletics')!
+    const athletics = result.skills.find((s) => s.name === 'Athletics')!
     expect(athletics.proficient).toBe(true)
     expect(athletics.bonus).toBe(4)
   })
@@ -172,7 +172,7 @@ describe('adaptCharacter — skills', () => {
   it('non-proficient skill has only ability mod', () => {
     const result = adaptCharacter(fullChar)
     // Monk: INT 10 (+0 mod), Arcana not proficient → 0
-    const arcana = result.skills.find((s) => s.name === 'arcana')!
+    const arcana = result.skills.find((s) => s.name === 'Arcana')!
     expect(arcana.proficient).toBe(false)
     expect(arcana.bonus).toBe(0)
   })
@@ -180,7 +180,7 @@ describe('adaptCharacter — skills', () => {
   it('expertise gives ability mod + 2×profBonus', () => {
     const result = adaptCharacter(spellcaster)
     // Bard: CHA 18 (+4 mod), Performance expertise, profBonus 3 → +4 + 6 = +10
-    const performance = result.skills.find((s) => s.name === 'performance')!
+    const performance = result.skills.find((s) => s.name === 'Performance')!
     expect(performance.expertise).toBe(true)
     expect(performance.bonus).toBe(10)
   })
@@ -189,9 +189,40 @@ describe('adaptCharacter — skills', () => {
     const result = adaptCharacter(fullChar)
     expect(result.skills).toHaveLength(18)
     const names = result.skills.map((s) => s.name)
-    expect(names).toContain('perception')
-    expect(names).toContain('sleight_of_hand')
-    expect(names).toContain('animal_handling')
+    expect(names).toContain('Perception')
+    expect(names).toContain('Sleight of Hand')
+    expect(names).toContain('Animal Handling')
+  })
+
+  it('emits display name for single-word skill', () => {
+    const raw: V1Character = {
+      page1: { saves_skills: { skills: { acrobatics: { prof: true, expr: false } } } },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.skills.find((s) => s.name === 'Acrobatics')).toBeDefined()
+    expect(c.skills.find((s) => s.name === 'acrobatics')).toBeUndefined()
+  })
+
+  it('emits display name for multi-word skill', () => {
+    const raw: V1Character = {
+      page1: { saves_skills: { skills: { sleight_of_hand: { prof: true } } } },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.skills.find((s) => s.name === 'Sleight of Hand')).toBeDefined()
+    expect(c.skills.find((s) => s.name === 'sleight_of_hand')).toBeUndefined()
+  })
+
+  it('passive perception derives correctly after display-name change', () => {
+    // WIS 16 (+3), Perception proficient, level 5 (profBonus 3) → 10 + 3 + 3 = 16
+    const raw: V1Character = {
+      page1: {
+        top_bar:    { passive_perception: '13' }, // stale v1 value — should be ignored
+        attributes: { wis: '16' },
+        basic_info: { classes: [{ name: 'Ranger', level: '5' }] },
+        saves_skills: { skills: { perception: { prof: true } } },
+      },
+    }
+    expect(adaptCharacter(raw).passivePerception).toBe(16)
   })
 })
 
@@ -467,6 +498,27 @@ describe('adaptCharacter — spell adapter defensiveness', () => {
     }
     expect(() => adaptCharacter(raw)).not.toThrow()
     expect(adaptCharacter(raw).attacks).toEqual([])
+  })
+
+  it('detects rollType=attack for normal bonus string "+5"', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Sword', toHit: '+5', stat: 'str' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('attack')
+  })
+
+  it('detects rollType=dc for "DC 14" toHit (spell save)', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Vicious Mockery', toHit: 'DC 14', stat: 'cha' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
+  })
+
+  it('detects rollType=dc for lowercase "dc 12" (case-insensitive)', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Burning Hands', toHit: 'dc 12' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
   })
 
   it('real v1 spell structure round-trips correctly', () => {
