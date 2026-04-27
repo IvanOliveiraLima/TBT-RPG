@@ -614,3 +614,129 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     expect(result.hitDice[1]?.current).toBe(result.hitDice[1]?.max)
   })
 })
+
+describe('adaptCharacter — combat stats from incomplete v1', () => {
+  it('calculates AC when v1 ac is empty (10 + DEX mod)', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { ac: '' }, attributes: { dex: '18' } },
+    }
+    expect(adaptCharacter(raw).ac).toBe(14) // 10 + 4
+  })
+
+  it('uses stored AC when v1 ac is set', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { ac: '17' }, attributes: { dex: '18' } },
+    }
+    expect(adaptCharacter(raw).ac).toBe(17)
+  })
+
+  it('calculates AC for low DEX (10 + DEX mod negative)', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { ac: '' }, attributes: { dex: '8' } },
+    }
+    expect(adaptCharacter(raw).ac).toBe(9) // 10 + (-1)
+  })
+
+  it('calculates initiative from DEX modifier when field is empty', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { initiative: '' }, attributes: { dex: '18' } },
+    }
+    expect(adaptCharacter(raw).initiative).toBe(4) // DEX mod
+  })
+
+  it('uses stored initiative when user entered a custom bonus', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { initiative: '+6' }, attributes: { dex: '18' } },
+    }
+    expect(adaptCharacter(raw).initiative).toBe(6)
+  })
+
+  it('handles negative stored initiative', () => {
+    const raw: V1Character = {
+      page1: { top_bar: { initiative: '-1' }, attributes: { dex: '8' } },
+    }
+    expect(adaptCharacter(raw).initiative).toBe(-1)
+  })
+
+  it('calculates passive perception from skills, ignoring v1 stored value', () => {
+    // WIS 16 (+3), perception proficient, level 5 (profBonus 3) → 10 + 3 + 3 = 16
+    const raw: V1Character = {
+      page1: {
+        top_bar: { passive_perception: '13' }, // stale v1 value — should be ignored
+        attributes: { wis: '16' },
+        basic_info: { classes: [{ name: 'Ranger', level: '5' }] },
+        saves_skills: {
+          skills: { perception: { prof: true } },
+        },
+      },
+    }
+    expect(adaptCharacter(raw).passivePerception).toBe(16)
+  })
+
+  it('passive perception uses expertise when set (doubles prof bonus)', () => {
+    // WIS 14 (+2), expertise in perception, level 4 (profBonus 2) → 10 + 2 + 4 = 16
+    const raw: V1Character = {
+      page1: {
+        attributes: { wis: '14' },
+        basic_info: { classes: [{ name: 'Rogue', level: '4' }] },
+        saves_skills: {
+          skills: { perception: { prof: true, expr: true } },
+        },
+      },
+    }
+    expect(adaptCharacter(raw).passivePerception).toBe(16)
+  })
+})
+
+describe('adaptCharacter — features from v1 string', () => {
+  it('parses comma-separated features into Feature array', () => {
+    const raw: V1Character = {
+      page1: { features: 'Wild Shape, Druidic Circle, Healing Word' },
+    }
+    const result = adaptCharacter(raw).features
+    expect(result).toHaveLength(3)
+    expect(result[0]?.name).toBe('Wild Shape')
+    expect(result[1]?.name).toBe('Druidic Circle')
+    expect(result[2]?.name).toBe('Healing Word')
+  })
+
+  it('returns empty array when features field is missing', () => {
+    const raw: V1Character = { page1: {} }
+    expect(adaptCharacter(raw).features).toEqual([])
+  })
+
+  it('handles extra whitespace and empty tokens', () => {
+    const raw: V1Character = {
+      page1: { features: ' Foo ,  Bar ,,Baz ' },
+    }
+    const result = adaptCharacter(raw).features
+    expect(result).toHaveLength(3)
+    expect(result.map((f) => f.name)).toEqual(['Foo', 'Bar', 'Baz'])
+  })
+
+  it('all parsed features default to type passive', () => {
+    const raw: V1Character = {
+      page1: { features: 'Wild Shape, Druidic' },
+    }
+    const result = adaptCharacter(raw).features
+    expect(result.every((f) => f.type === 'passive')).toBe(true)
+  })
+
+  it('parsed features have unique ids', () => {
+    const raw: V1Character = {
+      page1: { features: 'Wild Shape, Druidic Circle, Healing Surge' },
+    }
+    const ids = adaptCharacter(raw).features.map((f) => f.id)
+    expect(new Set(ids).size).toBe(3)
+  })
+
+  it('returns empty array when features is an empty string', () => {
+    const raw: V1Character = { page1: { features: '' } }
+    expect(adaptCharacter(raw).features).toEqual([])
+  })
+
+  it('returns empty array when features is only whitespace', () => {
+    const raw: V1Character = { page1: { features: '   ' } }
+    expect(adaptCharacter(raw).features).toEqual([])
+  })
+})

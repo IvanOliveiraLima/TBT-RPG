@@ -9,6 +9,9 @@
  * - page1.character_info.player_name — not part of the character's own domain model
  * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
  * - page1.top_bar.passive_perception — recalculated via passivePerception()
+ * - page1.top_bar.ac — recalculated as 10+DEX when blank/zero (v1 often empty)
+ * - page1.top_bar.initiative — recalculated as DEX mod when blank (v1 often empty)
+ * - page1.features — parsed from comma-separated string; v1 has no structured array
  * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
  * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
  *
@@ -48,8 +51,10 @@ import type {
   SpellSlot,
   SpellKnown,
   InventoryItem,
+  Feature,
 } from '@/domain/character'
 import {
+  abilityModifier,
   proficiencyBonus,
   savingThrowBonus,
   skillBonus,
@@ -95,6 +100,59 @@ function toArray<T>(val: unknown): T[] {
 
 function itemId(prefix: string, index: number): string {
   return `${prefix}_${index}`
+}
+
+/**
+ * Parses a signed string like "+3", "-1", "0" to a number.
+ * Handles the leading "+" that parseInt would otherwise ignore correctly anyway,
+ * but also returns 0 for empty/undefined/non-numeric values.
+ */
+function parseSigned(val: string | null | undefined): number {
+  if (!val) return 0
+  const n = parseInt(val.replace(/^\+/, ''), 10)
+  return isNaN(n) ? 0 : n
+}
+
+/**
+ * Derives Armor Class.
+ * Uses the stored v1 value when the user filled it (> 0).
+ * Falls back to 10 + DEX modifier (the D&D 5e unarmored baseline).
+ */
+function adaptAC(raw: V1Character, abilities: Abilities): number {
+  const stored = parseIntSafe(raw.page1?.top_bar?.ac)
+  if (stored > 0) return stored
+  return 10 + abilityModifier(abilities.dex)
+}
+
+/**
+ * Derives Initiative.
+ * Uses the stored v1 value when the user filled it in (non-empty string).
+ * Falls back to DEX modifier (the D&D 5e default).
+ */
+function adaptInitiative(raw: V1Character, abilities: Abilities): number {
+  const stored = str(raw.page1?.top_bar?.initiative)
+  if (stored !== '') return parseSigned(stored)
+  return abilityModifier(abilities.dex)
+}
+
+/**
+ * Parses the comma-separated features string stored in v1's page1.features.
+ * v1 has no structured features array — each comma-separated token becomes
+ * a passive Feature with no source, description, or uses tracking.
+ */
+function adaptFeatures(raw: V1Character): Feature[] {
+  const text = raw.page1?.features
+  if (typeof text !== 'string' || !text.trim()) return []
+  return text
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((name, idx) => ({
+      id:          `feat-${idx}`,
+      name,
+      description: '',
+      type:        'passive' as const,
+    }))
 }
 
 const VALID_ABILITY_KEYS = new Set<string>(['str', 'dex', 'con', 'int', 'wis', 'cha'])
@@ -472,8 +530,8 @@ export function adaptCharacter(raw: V1Character): Character {
     hitDice:    adaptHitDice(raw, classes),
     deathSaves: adaptDeathSaves(raw),
 
-    ac:               parseIntSafe(tb?.ac),
-    initiative:       parseIntSafe(tb?.initiative),
+    ac:               adaptAC(raw, abilities),
+    initiative:       adaptInitiative(raw, abilities),
     speed:            parseIntSafe(tb?.speed),
     passivePerception: passPerc,
     spellSaveDC:      parseIntSafe(tb?.spell_dc),
@@ -496,7 +554,7 @@ export function adaptCharacter(raw: V1Character): Character {
     inventory: adaptInventory(raw),
     currency:  adaptCurrency(raw),
 
-    features: [],
+    features: adaptFeatures(raw),
 
     // page4.backstory is the primary location (verified from real data).
     // page4.personality does NOT have a backstory field.
