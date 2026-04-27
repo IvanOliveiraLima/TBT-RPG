@@ -154,6 +154,11 @@ export interface V1Page1 {
    * Verified against js/save.js buildSheetData() and real DB exports.
    */
   attacks_spells?: V1AttackEntry[]
+  /**
+   * Free-text features/traits as a comma-separated string.
+   * v1 has no structured features array — this is parsed in the adapter.
+   */
+  features?: string
 }
 
 /* ── Page 2 ───────────────────────────────────────────────────────────── */
