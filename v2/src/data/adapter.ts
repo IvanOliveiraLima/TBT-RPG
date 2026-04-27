@@ -25,7 +25,7 @@
  * - features[] defaults to [] — v1 has no structured features array
  * - Inventory quantity defaults to 1 — v1 does not track quantity
  * - Attack proficient defaults to false — not stored in v1
- * - Attack rollType defaults to 'attack' — not stored in v1
+ * - Attack rollType detected from toHit pattern: "DC N" → 'dc', otherwise 'attack'
  * - Spell slots: no "used" tracking in v1 — current = max at all times
  * - createdAt falls back to updatedAt — v1 has no createdAt field
  */
@@ -315,6 +315,15 @@ function adaptSkills(
 }
 
 /**
+ * Detects whether a v1 toHit string represents a spell save DC ("DC 14", "dc 12")
+ * vs a normal attack roll bonus ("+5", "0").
+ */
+function detectRollType(toHit: string | undefined): 'attack' | 'dc' {
+  if (!toHit) return 'attack'
+  return /^DC\s*\d+/i.test(toHit) ? 'dc' : 'attack'
+}
+
+/**
  * Adapts attacks.
  *
  * v1 stores page1.attacks_spells as a FLAT array of attack objects (confirmed
@@ -327,10 +336,12 @@ function adaptAttacks(raw: V1Character): Attack[] {
     id:         itemId('atk', i),
     name:       str(a.name),
     baseStat:   toAbilityKey(a.stat),
-    bonus:      str(a.toHit),
+    bonus:      str(a.toHit),  // raw v1 string; can be "+5" or "DC 14"
     damage:     str(a.damage),
     damageType: str(a.damage_type),
-    rollType:   'attack' as const,
+    rollType:   detectRollType(a.toHit),
+    // v1 does not store proficiency on attacks — defaults to false on import.
+    // v2 edit mode (Phase C) will let users toggle this.
     proficient: false,
   }))
 }

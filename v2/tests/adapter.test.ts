@@ -500,6 +500,27 @@ describe('adaptCharacter — spell adapter defensiveness', () => {
     expect(adaptCharacter(raw).attacks).toEqual([])
   })
 
+  it('detects rollType=attack for normal bonus string "+5"', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Sword', toHit: '+5', stat: 'str' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('attack')
+  })
+
+  it('detects rollType=dc for "DC 14" toHit (spell save)', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Vicious Mockery', toHit: 'DC 14', stat: 'cha' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
+  })
+
+  it('detects rollType=dc for lowercase "dc 12" (case-insensitive)', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Burning Hands', toHit: 'dc 12' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
+  })
+
   it('real v1 spell structure round-trips correctly', () => {
     const result = adaptCharacter(spellcaster)
     expect(result.spells).toBeDefined()
