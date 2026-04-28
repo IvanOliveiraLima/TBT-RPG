@@ -291,10 +291,18 @@ describe('adaptCharacter — spells', () => {
     expect(faeirieFire?.prepared).toBe(false)
   })
 
-  it('saveDC is read from spell_info.dc (not recalculated)', () => {
+  it('saveDC is calculated from base stats, not read from stale v1 string', () => {
     const result = adaptCharacter(spellcaster)
-    // fixture stores "14" in spell_info.dc
-    expect(result.spells?.saveDC).toBe(14)
+    // Kael: CHA 18 (+4 mod), level 5 (profBonus 3) → DC = 8 + 3 + 4 = 15
+    // v1 spell_info.dc stores "14" (stale) — must be ignored
+    expect(result.spells?.saveDC).toBe(15)
+  })
+
+  it('attackBonus is calculated from base stats, not read from stale v1 string', () => {
+    const result = adaptCharacter(spellcaster)
+    // Kael: CHA 18 (+4 mod), level 5 (profBonus 3) → bonus = 3 + 4 = 7
+    // v1 spell_info.att stores "+6" (stale) — must be ignored
+    expect(result.spells?.attackBonus).toBe(7)
   })
 })
 
@@ -434,18 +442,25 @@ describe('adaptCharacter — inspiration', () => {
 })
 
 describe('adaptCharacter — spell adapter defensiveness', () => {
-  it('undefined page3 → no crash, spells undefined', () => {
+  it('caster with no page3 still gets spells object with empty lists', () => {
     const raw: V1Character = {
       page1: { basic_info: { char_name: 'Test', classes: [{ name: 'Cleric', level: '3' }] } },
-      // page3 absent
+      // page3 absent — Cleric is a caster, so spells must still be defined
     }
     expect(() => adaptCharacter(raw)).not.toThrow()
-    expect(adaptCharacter(raw).spells).toBeUndefined()
+    const c = adaptCharacter(raw)
+    expect(c.spells).toBeDefined()
+    expect(c.spells?.ability).toBe('wis')   // Cleric default
+    expect(c.spells?.slots).toEqual([])
+    expect(c.spells?.known).toEqual([])
   })
 
   it('cantrips block with no .spells property → no crash', () => {
     const raw: V1Character = {
-      page1: { saves_skills: { spell_casting: 'wis' } },
+      page1: {
+        basic_info: { classes: [{ name: 'Cleric', level: '5' }] },
+        saves_skills: { spell_casting: 'wis' },
+      },
       page3: {
         spell_info: { dc: '13', att: '+5' },
         spells: {
@@ -465,7 +480,10 @@ describe('adaptCharacter — spell adapter defensiveness', () => {
     // Before the schema was corrected, cantrips was stored as SpellEntry[].
     // The adapter guards against this — it should not crash and should skip the block.
     const raw: V1Character = {
-      page1: { saves_skills: { spell_casting: 'wis' } },
+      page1: {
+        basic_info: { classes: [{ name: 'Cleric', level: '5' }] },
+        saves_skills: { spell_casting: 'wis' },
+      },
       page3: {
         spell_info: { dc: '14', att: '+6' },
         spells: {
@@ -737,6 +755,128 @@ describe('adaptCharacter — combat stats from incomplete v1', () => {
       },
     }
     expect(adaptCharacter(raw).passivePerception).toBe(16)
+  })
+})
+
+describe('adaptCharacter — derived spell stats (not stale reads)', () => {
+  it('calculates spell save DC ignoring stale v1 stored value', () => {
+    // Bard 5, CHA 16 (mod +3), profBonus 3 → DC = 8 + 3 + 3 = 14
+    // v1 stores dc = '99' — must be ignored
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Bard', level: '5' }] },
+        attributes: { cha: '16' },
+        saves_skills: { spell_casting: 'cha' },
+      },
+      page3: { spell_info: { class: 'Bard', dc: '99', att: '+3', bonus: '' } },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells?.saveDC).toBe(14)
+    expect(c.spellSaveDC).toBe(14)   // top-level field (CombatStrip) must also be calculated
+  })
+
+  it('calculates spell attack bonus ignoring stale v1 stored value', () => {
+    // Bard 5, CHA 16 (mod +3), profBonus 3 → bonus = 3 + 3 = 6
+    // v1 stores att = '+99' — must be ignored
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Bard', level: '5' }] },
+        attributes: { cha: '16' },
+        saves_skills: { spell_casting: 'cha' },
+      },
+      page3: { spell_info: { class: 'Bard', dc: '99', att: '+99', bonus: '' } },
+    }
+    expect(adaptCharacter(raw).spells?.attackBonus).toBe(6)
+  })
+
+  it('top-level spellSaveDC is 0 for non-caster', () => {
+    // Monk is not a caster → spellSaveDC must be 0 (suppresses DC chip in CombatStrip)
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Monk', level: '5' }] },
+        attributes: { wis: '18' },
+        top_bar: { spell_dc: '14' }, // stale v1 value — must be ignored for non-casters
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells).toBeUndefined()
+    expect(c.spellSaveDC).toBe(0)
+  })
+})
+
+describe('adaptCharacter — caster detection by class', () => {
+  it('Druid with no spells filled still has spells object (caster by class)', () => {
+    // Mimics Eira: Druid 5, WIS 16, no spells entered in v1
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Druid', level: '5' }] },
+        attributes: { wis: '16' },
+      },
+      page3: {}, // no spells data at all
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells).toBeDefined()
+    expect(c.spells?.ability).toBe('wis')                // Druid default
+    expect(c.spells?.saveDC).toBe(14)                   // 8 + 3 (profBonus) + 3 (WIS mod)
+    expect(c.spells?.attackBonus).toBe(6)               // 3 + 3
+    expect(c.spells?.slots).toEqual([])
+    expect(c.spells?.known).toEqual([])
+  })
+
+  it('Barbarian has no spells object (non-caster)', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Barbarian', level: '5' }] },
+        attributes: { str: '18' },
+      },
+    }
+    expect(adaptCharacter(raw).spells).toBeUndefined()
+  })
+
+  it('Wizard uses INT as spell ability by default', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Wizard', level: '4' }] },
+        attributes: { int: '16' },
+        // spell_casting field absent — should fall back to class-based ability
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells?.ability).toBe('int')
+  })
+
+  it('Warlock uses CHA as spell ability by default', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Warlock', level: '5' }] },
+        attributes: { cha: '18' },
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells?.ability).toBe('cha')
+  })
+
+  it('multiclass Fighter/Wizard is a caster', () => {
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Fighter', level: '5' }, { name: 'Wizard', level: '3' }] },
+        attributes: { int: '16' },
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.spells).toBeDefined()
+  })
+
+  it('explicit spell_casting field overrides class-based default', () => {
+    // Druid whose player set spell_casting to "wis" explicitly
+    const raw: V1Character = {
+      page1: {
+        basic_info: { classes: [{ name: 'Druid', level: '5' }] },
+        attributes: { wis: '16' },
+        saves_skills: { spell_casting: 'wis' }, // explicit setting — same as default
+      },
+    }
+    expect(adaptCharacter(raw).spells?.ability).toBe('wis')
   })
 })
 
