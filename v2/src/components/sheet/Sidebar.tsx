@@ -18,7 +18,7 @@ const T = {
 
 const NAV_TABS: { k: TabKey; n: string }[] = [
   { k: 'status', n: 'Atributos' },
-  { k: 'combat', n: 'Combate & Skills' },
+  { k: 'combat', n: 'Combate' },
   { k: 'spells', n: 'Magias' },
   { k: 'inv',    n: 'Inventário' },
   { k: 'lore',   n: 'História' },

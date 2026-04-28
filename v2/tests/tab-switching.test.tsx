@@ -81,12 +81,14 @@ describe('tab switching', () => {
     expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('clicking Combate in the bottom tab bar shows Combat placeholder', () => {
+  it('clicking Combate in the bottom tab bar shows Combat tab content', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     render(<TabSwitcher />)
     // Mobile bottom tab bar - find "Combate" buttons and click the first
     const combateBtns = screen.getAllByText('Combate')
     fireEvent.click(combateBtns[0]!)
-    expect(screen.getAllByText('Combate & Skills').length).toBeGreaterThanOrEqual(1)
+    // CombatTab now renders real content — confirm CombatStrip is present
+    expect(screen.getAllByTestId('combat-strip').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Magias shows Spells placeholder', () => {

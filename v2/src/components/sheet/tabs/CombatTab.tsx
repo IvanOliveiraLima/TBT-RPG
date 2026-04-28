@@ -1,25 +1,36 @@
-const T = {
-  textPrimary: '#F4EFE0',
-  textMuted:   '#7A7788',
-  serif:       "'Cinzel', Georgia, serif",
-  sans:        "'Inter', system-ui, sans-serif",
-} as const
+import type React from 'react'
+import { useCharacterStore } from '@/store/character'
+import { CombatStrip } from '../parts/CombatStrip'
+import { AttacksList } from '../parts/AttacksList'
+
+const CARD: React.CSSProperties = {
+  background: '#15121C',
+  border: '1px solid #2A2537',
+  borderRadius: 14,
+  padding: 14,
+}
 
 export function CombatTab() {
+  const character = useCharacterStore((s) => s.character)
+  if (!character) return null
+
   return (
-    <div style={{
-      padding: 24,
-      textAlign: 'center',
-      fontFamily: T.sans,
-      color: T.textMuted,
-    }}>
-      <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, marginBottom: 8 }}>
-        Combate &amp; Skills
-      </p>
-      <p style={{ fontSize: 13 }}>Conteúdo em construção</p>
-      <p style={{ fontSize: 11, marginTop: 16, opacity: 0.7 }}>
-        Ataques, saving throws e perícias aparecerão aqui.
-      </p>
-    </div>
+    <>
+      {/* ── MOBILE STACK (hidden on lg+) ── */}
+      <div className="lg:hidden flex flex-col gap-3">
+        <CombatStrip character={character} cols={3} />
+        <div style={CARD}>
+          <AttacksList character={character} />
+        </div>
+      </div>
+
+      {/* ── DESKTOP (hidden below lg) ── */}
+      <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
+        <CombatStrip character={character} cols={6} />
+        <div style={CARD}>
+          <AttacksList character={character} />
+        </div>
+      </div>
+    </>
   )
 }
