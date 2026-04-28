@@ -11,6 +11,9 @@
  * - page1.top_bar.passive_perception — recalculated via passivePerception()
  * - page1.top_bar.ac — recalculated as 10+DEX when blank/zero (v1 often empty)
  * - page1.top_bar.initiative — recalculated as DEX mod when blank (v1 often empty)
+ * - page1.top_bar.spell_dc — recalculated via spellSaveDC() for casters (v1 string is stale)
+ * - page3.spell_info.att — recalculated via spellAttackBonus() (v1 string is stale)
+ * - page3.spell_info.dc — recalculated via spellSaveDC() (v1 string is stale)
  * - page1.features — parsed from comma-separated string; v1 has no structured array
  * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
  * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
@@ -27,6 +30,8 @@
  * - Attack proficient defaults to false — not stored in v1
  * - Attack rollType detected from toHit pattern: "DC N" → 'dc', otherwise 'attack'
  * - Spell slots: no "used" tracking in v1 — current = max at all times
+ * - Caster detection: based on class list (isCharacterCaster); not on data presence
+ * - Spell ability: prefers page1.saves_skills.spell_casting; falls back to class default
  * - createdAt falls back to updatedAt — v1 has no createdAt field
  */
 
@@ -59,8 +64,11 @@ import {
   savingThrowBonus,
   skillBonus,
   passivePerception,
+  spellSaveDC,
+  spellAttackBonus,
 } from '@/domain/calculations'
 import { getHitDie } from '@/domain/classes'
+import { isCharacterCaster, getSpellcastingAbility } from '@/domain/casters'
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -521,18 +529,26 @@ export function adaptCharacter(raw: V1Character): Character {
 
   const spellSlots = adaptSpellSlots(raw)
   const spellKnown = adaptSpellKnown(raw)
-  const hasSpells  = spellSlots.length > 0 || spellKnown.length > 0
+
+  // Caster detection: derive from class list. Characters whose class is in the
+  // caster list always get a spells object — even if they never filled the spell
+  // page in v1 (e.g. a Druid who hasn't entered spells yet).
+  const isCaster = isCharacterCaster(classes)
 
   // Spell ability: prefer page1.saves_skills.spell_casting (select element,
-  // stores "cha"/"int"/etc.). page3.spell_info.class is the class label ("Bard").
+  // stores "cha"/"int"/etc.). Falls back to class-based default when blank
+  // (common for casters who skipped that field in v1).
   const spellAbilityRaw = str(raw.page1?.saves_skills?.spell_casting)
+  const primaryClassName = classes[0]?.name ?? ''
+  const spellAbility = spellAbilityRaw
+    ? mapSpellAbility(spellAbilityRaw)
+    : getSpellcastingAbility(primaryClassName)
 
-  const spells = hasSpells
+  const spells = isCaster
     ? {
-        ability:     mapSpellAbility(spellAbilityRaw),
-        // page3.spell_info.att = attack bonus; .dc = save DC (verified from load.js)
-        attackBonus: parseIntSafe(raw.page3?.spell_info?.att),
-        saveDC:      parseIntSafe(raw.page3?.spell_info?.dc),
+        ability:     spellAbility,
+        attackBonus: spellAttackBonus(abilities[spellAbility], profBonus),
+        saveDC:      spellSaveDC(abilities[spellAbility], profBonus),
         slots:       spellSlots,
         known:       spellKnown,
       }
@@ -566,7 +582,7 @@ export function adaptCharacter(raw: V1Character): Character {
     initiative:       adaptInitiative(raw, abilities),
     speed:            parseIntSafe(tb?.speed),
     passivePerception: passPerc,
-    spellSaveDC:      parseIntSafe(tb?.spell_dc),
+    spellSaveDC:      isCaster ? spellSaveDC(abilities[spellAbility], profBonus) : 0,
     inspiration:      parseBoolean(tb?.insperation),
 
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
