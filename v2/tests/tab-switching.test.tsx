@@ -32,6 +32,13 @@ const MOCK_CHARACTER: Character = {
   savingThrows: [], skills: [],
   proficiencies: { weapons: '', armor: '', tools: '', languages: '', other: '' },
   attacks: [],
+  spells: {
+    ability: 'wis' as const,
+    attackBonus: 6,
+    saveDC: 16,
+    slots: [],
+    known: [],
+  },
   inventory: [],
   currency: { pp: 0, gp: 30, ep: 0, sp: 10, cp: 5 },
   features: [],
@@ -91,13 +98,13 @@ describe('tab switching', () => {
     expect(screen.getAllByTestId('combat-strip').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('clicking Magias shows Spells placeholder', () => {
+  it('clicking Magias shows SpellsTab content', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     render(<TabSwitcher />)
     const magiasBtns = screen.getAllByText('Magias')
     fireEvent.click(magiasBtns[0]!)
-    expect(screen.getAllByText('Magias').length).toBeGreaterThanOrEqual(1)
-    // Spell-specific sub-text confirms the tab rendered
-    expect(screen.getAllByText(/Slots, magias conhecidas/i).length).toBeGreaterThanOrEqual(1)
+    // SpellsTab renders spell-header for a caster
+    expect(screen.getAllByTestId('spell-header').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Inv shows Inventory placeholder', () => {
