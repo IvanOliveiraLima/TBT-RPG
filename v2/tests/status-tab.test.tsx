@@ -160,4 +160,22 @@ describe('StatusTab integration', () => {
     const dexMods = screen.getAllByTestId('attr-dex-mod')
     expect(dexMods[0]!.textContent).toBe('+4')
   })
+
+  it('renders ProficienciesBlock in Status tab', () => {
+    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    render(<StatusTab />)
+    expect(screen.getAllByTestId('proficiencies-block').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows proficiencies text from character', () => {
+    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    render(<StatusTab />)
+    expect(screen.getAllByText('Longbow, Shortsword, Light, Medium').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows languages in proficiencies block', () => {
+    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    render(<StatusTab />)
+    expect(screen.getAllByText('Common, Elvish, Sylvan').length).toBeGreaterThanOrEqual(1)
+  })
 })

@@ -1,25 +1,27 @@
-const T = {
-  textPrimary: '#F4EFE0',
-  textMuted:   '#7A7788',
-  serif:       "'Cinzel', Georgia, serif",
-  sans:        "'Inter', system-ui, sans-serif",
-} as const
+import { useCharacterStore } from '@/store/character'
+import { InventoryList } from '../parts/InventoryList'
+import { CurrencyBlock } from '../parts/CurrencyBlock'
 
 export function InventoryTab() {
+  const character = useCharacterStore((s) => s.character)
+  if (!character) return null
+
   return (
-    <div style={{
-      padding: 24,
-      textAlign: 'center',
-      fontFamily: T.sans,
-      color: T.textMuted,
-    }}>
-      <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, marginBottom: 8 }}>
-        Inventário
-      </p>
-      <p style={{ fontSize: 13 }}>Conteúdo em construção</p>
-      <p style={{ fontSize: 11, marginTop: 16, opacity: 0.7 }}>
-        Equipamentos, moedas e proficiências aparecerão aqui.
-      </p>
-    </div>
+    <>
+      {/* ── MOBILE STACK (hidden on lg+) ── */}
+      <div className="lg:hidden flex flex-col gap-3">
+        <CurrencyBlock character={character} />
+        <InventoryList character={character} />
+      </div>
+
+      {/* ── DESKTOP (2-col: inventory | currency) ── */}
+      <div
+        className="hidden lg:grid"
+        style={{ gridTemplateColumns: '1.3fr 1fr', gap: 14 }}
+      >
+        <InventoryList character={character} />
+        <CurrencyBlock character={character} />
+      </div>
+    </>
   )
 }
