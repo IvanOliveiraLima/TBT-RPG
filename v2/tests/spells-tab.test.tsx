@@ -51,7 +51,6 @@ const KAEL: Character = {
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
-  allies: '',
   notes: '',
   images: {},
   createdAt: 0,

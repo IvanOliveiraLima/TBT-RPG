@@ -45,7 +45,6 @@ const BASE: Character = {
   features: FEATURES,
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
-  allies: '',
   notes: '',
   images: {},
   createdAt: 0,

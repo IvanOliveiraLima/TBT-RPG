@@ -56,7 +56,7 @@ const EIRA: Character = {
   ] satisfies Feature[],
   backstory: 'Guardian of the Thornwood Forest',
   personality: { traits: 'Quiet observer', ideals: 'Protecting nature', bonds: 'The forest', flaws: 'Distrusts cities' },
-  allies: 'Emerald Enclave', notes: '',
+  notes: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,

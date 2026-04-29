@@ -37,7 +37,6 @@ const MOCK_CHARACTER: Character = {
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
-  allies: '', notes: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,

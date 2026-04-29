@@ -44,7 +44,7 @@ const MOCK_CHARACTER: Character = {
   features: [],
   backstory: 'Raised in the wilderness',
   personality: { traits: 'Calm', ideals: 'Balance', bonds: 'The forest', flaws: 'Secretive' },
-  allies: 'Circle of the Moon', notes: '',
+  notes: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
