@@ -1,0 +1,152 @@
+{
+  "id": "char_1700000000000_abc123",
+  "schemaVersion": 1,
+  "updatedAt": 1700000000000,
+  "page1": {
+    "basic_info": {
+      "char_name": "Kanaan Duskwalker",
+      "classes": [
+        { "name": "Monk", "level": "5" }
+      ],
+      "total_level": 5,
+      "char_class": "Monk",
+      "level": "5"
+    },
+    "character_info": {
+      "race_class": "Humano",
+      "background": "Outlander",
+      "player_name": "João",
+      "exp": "6500",
+      "alignment": "Neutro e Bom"
+    },
+    "top_bar": {
+      "proficiency": "3",
+      "initiative": "3",
+      "passive_perception": "15",
+      "ac": "16",
+      "speed": "45",
+      "spell_dc": "",
+      "insperation": ""
+    },
+    "attributes": {
+      "str": "12", "str_mod": "+1",
+      "dex": "16", "dex_mod": "+3",
+      "con": "14", "con_mod": "+2",
+      "int": "10", "int_mod": "+0",
+      "wis": "14", "wis_mod": "+2",
+      "cha": "8",  "cha_mod": "-1"
+    },
+    "saves_skills": {
+      "spell_casting": "",
+      "saves": {
+        "str_save": { "val": "+1", "prof": false },
+        "dex_save": { "val": "+6", "prof": true  },
+        "con_save": { "val": "+5", "prof": true  },
+        "int_save": { "val": "+0", "prof": false },
+        "wis_save": { "val": "+5", "prof": true  },
+        "cha_save": { "val": "-1", "prof": false }
+      },
+      "skills": {
+        "acrobatics":      { "val": "+6",  "prof": true,  "expr": false },
+        "animal_handling": { "val": "+2",  "prof": false, "expr": false },
+        "arcana":          { "val": "+0",  "prof": false, "expr": false },
+        "athletics":       { "val": "+4",  "prof": true,  "expr": false },
+        "deception":       { "val": "-1",  "prof": false, "expr": false },
+        "history":         { "val": "+0",  "prof": false, "expr": false },
+        "insight":         { "val": "+5",  "prof": true,  "expr": false },
+        "intimidation":    { "val": "-1",  "prof": false, "expr": false },
+        "investigation":   { "val": "+0",  "prof": false, "expr": false },
+        "medicine":        { "val": "+2",  "prof": false, "expr": false },
+        "nature":          { "val": "+0",  "prof": false, "expr": false },
+        "perception":      { "val": "+5",  "prof": true,  "expr": false },
+        "performance":     { "val": "-1",  "prof": false, "expr": false },
+        "persuasion":      { "val": "-1",  "prof": false, "expr": false },
+        "religion":        { "val": "+3",  "prof": true,  "expr": false },
+        "sleight_of_hand": { "val": "+3",  "prof": false, "expr": false },
+        "stealth":         { "val": "+6",  "prof": true,  "expr": false },
+        "survival":        { "val": "+2",  "prof": false, "expr": false }
+      }
+    },
+    "status": {
+      "temp_health": "",
+      "current_health": "38",
+      "max_health": "38",
+      "hit_dice": {
+        "current_hd": "5",
+        "max_hd": "5",
+        "hd_die": "8"
+      },
+      "death_saves": {
+        "success_1": false, "success_2": false, "success_3": false,
+        "fail_1": false, "fail_2": false, "fail_3": false
+      }
+    },
+    "proficiencies": {
+      "weapon_profs": "Simple weapons, shortswords",
+      "armor_profs": "None",
+      "tool_profs": "Herbalism kit, flute",
+      "language_profs": "Common, Elvish",
+      "other_profs": ""
+    },
+    "attacks_spells": [
+      { "name": "Unarmed Strike", "stat": "str", "toHit": "+4", "damage": "1d6+1", "damage_type": "Bludgeoning" },
+      { "name": "Shortsword",     "stat": "dex", "toHit": "+6", "damage": "1d6+3", "damage_type": "Piercing"    }
+    ]
+  },
+  "page2": {
+    "equipment": {
+      "val": {
+        "col_1": [
+          { "name": "Shortsword", "weight": "2" },
+          { "name": "Explorer's Pack", "weight": "59" },
+          { "name": "10 darts", "weight": "2.5" }
+        ],
+        "col_2": [
+          { "name": "Herbalism kit", "weight": "3" }
+        ]
+      },
+      "currency": { "cp": "0", "sp": "5", "ep": "0", "gp": "15", "pp": "0" },
+      "encumberance": ""
+    },
+    "mount_pet": {},
+    "mount_pet2": {}
+  },
+  "page3": {
+    "spell_info": {
+      "class": "",
+      "att": "",
+      "dc": "",
+      "bonus": ""
+    },
+    "spells": {
+      "cantrips": { "spells": [] },
+      "level_1": { "total": "", "spells": [] },
+      "level_2": { "total": "", "spells": [] },
+      "level_3": { "total": "", "spells": [] },
+      "level_4": { "total": "", "spells": [] },
+      "level_5": { "total": "", "spells": [] },
+      "level_6": { "total": "", "spells": [] },
+      "level_7": { "total": "", "spells": [] },
+      "level_8": { "total": "", "spells": [] },
+      "level_9": { "total": "", "spells": [] }
+    }
+  },
+  "page4": {
+    "backstory": "Raised in a mountain monastery, Kanaan mastered the Way of the Open Hand before venturing into the world to seek balance.",
+    "allies_organizations": { "name": "Monastério da Palma Aberta" },
+    "personality": {
+      "personality_traits": "I am always calm, no matter the situation.",
+      "ideals": "Respect. All people deserve to be treated with dignity.",
+      "bonds": "My monastery is my true home.",
+      "flaws": "I am slow to trust those outside my order."
+    }
+  },
+  "page5": {
+    "notes_1": "Ki points: 5/5",
+    "notes_2": "Flurry of Blows, Patient Defense, Step of the Wind"
+  },
+  "images": {
+    "character": "",
+    "symbol": ""
+  }
+}

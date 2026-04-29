@@ -1,0 +1,166 @@
+{
+  "id": "char_1700000001000_xyz789",
+  "schemaVersion": 1,
+  "updatedAt": 1700000001000,
+  "page1": {
+    "basic_info": {
+      "char_name": "Kael Brightweave",
+      "classes": [
+        { "name": "Bard", "level": "5" }
+      ],
+      "total_level": 5,
+      "char_class": "Bard",
+      "level": "5"
+    },
+    "character_info": {
+      "race_class": "Meio-Elfo",
+      "background": "Entertainer",
+      "player_name": "Maria",
+      "exp": "6500",
+      "alignment": "Caótico e Bom"
+    },
+    "top_bar": {
+      "proficiency": "3",
+      "initiative": "2",
+      "passive_perception": "13",
+      "ac": "14",
+      "speed": "30",
+      "spell_dc": "14",
+      "insperation": ""
+    },
+    "attributes": {
+      "str": "8",  "str_mod": "-1",
+      "dex": "14", "dex_mod": "+2",
+      "con": "12", "con_mod": "+1",
+      "int": "12", "int_mod": "+1",
+      "wis": "10", "wis_mod": "+0",
+      "cha": "18", "cha_mod": "+4"
+    },
+    "saves_skills": {
+      "spell_casting": "cha",
+      "saves": {
+        "str_save": { "val": "-1", "prof": false },
+        "dex_save": { "val": "+5", "prof": true  },
+        "con_save": { "val": "+1", "prof": false },
+        "int_save": { "val": "+1", "prof": false },
+        "wis_save": { "val": "+0", "prof": false },
+        "cha_save": { "val": "+7", "prof": true  }
+      },
+      "skills": {
+        "acrobatics":      { "val": "+2",  "prof": false, "expr": false },
+        "animal_handling": { "val": "+0",  "prof": false, "expr": false },
+        "arcana":          { "val": "+1",  "prof": false, "expr": false },
+        "athletics":       { "val": "-1",  "prof": false, "expr": false },
+        "deception":       { "val": "+7",  "prof": true,  "expr": false },
+        "history":         { "val": "+4",  "prof": true,  "expr": false },
+        "insight":         { "val": "+0",  "prof": false, "expr": false },
+        "intimidation":    { "val": "+4",  "prof": false, "expr": false },
+        "investigation":   { "val": "+1",  "prof": false, "expr": false },
+        "medicine":        { "val": "+0",  "prof": false, "expr": false },
+        "nature":          { "val": "+1",  "prof": false, "expr": false },
+        "perception":      { "val": "+3",  "prof": true,  "expr": false },
+        "performance":     { "val": "+10", "prof": true,  "expr": true  },
+        "persuasion":      { "val": "+7",  "prof": true,  "expr": false },
+        "religion":        { "val": "+1",  "prof": false, "expr": false },
+        "sleight_of_hand": { "val": "+2",  "prof": false, "expr": false },
+        "stealth":         { "val": "+2",  "prof": false, "expr": false },
+        "survival":        { "val": "+0",  "prof": false, "expr": false }
+      }
+    },
+    "status": {
+      "temp_health": "5",
+      "current_health": "30",
+      "max_health": "33",
+      "hit_dice": {
+        "current_hd": "3",
+        "max_hd": "5",
+        "hd_die": "8"
+      },
+      "death_saves": {
+        "success_1": true, "success_2": false, "success_3": false,
+        "fail_1": true, "fail_2": false, "fail_3": false
+      }
+    },
+    "proficiencies": {
+      "weapon_profs": "Simple weapons, hand crossbows, longswords, rapiers, shortswords",
+      "armor_profs": "Light armor",
+      "tool_profs": "Lute, lyre, pan flute",
+      "language_profs": "Common, Elvish, Draconic",
+      "other_profs": "Bardic Inspiration (d8)"
+    },
+    "attacks_spells": [
+      { "name": "Rapier",          "stat": "dex", "toHit": "+5",   "damage": "1d8+2", "damage_type": "Piercing" },
+      { "name": "Vicious Mockery", "stat": "cha", "toHit": "DC 14","damage": "2d4",   "damage_type": "Psychic"  }
+    ]
+  },
+  "page2": {
+    "equipment": {
+      "val": {
+        "col_1": [
+          { "name": "Rapier", "weight": "2" },
+          { "name": "Leather armor", "weight": "10" },
+          { "name": "Lute", "weight": "2" }
+        ],
+        "col_2": [
+          { "name": "Entertainer's pack", "weight": "38" },
+          { "name": "Dagger x2", "weight": "2" }
+        ]
+      },
+      "currency": { "cp": "5", "sp": "10", "ep": "0", "gp": "25", "pp": "1" },
+      "encumberance": ""
+    },
+    "mount_pet": {},
+    "mount_pet2": {}
+  },
+  "page3": {
+    "spell_info": {
+      "class": "Bard",
+      "att": "+6",
+      "dc": "14",
+      "bonus": ""
+    },
+    "spells": {
+      "cantrips": { "spells": [
+        { "spell_name": "Vicious Mockery" },
+        { "spell_name": "Minor Illusion" },
+        { "spell_name": "Prestidigitation" }
+      ]},
+      "level_1": { "total": "4", "spells": [
+        { "spell_name": "Healing Word",  "preped": true  },
+        { "spell_name": "Thunderwave",   "preped": true  },
+        { "spell_name": "Faerie Fire",   "preped": false }
+      ]},
+      "level_2": { "total": "3", "spells": [
+        { "spell_name": "Shatter",       "preped": true  },
+        { "spell_name": "Invisibility",  "preped": false }
+      ]},
+      "level_3": { "total": "2", "spells": [
+        { "spell_name": "Hypnotic Pattern", "preped": true }
+      ]},
+      "level_4": { "total": "", "spells": [] },
+      "level_5": { "total": "", "spells": [] },
+      "level_6": { "total": "", "spells": [] },
+      "level_7": { "total": "", "spells": [] },
+      "level_8": { "total": "", "spells": [] },
+      "level_9": { "total": "", "spells": [] }
+    }
+  },
+  "page4": {
+    "backstory": "Kael grew up performing in taverns along the Sword Coast before discovering their talent for magic. Now they use song and spell to protect the innocent.",
+    "allies_organizations": { "name": "The Harpers" },
+    "personality": {
+      "personality_traits": "I love a good performance and audience applause.",
+      "ideals": "Freedom. Everyone should be free to express themselves.",
+      "bonds": "I owe my life to a half-elf bard who saved me from slavers.",
+      "flaws": "I can't resist an audience, even when silence would be wiser."
+    }
+  },
+  "page5": {
+    "notes_1": "Bardic Inspiration: 4/4 dice remaining",
+    "notes_2": "Jack of All Trades, Song of Rest, Expertise (Performance, Persuasion)"
+  },
+  "images": {
+    "character": "",
+    "symbol": ""
+  }
+}

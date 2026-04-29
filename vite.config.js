@@ -7,6 +7,10 @@ export default defineConfig({
   build: {
     outDir: 'dist'
   },
+  test: {
+    // Restrict to our own tests only — exclude v2 (has own config) and worker/node_modules
+    include: ['tests/**/*.{test,spec}.{js,ts}'],
+  },
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',

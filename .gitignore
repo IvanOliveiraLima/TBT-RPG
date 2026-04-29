@@ -5,3 +5,10 @@ worker/.dev.vars
 .env
 .env.local
 .env*.local
+
+# v2 sub-project build artifacts
+v2/node_modules/
+v2/dist/
+
+# Design prototype reference (local only)
+design-reference/

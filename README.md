@@ -4,7 +4,55 @@ Uma ficha de personagem moderna, offline e com persistência automática para Du
 
 ## Demo
 
-[https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
+- **v1 (atual):** [https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
+- **v2 (preview):** [https://ivanoliveiralima.github.io/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/)
+
+## v2 (preview)
+
+A v2 é uma reescrita completa em React + TypeScript + Vite, atualmente em
+preview. Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/).
+
+### Status atual
+
+A v2 funciona como **viewer** das fichas v1 — leitura completa de todos os
+dados, com visual modernizado e responsivo. Edição de personagens ainda é
+feita exclusivamente na v1 ([raiz do app](https://ivanoliveiralima.github.io/TBT-RPG/)).
+
+### O que tem na v2
+
+- 5 abas funcionais: Atributos, Combate, Magias, Inventário, História
+- Layouts dedicados para mobile e desktop
+- Cálculos derivados consistentes (AC, Initiative, Passive Perception, bonuses)
+- Cloud sync via Supabase (opcional)
+- 517 testes unitários e de integração
+- PWA instalável
+
+### O que não tem ainda (Fase C)
+
+- Edição de personagens
+- Geração via IA (Cloudflare Workers)
+- Tradução PT/EN
+- Importação/exportação de JSON na v2 (use a v1 por enquanto)
+
+### Stack v2
+
+Vite + React 19 + TypeScript + Tailwind + Zustand + Supabase + IndexedDB.
+
+O projeto usa uma estrutura monorepo leve:
+- `./` — v1 (vanilla JS, Vite) — produção atual
+- `v2/` — v2 (React, TypeScript, Tailwind, Vite) — preview
+
+Ambas as versões são deployadas pelo mesmo CI para `gh-pages`:
+```
+ivanoliveiralima.github.io/TBT-RPG/      → v1
+ivanoliveiralima.github.io/TBT-RPG/v2/   → v2
+```
+
+Para desenvolver a v2:
+```bash
+cd v2 && npm install && npm run dev
+# Acesse http://localhost:5173
+```
 
 ## Sobre
 

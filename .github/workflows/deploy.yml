@@ -16,21 +16,47 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm ci
-      - name: Build
+
+      # ── Build v1 ──────────────────────────────────────────────────────
+      - name: Install v1 dependencies
+        run: npm ci
+
+      - name: Build v1
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      - name: Show dist/index.html
+
+      - name: Show v1 dist/index.html
         run: cat dist/index.html
+
+      # ── Build v2 ──────────────────────────────────────────────────────
+      - name: Install v2 dependencies
+        working-directory: v2
+        run: npm ci --legacy-peer-deps
+
+      - name: Build v2
+        working-directory: v2
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # ── Merge into unified dist/ ──────────────────────────────────────
+      - name: Copy v2 dist into dist/v2/
+        run: cp -r v2/dist dist/v2
+
+      # ── Deploy ────────────────────────────────────────────────────────
       - uses: actions/configure-pages@v4
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
+
       - uses: actions/deploy-pages@v4
         id: deployment

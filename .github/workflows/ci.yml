@@ -13,10 +13,32 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
+
+      # ── v1 ────────────────────────────────────────────────────────────
       - run: npm ci
       - run: npm run lint
       - run: npm run test
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # ── v2 ────────────────────────────────────────────────────────────
+      - name: Install v2 dependencies
+        working-directory: v2
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint v2
+        working-directory: v2
+        run: npm run lint
+
+      - name: Test v2
+        working-directory: v2
+        run: npm run test
+
+      - name: Build v2
+        working-directory: v2
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
