@@ -7,6 +7,7 @@ import { AttrGrid } from '../parts/AttrGrid'
 import { SavingThrows } from '../parts/SavingThrows'
 import { SkillsBlock } from '../parts/SkillsBlock'
 import { FeaturesList } from '../parts/FeaturesList'
+import { ProficienciesBlock } from '../parts/ProficienciesBlock'
 import { Label } from '../ui/Label'
 
 const CARD: React.CSSProperties = {
@@ -54,6 +55,9 @@ export function StatusTab() {
           <Label>Saving Throws</Label>
           <SavingThrows character={character} />
         </div>
+
+        {/* Proficiências */}
+        <ProficienciesBlock character={character} />
       </div>
 
       {/* ── DESKTOP GRID (hidden below lg) ── */}
@@ -98,6 +102,11 @@ export function StatusTab() {
             <Label>Features</Label>
             <FeaturesList character={character} />
           </div>
+        </div>
+
+        {/* Row 4: Proficiências — full width */}
+        <div style={{ gridColumn: 'span 3' }}>
+          <ProficienciesBlock character={character} />
         </div>
       </div>
     </>
