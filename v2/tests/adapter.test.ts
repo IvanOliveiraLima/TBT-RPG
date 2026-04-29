@@ -348,11 +348,6 @@ describe('adaptCharacter — full fixture', () => {
     expect(result.backstory).toContain('monastery')
   })
 
-  it('allies from allies_organizations.name', () => {
-    const result = adaptCharacter(fullChar)
-    expect(result.allies).toBe('Monastério da Palma Aberta')
-  })
-
   it('notes are concatenated from notes_1 and notes_2', () => {
     const result = adaptCharacter(fullChar)
     expect(result.notes).toContain('Ki points')
@@ -388,13 +383,38 @@ describe('adaptCharacter — full fixture', () => {
     }
     const result = adaptCharacter(charWithImage)
     expect(result.images.character).toBe('data:image/png;base64,abc123')
-    expect(result.images.symbol).toBeUndefined()
   })
 
   it('empty image strings are not included in images object', () => {
     const result = adaptCharacter(fullChar)
     expect(result.images.character).toBeUndefined()
-    expect(result.images.symbol).toBeUndefined()
+  })
+})
+
+describe('adaptCharacter — removed organization fields', () => {
+  it('does not include allies in domain Character', () => {
+    const raw: V1Character = {
+      page4: {
+        allies_organizations: {
+          name: 'Harpers',
+          val: 'A network of spies and rebels.',
+        },
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c).not.toHaveProperty('allies')
+  })
+
+  it('does not include images.symbol in domain Character', () => {
+    const raw: V1Character = {
+      images: {
+        character: 'data:image/png;base64,abc',
+        symbol:    'data:image/png;base64,xyz',
+      },
+    }
+    const c = adaptCharacter(raw)
+    expect(c.images.character).toBe('data:image/png;base64,abc')
+    expect(c.images).not.toHaveProperty('symbol')
   })
 })
 
