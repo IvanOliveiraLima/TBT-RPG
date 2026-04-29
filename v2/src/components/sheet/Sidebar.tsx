@@ -22,7 +22,6 @@ const NAV_TABS: { k: TabKey; n: string }[] = [
   { k: 'spells', n: 'Magias' },
   { k: 'inv',    n: 'Inventário' },
   { k: 'lore',   n: 'História' },
-  { k: 'notes',  n: 'Notas' },
 ]
 
 interface SidebarProps {

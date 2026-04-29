@@ -10,7 +10,6 @@ import { CombatTab } from '@/components/sheet/tabs/CombatTab'
 import { SpellsTab } from '@/components/sheet/tabs/SpellsTab'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
 import { LoreTab } from '@/components/sheet/tabs/LoreTab'
-import { NotesTab } from '@/components/sheet/tabs/NotesTab'
 import type { Character } from '@/domain/character'
 
 const MOCK_CHARACTER: Character = {
@@ -57,7 +56,6 @@ function TabContent({ tabKey }: { tabKey: TabKey }) {
     case 'spells':  return <SpellsTab />
     case 'inv':     return <InventoryTab />
     case 'lore':    return <LoreTab />
-    case 'notes':   return <NotesTab />
   }
 }
 
@@ -114,19 +112,12 @@ describe('tab switching', () => {
     expect(screen.getAllByText('Inventário').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('clicking Lore shows Lore placeholder', () => {
+  it('clicking Lore shows LoreTab content', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     render(<TabSwitcher />)
     const loreBtns = screen.getAllByText('Lore')
     fireEvent.click(loreBtns[0]!)
-    expect(screen.getAllByText('Lore & História').length).toBeGreaterThanOrEqual(1)
-  })
-
-  it('clicking Notas in desktop sidebar switches to Notes placeholder', () => {
-    render(<TabSwitcher />)
-    // Desktop sidebar has "Notas" nav button
-    const notasBtns = screen.getAllByText('Notas')
-    fireEvent.click(notasBtns[0]!)
-    expect(screen.getAllByText(/Disponível apenas no desktop/i).length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByTestId('lore-hero').length).toBeGreaterThanOrEqual(1)
   })
 
   it('character name is visible in the rendered shell', () => {

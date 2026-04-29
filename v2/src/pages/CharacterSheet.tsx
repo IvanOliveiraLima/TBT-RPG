@@ -11,7 +11,6 @@ import { CombatTab } from '@/components/sheet/tabs/CombatTab'
 import { SpellsTab } from '@/components/sheet/tabs/SpellsTab'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
 import { LoreTab } from '@/components/sheet/tabs/LoreTab'
-import { NotesTab } from '@/components/sheet/tabs/NotesTab'
 
 function TabContent({ tabKey }: { tabKey: TabKey }) {
   switch (tabKey) {
@@ -20,7 +19,6 @@ function TabContent({ tabKey }: { tabKey: TabKey }) {
     case 'spells':  return <SpellsTab />
     case 'inv':     return <InventoryTab />
     case 'lore':    return <LoreTab />
-    case 'notes':   return <NotesTab />
   }
 }
 

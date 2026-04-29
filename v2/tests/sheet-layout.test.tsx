@@ -81,11 +81,12 @@ describe('SheetLayout', () => {
     expect(screen.getAllByText('Lore').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders the 6 desktop sidebar nav items including Notas', () => {
+  it('renders the 5 desktop sidebar nav items (Notas removed)', () => {
     render(<Wrapper />)
-    // Desktop sidebar has Atributos, Combate & Skills, Magias, Inventário, História, Notas
+    // Desktop sidebar has Atributos, Combate, Magias, Inventário, História
     expect(screen.getAllByText('Atributos').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Notas').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('História').length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Notas')).toBeNull()
   })
 
   it('renders the open menu button (hamburger) in mobile header', () => {

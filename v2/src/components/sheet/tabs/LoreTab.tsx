@@ -1,25 +1,19 @@
-const T = {
-  textPrimary: '#F4EFE0',
-  textMuted:   '#7A7788',
-  serif:       "'Cinzel', Georgia, serif",
-  sans:        "'Inter', system-ui, sans-serif",
-} as const
+import { useCharacterStore } from '@/store/character'
+import { LoreHero } from '../parts/LoreHero'
+import { BackstoryBlock } from '../parts/BackstoryBlock'
+import { PersonalityBlock } from '../parts/PersonalityBlock'
+import { NotesBlock } from '../parts/NotesBlock'
 
 export function LoreTab() {
+  const character = useCharacterStore((s) => s.character)
+  if (!character) return null
+
   return (
-    <div style={{
-      padding: 24,
-      textAlign: 'center',
-      fontFamily: T.sans,
-      color: T.textMuted,
-    }}>
-      <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, marginBottom: 8 }}>
-        Lore &amp; História
-      </p>
-      <p style={{ fontSize: 13 }}>Conteúdo em construção</p>
-      <p style={{ fontSize: 11, marginTop: 16, opacity: 0.7 }}>
-        Backstory, personalidade, vínculos e fraquezas aparecerão aqui.
-      </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <LoreHero character={character} />
+      <BackstoryBlock character={character} />
+      <PersonalityBlock character={character} />
+      <NotesBlock character={character} />
     </div>
   )
 }
