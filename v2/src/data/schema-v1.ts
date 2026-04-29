@@ -254,9 +254,14 @@ export interface V1Personality {
   flaws?:              string
 }
 
+/**
+ * @deprecated Organization concept removed in v2.
+ * Type kept for v1 schema fidelity, but never adapted to domain.
+ */
 export interface V1AlliesOrganizations {
   name?:         string
-  symbol_image?: string
+  val?:          string   // textarea description — never mapped to domain
+  symbol_image?: string   // legacy field, never used in v1 code
 }
 
 export interface V1Page4 {
@@ -276,7 +281,8 @@ export interface V1Page5 {
 
 export interface V1CharacterImages {
   character?: string  // base64 data URL or ''
-  symbol?:    string
+  /** @deprecated Symbol image removed from v2 domain (organization concept) */
+  symbol?: string
 }
 
 /* ── Root character record ────────────────────────────────────────────── */

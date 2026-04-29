@@ -17,6 +17,8 @@
  * - page1.features — parsed from comma-separated string; v1 has no structured array
  * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
  * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
+ * - page4.allies_organizations.* — organization concept removed in v2 (Lore tab has no allies field)
+ * - images.symbol — organization symbol image, removed alongside allies
  *
  * v1 fields with typo/rename preserved in raw schema but corrected in domain:
  * - top_bar.insperation → Character.inspiration (string → boolean)
@@ -629,12 +631,10 @@ export function adaptCharacter(raw: V1Character): Character {
       bonds:  str(p4?.personality?.bonds),
       flaws:  str(p4?.personality?.flaws),
     },
-    allies: str(p4?.allies_organizations?.name),
     notes,
 
     images: {
       ...(raw.images?.character ? { character: raw.images.character } : {}),
-      ...(raw.images?.symbol    ? { symbol:    raw.images.symbol    } : {}),
     },
 
     createdAt: raw.updatedAt ?? now,

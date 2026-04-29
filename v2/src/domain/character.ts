@@ -147,13 +147,11 @@ export interface Character {
   features: Feature[]
   backstory: string
   personality: { traits: string; ideals: string; bonds: string; flaws: string }
-  allies: string
   notes: string
 
   // Images (base64 data URLs)
   images: {
     character?: string
-    symbol?: string
   }
 
   // Metadata
