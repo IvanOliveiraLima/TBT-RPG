@@ -1,0 +1,182 @@
+import type en from './en';
+
+const pt: Record<keyof typeof en, string> = {
+  // Common UI
+  'common.loading': 'Carregando…',
+  'common.error': 'Erro',
+  'common.cancel': 'Cancelar',
+  'common.save': 'Salvar',
+  'common.add': '+ Adicionar',
+  'common.remove': 'Remover',
+  'common.empty_dash': '—',
+  'common.back': 'Voltar',
+  'common.level_abbr': 'Nv',
+  'common.feet_abbr': 'ft',
+
+  // Ability scores (PT usa abreviações localizadas)
+  'ability.str': 'FOR',
+  'ability.dex': 'DES',
+  'ability.con': 'CON',
+  'ability.int': 'INT',
+  'ability.wis': 'SAB',
+  'ability.cha': 'CAR',
+  'ability.strength': 'Força',
+  'ability.dexterity': 'Destreza',
+  'ability.constitution': 'Constituição',
+  'ability.intelligence': 'Inteligência',
+  'ability.wisdom': 'Sabedoria',
+  'ability.charisma': 'Carisma',
+
+  // Navigation / sidebar
+  'nav.my_characters': 'Meus personagens',
+  'nav.pages': 'Páginas',
+  'nav.attributes': 'Atributos',
+  'nav.combat': 'Combate',
+  'nav.spells': 'Magias',
+  'nav.inventory': 'Inventário',
+  'nav.lore': 'História',
+  'nav.generate_with_ai': 'Gerar com IA',
+  'nav.ai_subtitle': 'Backstory, items, magias',
+
+  // Bottom tab bar (short labels)
+  'tab.status': 'Status',
+  'tab.combat': 'Combate',
+  'tab.spells': 'Magias',
+  'tab.inventory': 'Inv',
+  'tab.lore': 'Histórico',
+
+  // Auth
+  'auth.sign_in': 'Entrar',
+  'auth.sign_out': 'Sair',
+  'auth.create_account': 'Criar conta',
+  'auth.email': 'E-mail',
+  'auth.password': 'Senha',
+  'auth.signing_in': 'Entrando…',
+  'auth.sign_in_title': 'Entrar na conta',
+  'auth.sign_in_failed': 'Falha no login',
+  'auth.sync_prompt': 'Entrar para sincronizar',
+
+  // Topbar actions
+  'topbar.export': 'Exportar',
+  'topbar.unlock': 'Destravar',
+  'topbar.lock': 'Travar',
+  'topbar.synced': 'Sincronizado',
+
+  // Sync status
+  'sync.synced': 'Sincronizado',
+  'sync.syncing': 'Sincronizando…',
+  'sync.offline': 'Offline',
+
+  // CharSelect
+  'charselect.headline': 'Sua ficha,\nfacilitada.',
+  'charselect.tagline': 'Mesa virtual · fichas sincronizadas',
+  'charselect.subline': 'Gerencie seus personagens de D&D em qualquer dispositivo.',
+  'charselect.feature_hint': 'HP, magias e inventário a um toque.',
+  'charselect.my_characters': 'Meus Personagens',
+  'charselect.loading': 'Carregando…',
+  'charselect.loading_characters': 'Carregando personagens…',
+  'charselect.empty': 'Nenhum personagem encontrado.',
+  'charselect.empty_hint': 'Crie um na v1 e ele aparecerá aqui.',
+  'charselect.create': 'Criar novo personagem',
+  'charselect.create_unavailable': 'Criação de personagens ainda não implementada na v2.\nUse a v1: {url}',
+  'charselect.import': '⬇ Importar JSON',
+  'charselect.export': '⬆ Exportar',
+  'charselect.v1_notice': 'Ficha completa disponível na versão atual (v1)',
+  'charselect.saved_singular': '1 salvo',
+  'charselect.saved_plural': '{n} salvos',
+  'charselect.inspired': 'Inspirado',
+
+  // Combat stats (strip labels)
+  'combat.ac': 'CA',
+  'combat.initiative': 'INIC',
+  'combat.speed': 'VEL',
+  'combat.passive_perception': 'PP',
+  'combat.spell_save_dc': 'DC',
+  'combat.proficiency_bonus': 'PROF',
+  'combat.hit_points': 'Pontos de Vida',
+  'combat.death_saves': 'Testes de Morte',
+  'combat.hit_dice': 'Dados de Vida',
+  'combat.heal': '+ Curar',
+  'combat.damage': '− Dano',
+  'combat.saving_throws': 'Testes de Resistência',
+
+  // Skills section
+  'skills.label': 'Perícias',
+
+  // Features & Traits
+  'features.label': 'Habilidades & Traços',
+  'features.empty': 'Nenhuma habilidade registrada.',
+
+  // Attacks
+  'attacks.label': 'Ataques',
+  'attacks.add': '+ Adicionar',
+  'attacks.empty': 'Nenhum ataque cadastrado.',
+  'attacks.empty_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
+
+  // Spells
+  'spells.label': 'Magias',
+  'spells.cantrips': 'TRUQUES',
+  'spells.level_label': 'NÍVEL {level}',
+  'spells.slots_label': 'ESPAÇOS DE MAGIA',
+  'spells.header_class': 'CLASSE',
+  'spells.header_ability': 'HABILIDADE',
+  'spells.header_save_dc': 'DC DE SALVAGUARDA',
+  'spells.header_attack_bonus': 'BÔNUS DE ATAQUE',
+  'spells.not_caster': '{name} não conjura magias.',
+  'spells.no_spellcasting': 'Esta classe não possui conjuração de magias.',
+  'spells.caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
+  'spells.empty': 'Nenhuma magia cadastrada.',
+  'spells.empty_hint': 'Adicione cantrips e magias para gerenciar slots.',
+
+  // Inventory
+  'inventory.label': 'ITENS ({count})',
+  'inventory.empty': 'Nenhum item registrado.',
+  'inventory.empty_hint': 'Adicione itens para gerenciar seu inventário.',
+  'inventory.add': '+ Adicionar',
+
+  // Currency
+  'currency.label': 'MOEDAS',
+  'currency.pp': 'Platina',
+  'currency.gp': 'Ouro',
+  'currency.ep': 'Electrum',
+  'currency.sp': 'Prata',
+  'currency.cp': 'Cobre',
+
+  // Proficiencies
+  'proficiencies.label': 'PROFICIÊNCIAS',
+  'proficiencies.weapons_armor': 'ARMAS E ARMADURAS',
+  'proficiencies.tools': 'FERRAMENTAS',
+  'proficiencies.languages': 'IDIOMAS',
+  'proficiencies.other': 'OUTRAS',
+
+  // Lore / backstory
+  'lore.history_label': 'História',
+  'lore.backstory_empty': 'Nenhuma história registrada ainda.',
+  'lore.notes_label': 'Notas',
+  'lore.notes_empty': 'Nenhuma nota registrada.',
+  'lore.personality_label': 'Personalidade',
+  'lore.traits': 'Traços',
+  'lore.ideals': 'Ideais',
+  'lore.bonds': 'Vínculos',
+  'lore.flaws': 'Defeitos',
+  'lore.level_xp': 'Nível {level} · {xp} XP',
+
+  // Aria labels (accessibility)
+  'aria.portrait': 'Retrato de {name}',
+  'aria.open_menu': 'Abrir menu',
+  'aria.generate_ai': 'Gerar com IA',
+  'aria.item_weight': 'Item: {name}, peso: {weight}',
+  'aria.remove_item': 'Remover {name}',
+  'aria.remove_spell': 'Remover magia {name}',
+  'aria.remove_attack': 'Remover ataque {name}',
+  'aria.spell_slot': 'Slot de nível {level} ({current} de {max} disponíveis)',
+
+  // Phase C placeholder alerts
+  'phase_c.editing_coming_soon': 'Edição virá na Fase C',
+  'phase_c.details_coming_soon': 'Detalhes virão na Fase C',
+  'phase_c.ai_unavailable': 'Gerar com IA — não implementado nesta fase.',
+  'phase_c.export_unavailable': 'Exportar — não implementado nesta fase.',
+  'phase_c.lock_unavailable': 'Destravar / Travar — não implementado nesta fase.',
+};
+
+export default pt;
