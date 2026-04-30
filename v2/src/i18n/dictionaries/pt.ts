@@ -38,12 +38,21 @@ const pt: Record<keyof typeof en, string> = {
   'nav.generate_with_ai': 'Gerar com IA',
   'nav.ai_subtitle': 'Backstory, items, magias',
 
+  // Sidebar version badge
+  'sidebar.version_badge': 'v2 · beta',
+
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combate',
   'tab.spells': 'Magias',
   'tab.inventory': 'Inv',
   'tab.lore': 'Histórico',
+
+  // Mobile drawer items
+  'drawer.export_json': 'Exportar JSON',
+  'drawer.import_json': 'Importar JSON',
+  'drawer.new_sheet': 'Nova ficha',
+  'drawer.lock': 'Bloquear',
 
   // Auth
   'auth.sign_in': 'Entrar',
@@ -68,23 +77,35 @@ const pt: Record<keyof typeof en, string> = {
   'sync.offline': 'Offline',
 
   // CharSelect
-  'charselect.headline': 'Sua ficha,\nfacilitada.',
+  'charselect.hero_line1': 'Sua ficha,',
+  'charselect.hero_line2': 'facilitada.',
   'charselect.tagline': 'Mesa virtual · fichas sincronizadas',
   'charselect.subline': 'Gerencie seus personagens de D&D em qualquer dispositivo.',
   'charselect.feature_hint': 'HP, magias e inventário a um toque.',
+  'charselect.preview_badge': 'v2 · Preview',
   'charselect.my_characters': 'Meus Personagens',
   'charselect.loading': 'Carregando…',
   'charselect.loading_characters': 'Carregando personagens…',
+  'charselect.saved_count_one': '{n} salvo',
+  'charselect.saved_count_other': '{n} salvos',
   'charselect.empty': 'Nenhum personagem encontrado.',
   'charselect.empty_hint': 'Crie um na v1 e ele aparecerá aqui.',
   'charselect.create': 'Criar novo personagem',
   'charselect.create_unavailable': 'Criação de personagens ainda não implementada na v2.\nUse a v1: {url}',
   'charselect.import': '⬇ Importar JSON',
+  'charselect.import_unavailable': 'Importar JSON — não implementado na v2 ainda.',
   'charselect.export': '⬆ Exportar',
-  'charselect.v1_notice': 'Ficha completa disponível na versão atual (v1)',
-  'charselect.saved_singular': '1 salvo',
-  'charselect.saved_plural': '{n} salvos',
+  'charselect.export_unavailable': 'Exportar — não implementado na v2 ainda.',
+  'charselect.v1_prefix': 'Ficha completa disponível na',
+  'charselect.v1_link': 'versão atual (v1) →',
   'charselect.inspired': 'Inspirado',
+
+  // State screens
+  'screens.loading_character': 'Carregando personagem…',
+  'screens.error_title': 'Erro ao carregar',
+  'screens.not_found_title': 'Personagem não encontrado',
+  'screens.not_found_hint': 'Este personagem não existe ou foi removido.',
+  'screens.back_to_list': 'Voltar para lista',
 
   // Combat stats (strip labels)
   'combat.ac': 'CA',

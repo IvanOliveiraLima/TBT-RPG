@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '@/i18n'
 
 const T = {
   bg:          '#0F0D14',
@@ -19,6 +20,7 @@ interface ErrorScreenProps {
 
 export function ErrorScreen({ message }: ErrorScreenProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   return (
     <div style={{
       display: 'flex',
@@ -36,7 +38,7 @@ export function ErrorScreen({ message }: ErrorScreenProps) {
         color: T.danger,
       }}>✕</div>
       <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, textAlign: 'center' }}>
-        Erro ao carregar
+        {t('screens.error_title')}
       </p>
       <p style={{ fontSize: 13, color: T.textMuted, textAlign: 'center' }}>
         {message}
@@ -55,7 +57,7 @@ export function ErrorScreen({ message }: ErrorScreenProps) {
           cursor: 'pointer',
         }}
       >
-        Voltar
+        {t('screens.back_to_list')}
       </button>
     </div>
   )

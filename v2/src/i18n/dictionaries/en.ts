@@ -36,12 +36,21 @@ const en = {
   'nav.generate_with_ai': 'Generate with AI',
   'nav.ai_subtitle': 'Backstory, items, spells',
 
+  // Sidebar version badge
+  'sidebar.version_badge': 'v2 · beta',
+
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combat',
   'tab.spells': 'Spells',
   'tab.inventory': 'Inv',
   'tab.lore': 'Lore',
+
+  // Mobile drawer items
+  'drawer.export_json': 'Export JSON',
+  'drawer.import_json': 'Import JSON',
+  'drawer.new_sheet': 'New sheet',
+  'drawer.lock': 'Lock',
 
   // Auth
   'auth.sign_in': 'Sign in',
@@ -66,23 +75,35 @@ const en = {
   'sync.offline': 'Offline',
 
   // CharSelect
-  'charselect.headline': 'Your sheet,\neffortlessly.',
+  'charselect.hero_line1': 'Your sheet,',
+  'charselect.hero_line2': 'effortlessly.',
   'charselect.tagline': 'Virtual table · synced sheets',
   'charselect.subline': 'Manage your D&D characters from any device.',
   'charselect.feature_hint': 'HP, spells and inventory at a tap.',
+  'charselect.preview_badge': 'v2 · Preview',
   'charselect.my_characters': 'My Characters',
   'charselect.loading': 'Loading…',
   'charselect.loading_characters': 'Loading characters…',
+  'charselect.saved_count_one': '{n} saved',
+  'charselect.saved_count_other': '{n} saved',
   'charselect.empty': 'No characters found.',
   'charselect.empty_hint': 'Create one in v1 and it will appear here.',
   'charselect.create': 'Create new character',
   'charselect.create_unavailable': 'Character creation is not yet available in v2.\nUse v1: {url}',
   'charselect.import': '⬇ Import JSON',
+  'charselect.import_unavailable': 'Import JSON — not yet available in v2.',
   'charselect.export': '⬆ Export',
-  'charselect.v1_notice': 'Full sheet available in the current version (v1)',
-  'charselect.saved_singular': '1 saved',
-  'charselect.saved_plural': '{n} saved',
+  'charselect.export_unavailable': 'Export — not yet available in v2.',
+  'charselect.v1_prefix': 'Full sheet available in the',
+  'charselect.v1_link': 'current version (v1) →',
   'charselect.inspired': 'Inspired',
+
+  // State screens
+  'screens.loading_character': 'Loading character…',
+  'screens.error_title': 'Failed to load',
+  'screens.not_found_title': 'Character not found',
+  'screens.not_found_hint': 'This character no longer exists or was deleted.',
+  'screens.back_to_list': 'Back to list',
 
   // Combat stats (strip labels)
   'combat.ac': 'AC',

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { Character } from '@/domain/character'
+import { renderWithI18n } from './helpers/render'
 
 const MOCK_CHARACTER: Character = {
   id: 'char_test_layout',
@@ -48,16 +49,18 @@ function Wrapper({ activeTab = 'status' as const, onTabChange = () => undefined 
 }
 
 describe('SheetLayout', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   it('renders the character name in the mobile header', () => {
-    render(<Wrapper />)
-    // Name appears in MobileHeader (sticky header)
+    renderWithI18n(<Wrapper />, 'pt')
     const names = screen.getAllByText('Eira Swiftwind')
     expect(names.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders both desktop and mobile shells simultaneously in the DOM', () => {
-    const { container } = render(<Wrapper />)
-    // lg:hidden wraps mobile; hidden lg:block wraps desktop
+    const { container } = renderWithI18n(<Wrapper />, 'pt')
     const lgHiddenDivs = container.querySelectorAll('.lg\\:hidden')
     const hiddenLgDivs = container.querySelectorAll('.hidden')
     expect(lgHiddenDivs.length).toBeGreaterThanOrEqual(1)
@@ -65,32 +68,51 @@ describe('SheetLayout', () => {
   })
 
   it('renders the tab content children in both shells', () => {
-    render(<Wrapper />)
-    // Both mobile and desktop mount children → 2 instances
+    renderWithI18n(<Wrapper />, 'pt')
     const slots = screen.getAllByTestId('tab-content')
     expect(slots.length).toBe(2)
   })
 
-  it('renders the bottom tab bar with all 5 mobile tabs', () => {
-    render(<Wrapper />)
-    // Status, Combate, Magias, Inv, Lore buttons in BottomTabBar
+  it('renders the bottom tab bar with all 5 mobile tabs in PT', () => {
+    renderWithI18n(<Wrapper />, 'pt')
     expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Combate').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Magias').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Inv').length).toBeGreaterThanOrEqual(1)
+    // PT: tab.lore = 'Histórico'
+    expect(screen.getAllByText('Histórico').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders the bottom tab bar with all 5 mobile tabs in EN', () => {
+    renderWithI18n(<Wrapper />, 'en')
+    expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Combat').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Spells').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Inv').length).toBeGreaterThanOrEqual(1)
+    // EN: tab.lore = 'Lore'
     expect(screen.getAllByText('Lore').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders the 5 desktop sidebar nav items (Notas removed)', () => {
-    render(<Wrapper />)
-    // Desktop sidebar has Atributos, Combate, Magias, Inventário, História
+  it('renders the 5 desktop sidebar nav items in PT (Notas removed)', () => {
+    renderWithI18n(<Wrapper />, 'pt')
     expect(screen.getAllByText('Atributos').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('História').length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByText('Notas')).toBeNull()
   })
 
-  it('renders the open menu button (hamburger) in mobile header', () => {
-    render(<Wrapper />)
+  it('renders the 5 desktop sidebar nav items in EN', () => {
+    renderWithI18n(<Wrapper />, 'en')
+    expect(screen.getAllByText('Attributes').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Lore').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders the open menu button in PT (aria-label translated)', () => {
+    renderWithI18n(<Wrapper />, 'pt')
     expect(screen.getByLabelText('Abrir menu')).toBeDefined()
+  })
+
+  it('renders the open menu button in EN (aria-label translated)', () => {
+    renderWithI18n(<Wrapper />, 'en')
+    expect(screen.getByLabelText('Open menu')).toBeDefined()
   })
 })

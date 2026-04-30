@@ -1,4 +1,7 @@
+import type { ReactNode } from 'react'
 import type { TabKey } from './types'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 
 const T = {
   gold:     '#D4A017',
@@ -6,10 +9,10 @@ const T = {
   sans:     "'Inter', system-ui, sans-serif",
 } as const
 
-const TABS: { k: TabKey; n: string; icon: React.ReactNode }[] = [
+const TABS: { k: TabKey; n: TranslationKey; icon: ReactNode }[] = [
   {
     k: 'status',
-    n: 'Status',
+    n: 'tab.status',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M12 21s-7-5.5-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 11-7 11l-2 0-2 0z"
@@ -19,7 +22,7 @@ const TABS: { k: TabKey; n: string; icon: React.ReactNode }[] = [
   },
   {
     k: 'combat',
-    n: 'Combate',
+    n: 'tab.combat',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M14.5 3.5 3.5 14.5 9.5 20.5 20.5 9.5 14.5 3.5z M6.5 17.5 8.5 19.5 M11 13 14 10"
@@ -29,7 +32,7 @@ const TABS: { k: TabKey; n: string; icon: React.ReactNode }[] = [
   },
   {
     k: 'spells',
-    n: 'Magias',
+    n: 'tab.spells',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M5 19l2.5-2.5M16.5 7.5 19 5"
@@ -40,7 +43,7 @@ const TABS: { k: TabKey; n: string; icon: React.ReactNode }[] = [
   },
   {
     k: 'inv',
-    n: 'Inv',
+    n: 'tab.inventory',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M4 7h16v12H4z M4 7l2-3h12l2 3 M10 11h4"
@@ -50,7 +53,7 @@ const TABS: { k: TabKey; n: string; icon: React.ReactNode }[] = [
   },
   {
     k: 'lore',
-    n: 'Lore',
+    n: 'tab.lore',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M4 4h10l6 6v10H4z M14 4v6h6 M8 14h8 M8 18h8"
@@ -66,6 +69,7 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ active, onChange }: BottomTabBarProps) {
+  const { t } = useTranslation()
   return (
     <div style={{
       position: 'sticky', bottom: 0, zIndex: 10,
@@ -77,12 +81,12 @@ export function BottomTabBar({ active, onChange }: BottomTabBarProps) {
       display: 'grid',
       gridTemplateColumns: 'repeat(5, 1fr)',
     }}>
-      {TABS.map(t => {
-        const active_ = active === t.k
+      {TABS.map(tab => {
+        const active_ = active === tab.k
         return (
           <button
-            key={t.k}
-            onClick={() => onChange(t.k)}
+            key={tab.k}
+            onClick={() => onChange(tab.k)}
             style={{
               background: 'transparent',
               border: 'none',
@@ -105,12 +109,12 @@ export function BottomTabBar({ active, onChange }: BottomTabBarProps) {
                 boxShadow: `0 0 8px ${T.gold}80`,
               }} />
             )}
-            {t.icon}
+            {tab.icon}
             <span style={{
               fontSize: 10,
               fontWeight: active_ ? 600 : 500,
               letterSpacing: 0.3,
-            }}>{t.n}</span>
+            }}>{t(tab.n)}</span>
           </button>
         )
       })}
