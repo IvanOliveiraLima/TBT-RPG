@@ -1,5 +1,6 @@
 import type { Character } from '@/domain/character'
 import { formatSigned } from '@/domain/calculations'
+import { useTranslation } from '@/i18n'
 
 interface CombatStripProps {
   character: Character
@@ -7,15 +8,16 @@ interface CombatStripProps {
 }
 
 export function CombatStrip({ character, cols = 3 }: CombatStripProps) {
-  const items: { label: string; value: string }[] = [
-    { label: 'AC', value: String(character.ac) },
-    { label: 'INIT', value: formatSigned(character.initiative) },
-    { label: 'SPD', value: `${character.speed} ft` },
-    { label: 'PP', value: String(character.passivePerception) },
+  const { t } = useTranslation()
+  const items: { key: string; label: string; value: string }[] = [
+    { key: 'ac',   label: t('combat.ac'),                 value: String(character.ac) },
+    { key: 'init', label: t('combat.initiative'),          value: formatSigned(character.initiative) },
+    { key: 'spd',  label: t('combat.speed'),               value: `${character.speed} ft` },
+    { key: 'pp',   label: t('combat.passive_perception'),  value: String(character.passivePerception) },
     ...(character.spellSaveDC > 0
-      ? [{ label: 'DC', value: String(character.spellSaveDC) }]
+      ? [{ key: 'dc', label: t('combat.spell_save_dc'), value: String(character.spellSaveDC) }]
       : []),
-    { label: 'PROF', value: formatSigned(character.proficiencyBonus) },
+    { key: 'prof', label: t('combat.proficiency_bonus'),   value: formatSigned(character.proficiencyBonus) },
   ]
 
   return (
@@ -29,8 +31,8 @@ export function CombatStrip({ character, cols = 3 }: CombatStripProps) {
     >
       {items.map((it) => (
         <div
-          key={it.label}
-          data-testid={`combat-stat-${it.label.toLowerCase()}`}
+          key={it.key}
+          data-testid={`combat-stat-${it.key}`}
           style={{
             background: '#15121C',
             border: '1px solid #2A2537',
@@ -48,7 +50,7 @@ export function CombatStrip({ character, cols = 3 }: CombatStripProps) {
               textTransform: 'uppercase',
             }}
           >
-            {it.label}
+              {it.label}
           </div>
           <div
             style={{

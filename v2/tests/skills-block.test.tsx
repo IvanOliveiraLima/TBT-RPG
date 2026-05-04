@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character, SkillState } from '@/domain/character'
 import { SkillsBlock } from '@/components/sheet/parts/SkillsBlock'
+import { renderWithI18n } from './helpers/render'
 
 function skill(
   name: string,
@@ -66,48 +67,47 @@ const BASE: Character = {
 }
 
 describe('SkillsBlock', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders all 18 skills', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const container = screen.getByTestId('skills-block')
-    // exclude bonus spans (data-testid ends with "-bonus")
     expect(container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])')).toHaveLength(18)
   })
 
-  it('renders skills in alphabetical order', () => {
-    render(<SkillsBlock character={BASE} />)
+  it('renders skills in alphabetical order by EN label in EN mode', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'en')
     const container = screen.getByTestId('skills-block')
-    const names = Array.from(
+    const ids = Array.from(
       container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])'),
     ).map((el) => el.getAttribute('data-testid')?.replace('skill-', ''))
-    const sorted = [...names].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
-    expect(names).toEqual(sorted)
+    const sorted = [...ids].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    expect(ids).toEqual(sorted)
   })
 
   it('renders two pips per skill row', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const acroRow = screen.getByTestId('skill-Acrobatics')
     expect(acroRow.querySelectorAll('[role="presentation"]')).toHaveLength(2)
   })
 
   it('proficiency pip filled when proficient', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const acroRow = screen.getByTestId('skill-Acrobatics')
     const pips = acroRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
-    // first pip is gold proficiency pip
     expect(pips[0]!.style.background).not.toBe('transparent')
   })
 
   it('expertise pip filled when expertise', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const insightRow = screen.getByTestId('skill-Insight')
     const pips = insightRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
-    // both pips filled (proficient and expertise)
     expect(pips[0]!.style.background).not.toBe('transparent')
     expect(pips[1]!.style.background).not.toBe('transparent')
   })
 
   it('both pips empty when neither proficient nor expertise', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const arcanaRow = screen.getByTestId('skill-Arcana')
     const pips = arcanaRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
     expect(pips[0]!.style.background).toBe('transparent')
@@ -115,35 +115,78 @@ describe('SkillsBlock', () => {
   })
 
   it('formats bonus with + sign for proficient skill', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('skill-Acrobatics-bonus').textContent).toBe('+4')
   })
 
   it('formats negative bonus correctly', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('skill-Deception-bonus').textContent).toBe('-1')
   })
 
   it('formats zero bonus as +0', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('skill-Arcana-bonus').textContent).toBe('+0')
   })
 
   it('uses ruby text color for expertise skills', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const insightBonus = screen.getByTestId('skill-Insight-bonus') as HTMLElement
     expect(insightBonus.style.color).toBe('rgb(139, 26, 46)')
   })
 
   it('uses gold text color for proficient-only skills', () => {
-    render(<SkillsBlock character={BASE} />)
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const acroBonus = screen.getByTestId('skill-Acrobatics-bonus') as HTMLElement
     expect(acroBonus.style.color).toBe('rgb(212, 160, 23)')
   })
 
   it('renders empty block when no skills', () => {
-    render(<SkillsBlock character={{ ...BASE, skills: [] }} />)
+    renderWithI18n(<SkillsBlock character={{ ...BASE, skills: [] }} />, 'pt')
     const container = screen.getByTestId('skills-block')
     expect(container.querySelectorAll('[data-testid^="skill-"]')).toHaveLength(0)
+  })
+
+  it('renders skill names in PT (PHB-PT standard)', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    expect(screen.getByText('Acrobacia')).toBeDefined()
+    expect(screen.getByText('Furtividade')).toBeDefined()
+    expect(screen.getByText('Prestidigitação')).toBeDefined()
+    expect(screen.getByText('Adestrar Animais')).toBeDefined()
+    expect(screen.getByText('Atuação')).toBeDefined()
+  })
+
+  it('renders skill names in EN', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'en')
+    expect(screen.getByText('Acrobatics')).toBeDefined()
+    expect(screen.getByText('Stealth')).toBeDefined()
+    expect(screen.getByText('Sleight of Hand')).toBeDefined()
+    expect(screen.getByText('Animal Handling')).toBeDefined()
+    expect(screen.getByText('Performance')).toBeDefined()
+  })
+
+  it('PT sort puts Atuação (Performance) before Enganação (Deception)', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    const container = screen.getByTestId('skills-block')
+    const rows = Array.from(
+      container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])'),
+    )
+    const perf = rows.findIndex((el) => el.getAttribute('data-testid') === 'skill-Performance')
+    const decep = rows.findIndex((el) => el.getAttribute('data-testid') === 'skill-Deception')
+    // 'Atuação' < 'Enganação' alphabetically in PT
+    expect(perf).toBeLessThan(decep)
+  })
+
+  it('renders ability abbreviations in PT (DES for dex)', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    // Multiple DEX skills exist; DES should appear
+    const desSpans = screen.getAllByText('DES')
+    expect(desSpans.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders ability abbreviations in EN (DEX for dex)', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'en')
+    const dexSpans = screen.getAllByText('DEX')
+    expect(dexSpans.length).toBeGreaterThanOrEqual(1)
   })
 })

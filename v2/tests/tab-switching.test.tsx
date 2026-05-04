@@ -87,8 +87,8 @@ describe('tab switching', () => {
   it('starts on the Status tab and renders HpBlock when store is populated', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
-    // HpBlock renders "Hit Points" label
-    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
+    // HpBlock renders "Pontos de Vida" label in PT
+    expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Combate in the bottom tab bar shows Combat tab content', () => {
@@ -147,7 +147,7 @@ describe('tab switching', () => {
     // Then go back to Status via bottom tab bar
     const statusBtns = screen.getAllByText('Status')
     fireEvent.click(statusBtns[0]!)
-    // HpBlock is visible again
-    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
+    // HpBlock is visible again with PT label
+    expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 })

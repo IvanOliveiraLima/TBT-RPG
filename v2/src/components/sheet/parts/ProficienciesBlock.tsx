@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 
@@ -9,12 +10,6 @@ const T = {
   sans:          "'Inter', system-ui, sans-serif",
 } as const
 
-const ROWS: { label: string; field: keyof Character['proficiencies'] }[] = [
-  { label: 'ARMAS E ARMADURAS', field: 'weaponsAndArmor' },
-  { label: 'FERRAMENTAS',       field: 'tools' },
-  { label: 'IDIOMAS',           field: 'languages' },
-  { label: 'OUTRAS',            field: 'other' },
-]
 
 function ProficiencyRow({
   label,
@@ -65,19 +60,26 @@ interface ProficienciesBlockProps {
 }
 
 export function ProficienciesBlock({ character }: ProficienciesBlockProps) {
+  const { t } = useTranslation()
   const { proficiencies } = character
+  const rows: { label: string; field: keyof Character['proficiencies'] }[] = [
+    { label: t('proficiencies.weapons_armor'), field: 'weaponsAndArmor' },
+    { label: t('proficiencies.tools'),         field: 'tools' },
+    { label: t('proficiencies.languages'),     field: 'languages' },
+    { label: t('proficiencies.other'),         field: 'other' },
+  ]
 
   return (
     <div data-testid="proficiencies-block">
       <Card padding="md">
-        <Label>PROFICIÊNCIAS</Label>
+        <Label>{t('proficiencies.label')}</Label>
         <div style={{ marginTop: 8 }}>
-          {ROWS.map(({ label, field }, i) => (
+          {rows.map(({ label, field }, i) => (
             <div key={field} data-testid={`prof-row-${field}`}>
               <ProficiencyRow
                 label={label}
                 value={proficiencies[field]}
-                divider={i < ROWS.length - 1}
+                divider={i < rows.length - 1}
               />
             </div>
           ))}

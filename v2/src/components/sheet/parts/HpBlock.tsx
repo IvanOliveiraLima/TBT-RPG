@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { HpBar } from './HpBar'
@@ -10,6 +11,7 @@ interface HpBlockProps {
 }
 
 export function HpBlock({ character }: HpBlockProps) {
+  const { t } = useTranslation()
   const { hp, deathSaves, hitDice } = character
   const current = hp.current
   const max = hp.max
@@ -36,7 +38,7 @@ export function HpBlock({ character }: HpBlockProps) {
             color: '#7A7788',
           }}
         >
-          Hit Points
+          {t('hp.section_title')}
         </div>
         <div
           style={{
@@ -72,7 +74,7 @@ export function HpBlock({ character }: HpBlockProps) {
         <div style={{ color: '#7A7788', fontSize: 18 }}>/ {max > 0 ? max : '—'}</div>
         {hp.temp > 0 && (
           <div style={{ marginLeft: 'auto' }}>
-            <Badge variant="purple">+{hp.temp} temp</Badge>
+            <Badge variant="purple">{t('hp.temp_label', { n: String(hp.temp) })}</Badge>
           </div>
         )}
       </div>
@@ -96,7 +98,7 @@ export function HpBlock({ character }: HpBlockProps) {
             fontFamily: "'Inter', system-ui, sans-serif",
           }}
         >
-          ＋ Heal
+          ＋ {t('hp.heal_button')}
         </button>
         <button
           onClick={() => alert('Edição virá na Fase C')}
@@ -113,7 +115,7 @@ export function HpBlock({ character }: HpBlockProps) {
             fontFamily: "'Inter', system-ui, sans-serif",
           }}
         >
-          − Damage
+          − {t('hp.damage_button')}
         </button>
       </div>
 

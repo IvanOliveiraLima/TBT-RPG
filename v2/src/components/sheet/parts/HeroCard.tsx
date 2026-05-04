@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 import { Badge } from '../ui/Badge'
 
 interface HeroCardProps {
@@ -7,6 +8,7 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ character, compact = false }: HeroCardProps) {
+  const { t } = useTranslation()
   const portrait = character.images.character
   const firstClass = character.classes[0]
   const portraitSize = compact ? 58 : 72
@@ -123,7 +125,7 @@ export function HeroCard({ character, compact = false }: HeroCardProps) {
           {character.inspiration && (
             <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               <Badge variant="purple" icon={<span>✦</span>}>
-                Inspirado
+                {t('hero.inspired_badge')}
               </Badge>
             </div>
           )}

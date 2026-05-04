@@ -105,6 +105,51 @@ const en = {
   'screens.not_found_hint': 'This character no longer exists or was deleted.',
   'screens.back_to_list': 'Back to list',
 
+  // HP block
+  'hp.section_title': 'Hit Points',
+  'hp.heal_button': 'Heal',
+  'hp.damage_button': 'Damage',
+  'hp.temp_label': '+{n} temp',
+
+  // Hit Dice
+  'hit_dice.section_title': 'Hit Dice',
+
+  // Saving throws section
+  'saves.section_title': 'Saving Throws',
+  'saves.ability.str': 'Strength',
+  'saves.ability.dex': 'Dexterity',
+  'saves.ability.con': 'Constitution',
+  'saves.ability.int': 'Intelligence',
+  'saves.ability.wis': 'Wisdom',
+  'saves.ability.cha': 'Charisma',
+
+  // Individual skill names (18)
+  'skills.section_title': 'Skills',
+  'skills.acrobatics': 'Acrobatics',
+  'skills.animal_handling': 'Animal Handling',
+  'skills.arcana': 'Arcana',
+  'skills.athletics': 'Athletics',
+  'skills.deception': 'Deception',
+  'skills.history': 'History',
+  'skills.insight': 'Insight',
+  'skills.intimidation': 'Intimidation',
+  'skills.investigation': 'Investigation',
+  'skills.medicine': 'Medicine',
+  'skills.nature': 'Nature',
+  'skills.perception': 'Perception',
+  'skills.performance': 'Performance',
+  'skills.persuasion': 'Persuasion',
+  'skills.religion': 'Religion',
+  'skills.sleight_of_hand': 'Sleight of Hand',
+  'skills.stealth': 'Stealth',
+  'skills.survival': 'Survival',
+
+  // Attributes section
+  'attributes.section_title': 'Attributes',
+
+  // Hero card
+  'hero.inspired_badge': 'Inspired',
+
   // Combat stats (strip labels)
   'combat.ac': 'AC',
   'combat.initiative': 'INIT',
@@ -115,15 +160,16 @@ const en = {
   'combat.hit_points': 'Hit Points',
   'combat.death_saves': 'Death Saves',
   'combat.hit_dice': 'Hit Dice',
-  'combat.heal': '+ Heal',
+  'combat.heal': '＋ Heal',
   'combat.damage': '− Damage',
   'combat.saving_throws': 'Saving Throws',
 
-  // Skills section
+  // Skills section (legacy label key)
   'skills.label': 'Skills',
 
   // Features & Traits
   'features.label': 'Features & Traits',
+  'features.title': 'Features',
   'features.empty': 'No features recorded.',
 
   // Attacks

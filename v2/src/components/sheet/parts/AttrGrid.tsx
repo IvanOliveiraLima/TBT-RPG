@@ -1,5 +1,6 @@
 import type { Character, AbilityKey } from '@/domain/character'
 import { abilityModifier, formatSigned } from '@/domain/calculations'
+import { useTranslation } from '@/i18n'
 
 interface AttrGridProps {
   character: Character
@@ -8,16 +9,9 @@ interface AttrGridProps {
 }
 
 const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
-const ABILITY_LABELS: Record<AbilityKey, string> = {
-  str: 'STR',
-  dex: 'DEX',
-  con: 'CON',
-  int: 'INT',
-  wis: 'WIS',
-  cha: 'CHA',
-}
 
 export function AttrGrid({ character, cols = 3, compact = false }: AttrGridProps) {
+  const { t } = useTranslation()
   const saveProf = new Map(
     character.savingThrows.map((st) => [st.ability, st.proficient]),
   )
@@ -75,7 +69,7 @@ export function AttrGrid({ character, cols = 3, compact = false }: AttrGridProps
                 textTransform: 'uppercase',
               }}
             >
-              {ABILITY_LABELS[k]}
+              {t(`ability.${k}`)}
             </div>
             <div
               data-testid={`attr-${k}-mod`}
