@@ -198,6 +198,31 @@ const en = {
   'spells.caster_hint': 'Spells are accessed by classes such as Druid, Bard, Cleric, Wizard, Sorcerer, and others.',
   'spells.empty': 'No spells recorded.',
   'spells.empty_hint': 'Add cantrips and spells to manage slots.',
+  // SpellHeader cell labels
+  'spells.header.class': 'CLASS',
+  'spells.header.ability': 'ABILITY',
+  'spells.header.save_dc': 'SAVE DC',
+  'spells.header.attack_bonus': 'ATTACK BONUS',
+  // SpellSlots
+  'spell_slots.section_title': 'SPELL SLOTS',
+  'spell_slots.level_label': 'LEVEL {level}',
+  'spell_slots.count_label': '{current}/{max}',
+  'spell_slots.pip_aria': 'Level {level} slot ({current} of {max} available)',
+  // SpellList
+  'spells.section_title': 'SPELLS',
+  'spells.add_button': 'Add',
+  'spells.count_label': '({count})',
+  'spells.cantrips_section': 'CANTRIPS',
+  'spells.level_section': 'LEVEL {level}',
+  'spells.section_count': '{count}',
+  'spells.empty_state_title': 'No spells registered.',
+  'spells.empty_state_hint': 'Add cantrips and spells to manage slots.',
+  // SpellRow
+  'spells.row.unprepared_aria': 'Not prepared',
+  'spells.row.row_aria': 'Spell {name}',
+  // SpellsTab non-caster
+  'spells.non_caster_title': 'This class does not cast spells.',
+  'spells.non_caster_hint': 'Spells are accessed by classes like Druid, Bard, Cleric, Wizard, Sorcerer and others.',
 
   // Inventory
   'inventory.label': 'ITEMS ({count})',

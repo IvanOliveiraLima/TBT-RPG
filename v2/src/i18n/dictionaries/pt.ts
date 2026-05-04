@@ -200,6 +200,31 @@ const pt: Record<keyof typeof en, string> = {
   'spells.caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
   'spells.empty': 'Nenhuma magia cadastrada.',
   'spells.empty_hint': 'Adicione cantrips e magias para gerenciar slots.',
+  // SpellHeader cell labels
+  'spells.header.class': 'CLASSE',
+  'spells.header.ability': 'HABILIDADE',
+  'spells.header.save_dc': 'DC DE SALVAGUARDA',
+  'spells.header.attack_bonus': 'BÔNUS DE ATAQUE',
+  // SpellSlots
+  'spell_slots.section_title': 'ESPAÇOS DE MAGIA',
+  'spell_slots.level_label': 'NÍVEL {level}',
+  'spell_slots.count_label': '{current}/{max}',
+  'spell_slots.pip_aria': 'Espaço de nível {level} ({current} de {max} disponíveis)',
+  // SpellList
+  'spells.section_title': 'MAGIAS',
+  'spells.add_button': 'Adicionar',
+  'spells.count_label': '({count})',
+  'spells.cantrips_section': 'TRUQUES',
+  'spells.level_section': 'NÍVEL {level}',
+  'spells.section_count': '{count}',
+  'spells.empty_state_title': 'Nenhuma magia cadastrada.',
+  'spells.empty_state_hint': 'Adicione truques e magias para gerenciar espaços.',
+  // SpellRow
+  'spells.row.unprepared_aria': 'Não preparada',
+  'spells.row.row_aria': 'Magia {name}',
+  // SpellsTab non-caster
+  'spells.non_caster_title': 'Esta classe não possui conjuração de magias.',
+  'spells.non_caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
 
   // Inventory
   'inventory.label': 'ITENS ({count})',
