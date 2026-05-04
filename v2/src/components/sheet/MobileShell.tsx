@@ -28,7 +28,7 @@ interface MobileShellProps {
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
-  const { t, lang, setLang } = useTranslation()
+  const { t } = useTranslation()
 
   return (
     <div style={{
@@ -131,27 +131,26 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                 paddingTop: 10,
                 borderTop: `1px solid ${T.borderSubtle}`,
               }}>
+                {/* Language toggle — inactive until C.4.2 (all tabs migrated) */}
                 <button
-                  onClick={() => setLang('pt')}
                   style={{
-                    flex: 1, background: lang === 'pt' ? T.purple : 'transparent',
-                    color: lang === 'pt' ? '#fff' : T.textMuted,
-                    border: lang === 'pt' ? 'none' : `1px solid ${T.borderSubtle}`,
+                    flex: 1, background: 'transparent',
+                    color: T.textMuted,
+                    border: `1px solid ${T.borderSubtle}`,
                     borderRadius: 6, padding: '6px',
-                    fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, cursor: 'default',
                     fontFamily: T.sans,
                   }}
                 >
                   PT
                 </button>
                 <button
-                  onClick={() => setLang('en')}
                   style={{
-                    flex: 1, background: lang === 'en' ? T.purple : 'transparent',
-                    color: lang === 'en' ? '#fff' : T.textMuted,
-                    border: lang === 'en' ? 'none' : `1px solid ${T.borderSubtle}`,
+                    flex: 1, background: 'transparent',
+                    color: T.textMuted,
+                    border: `1px solid ${T.borderSubtle}`,
                     borderRadius: 6, padding: '6px',
-                    fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                    fontSize: 11, fontWeight: 600, cursor: 'default',
                     fontFamily: T.sans,
                   }}
                 >

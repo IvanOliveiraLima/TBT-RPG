@@ -33,7 +33,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
-  const { t, lang, setLang } = useTranslation()
+  const { t } = useTranslation()
   const portrait = character.images.character
   const firstClass = character.classes[0]
 
@@ -193,28 +193,26 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
         </div>
       </div>
 
-      {/* Language toggle */}
+      {/* Language toggle — inactive until C.4.2 (all tabs migrated) */}
       <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
         <button
-          onClick={() => setLang('pt')}
           style={{
-            flex: 1, background: lang === 'pt' ? T.purple : 'transparent',
-            color: lang === 'pt' ? '#fff' : T.textMuted,
-            border: lang === 'pt' ? 'none' : `1px solid ${T.borderSubtle}`,
+            flex: 1, background: 'transparent',
+            color: T.textMuted,
+            border: `1px solid ${T.borderSubtle}`,
             borderRadius: 6, padding: 6,
-            fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            fontSize: 10, fontWeight: 700, cursor: 'default',
           }}
         >
           PT
         </button>
         <button
-          onClick={() => setLang('en')}
           style={{
-            flex: 1, background: lang === 'en' ? T.purple : 'transparent',
-            color: lang === 'en' ? '#fff' : T.textMuted,
-            border: lang === 'en' ? 'none' : `1px solid ${T.borderSubtle}`,
+            flex: 1, background: 'transparent',
+            color: T.textMuted,
+            border: `1px solid ${T.borderSubtle}`,
             borderRadius: 6, padding: 6,
-            fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            fontSize: 10, fontWeight: 700, cursor: 'default',
           }}
         >
           EN
