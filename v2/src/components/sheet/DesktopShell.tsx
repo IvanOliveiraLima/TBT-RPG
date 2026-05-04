@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
 import { Sidebar } from './Sidebar'
+import { useTranslation } from '@/i18n'
 
 const T = {
   borderSubtle: '#2A2537',
@@ -42,6 +43,7 @@ interface DesktopShellProps {
 }
 
 export function DesktopShell({ character, activeTab, onTabChange, children }: DesktopShellProps) {
+  const { t } = useTranslation()
   const firstClass = character.classes[0]
   return (
     <div style={{
@@ -81,7 +83,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
               {' · '}
               {firstClass?.name ?? ''}
               {firstClass?.subclass ? ` (${firstClass.subclass})` : ''}
-              {' · Nv '}
+              {' · '}{t('common.level_abbr')}{' '}
               {character.totalLevel}
               {character.background ? ` · ${character.background}` : ''}
               {character.alignment ? ` · ${character.alignment}` : ''}
@@ -90,10 +92,10 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
 
           <div style={{ flex: 1 }} />
 
-          <Tag color="success">● Sincronizado</Tag>
+          <Tag color="success">● {t('topbar.synced')}</Tag>
 
           <button
-            onClick={() => alert('Exportar — não implementado nesta fase.')}
+            onClick={() => alert(t('phase_c.export_unavailable'))}
             style={{
               background: 'transparent',
               border: `1px solid ${T.borderDefault}`,
@@ -101,11 +103,11 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
               padding: '6px 12px', fontSize: 12, cursor: 'pointer',
             }}
           >
-            Exportar
+            {t('topbar.export')}
           </button>
 
           <button
-            onClick={() => alert('Destravar / Travar — não implementado nesta fase.')}
+            onClick={() => alert(t('phase_c.lock_unavailable'))}
             style={{
               background: T.ruby,
               border: `1px solid ${T.rubyHover}`,
@@ -113,7 +115,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
               padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            🔒 Destravar
+            🔒 {t('topbar.unlock')}
           </button>
         </div>
 

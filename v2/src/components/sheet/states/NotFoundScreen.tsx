@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '@/i18n'
 
 const T = {
   bg:          '#0F0D14',
@@ -12,6 +13,7 @@ const T = {
 
 export function NotFoundScreen() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   return (
     <div style={{
       display: 'flex',
@@ -28,10 +30,10 @@ export function NotFoundScreen() {
         ?
       </p>
       <p style={{ fontFamily: T.serif, fontSize: 16, color: T.textPrimary, textAlign: 'center' }}>
-        Personagem não encontrado
+        {t('screens.not_found_title')}
       </p>
       <p style={{ fontSize: 13, color: T.textMuted, textAlign: 'center' }}>
-        Este personagem não existe ou foi removido.
+        {t('screens.not_found_hint')}
       </p>
       <button
         onClick={() => navigate('/')}
@@ -47,7 +49,7 @@ export function NotFoundScreen() {
           cursor: 'pointer',
         }}
       >
-        Voltar para lista
+        {t('screens.back_to_list')}
       </button>
     </div>
   )
