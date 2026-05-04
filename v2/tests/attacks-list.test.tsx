@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character, Attack } from '@/domain/character'
 import { AttacksList } from '@/components/sheet/parts/AttacksList'
+import { renderWithI18n } from './helpers/render'
 
 function makeAttack(overrides: Pick<Attack, 'id' | 'name'> & Partial<Attack>): Attack {
   return {
@@ -71,13 +72,15 @@ const BASE: Character = {
 }
 
 describe('AttacksList', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders Rapier attack row', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     expect(screen.getByText('Rapier')).toBeDefined()
   })
 
   it('renders Vicious Mockery attack row', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     expect(screen.getByText('Vicious Mockery')).toBeDefined()
   })
 
@@ -89,13 +92,13 @@ describe('AttacksList', () => {
         makeAttack({ id: 'atk_1', name: 'Shortsword', bonus: '+4' }),
       ],
     }
-    render(<AttacksList character={char} />)
+    renderWithI18n(<AttacksList character={char} />, 'en')
     expect(screen.getByText('Shortsword')).toBeDefined()
     expect(screen.queryByTestId('attack-row-atk_0')).toBeNull()
   })
 
   it('shows empty state when attacks array is empty', () => {
-    render(<AttacksList character={{ ...BASE, attacks: [] }} />)
+    renderWithI18n(<AttacksList character={{ ...BASE, attacks: [] }} />, 'pt')
     expect(screen.getByText('Nenhum ataque cadastrado.')).toBeDefined()
   })
 
@@ -107,19 +110,19 @@ describe('AttacksList', () => {
         makeAttack({ id: 'atk_1', name: '   ' }),
       ],
     }
-    render(<AttacksList character={char} />)
+    renderWithI18n(<AttacksList character={char} />, 'pt')
     expect(screen.getByText('Nenhum ataque cadastrado.')).toBeDefined()
   })
 
   it('Rapier badge shows "+5"', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     const rapierRow = screen.getByTestId('attack-row-atk_0')
     const badge = rapierRow.querySelector('span') as HTMLElement
     expect(badge.textContent).toBe('+5')
   })
 
   it('Rapier badge is gold variant', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     const rapierRow = screen.getByTestId('attack-row-atk_0')
     const badge = rapierRow.querySelector('span') as HTMLElement
     // gold fg = #E8C569 → jsdom normalises to rgb(232, 197, 105)
@@ -127,27 +130,27 @@ describe('AttacksList', () => {
   })
 
   it('Vicious Mockery badge shows "DC 14"', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     const vmRow = screen.getByTestId('attack-row-atk_1')
     const badge = vmRow.querySelector('span') as HTMLElement
     expect(badge.textContent).toBe('DC 14')
   })
 
   it('Vicious Mockery badge is purple variant', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     const vmRow = screen.getByTestId('attack-row-atk_1')
     const badge = vmRow.querySelector('span') as HTMLElement
     // purple fg = #B5A5E8 → jsdom normalises to rgb(181, 165, 232)
     expect(badge.style.color).toBe('rgb(181, 165, 232)')
   })
 
-  it('Rapier meta line shows "DEX · 1d8+2 Piercing"', () => {
-    render(<AttacksList character={BASE} />)
+  it('Rapier meta line shows "DEX · 1d8+2 Piercing" in EN', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     expect(screen.getByTestId('attack-meta-atk_0').textContent).toBe('DEX · 1d8+2 Piercing')
   })
 
-  it('Vicious Mockery meta line shows "CHA · 2d4 Psychic"', () => {
-    render(<AttacksList character={BASE} />)
+  it('Vicious Mockery meta line shows "CHA · 2d4 Psychic" in EN', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     expect(screen.getByTestId('attack-meta-atk_1').textContent).toBe('CHA · 2d4 Psychic')
   })
 
@@ -156,7 +159,7 @@ describe('AttacksList', () => {
       ...BASE,
       attacks: [makeAttack({ id: 'atk_0', name: 'Punch', baseStat: 'str', damage: '', damageType: '' })],
     }
-    render(<AttacksList character={char} />)
+    renderWithI18n(<AttacksList character={char} />, 'en')
     expect(screen.getByTestId('attack-meta-atk_0').textContent).toBe('STR')
   })
 
@@ -165,24 +168,64 @@ describe('AttacksList', () => {
       ...BASE,
       attacks: [makeAttack({ id: 'atk_0', name: 'Punch', baseStat: 'str', damage: '1d4', damageType: '' })],
     }
-    render(<AttacksList character={char} />)
+    renderWithI18n(<AttacksList character={char} />, 'en')
     expect(screen.getByTestId('attack-meta-atk_0').textContent).toBe('STR · 1d4')
   })
 
-  it('shows "+ Adicionar" button', () => {
-    render(<AttacksList character={BASE} />)
+  it('shows add attack button', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'pt')
     expect(screen.getByTestId('add-attack-btn')).toBeDefined()
   })
 
   it('shows remove button for each attack row', () => {
-    render(<AttacksList character={BASE} />)
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
     expect(screen.getByTestId('remove-attack-atk_0')).toBeDefined()
     expect(screen.getByTestId('remove-attack-atk_1')).toBeDefined()
   })
 
-  it('remove button has accessible aria-label', () => {
-    render(<AttacksList character={BASE} />)
+  it('remove button has accessible aria-label in PT', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'pt')
     const removeBtn = screen.getByRole('button', { name: 'Remover ataque Rapier' })
+    expect(removeBtn).toBeDefined()
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('renders section title in PT', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'pt')
+    expect(screen.getByText('ATAQUES')).toBeDefined()
+    expect(screen.getByText(/\+ Adicionar/)).toBeDefined()
+  })
+
+  it('renders section title in EN', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
+    expect(screen.getByText('ATTACKS')).toBeDefined()
+    expect(screen.getByText(/\+ Add/)).toBeDefined()
+  })
+
+  it('shows empty state title and hint in PT', () => {
+    renderWithI18n(<AttacksList character={{ ...BASE, attacks: [] }} />, 'pt')
+    expect(screen.getByText('Nenhum ataque cadastrado.')).toBeDefined()
+    expect(screen.getByText('Adicione um ataque para registrar suas armas e magias ofensivas.')).toBeDefined()
+  })
+
+  it('shows empty state title and hint in EN', () => {
+    renderWithI18n(<AttacksList character={{ ...BASE, attacks: [] }} />, 'en')
+    expect(screen.getByText('No attacks registered.')).toBeDefined()
+    expect(screen.getByText('Add an attack to register your weapons and offensive spells.')).toBeDefined()
+  })
+
+  it('meta line uses localized ability abbreviation in PT', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'pt')
+    // Rapier uses DEX → DES in PT
+    expect(screen.getByTestId('attack-meta-atk_0').textContent).toBe('DES · 1d8+2 Piercing')
+    // Vicious Mockery uses CHA → CAR in PT
+    expect(screen.getByTestId('attack-meta-atk_1').textContent).toBe('CAR · 2d4 Psychic')
+  })
+
+  it('remove button has accessible aria-label in EN', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
+    const removeBtn = screen.getByRole('button', { name: 'Remove attack Rapier' })
     expect(removeBtn).toBeDefined()
   })
 })

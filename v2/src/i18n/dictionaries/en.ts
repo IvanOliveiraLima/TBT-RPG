@@ -177,6 +177,12 @@ const en = {
   'attacks.add': '+ Add',
   'attacks.empty': 'No attacks recorded.',
   'attacks.empty_hint': 'Add an attack to record your weapons and offensive spells.',
+  'attacks.section_title': 'ATTACKS',
+  'attacks.add_button': 'Add',
+  'attacks.empty_state_title': 'No attacks registered.',
+  'attacks.empty_state_hint': 'Add an attack to register your weapons and offensive spells.',
+  'attacks.count_label': '({count})',
+  'attacks.row_aria': 'Attack {name}, {bonus_or_dc}, {damage}',
 
   // Spells
   'spells.label': 'Spells',

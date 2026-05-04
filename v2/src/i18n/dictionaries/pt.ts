@@ -179,6 +179,12 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.add': '+ Adicionar',
   'attacks.empty': 'Nenhum ataque cadastrado.',
   'attacks.empty_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
+  'attacks.section_title': 'ATAQUES',
+  'attacks.add_button': 'Adicionar',
+  'attacks.empty_state_title': 'Nenhum ataque cadastrado.',
+  'attacks.empty_state_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
+  'attacks.count_label': '({count})',
+  'attacks.row_aria': 'Ataque {name}, {bonus_or_dc}, {damage}',
 
   // Spells
   'spells.label': 'Magias',
