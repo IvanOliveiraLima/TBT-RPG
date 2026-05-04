@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { CombatStrip } from '@/components/sheet/parts/CombatStrip'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'c1',
@@ -21,7 +22,7 @@ const BASE: Character = {
   initiative: 2,
   speed: 30,
   passivePerception: 14,
-  spellSaveDC: 0, // non-caster
+  spellSaveDC: 0,
   inspiration: false,
   savingThrows: [],
   skills: [],
@@ -39,60 +40,72 @@ const BASE: Character = {
 }
 
 describe('CombatStrip', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders AC value', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.getByTestId('combat-stat-ac').textContent).toContain('15')
   })
 
   it('formats positive initiative with + sign', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.getByTestId('combat-stat-init').textContent).toContain('+2')
   })
 
   it('formats negative initiative correctly', () => {
-    render(<CombatStrip character={{ ...BASE, initiative: -1 }} />)
+    renderWithI18n(<CombatStrip character={{ ...BASE, initiative: -1 }} />, 'pt')
     expect(screen.getByTestId('combat-stat-init').textContent).toContain('-1')
   })
 
   it('formats zero initiative as +0', () => {
-    render(<CombatStrip character={{ ...BASE, initiative: 0 }} />)
+    renderWithI18n(<CombatStrip character={{ ...BASE, initiative: 0 }} />, 'pt')
     expect(screen.getByTestId('combat-stat-init').textContent).toContain('+0')
   })
 
   it('renders speed with ft unit', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.getByTestId('combat-stat-spd').textContent).toContain('30 ft')
   })
 
   it('renders passive perception', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.getByTestId('combat-stat-pp').textContent).toContain('14')
   })
 
   it('omits DC when spellSaveDC is 0', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.queryByTestId('combat-stat-dc')).toBeNull()
   })
 
   it('shows DC when spellSaveDC is defined', () => {
-    render(<CombatStrip character={{ ...BASE, spellSaveDC: 14 }} />)
+    renderWithI18n(<CombatStrip character={{ ...BASE, spellSaveDC: 14 }} />, 'pt')
     expect(screen.getByTestId('combat-stat-dc').textContent).toContain('14')
   })
 
   it('formats proficiency bonus with + sign', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     expect(screen.getByTestId('combat-stat-prof').textContent).toContain('+2')
   })
 
   it('uses 3-col grid by default', () => {
-    render(<CombatStrip character={BASE} />)
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
     const strip = screen.getByTestId('combat-strip')
     expect(strip.style.gridTemplateColumns).toBe('repeat(3, 1fr)')
   })
 
   it('uses 6-col grid when cols=6', () => {
-    render(<CombatStrip character={BASE} cols={6} />)
+    renderWithI18n(<CombatStrip character={BASE} cols={6} />, 'pt')
     const strip = screen.getByTestId('combat-strip')
     expect(strip.style.gridTemplateColumns).toBe('repeat(6, 1fr)')
+  })
+
+  it('renders PT label "CA" for AC stat', () => {
+    renderWithI18n(<CombatStrip character={BASE} />, 'pt')
+    expect(screen.getByTestId('combat-stat-ac').textContent).toContain('CA')
+  })
+
+  it('renders EN label "AC" for AC stat', () => {
+    renderWithI18n(<CombatStrip character={BASE} />, 'en')
+    expect(screen.getByTestId('combat-stat-ac').textContent).toContain('AC')
   })
 })

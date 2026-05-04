@@ -1,3 +1,5 @@
+import { useTranslation } from '@/i18n'
+
 interface HitDiceEntry {
   current: number
   max: number
@@ -9,6 +11,7 @@ interface HitDicePoolProps {
 }
 
 export function HitDicePool({ hitDice }: HitDicePoolProps) {
+  const { t } = useTranslation()
   return (
     <div>
       <div
@@ -21,7 +24,7 @@ export function HitDicePool({ hitDice }: HitDicePoolProps) {
           marginBottom: 6,
         }}
       >
-        Hit Dice
+        {t('hit_dice.section_title')}
       </div>
 
       {hitDice.length === 0 ? (

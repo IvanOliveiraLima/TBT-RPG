@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { ProficienciesBlock } from '@/components/sheet/parts/ProficienciesBlock'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'kael_01',
@@ -43,13 +44,15 @@ const EMPTY_PROFS: Character = {
 }
 
 describe('ProficienciesBlock', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders proficiencies-block testid', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('proficiencies-block')).toBeDefined()
   })
 
   it('renders all 4 rows', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('prof-row-weaponsAndArmor')).toBeDefined()
     expect(screen.getByTestId('prof-row-tools')).toBeDefined()
     expect(screen.getByTestId('prof-row-languages')).toBeDefined()
@@ -57,50 +60,65 @@ describe('ProficienciesBlock', () => {
   })
 
   it('shows weaponsAndArmor text verbatim', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(
       screen.getByText('Simple weapons, hand crossbows, longswords, rapiers, shortswords, Light armor'),
     ).toBeDefined()
   })
 
   it('shows tools text', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('Lute, lyre, pan flute')).toBeDefined()
   })
 
   it('shows languages text', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('Common, Elvish, Draconic')).toBeDefined()
   })
 
   it('shows other text', () => {
-    render(<ProficienciesBlock character={BASE} />)
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('Bardic Inspiration (d8)')).toBeDefined()
   })
 
-  it('shows "PROFICIÊNCIAS" label', () => {
-    render(<ProficienciesBlock character={BASE} />)
+  it('shows "PROFICIÊNCIAS" section label in PT', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('PROFICIÊNCIAS')).toBeDefined()
   })
 
+  it('shows "PROFICIENCIES" section label in EN', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'en')
+    expect(screen.getByText('PROFICIENCIES')).toBeDefined()
+  })
+
   it('shows "—" placeholder for each empty field', () => {
-    render(<ProficienciesBlock character={EMPTY_PROFS} />)
+    renderWithI18n(<ProficienciesBlock character={EMPTY_PROFS} />, 'pt')
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBe(4)
   })
 
-  it('shows "ARMAS E ARMADURAS" row label', () => {
-    render(<ProficienciesBlock character={BASE} />)
+  it('shows "ARMAS E ARMADURAS" row label in PT', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('ARMAS E ARMADURAS')).toBeDefined()
   })
 
-  it('shows "FERRAMENTAS" row label', () => {
-    render(<ProficienciesBlock character={BASE} />)
+  it('shows "FERRAMENTAS" row label in PT', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('FERRAMENTAS')).toBeDefined()
   })
 
-  it('shows "IDIOMAS" row label', () => {
-    render(<ProficienciesBlock character={BASE} />)
+  it('shows "IDIOMAS" row label in PT', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'pt')
     expect(screen.getByText('IDIOMAS')).toBeDefined()
+  })
+
+  it('shows "WEAPONS & ARMOR" row label in EN', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'en')
+    expect(screen.getByText('WEAPONS & ARMOR')).toBeDefined()
+  })
+
+  it('shows "LANGUAGES" row label in EN', () => {
+    renderWithI18n(<ProficienciesBlock character={BASE} />, 'en')
+    expect(screen.getByText('LANGUAGES')).toBeDefined()
   })
 })

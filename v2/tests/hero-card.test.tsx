@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import { HeroCard } from '@/components/sheet/parts/HeroCard'
 import type { Character } from '@/domain/character'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'char_hero_test',
@@ -34,69 +35,78 @@ const BASE: Character = {
 }
 
 describe('HeroCard', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders character name', () => {
-    render(<HeroCard character={BASE} />)
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
     expect(screen.getByText('Eira Swiftwind')).toBeDefined()
   })
 
-  it('shows "Inspirado" badge when inspiration is true', () => {
-    render(<HeroCard character={{ ...BASE, inspiration: true }} />)
+  it('shows "Inspirado" badge in PT when inspiration is true', () => {
+    renderWithI18n(<HeroCard character={{ ...BASE, inspiration: true }} />, 'pt')
     expect(screen.getByText('Inspirado')).toBeDefined()
   })
 
-  it('hides "Inspirado" badge when inspiration is false', () => {
-    render(<HeroCard character={{ ...BASE, inspiration: false }} />)
+  it('shows "Inspired" badge in EN when inspiration is true', () => {
+    renderWithI18n(<HeroCard character={{ ...BASE, inspiration: true }} />, 'en')
+    expect(screen.getByText('Inspired')).toBeDefined()
+  })
+
+  it('hides inspiration badge when inspiration is false', () => {
+    renderWithI18n(<HeroCard character={{ ...BASE, inspiration: false }} />, 'pt')
     expect(screen.queryByText('Inspirado')).toBeNull()
+    expect(screen.queryByText('Inspired')).toBeNull()
   })
 
   it('renders portrait via background-image when character.images.character is set', () => {
     const portrait = 'data:image/png;base64,AAAA'
-    const { container } = render(
+    const { container } = renderWithI18n(
       <HeroCard character={{ ...BASE, images: { character: portrait } }} />,
+      'pt',
     )
     const portraitEl = container.querySelector('[style*="url("]')
     expect(portraitEl).not.toBeNull()
   })
 
   it('renders name initial as placeholder when no portrait', () => {
-    render(<HeroCard character={{ ...BASE, images: {} }} />)
-    // 'E' is the first letter of 'Eira'
+    renderWithI18n(<HeroCard character={{ ...BASE, images: {} }} />, 'pt')
     const initials = screen.getAllByText('E')
     expect(initials.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders race in meta line', () => {
-    render(<HeroCard character={BASE} />)
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
     expect(screen.getByText('Elfo')).toBeDefined()
   })
 
   it('renders class + level in meta line', () => {
-    render(<HeroCard character={BASE} />)
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
     expect(screen.getByText('Ranger 4')).toBeDefined()
   })
 
   it('renders background in meta line', () => {
-    render(<HeroCard character={BASE} />)
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
     expect(screen.getByText('Outlander')).toBeDefined()
   })
 
   it('renders total level in ruby badge', () => {
-    render(<HeroCard character={BASE} />)
-    // Level "4" appears in the small badge
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
     const fours = screen.getAllByText('4')
     expect(fours.length).toBeGreaterThanOrEqual(1)
   })
 
   it('does not crash when race and background are empty strings', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <HeroCard character={{ ...BASE, race: '', background: '' }} />,
+      'pt',
     )
     expect(container.firstChild).not.toBeNull()
   })
 
   it('does not crash when classes array is empty', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <HeroCard character={{ ...BASE, classes: [] }} />,
+      'pt',
     )
     expect(container.firstChild).not.toBeNull()
   })

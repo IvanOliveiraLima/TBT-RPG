@@ -107,6 +107,51 @@ const pt: Record<keyof typeof en, string> = {
   'screens.not_found_hint': 'Este personagem não existe ou foi removido.',
   'screens.back_to_list': 'Voltar para lista',
 
+  // HP block
+  'hp.section_title': 'Pontos de Vida',
+  'hp.heal_button': 'Curar',
+  'hp.damage_button': 'Dano',
+  'hp.temp_label': '+{n} temp',
+
+  // Hit Dice
+  'hit_dice.section_title': 'Dados de Vida',
+
+  // Saving throws section
+  'saves.section_title': 'Testes de Resistência',
+  'saves.ability.str': 'Força',
+  'saves.ability.dex': 'Destreza',
+  'saves.ability.con': 'Constituição',
+  'saves.ability.int': 'Inteligência',
+  'saves.ability.wis': 'Sabedoria',
+  'saves.ability.cha': 'Carisma',
+
+  // Individual skill names (18, padrão PHB-PT)
+  'skills.section_title': 'Perícias',
+  'skills.acrobatics': 'Acrobacia',
+  'skills.animal_handling': 'Adestrar Animais',
+  'skills.arcana': 'Arcanismo',
+  'skills.athletics': 'Atletismo',
+  'skills.deception': 'Enganação',
+  'skills.history': 'História',
+  'skills.insight': 'Intuição',
+  'skills.intimidation': 'Intimidação',
+  'skills.investigation': 'Investigação',
+  'skills.medicine': 'Medicina',
+  'skills.nature': 'Natureza',
+  'skills.perception': 'Percepção',
+  'skills.performance': 'Atuação',
+  'skills.persuasion': 'Persuasão',
+  'skills.religion': 'Religião',
+  'skills.sleight_of_hand': 'Prestidigitação',
+  'skills.stealth': 'Furtividade',
+  'skills.survival': 'Sobrevivência',
+
+  // Attributes section
+  'attributes.section_title': 'Atributos',
+
+  // Hero card
+  'hero.inspired_badge': 'Inspirado',
+
   // Combat stats (strip labels)
   'combat.ac': 'CA',
   'combat.initiative': 'INIC',
@@ -117,16 +162,17 @@ const pt: Record<keyof typeof en, string> = {
   'combat.hit_points': 'Pontos de Vida',
   'combat.death_saves': 'Testes de Morte',
   'combat.hit_dice': 'Dados de Vida',
-  'combat.heal': '+ Curar',
+  'combat.heal': '＋ Curar',
   'combat.damage': '− Dano',
   'combat.saving_throws': 'Testes de Resistência',
 
-  // Skills section
+  // Skills section (legacy label key)
   'skills.label': 'Perícias',
 
   // Features & Traits
-  'features.label': 'Habilidades & Traços',
-  'features.empty': 'Nenhuma habilidade registrada.',
+  'features.label': 'Características & Traços',
+  'features.title': 'Características',
+  'features.empty': 'Nenhuma feature registrada.',
 
   // Attacks
   'attacks.label': 'Ataques',

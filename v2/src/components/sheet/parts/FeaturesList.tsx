@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 import { Badge } from '../ui/Badge'
 
 interface FeaturesListProps {
@@ -6,6 +7,7 @@ interface FeaturesListProps {
 }
 
 export function FeaturesList({ character }: FeaturesListProps) {
+  const { t } = useTranslation()
   const { features } = character
 
   if (features.length === 0) {
@@ -14,7 +16,7 @@ export function FeaturesList({ character }: FeaturesListProps) {
         data-testid="features-empty"
         style={{ fontSize: 13, color: '#7A7788', padding: '8px 10px' }}
       >
-        Nenhuma feature registrada.
+        {t('features.empty')}
       </div>
     )
   }
