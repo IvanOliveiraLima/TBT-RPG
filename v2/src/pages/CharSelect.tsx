@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCharactersStore } from '@/store/characters'
 import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
+import { useTranslation, pluralKey } from '@/i18n'
 
 /* ── V1 production URL ────────────────────────────────────────────────── */
 const V1_URL = 'https://ivanoliveiralima.github.io/TBT-RPG/'
@@ -193,6 +194,7 @@ function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
 function AuthStrip() {
   const navigate                   = useNavigate()
   const { user, loading, signOut } = useAuthStore()
+  const { t }                      = useTranslation()
 
   if (loading) return null
 
@@ -219,7 +221,7 @@ function AuthStrip() {
             cursor: 'pointer',
           }}
         >
-          Sair
+          {t('auth.sign_out')}
         </button>
       </div>
     )
@@ -244,7 +246,7 @@ function AuthStrip() {
           cursor: 'pointer',
         }}
       >
-        Entrar
+        {t('auth.sign_in')}
       </button>
       <button
         onClick={() => navigate('/login')}
@@ -256,7 +258,7 @@ function AuthStrip() {
           cursor: 'pointer',
         }}
       >
-        Criar conta
+        {t('auth.create_account')}
       </button>
     </div>
   )
@@ -265,6 +267,7 @@ function AuthStrip() {
 /* ── Main page ─────────────────────────────────────────────────────────── */
 export default function CharSelect() {
   const { characters, loading, fetchCharacters } = useCharactersStore()
+  const { t } = useTranslation()
 
   useEffect(() => {
     void fetchCharacters()
@@ -303,7 +306,7 @@ export default function CharSelect() {
               fontSize: 10, color: T.textMuted,
               letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4,
             }}>
-              Mesa virtual · fichas sincronizadas
+              {t('charselect.tagline')}
             </div>
           </div>
         </div>
@@ -317,22 +320,22 @@ export default function CharSelect() {
           letterSpacing: 0.3,
           marginBottom: 10,
         }}>
-          Sua ficha,<br />
+          {t('charselect.hero_line1')}<br />
           <span style={{
             background: `linear-gradient(90deg, ${T.gold}, #F2D06B)`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>
-            facilitada.
+            {t('charselect.hero_line2')}
           </span>
         </div>
         <div style={{
           fontSize: 13, color: T.textTertiary,
           lineHeight: 1.55, maxWidth: 320,
         }}>
-          Gerencie seus personagens de D&amp;D em qualquer dispositivo.
-          HP, magias e inventário a um toque.
+          {t('charselect.subline')}{' '}
+          {t('charselect.feature_hint')}
         </div>
 
         {/* v2 badge */}
@@ -347,7 +350,7 @@ export default function CharSelect() {
           color: '#9B8ED4',
           letterSpacing: 1, textTransform: 'uppercase',
         }}>
-          v2 · Preview
+          {t('charselect.preview_badge')}
         </div>
 
         {/* Ornament */}
@@ -373,10 +376,12 @@ export default function CharSelect() {
               letterSpacing: 2, textTransform: 'uppercase',
               color: T.textMuted,
             }}>
-              Meus Personagens
+              {t('charselect.my_characters')}
             </div>
             <div style={{ fontSize: 11, color: T.textTertiary, marginTop: 2 }}>
-              {loading ? 'Carregando…' : `${characters.length} salvos`}
+              {loading
+                ? t('charselect.loading')
+                : t(pluralKey('charselect.saved_count', characters.length), { n: characters.length })}
             </div>
           </div>
           <span style={{ flex: 1 }} />
@@ -401,7 +406,7 @@ export default function CharSelect() {
               padding: 20, textAlign: 'center',
               color: T.textMuted, fontSize: 13,
             }}>
-              Carregando personagens…
+              {t('charselect.loading_characters')}
             </div>
           )}
 
@@ -412,9 +417,9 @@ export default function CharSelect() {
               border: `1px dashed ${T.borderSubtle}`,
               borderRadius: 14,
             }}>
-              Nenhum personagem encontrado.<br />
+              {t('charselect.empty')}<br />
               <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
-                Crie um na <a href={V1_URL} style={{ color: T.gold }}>v1</a> e ele aparecerá aqui.
+                <a href={V1_URL} style={{ color: T.gold }}>{t('charselect.empty_hint')}</a>
               </span>
             </div>
           )}
@@ -425,7 +430,7 @@ export default function CharSelect() {
 
           {/* Create new — stub */}
           <button
-            onClick={() => alert('Criação de personagens ainda não implementada na v2.\nUse a v1: ' + V1_URL)}
+            onClick={() => alert(t('charselect.create_unavailable', { url: V1_URL }))}
             style={{
               padding: '16px', borderRadius: 14,
               background: 'transparent',
@@ -437,7 +442,7 @@ export default function CharSelect() {
             }}
           >
             <span style={{ fontSize: 18, color: T.gold }}>＋</span>
-            Criar novo personagem
+            {t('charselect.create')}
           </button>
         </div>
 
@@ -447,7 +452,7 @@ export default function CharSelect() {
           paddingTop: 14, borderTop: `1px solid ${T.borderSubtle}`,
         }}>
           <button
-            onClick={() => alert('Importar JSON — não implementado na v2 ainda.')}
+            onClick={() => alert(t('charselect.import_unavailable'))}
             style={{
               flex: 1, background: 'transparent',
               border: `1px solid ${T.borderSubtle}`,
@@ -456,10 +461,10 @@ export default function CharSelect() {
               cursor: 'pointer', letterSpacing: 0.3,
             }}
           >
-            ⬇ Importar JSON
+            {t('charselect.import')}
           </button>
           <button
-            onClick={() => alert('Exportar — não implementado na v2 ainda.')}
+            onClick={() => alert(t('charselect.export_unavailable'))}
             style={{
               flex: 1, background: 'transparent',
               border: `1px solid ${T.borderSubtle}`,
@@ -468,7 +473,7 @@ export default function CharSelect() {
               cursor: 'pointer', letterSpacing: 0.3,
             }}
           >
-            ⬆ Exportar
+            {t('charselect.export')}
           </button>
         </div>
 
@@ -477,9 +482,9 @@ export default function CharSelect() {
           marginTop: 14, textAlign: 'center',
           fontSize: 11, color: T.textMuted,
         }}>
-          Ficha completa disponível na{' '}
+          {t('charselect.v1_prefix')}{' '}
           <a href={V1_URL} style={{ color: T.gold, textDecoration: 'none' }}>
-            versão atual (v1) →
+            {t('charselect.v1_link')}
           </a>
         </div>
 

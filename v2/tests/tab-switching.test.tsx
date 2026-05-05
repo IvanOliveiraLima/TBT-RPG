@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
+import { renderWithI18n } from './helpers/render'
 import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { TabKey } from '@/components/sheet/types'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
@@ -75,20 +76,24 @@ function TabSwitcher() {
 }
 
 describe('tab switching', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   afterEach(() => {
     useCharacterStore.setState({ character: null, loading: false, error: null })
   })
 
   it('starts on the Status tab and renders HpBlock when store is populated', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
-    render(<TabSwitcher />)
-    // HpBlock renders "Hit Points" label
-    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
+    renderWithI18n(<TabSwitcher />, 'pt')
+    // HpBlock renders "Pontos de Vida" label in PT
+    expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Combate in the bottom tab bar shows Combat tab content', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
     // Mobile bottom tab bar - find "Combate" buttons and click the first
     const combateBtns = screen.getAllByText('Combate')
     fireEvent.click(combateBtns[0]!)
@@ -98,7 +103,7 @@ describe('tab switching', () => {
 
   it('clicking Magias shows SpellsTab content', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
     const magiasBtns = screen.getAllByText('Magias')
     fireEvent.click(magiasBtns[0]!)
     // SpellsTab renders spell-header for a caster
@@ -106,35 +111,43 @@ describe('tab switching', () => {
   })
 
   it('clicking Inv shows Inventory placeholder', () => {
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
     const invBtns = screen.getAllByText('Inv')
     fireEvent.click(invBtns[0]!)
     expect(screen.getAllByText('Inventário').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('clicking Lore shows LoreTab content', () => {
+  it('clicking Histórico (lore tab) shows LoreTab content', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
+    const loreBtns = screen.getAllByText('Histórico')
+    fireEvent.click(loreBtns[0]!)
+    expect(screen.getAllByTestId('lore-hero').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('clicking Lore (EN) shows LoreTab content', () => {
+    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    renderWithI18n(<TabSwitcher />, 'en')
     const loreBtns = screen.getAllByText('Lore')
     fireEvent.click(loreBtns[0]!)
     expect(screen.getAllByTestId('lore-hero').length).toBeGreaterThanOrEqual(1)
   })
 
   it('character name is visible in the rendered shell', () => {
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
     expect(screen.getAllByText('Mestre Kanaan').length).toBeGreaterThanOrEqual(1)
   })
 
   it('switching tabs back to Status shows HpBlock content again', () => {
     useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
-    render(<TabSwitcher />)
+    renderWithI18n(<TabSwitcher />, 'pt')
     // Go to Combat
     const combateBtns = screen.getAllByText('Combate')
     fireEvent.click(combateBtns[0]!)
     // Then go back to Status via bottom tab bar
     const statusBtns = screen.getAllByText('Status')
     fireEvent.click(statusBtns[0]!)
-    // HpBlock is visible again
-    expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
+    // HpBlock is visible again with PT label
+    expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 })

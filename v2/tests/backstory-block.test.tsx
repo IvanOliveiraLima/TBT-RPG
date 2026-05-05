@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { BackstoryBlock } from '@/components/sheet/parts/BackstoryBlock'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'eira_01',
@@ -35,30 +36,59 @@ const BASE: Character = {
 const EMPTY_BACKSTORY: Character = { ...BASE, backstory: '' }
 
 describe('BackstoryBlock', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders backstory-block testid', () => {
-    render(<BackstoryBlock character={BASE} />)
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('backstory-block')).toBeDefined()
   })
 
   it('shows backstory text when present', () => {
-    render(<BackstoryBlock character={BASE} />)
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('backstory-text').textContent).toContain('Guardian of the Thornwood Forest.')
   })
 
   it('preserves newlines (whitespace-pre-wrap) in backstory text', () => {
-    render(<BackstoryBlock character={BASE} />)
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'pt')
     const el = screen.getByTestId('backstory-text') as HTMLElement
     expect(el.style.whiteSpace).toBe('pre-wrap')
   })
 
   it('shows empty state when backstory is empty', () => {
-    render(<BackstoryBlock character={EMPTY_BACKSTORY} />)
+    renderWithI18n(<BackstoryBlock character={EMPTY_BACKSTORY} />, 'pt')
     expect(screen.getByTestId('backstory-empty')).toBeDefined()
     expect(screen.getByText('Nenhuma história registrada ainda.')).toBeDefined()
   })
 
   it('does not show empty state when backstory is present', () => {
-    render(<BackstoryBlock character={BASE} />)
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'pt')
     expect(screen.queryByTestId('backstory-empty')).toBeNull()
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('shows section title HISTÓRIA in PT', () => {
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'pt')
+    expect(screen.getByText('HISTÓRIA')).toBeDefined()
+  })
+
+  it('shows section title BACKSTORY in EN', () => {
+    renderWithI18n(<BackstoryBlock character={BASE} />, 'en')
+    expect(screen.getByText('BACKSTORY')).toBeDefined()
+  })
+
+  it('shows empty state title in EN', () => {
+    renderWithI18n(<BackstoryBlock character={EMPTY_BACKSTORY} />, 'en')
+    expect(screen.getByText('No story recorded yet.')).toBeDefined()
+  })
+
+  it('shows empty state hint in PT', () => {
+    renderWithI18n(<BackstoryBlock character={EMPTY_BACKSTORY} />, 'pt')
+    expect(screen.getByText('Documente o passado, motivações e momentos marcantes do seu personagem.')).toBeDefined()
+  })
+
+  it('shows empty state hint in EN', () => {
+    renderWithI18n(<BackstoryBlock character={EMPTY_BACKSTORY} />, 'en')
+    expect(screen.getByText("Document your character's past, motivations, and pivotal moments.")).toBeDefined()
   })
 })

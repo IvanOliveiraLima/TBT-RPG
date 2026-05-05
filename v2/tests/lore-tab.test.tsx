@@ -1,8 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import { LoreTab } from '@/components/sheet/tabs/LoreTab'
 import { useCharacterStore } from '@/store/character'
 import type { Character } from '@/domain/character'
+import { renderWithI18n } from './helpers/render'
 
 const EIRA: Character = {
   id: 'eira_01',
@@ -39,54 +40,56 @@ const EIRA: Character = {
 }
 
 describe('LoreTab integration', () => {
+  beforeEach(() => { localStorage.clear() })
+
   afterEach(() => {
     useCharacterStore.setState({ character: null, loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
-    const { container } = render(<LoreTab />)
+    const { container } = renderWithI18n(<LoreTab />, 'pt')
     expect(container.firstChild).toBeNull()
   })
 
   it('renders LoreHero when character is loaded', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('lore-hero')).toBeDefined()
   })
 
   it('renders BackstoryBlock', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('backstory-block')).toBeDefined()
   })
 
   it('renders PersonalityBlock', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('personality-block')).toBeDefined()
   })
 
   it('renders NotesBlock', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
   it('shows character name in LoreHero', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('lore-name').textContent).toBe('Eira Thornwood')
   })
 
   it('shows backstory text in BackstoryBlock', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('backstory-text').textContent).toContain('Guardian of the Thornwood Forest.')
   })
 
   it('shows all 4 personality fields', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByText('Silent and vigilant')).toBeDefined()
     expect(screen.getByText('Protecting all living things')).toBeDefined()
     expect(screen.getByText('The Thornwood is home')).toBeDefined()
@@ -95,7 +98,7 @@ describe('LoreTab integration', () => {
 
   it('shows notes empty state when notes is empty', () => {
     useCharacterStore.setState({ character: EIRA, loading: false, error: null })
-    render(<LoreTab />)
+    renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('notes-empty')).toBeDefined()
   })
 })

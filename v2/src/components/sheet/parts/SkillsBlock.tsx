@@ -1,22 +1,46 @@
-import type { Character, AbilityKey } from '@/domain/character'
+import type { Character } from '@/domain/character'
 import { formatSigned } from '@/domain/calculations'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 import { Pip } from '../ui/Pip'
 
 interface SkillsBlockProps {
   character: Character
 }
 
-const ABILITY_ABBR: Record<AbilityKey, string> = {
-  str: 'STR',
-  dex: 'DEX',
-  con: 'CON',
-  int: 'INT',
-  wis: 'WIS',
-  cha: 'CHA',
+// Maps English display names (from domain) to i18n key suffixes
+const SKILL_DISPLAY_TO_KEY: Record<string, string> = {
+  'Acrobatics':     'acrobatics',
+  'Animal Handling':'animal_handling',
+  'Arcana':         'arcana',
+  'Athletics':      'athletics',
+  'Deception':      'deception',
+  'History':        'history',
+  'Insight':        'insight',
+  'Intimidation':   'intimidation',
+  'Investigation':  'investigation',
+  'Medicine':       'medicine',
+  'Nature':         'nature',
+  'Perception':     'perception',
+  'Performance':    'performance',
+  'Persuasion':     'persuasion',
+  'Religion':       'religion',
+  'Sleight of Hand':'sleight_of_hand',
+  'Stealth':        'stealth',
+  'Survival':       'survival',
 }
 
 export function SkillsBlock({ character }: SkillsBlockProps) {
-  const sorted = [...character.skills].sort((a, b) => a.name.localeCompare(b.name))
+  const { t } = useTranslation()
+
+  function skillLabel(name: string): string {
+    const k = SKILL_DISPLAY_TO_KEY[name]
+    return k !== undefined ? t(`skills.${k}` as TranslationKey) : name
+  }
+
+  const sorted = [...character.skills].sort((a, b) =>
+    skillLabel(a.name).localeCompare(skillLabel(b.name)),
+  )
 
   return (
     <div
@@ -59,7 +83,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
                 fontWeight: active ? 500 : 400,
               }}
             >
-              {s.name}
+              {skillLabel(s.name)}
             </span>
             <span
               style={{
@@ -70,7 +94,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
                 fontWeight: 500,
               }}
             >
-              {ABILITY_ABBR[s.ability] ?? s.ability.toUpperCase()}
+              {t(`ability.${s.ability}`)}
             </span>
             <span
               data-testid={`skill-${s.name}-bonus`}

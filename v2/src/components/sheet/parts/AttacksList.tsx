@@ -1,5 +1,7 @@
-import type { Character, Attack, AbilityKey } from '@/domain/character'
+import type { Character, Attack } from '@/domain/character'
 import { Badge } from '../ui/Badge'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 
 interface AttacksListProps {
   character: Character
@@ -15,17 +17,8 @@ const T = {
   sans:          "'Inter', system-ui, sans-serif",
 } as const
 
-const ABILITY_ABBR: Record<AbilityKey | '', string> = {
-  str: 'STR',
-  dex: 'DEX',
-  con: 'CON',
-  int: 'INT',
-  wis: 'WIS',
-  cha: 'CHA',
-  '': '—',
-}
-
 export function AttacksList({ character }: AttacksListProps) {
+  const { t } = useTranslation()
   const attacks = character.attacks.filter((a) => a.name.trim() !== '')
 
   return (
@@ -44,7 +37,7 @@ export function AttacksList({ character }: AttacksListProps) {
             fontFamily: T.sans,
           }}
         >
-          Ataques
+          {t('attacks.section_title')}
         </h3>
         <span
           style={{
@@ -54,11 +47,11 @@ export function AttacksList({ character }: AttacksListProps) {
             fontFamily: T.sans,
           }}
         >
-          ({attacks.length})
+          {t('attacks.count_label', { count: String(attacks.length) })}
         </span>
         <button
           data-testid="add-attack-btn"
-          onClick={() => alert('Edição virá na Fase C')}
+          onClick={() => alert(t('phase_c.editing_coming_soon'))}
           style={{
             background: 'transparent',
             border: `1px solid ${T.borderDefault}`,
@@ -71,7 +64,7 @@ export function AttacksList({ character }: AttacksListProps) {
             fontFamily: T.sans,
           }}
         >
-          + Adicionar
+          + {t('attacks.add_button')}
         </button>
       </div>
 
@@ -82,10 +75,10 @@ export function AttacksList({ character }: AttacksListProps) {
           style={{ textAlign: 'center', padding: '24px 0', fontFamily: T.sans }}
         >
           <p style={{ fontSize: 13, color: T.textMuted, margin: '0 0 6px' }}>
-            Nenhum ataque cadastrado.
+            {t('attacks.empty_state_title')}
           </p>
           <p style={{ fontSize: 11, color: T.textMuted, opacity: 0.7, margin: 0 }}>
-            Adicione um ataque para registrar suas armas e magias ofensivas.
+            {t('attacks.empty_state_hint')}
           </p>
         </div>
       ) : (
@@ -104,7 +97,12 @@ interface AttackRowProps {
 }
 
 function AttackRow({ attack }: AttackRowProps) {
-  const abilityLabel = ABILITY_ABBR[attack.baseStat] ?? attack.baseStat.toUpperCase()
+  const { t } = useTranslation()
+
+  const abilityLabel = attack.baseStat
+    ? t(`ability.${attack.baseStat}` as TranslationKey)
+    : '—'
+
   const hasDamage = attack.damage.trim() !== ''
   const hasDamageType = attack.damageType.trim() !== ''
 
@@ -114,16 +112,23 @@ function AttackRow({ attack }: AttackRowProps) {
   }
   const metaLine = metaParts.join(' · ')
 
+  const handleRow = () => alert(t('phase_c.details_coming_soon'))
+
   return (
     <div
       role="button"
       tabIndex={0}
+      aria-label={t('attacks.row_aria', {
+        name: attack.name,
+        bonus_or_dc: attack.bonus,
+        damage: attack.damage || '—',
+      })}
       data-testid={`attack-row-${attack.id}`}
-      onClick={() => alert('Detalhes do ataque virão na Fase C')}
+      onClick={handleRow}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          alert('Detalhes do ataque virão na Fase C')
+          handleRow()
         }
       }}
       style={{
@@ -169,10 +174,10 @@ function AttackRow({ attack }: AttackRowProps) {
         </Badge>
         <button
           data-testid={`remove-attack-${attack.id}`}
-          aria-label={`Remover ataque ${attack.name}`}
+          aria-label={t('aria.remove_attack', { name: attack.name })}
           onClick={(e) => {
             e.stopPropagation()
-            alert('Remoção virá na Fase C')
+            alert(t('phase_c.editing_coming_soon'))
           }}
           style={{
             background: 'transparent',

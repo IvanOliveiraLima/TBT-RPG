@@ -1,8 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import { CombatTab } from '@/components/sheet/tabs/CombatTab'
 import { useCharacterStore } from '@/store/character'
 import type { Character, Attack } from '@/domain/character'
+import { renderWithI18n } from './helpers/render'
 
 function makeAttack(overrides: Pick<Attack, 'id' | 'name'> & Partial<Attack>): Attack {
   return {
@@ -55,60 +56,62 @@ const KAEL: Character = {
 }
 
 describe('CombatTab integration', () => {
+  beforeEach(() => { localStorage.clear() })
+
   afterEach(() => {
     useCharacterStore.setState({ character: null, loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
-    const { container } = render(<CombatTab />)
+    const { container } = renderWithI18n(<CombatTab />, 'pt')
     expect(container.firstChild).toBeNull()
   })
 
   it('renders CombatStrip when character is in store', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const strips = screen.getAllByTestId('combat-strip')
     expect(strips.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders AttacksList when character is in store', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const lists = screen.getAllByTestId('attacks-list')
     expect(lists.length).toBeGreaterThanOrEqual(1)
   })
 
   it('CombatStrip shows correct AC value', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const acStats = screen.getAllByTestId('combat-stat-ac')
     expect(acStats[0]!.textContent).toContain('14')
   })
 
   it('CombatStrip shows correct initiative', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const initStats = screen.getAllByTestId('combat-stat-init')
     expect(initStats[0]!.textContent).toContain('+2')
   })
 
   it('CombatStrip shows DC for spellcaster', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const dcStats = screen.getAllByTestId('combat-stat-dc')
     expect(dcStats[0]!.textContent).toContain('15')
   })
 
   it('renders both Rapier and Vicious Mockery in AttacksList', () => {
     useCharacterStore.setState({ character: KAEL, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     expect(screen.getAllByText('Rapier').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Vicious Mockery').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows empty attack state for character with no attacks', () => {
     useCharacterStore.setState({ character: { ...KAEL, attacks: [] }, loading: false, error: null })
-    render(<CombatTab />)
+    renderWithI18n(<CombatTab />, 'pt')
     const emptyStates = screen.getAllByTestId('attacks-empty-state')
     expect(emptyStates.length).toBeGreaterThanOrEqual(1)
   })

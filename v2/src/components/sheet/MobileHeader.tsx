@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 
 const T = {
   elevated:     '#1B1725',
@@ -17,6 +18,7 @@ interface MobileHeaderProps {
 }
 
 export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
+  const { t } = useTranslation()
   const firstClass = character.classes[0]
   return (
     <div style={{
@@ -31,7 +33,7 @@ export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
     }}>
       <button
         onClick={onMenu}
-        aria-label="Abrir menu"
+        aria-label={t('aria.open_menu')}
         style={{
           width: 34, height: 34, borderRadius: 8,
           background: T.elevated,
@@ -62,7 +64,7 @@ export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
       </div>
 
       <button
-        aria-label="Gerar com IA"
+        aria-label={t('aria.generate_ai')}
         style={{
           width: 34, height: 34, borderRadius: 8,
           background: 'transparent',
@@ -71,7 +73,7 @@ export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
           cursor: 'pointer',
           fontSize: 14, padding: 0, flexShrink: 0,
         }}
-        onClick={() => alert('Gerar com IA — não implementado nesta fase.')}
+        onClick={() => alert(t('phase_c.ai_unavailable'))}
       >
         ✦
       </button>

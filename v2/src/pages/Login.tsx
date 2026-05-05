@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
+import { useTranslation } from '@/i18n'
 
 export default function Login() {
   const navigate   = useNavigate()
   const { signIn } = useAuthStore()
+  const { t }      = useTranslation()
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -19,7 +21,7 @@ export default function Login() {
       await signIn(email, password)
       navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha no login')
+      setError(err instanceof Error ? err.message : t('auth.sign_in_failed'))
     } finally {
       setLoading(false)
     }
@@ -57,7 +59,7 @@ export default function Login() {
             TBT<span style={{ color: '#D4A017' }}>·</span>RPG
           </div>
           <div style={{ fontSize: 13, color: '#7A7788' }}>
-            Entrar na conta
+            {t('auth.sign_in_title')}
           </div>
         </div>
 
@@ -71,7 +73,7 @@ export default function Login() {
               color: '#7A7788',
               marginBottom: 6,
             }}>
-              E-mail
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -100,7 +102,7 @@ export default function Login() {
               color: '#7A7788',
               marginBottom: 6,
             }}>
-              Senha
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -150,7 +152,7 @@ export default function Login() {
               transition: 'background 200ms',
             }}
           >
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? t('auth.signing_in') : t('auth.sign_in')}
           </button>
         </form>
 
@@ -166,7 +168,7 @@ export default function Login() {
               textDecoration: 'underline',
             }}
           >
-            Voltar
+            {t('common.back')}
           </button>
         </div>
       </div>

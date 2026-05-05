@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useCharacterStore } from '@/store/character'
+import { useTranslation } from '@/i18n'
 import { HeroCard } from '../parts/HeroCard'
 import { HpBlock } from '../parts/HpBlock'
 import { CombatStrip } from '../parts/CombatStrip'
@@ -18,6 +19,7 @@ const CARD: React.CSSProperties = {
 }
 
 export function StatusTab() {
+  const { t } = useTranslation()
   const character = useCharacterStore((s) => s.character)
   if (!character) return null
 
@@ -33,26 +35,26 @@ export function StatusTab() {
         <div style={CARD}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <span style={{ color: '#D4A017', fontSize: 12 }}>⬢</span>
-            <Label style={{ marginBottom: 0 }}>Atributos</Label>
+            <Label style={{ marginBottom: 0 }}>{t('attributes.section_title')}</Label>
           </div>
           <AttrGrid character={character} cols={3} compact />
         </div>
 
         {/* Saving Throws — before Skills (numeric → numeric → descriptive) */}
         <div style={CARD}>
-          <Label>Saving Throws</Label>
+          <Label>{t('saves.section_title')}</Label>
           <SavingThrows character={character} />
         </div>
 
         {/* Skills */}
         <div style={CARD}>
-          <Label>Skills</Label>
+          <Label>{t('skills.label')}</Label>
           <SkillsBlock character={character} />
         </div>
 
         {/* Features & Traits */}
         <div style={CARD}>
-          <Label>Features & Traits</Label>
+          <Label>{t('features.label')}</Label>
           <FeaturesList character={character} />
         </div>
 
@@ -71,7 +73,7 @@ export function StatusTab() {
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <div style={{ ...CARD, height: '100%' }}>
-              <Label>Combate</Label>
+              <Label>{t('nav.combat')}</Label>
               <CombatStrip character={character} cols={6} />
             </div>
           </div>
@@ -79,7 +81,7 @@ export function StatusTab() {
           {/* Row 2: AttrGrid full width */}
           <div style={{ gridColumn: 'span 3' }}>
             <div style={CARD}>
-              <Label>Atributos</Label>
+              <Label>{t('attributes.section_title')}</Label>
               <AttrGrid character={character} cols={6} />
             </div>
           </div>
@@ -88,16 +90,16 @@ export function StatusTab() {
         {/* Row 3: 2-col — Skills left | Saves + Features right */}
         <div className="grid grid-cols-2" style={{ gap: 14 }}>
           <div style={{ ...CARD, maxHeight: 420, overflowY: 'auto' }}>
-            <Label>Skills</Label>
+            <Label>{t('skills.label')}</Label>
             <SkillsBlock character={character} />
           </div>
           <div className="flex flex-col" style={{ gap: 14 }}>
             <div style={CARD}>
-              <Label>Saving Throws</Label>
+              <Label>{t('saves.section_title')}</Label>
               <SavingThrows character={character} />
             </div>
             <div style={CARD}>
-              <Label>Features</Label>
+              <Label>{t('features.title')}</Label>
               <FeaturesList character={character} />
             </div>
           </div>

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 
 const T = {
   surface:      '#15121C',
@@ -16,12 +18,12 @@ const T = {
   sans:         "'Inter', system-ui, sans-serif",
 } as const
 
-const NAV_TABS: { k: TabKey; n: string }[] = [
-  { k: 'status', n: 'Atributos' },
-  { k: 'combat', n: 'Combate' },
-  { k: 'spells', n: 'Magias' },
-  { k: 'inv',    n: 'Inventário' },
-  { k: 'lore',   n: 'História' },
+const NAV_TABS: { k: TabKey; n: TranslationKey }[] = [
+  { k: 'status', n: 'nav.attributes' },
+  { k: 'combat', n: 'nav.combat' },
+  { k: 'spells', n: 'nav.spells' },
+  { k: 'inv',    n: 'nav.inventory' },
+  { k: 'lore',   n: 'nav.lore' },
 ]
 
 interface SidebarProps {
@@ -31,6 +33,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
+  const { t, lang, setLang } = useTranslation()
   const portrait = character.images.character
   const firstClass = character.classes[0]
 
@@ -72,7 +75,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
           }}>
             TBT-RPG
           </div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>v2 · beta</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{t('sidebar.version_badge')}</div>
         </div>
       </Link>
 
@@ -95,7 +98,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
           <path d="M19 12H5M5 12l7 7M5 12l7-7"
             stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span>Meus personagens</span>
+        <span>{t('nav.my_characters')}</span>
       </Link>
 
       {/* Character mini-card */}
@@ -138,16 +141,16 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
         textTransform: 'uppercase', letterSpacing: 1.5,
         padding: '0 10px 6px', fontWeight: 600,
       }}>
-        Páginas
+        {t('nav.pages')}
       </div>
 
       {/* Nav items */}
-      {NAV_TABS.map(t => {
-        const isActive = activeTab === t.k
+      {NAV_TABS.map(tab => {
+        const isActive = activeTab === tab.k
         return (
           <button
-            key={t.k}
-            onClick={() => onTabChange(t.k)}
+            key={tab.k}
+            onClick={() => onTabChange(tab.k)}
             style={{
               background: isActive ? T.elevated : 'transparent',
               border: 'none',
@@ -164,7 +167,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
               transition: 'all 150ms',
             }}
           >
-            {t.n}
+            {t(tab.n)}
           </button>
         )
       })}
@@ -173,7 +176,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
 
       {/* AI button */}
       <div
-        onClick={() => alert('Gerar com IA — não implementado nesta fase.')}
+        onClick={() => alert(t('phase_c.ai_unavailable'))}
         style={{
           padding: '10px 12px',
           background: 'linear-gradient(135deg, rgba(212,160,23,0.12), rgba(91,63,168,0.08))',
@@ -185,27 +188,33 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
       >
         <span style={{ color: T.gold }}>✦</span>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary }}>Gerar com IA</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>Backstory, items, magias</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary }}>{t('nav.generate_with_ai')}</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{t('nav.ai_subtitle')}</div>
         </div>
       </div>
 
-      {/* Language toggle (visual only) */}
+      {/* Language toggle */}
       <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
-        <button style={{
-          flex: 1, background: T.purple, color: '#fff',
-          border: 'none', borderRadius: 6, padding: 6,
-          fontSize: 10, fontWeight: 700, cursor: 'pointer',
-        }}>
-          PT
-        </button>
-        <button style={{
-          flex: 1, background: 'transparent', color: T.textMuted,
-          border: `1px solid ${T.borderSubtle}`, borderRadius: 6,
-          padding: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-        }}>
-          EN
-        </button>
+        {(['pt', 'en'] as const).map(l => {
+          const isActive = lang === l
+          return (
+            <button
+              key={l}
+              aria-pressed={isActive}
+              onClick={() => { if (!isActive) setLang(l) }}
+              style={{
+                flex: 1,
+                background: isActive ? T.elevated : 'transparent',
+                color: isActive ? T.textPrimary : T.textMuted,
+                border: `1px solid ${isActive ? T.gold : T.borderSubtle}`,
+                borderRadius: 6, padding: 6,
+                fontSize: 10, fontWeight: 700, cursor: 'pointer',
+              }}
+            >
+              {l.toUpperCase()}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

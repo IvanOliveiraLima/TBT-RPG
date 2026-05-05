@@ -1,5 +1,7 @@
 import type { Character, InventoryItem } from '@/domain/character'
 import { formatWeight, totalInventoryWeight } from '@/utils/format'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 
@@ -20,10 +22,11 @@ interface ItemRowProps {
 }
 
 function ItemRow({ item }: ItemRowProps) {
+  const { t } = useTranslation()
   return (
     <div
       data-testid={`inventory-item-${item.id}`}
-      aria-label={`Item: ${item.name}, peso: ${formatWeight(item.weight)}`}
+      aria-label={t('aria.item_weight' as TranslationKey, { name: item.name, weight: formatWeight(item.weight) })}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -32,7 +35,7 @@ function ItemRow({ item }: ItemRowProps) {
         borderRadius: 6,
         cursor: 'pointer',
       }}
-      onClick={() => alert('Detalhes virão na Fase C')}
+      onClick={() => alert(t('phase_c.details_coming_soon'))}
       onMouseEnter={(e) => { e.currentTarget.style.background = T.elevated }}
       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
     >
@@ -52,8 +55,8 @@ function ItemRow({ item }: ItemRowProps) {
       </span>
       <button
         data-testid={`remove-item-${item.id}`}
-        aria-label={`Remover ${item.name}`}
-        onClick={(e) => { e.stopPropagation(); alert('Edição virá na Fase C') }}
+        aria-label={t('aria.remove_item' as TranslationKey, { name: item.name })}
+        onClick={(e) => { e.stopPropagation(); alert(t('phase_c.editing_coming_soon')) }}
         style={{
           background: 'none',
           border: 'none',
@@ -75,6 +78,7 @@ interface InventoryListProps {
 }
 
 export function InventoryList({ character }: InventoryListProps) {
+  const { t } = useTranslation()
   const { inventory } = character
   const total = totalInventoryWeight(inventory)
   const carryMax = 15 * character.abilities.str || 150
@@ -86,7 +90,10 @@ export function InventoryList({ character }: InventoryListProps) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Label style={{ marginBottom: 0 }}>
-            ITENS <span style={{ color: T.gold, fontWeight: 400 }}>({inventory.length})</span>
+            {t('inventory.section_title')}{' '}
+            <span style={{ color: T.gold, fontWeight: 400 }}>
+              {t('inventory.count_label', { count: String(inventory.length) })}
+            </span>
           </Label>
           <span style={{ flex: 1 }} />
           <span
@@ -97,7 +104,7 @@ export function InventoryList({ character }: InventoryListProps) {
           </span>
           <button
             data-testid="add-item-btn"
-            onClick={() => alert('Edição virá na Fase C')}
+            onClick={() => alert(t('phase_c.editing_coming_soon'))}
             style={{
               background: 'none',
               border: `1px solid ${T.borderSubtle}`,
@@ -109,7 +116,7 @@ export function InventoryList({ character }: InventoryListProps) {
               fontFamily: T.sans,
             }}
           >
-            + Adicionar
+            + {t('inventory.add_button')}
           </button>
         </div>
 
@@ -140,10 +147,10 @@ export function InventoryList({ character }: InventoryListProps) {
             style={{ textAlign: 'center', padding: '20px 10px' }}
           >
             <p style={{ fontSize: 13, color: T.textMuted, margin: '0 0 6px' }}>
-              Nenhum item registrado.
+              {t('inventory.empty_state_title')}
             </p>
             <p style={{ fontSize: 11, color: T.textMuted, margin: 0, opacity: 0.7 }}>
-              Adicione itens para gerenciar seu inventário.
+              {t('inventory.empty_state_hint')}
             </p>
           </div>
         ) : (

@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { PersonalityBlock } from '@/components/sheet/parts/PersonalityBlock'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'eira_01',
@@ -43,21 +44,23 @@ const EMPTY_PERSONALITY: Character = {
 }
 
 describe('PersonalityBlock', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders personality-block testid', () => {
-    render(<PersonalityBlock character={BASE} />)
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('personality-block')).toBeDefined()
   })
 
-  it('renders all 4 personality fields', () => {
-    render(<PersonalityBlock character={BASE} />)
-    expect(screen.getByTestId('personality-field-traços')).toBeDefined()
-    expect(screen.getByTestId('personality-field-ideais')).toBeDefined()
-    expect(screen.getByTestId('personality-field-vínculos')).toBeDefined()
-    expect(screen.getByTestId('personality-field-defeitos')).toBeDefined()
+  it('renders all 4 personality fields (stable key-based testids)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+    expect(screen.getByTestId('personality-field-traits')).toBeDefined()
+    expect(screen.getByTestId('personality-field-ideals')).toBeDefined()
+    expect(screen.getByTestId('personality-field-bonds')).toBeDefined()
+    expect(screen.getByTestId('personality-field-flaws')).toBeDefined()
   })
 
-  it('shows PT-BR labels: Traços, Ideais, Vínculos, Defeitos', () => {
-    render(<PersonalityBlock character={BASE} />)
+  it('shows PT labels: Traços, Ideais, Vínculos, Defeitos', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByText('Traços')).toBeDefined()
     expect(screen.getByText('Ideais')).toBeDefined()
     expect(screen.getByText('Vínculos')).toBeDefined()
@@ -65,28 +68,54 @@ describe('PersonalityBlock', () => {
   })
 
   it('shows traits text', () => {
-    render(<PersonalityBlock character={BASE} />)
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByText('Quiet and observant')).toBeDefined()
   })
 
   it('shows ideals text', () => {
-    render(<PersonalityBlock character={BASE} />)
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByText('Protecting the wild')).toBeDefined()
   })
 
   it('shows bonds text', () => {
-    render(<PersonalityBlock character={BASE} />)
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByText('Bonded to the forest')).toBeDefined()
   })
 
   it('shows flaws text', () => {
-    render(<PersonalityBlock character={BASE} />)
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
     expect(screen.getByText('Distrusts cities')).toBeDefined()
   })
 
   it('empty field shows "—" placeholder', () => {
-    render(<PersonalityBlock character={EMPTY_PERSONALITY} />)
+    renderWithI18n(<PersonalityBlock character={EMPTY_PERSONALITY} />, 'pt')
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBe(4)
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('shows section title PERSONALIDADE in PT', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+    expect(screen.getByText('PERSONALIDADE')).toBeDefined()
+  })
+
+  it('shows section title PERSONALITY in EN', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
+    expect(screen.getByText('PERSONALITY')).toBeDefined()
+  })
+
+  it('shows EN labels: Traits, Ideals, Bonds, Flaws', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
+    expect(screen.getByText('Traits')).toBeDefined()
+    expect(screen.getByText('Ideals')).toBeDefined()
+    expect(screen.getByText('Bonds')).toBeDefined()
+    expect(screen.getByText('Flaws')).toBeDefined()
+  })
+
+  it('personality values are not translated (free-text)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
+    expect(screen.getByText('Quiet and observant')).toBeDefined()
+    expect(screen.getByText('Protecting the wild')).toBeDefined()
   })
 })

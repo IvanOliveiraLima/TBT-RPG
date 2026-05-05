@@ -4,6 +4,7 @@ import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
 import { MobileHeader } from './MobileHeader'
 import { BottomTabBar } from './BottomTabBar'
+import { useTranslation } from '@/i18n'
 
 const T = {
   surface:      '#15121C',
@@ -13,18 +14,9 @@ const T = {
   textSecondary:'#C8C4D6',
   textMuted:    '#7A7788',
   purple:       '#5B3FA8',
-  gold:         '#D4A017',
   serif:        "'Cinzel', Georgia, serif",
   sans:         "'Inter', system-ui, sans-serif",
 } as const
-
-const DRAWER_ITEMS = [
-  'Exportar JSON',
-  'Importar JSON',
-  'Nova ficha',
-  'Bloquear',
-  'Entrar para sincronizar',
-]
 
 interface MobileShellProps {
   character: Character
@@ -36,6 +28,7 @@ interface MobileShellProps {
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
+  const { t, lang, setLang } = useTranslation()
 
   return (
     <div style={{
@@ -104,13 +97,19 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                 <path d="M19 12H5M5 12l7 7M5 12l7-7"
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              Meus personagens
+              {t('nav.my_characters')}
             </button>
 
-            {DRAWER_ITEMS.map(item => (
+            {([
+              ['drawer.export_json', 'phase_c.export_unavailable'],
+              ['drawer.import_json', 'phase_c.editing_coming_soon'],
+              ['drawer.new_sheet',   'phase_c.editing_coming_soon'],
+              ['drawer.lock',        'phase_c.lock_unavailable'],
+              ['auth.sync_prompt',   null],
+            ] as const).map(([labelKey, alertKey]) => (
               <button
-                key={item}
-                onClick={() => setDrawerOpen(false)}
+                key={labelKey}
+                onClick={() => { if (alertKey) alert(t(alertKey)); setDrawerOpen(false) }}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -122,7 +121,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                   fontFamily: T.sans,
                 }}
               >
-                {item}
+                {t(labelKey)}
               </button>
             ))}
 
@@ -132,22 +131,27 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                 paddingTop: 10,
                 borderTop: `1px solid ${T.borderSubtle}`,
               }}>
-                <button style={{
-                  flex: 1, background: T.purple, color: '#fff',
-                  border: 'none', borderRadius: 6, padding: '6px',
-                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  fontFamily: T.sans,
-                }}>
-                  PT
-                </button>
-                <button style={{
-                  flex: 1, background: 'transparent', color: T.textMuted,
-                  border: `1px solid ${T.borderSubtle}`, borderRadius: 6,
-                  padding: '6px', fontSize: 11, fontWeight: 600, cursor: 'pointer',
-                  fontFamily: T.sans,
-                }}>
-                  EN
-                </button>
+                {(['pt', 'en'] as const).map(l => {
+                  const isActive = lang === l
+                  return (
+                    <button
+                      key={l}
+                      aria-pressed={isActive}
+                      onClick={() => { if (!isActive) setLang(l) }}
+                      style={{
+                        flex: 1,
+                        background: isActive ? '#1B1725' : 'transparent',
+                        color: isActive ? T.textPrimary : T.textMuted,
+                        border: `1px solid ${isActive ? '#D4A017' : T.borderSubtle}`,
+                        borderRadius: 6, padding: '6px',
+                        fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                        fontFamily: T.sans,
+                      }}
+                    >
+                      {l.toUpperCase()}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -24,14 +24,14 @@ feita exclusivamente na v1 ([raiz do app](https://ivanoliveiralima.github.io/TBT
 - Layouts dedicados para mobile e desktop
 - Cálculos derivados consistentes (AC, Initiative, Passive Perception, bonuses)
 - Cloud sync via Supabase (opcional)
-- 517 testes unitários e de integração
+- Interface bilíngue EN/PT com alternância instantânea (sem reload)
+- ~644 testes unitários e de integração
 - PWA instalável
 
 ### O que não tem ainda (Fase C)
 
 - Edição de personagens
 - Geração via IA (Cloudflare Workers)
-- Tradução PT/EN
 - Importação/exportação de JSON na v2 (use a v1 por enquanto)
 
 ### Stack v2

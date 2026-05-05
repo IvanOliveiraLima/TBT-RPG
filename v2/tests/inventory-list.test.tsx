@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { InventoryList } from '@/components/sheet/parts/InventoryList'
+import { renderWithI18n } from './helpers/render'
 
 // Kanaan — Monk 5 with 4 items (mirrors full-character.json fixture)
 const KANAAN: Character = {
@@ -44,13 +45,15 @@ const EMPTY_INVENTORY: Character = {
 }
 
 describe('InventoryList', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders inventory-list testid', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByTestId('inventory-list')).toBeDefined()
   })
 
   it('renders all 4 items for Kanaan', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByTestId('inventory-item-inv_0')).toBeDefined()
     expect(screen.getByTestId('inventory-item-inv_1')).toBeDefined()
     expect(screen.getByTestId('inventory-item-inv_2')).toBeDefined()
@@ -58,7 +61,7 @@ describe('InventoryList', () => {
   })
 
   it('shows item names', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByText('Shortsword')).toBeDefined()
     expect(screen.getByText("Explorer's Pack")).toBeDefined()
     expect(screen.getByText('10 darts')).toBeDefined()
@@ -66,23 +69,23 @@ describe('InventoryList', () => {
   })
 
   it('shows weight for first item as "2 lb"', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByText('2 lb')).toBeDefined()
   })
 
   it('shows decimal weight "2.5 lb" for darts', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByText('2.5 lb')).toBeDefined()
   })
 
   it('shows total weight in header (2 + 59 + 2.5 + 3 = 66.5 lb)', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     const totalEl = screen.getByTestId('inventory-total-weight')
     expect(totalEl.textContent).toContain('66.5 lb')
   })
 
   it('preserves insertion order (Shortsword before Herbalism kit)', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     const list = screen.getByTestId('inventory-list')
     const items = list.querySelectorAll('[data-testid^="inventory-item-"]')
     expect(items[0]?.textContent).toContain('Shortsword')
@@ -90,47 +93,91 @@ describe('InventoryList', () => {
   })
 
   it('shows item count "(4)" in header', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     const list = screen.getByTestId('inventory-list')
     expect(list.textContent).toContain('(4)')
   })
 
-  it('shows "+ Adicionar" button', () => {
-    render(<InventoryList character={KANAAN} />)
+  it('shows add item button', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByTestId('add-item-btn')).toBeDefined()
   })
 
   it('shows remove button for each item', () => {
-    render(<InventoryList character={KANAAN} />)
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
     expect(screen.getByTestId('remove-item-inv_0')).toBeDefined()
     expect(screen.getByTestId('remove-item-inv_3')).toBeDefined()
   })
 
   it('shows empty state when inventory is empty', () => {
-    render(<InventoryList character={EMPTY_INVENTORY} />)
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'pt')
     expect(screen.getByTestId('inventory-empty-state')).toBeDefined()
     expect(screen.getByText('Nenhum item registrado.')).toBeDefined()
   })
 
   it('empty state shows help text', () => {
-    render(<InventoryList character={EMPTY_INVENTORY} />)
-    expect(screen.getByText('Adicione itens para gerenciar seu inventário.')).toBeDefined()
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'pt')
+    expect(screen.getByText('Adicione seus equipamentos, consumíveis e tesouros.')).toBeDefined()
   })
 
   it('shows item count "(0)" for empty inventory', () => {
-    render(<InventoryList character={EMPTY_INVENTORY} />)
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'pt')
     const list = screen.getByTestId('inventory-list')
     expect(list.textContent).toContain('(0)')
   })
 
-  it('still shows "+ Adicionar" when empty', () => {
-    render(<InventoryList character={EMPTY_INVENTORY} />)
+  it('still shows add button when empty', () => {
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'pt')
     expect(screen.getByTestId('add-item-btn')).toBeDefined()
   })
 
   it('total weight shows "0 lb" for empty inventory', () => {
-    render(<InventoryList character={EMPTY_INVENTORY} />)
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'pt')
     const totalEl = screen.getByTestId('inventory-total-weight')
     expect(totalEl.textContent).toContain('0 lb')
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('shows section title ITENS in PT', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
+    expect(screen.getByText('ITENS')).toBeDefined()
+  })
+
+  it('shows section title ITEMS in EN', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'en')
+    expect(screen.getByText('ITEMS')).toBeDefined()
+  })
+
+  it('add button shows + Adicionar in PT', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
+    expect(screen.getByText('+ Adicionar')).toBeDefined()
+  })
+
+  it('add button shows + Add in EN', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'en')
+    expect(screen.getByText('+ Add')).toBeDefined()
+  })
+
+  it('shows empty state title in EN', () => {
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'en')
+    expect(screen.getByText('No items recorded.')).toBeDefined()
+  })
+
+  it('shows empty state hint in EN', () => {
+    renderWithI18n(<InventoryList character={EMPTY_INVENTORY} />, 'en')
+    expect(screen.getByText('Add your equipment, consumables, and treasure.')).toBeDefined()
+  })
+
+  it('remove button has accessible aria-label in PT', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
+    const btn = screen.getByRole('button', { name: 'Remover Shortsword' })
+    expect(btn).toBeDefined()
+  })
+
+  it('remove button has accessible aria-label in EN', () => {
+    renderWithI18n(<InventoryList character={KANAAN} />, 'en')
+    const btn = screen.getByRole('button', { name: 'Remove Shortsword' })
+    expect(btn).toBeDefined()
   })
 })

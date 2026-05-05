@@ -1,14 +1,16 @@
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 
 // Colors matching design-reference/tbt-rpg/project/components/sheet-parts.jsx
-const COINS = [
-  { key: 'pp' as const, label: 'PP', color: '#D0D0E8', ariaName: 'Platina' },
-  { key: 'gp' as const, label: 'GP', color: '#D4A017', ariaName: 'Ouro' },
-  { key: 'ep' as const, label: 'EP', color: '#C8B070', ariaName: 'Electrum' },
-  { key: 'sp' as const, label: 'SP', color: '#B8B8C8', ariaName: 'Prata' },
-  { key: 'cp' as const, label: 'CP', color: '#B47850', ariaName: 'Cobre' },
+const COINS: { key: 'pp' | 'gp' | 'ep' | 'sp' | 'cp'; color: string }[] = [
+  { key: 'pp', color: '#D0D0E8' },
+  { key: 'gp', color: '#D4A017' },
+  { key: 'ep', color: '#C8B070' },
+  { key: 'sp', color: '#B8B8C8' },
+  { key: 'cp', color: '#B47850' },
 ]
 
 const T = {
@@ -24,12 +26,13 @@ interface CurrencyBlockProps {
 }
 
 export function CurrencyBlock({ character }: CurrencyBlockProps) {
+  const { t } = useTranslation()
   const { currency } = character
 
   return (
     <div data-testid="currency-block">
       <Card padding="md">
-        <Label>MOEDAS</Label>
+        <Label>{t('currency.section_title')}</Label>
         <div
           style={{
             display: 'grid',
@@ -37,11 +40,11 @@ export function CurrencyBlock({ character }: CurrencyBlockProps) {
             gap: 6,
           }}
         >
-          {COINS.map(({ key, label, color, ariaName }) => (
+          {COINS.map(({ key, color }) => (
             <div
               key={key}
               data-testid={`currency-${key}`}
-              aria-label={`${ariaName}: ${currency[key]}`}
+              aria-label={t(`currency.${key}_aria` as TranslationKey, { count: String(currency[key]) })}
               style={{
                 background: T.elevated,
                 border: `1px solid ${T.borderSubtle}`,
@@ -59,7 +62,7 @@ export function CurrencyBlock({ character }: CurrencyBlockProps) {
                   textTransform: 'uppercase',
                 }}
               >
-                {label}
+                {t(`currency.${key}_label` as TranslationKey)}
               </div>
               <div
                 style={{

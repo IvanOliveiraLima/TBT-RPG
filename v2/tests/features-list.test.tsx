@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character, Feature } from '@/domain/character'
 import { FeaturesList } from '@/components/sheet/parts/FeaturesList'
+import { renderWithI18n } from './helpers/render'
 
 function feature(
   id: string,
@@ -52,8 +53,10 @@ const BASE: Character = {
 }
 
 describe('FeaturesList', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders all features', () => {
-    render(<FeaturesList character={BASE} />)
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     expect(screen.getByTestId('feature-f1')).toBeDefined()
     expect(screen.getByTestId('feature-f2')).toBeDefined()
     expect(screen.getByTestId('feature-f3')).toBeDefined()
@@ -61,56 +64,57 @@ describe('FeaturesList', () => {
   })
 
   it('shows feature names', () => {
-    render(<FeaturesList character={BASE} />)
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     expect(screen.getByText('Druidic')).toBeDefined()
     expect(screen.getByText('Wild Shape')).toBeDefined()
     expect(screen.getByText('Stonecunning')).toBeDefined()
   })
 
   it('shows feature source text', () => {
-    render(<FeaturesList character={BASE} />)
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     expect(screen.getAllByText('Classe').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Raça')).toBeDefined()
   })
 
   it('shows uses badge for active features with usesMax', () => {
-    render(<FeaturesList character={BASE} />)
-    // Wild Shape: 2/2
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     expect(screen.getByText('2/2')).toBeDefined()
   })
 
   it('shows 0/1 uses badge when all uses spent', () => {
-    render(<FeaturesList character={BASE} />)
-    // Channel Divinity: 0/1
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     expect(screen.getByText('0/1')).toBeDefined()
   })
 
   it('does not show uses badge for passive features', () => {
-    render(<FeaturesList character={BASE} />)
-    // Druidic is passive — no badge in its row
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     const druidicRow = screen.getByTestId('feature-f1')
     expect(druidicRow.querySelector('span[style*="inline-flex"]')).toBeNull()
   })
 
   it('shows gold diamond icon for each feature', () => {
-    render(<FeaturesList character={BASE} />)
+    renderWithI18n(<FeaturesList character={BASE} />, 'pt')
     const list = screen.getByTestId('features-list')
     const diamonds = list.querySelectorAll('span')
-    // At least 4 diamond icons
     const goldSpans = Array.from(diamonds).filter(
       (s) => (s as HTMLElement).style.color === 'rgb(212, 160, 23)',
     )
     expect(goldSpans.length).toBeGreaterThanOrEqual(4)
   })
 
-  it('shows fallback text when features array is empty', () => {
-    render(<FeaturesList character={{ ...BASE, features: [] }} />)
+  it('shows PT empty state text', () => {
+    renderWithI18n(<FeaturesList character={{ ...BASE, features: [] }} />, 'pt')
     expect(screen.getByTestId('features-empty')).toBeDefined()
     expect(screen.getByText('Nenhuma feature registrada.')).toBeDefined()
   })
 
+  it('shows EN empty state text', () => {
+    renderWithI18n(<FeaturesList character={{ ...BASE, features: [] }} />, 'en')
+    expect(screen.getByText('No features recorded.')).toBeDefined()
+  })
+
   it('does not render features-list container when empty', () => {
-    render(<FeaturesList character={{ ...BASE, features: [] }} />)
+    renderWithI18n(<FeaturesList character={{ ...BASE, features: [] }} />, 'pt')
     expect(screen.queryByTestId('features-list')).toBeNull()
   })
 })

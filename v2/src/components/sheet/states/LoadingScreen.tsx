@@ -1,6 +1,7 @@
+import { useTranslation } from '@/i18n'
+
 const T = {
   bg:          '#0F0D14',
-  textPrimary: '#F4EFE0',
   textMuted:   '#7A7788',
   gold:        '#D4A017',
   serif:       "'Cinzel', Georgia, serif",
@@ -8,6 +9,7 @@ const T = {
 } as const
 
 export function LoadingScreen() {
+  const { t } = useTranslation()
   return (
     <div style={{
       display: 'flex',
@@ -29,7 +31,7 @@ export function LoadingScreen() {
       }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <p style={{ fontSize: 13, color: T.textMuted, fontFamily: T.serif }}>
-        Carregando personagem…
+        {t('screens.loading_character')}
       </p>
     </div>
   )
