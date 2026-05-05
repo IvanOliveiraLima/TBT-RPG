@@ -182,20 +182,6 @@ const en = {
   'spells.non_caster_title': 'This class does not cast spells.',
   'spells.non_caster_hint': 'Spells are accessed by classes like Druid, Bard, Cleric, Wizard, Sorcerer and others.',
 
-  // Inventory (reserved for C.4.1e)
-  'inventory.label': 'ITEMS ({count})',
-  'inventory.empty': 'No items recorded.',
-  'inventory.empty_hint': 'Add items to manage your inventory.',
-  'inventory.add': '+ Add',
-
-  // Currency (reserved for C.4.1e)
-  'currency.label': 'CURRENCY',
-  'currency.pp': 'Platinum',
-  'currency.gp': 'Gold',
-  'currency.ep': 'Electrum',
-  'currency.sp': 'Silver',
-  'currency.cp': 'Copper',
-
   // Proficiencies
   'proficiencies.label': 'PROFICIENCIES',
   'proficiencies.weapons_armor': 'WEAPONS & ARMOR',
@@ -203,24 +189,10 @@ const en = {
   'proficiencies.languages': 'LANGUAGES',
   'proficiencies.other': 'OTHER',
 
-  // Lore / backstory (reserved for C.4.1e)
-  'lore.history_label': 'History',
-  'lore.backstory_empty': 'No history recorded yet.',
-  'lore.notes_label': 'Notes',
-  'lore.notes_empty': 'No notes recorded.',
-  'lore.personality_label': 'Personality',
-  'lore.traits': 'Traits',
-  'lore.ideals': 'Ideals',
-  'lore.bonds': 'Bonds',
-  'lore.flaws': 'Flaws',
-  'lore.level_xp': 'Level {level} · {xp} XP',
-
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
   'aria.generate_ai': 'Generate with AI',
-  'aria.item_weight': 'Item: {name}, weight: {weight}',
-  'aria.remove_item': 'Remove {name}',
   'aria.remove_spell': 'Remove spell {name}',
   'aria.remove_attack': 'Remove attack {name}',
   'aria.spell_slot': 'Level {level} slot ({current} of {max} available)',

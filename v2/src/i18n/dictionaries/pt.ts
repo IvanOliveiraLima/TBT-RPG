@@ -184,20 +184,6 @@ const pt: Record<keyof typeof en, string> = {
   'spells.non_caster_title': 'Esta classe não possui conjuração de magias.',
   'spells.non_caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
 
-  // Inventory (reserved for C.4.1e)
-  'inventory.label': 'ITENS ({count})',
-  'inventory.empty': 'Nenhum item registrado.',
-  'inventory.empty_hint': 'Adicione itens para gerenciar seu inventário.',
-  'inventory.add': '+ Adicionar',
-
-  // Currency (reserved for C.4.1e)
-  'currency.label': 'MOEDAS',
-  'currency.pp': 'Platina',
-  'currency.gp': 'Ouro',
-  'currency.ep': 'Electrum',
-  'currency.sp': 'Prata',
-  'currency.cp': 'Cobre',
-
   // Proficiencies
   'proficiencies.label': 'PROFICIÊNCIAS',
   'proficiencies.weapons_armor': 'ARMAS E ARMADURAS',
@@ -205,24 +191,10 @@ const pt: Record<keyof typeof en, string> = {
   'proficiencies.languages': 'IDIOMAS',
   'proficiencies.other': 'OUTRAS',
 
-  // Lore / backstory (reserved for C.4.1e)
-  'lore.history_label': 'História',
-  'lore.backstory_empty': 'Nenhuma história registrada ainda.',
-  'lore.notes_label': 'Notas',
-  'lore.notes_empty': 'Nenhuma nota registrada.',
-  'lore.personality_label': 'Personalidade',
-  'lore.traits': 'Traços',
-  'lore.ideals': 'Ideais',
-  'lore.bonds': 'Vínculos',
-  'lore.flaws': 'Defeitos',
-  'lore.level_xp': 'Nível {level} · {xp} XP',
-
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
   'aria.generate_ai': 'Gerar com IA',
-  'aria.item_weight': 'Item: {name}, peso: {weight}',
-  'aria.remove_item': 'Remover {name}',
   'aria.remove_spell': 'Remover magia {name}',
   'aria.remove_attack': 'Remover ataque {name}',
   'aria.spell_slot': 'Slot de nível {level} ({current} de {max} disponíveis)',
