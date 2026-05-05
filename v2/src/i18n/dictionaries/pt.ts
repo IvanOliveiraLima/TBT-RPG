@@ -201,19 +201,25 @@ const pt: Record<keyof typeof en, string> = {
   'spells.empty': 'Nenhuma magia cadastrada.',
   'spells.empty_hint': 'Adicione cantrips e magias para gerenciar slots.',
 
-  // Inventory
-  'inventory.label': 'ITENS ({count})',
-  'inventory.empty': 'Nenhum item registrado.',
-  'inventory.empty_hint': 'Adicione itens para gerenciar seu inventário.',
-  'inventory.add': '+ Adicionar',
+  // Inventory — InventoryList + ItemRow
+  'inventory.section_title':     'ITENS',
+  'inventory.add_button':        'Adicionar',
+  'inventory.count_label':       '({count})',
+  'inventory.empty_state_title': 'Nenhum item registrado.',
+  'inventory.empty_state_hint':  'Adicione seus equipamentos, consumíveis e tesouros.',
 
-  // Currency
-  'currency.label': 'MOEDAS',
-  'currency.pp': 'Platina',
-  'currency.gp': 'Ouro',
-  'currency.ep': 'Electrum',
-  'currency.sp': 'Prata',
-  'currency.cp': 'Cobre',
+  // Currency — CurrencyBlock
+  'currency.section_title': 'MOEDAS',
+  'currency.pp_label':      'PP',
+  'currency.gp_label':      'GP',
+  'currency.ep_label':      'EP',
+  'currency.sp_label':      'SP',
+  'currency.cp_label':      'CP',
+  'currency.pp_aria':       'Platina: {count}',
+  'currency.gp_aria':       'Ouro: {count}',
+  'currency.ep_aria':       'Electrum: {count}',
+  'currency.sp_aria':       'Prata: {count}',
+  'currency.cp_aria':       'Cobre: {count}',
 
   // Proficiencies
   'proficiencies.label': 'PROFICIÊNCIAS',
@@ -222,17 +228,25 @@ const pt: Record<keyof typeof en, string> = {
   'proficiencies.languages': 'IDIOMAS',
   'proficiencies.other': 'OUTRAS',
 
-  // Lore / backstory
-  'lore.history_label': 'História',
-  'lore.backstory_empty': 'Nenhuma história registrada ainda.',
-  'lore.notes_label': 'Notas',
-  'lore.notes_empty': 'Nenhuma nota registrada.',
-  'lore.personality_label': 'Personalidade',
-  'lore.traits': 'Traços',
-  'lore.ideals': 'Ideais',
-  'lore.bonds': 'Vínculos',
-  'lore.flaws': 'Defeitos',
-  'lore.level_xp': 'Nível {level} · {xp} XP',
+  // Lore hero — LoreHero
+  'lore.hero.level_xp': 'Nível {level} · {xp} XP',
+
+  // Backstory — BackstoryBlock
+  'backstory.section_title':     'HISTÓRIA',
+  'backstory.empty_state_title': 'Nenhuma história registrada ainda.',
+  'backstory.empty_state_hint':  'Documente o passado, motivações e momentos marcantes do seu personagem.',
+
+  // Personality — PersonalityBlock
+  'personality.section_title': 'PERSONALIDADE',
+  'personality.traits_label':  'Traços',
+  'personality.ideals_label':  'Ideais',
+  'personality.bonds_label':   'Vínculos',
+  'personality.flaws_label':   'Defeitos',
+
+  // Notes — NotesBlock
+  'notes.section_title':     'NOTAS',
+  'notes.empty_state_title': 'Nenhuma nota registrada ainda.',
+  'notes.empty_state_hint':  'Use este espaço para anotações de sessão, NPCs e lembretes.',
 
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
