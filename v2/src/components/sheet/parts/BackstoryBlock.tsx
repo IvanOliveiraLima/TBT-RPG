@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 import { Label } from '../ui/Label'
 
 const CARD: React.CSSProperties = {
@@ -10,9 +11,10 @@ const CARD: React.CSSProperties = {
 }
 
 export function BackstoryBlock({ character }: { character: Character }) {
+  const { t } = useTranslation()
   return (
     <div style={CARD} data-testid="backstory-block">
-      <Label style={{ marginBottom: 10 }}>História</Label>
+      <Label style={{ marginBottom: 10 }}>{t('backstory.section_title')}</Label>
       {character.backstory ? (
         <p
           style={{
@@ -27,12 +29,14 @@ export function BackstoryBlock({ character }: { character: Character }) {
           {character.backstory}
         </p>
       ) : (
-        <p
-          style={{ color: '#7A7788', fontStyle: 'italic', fontSize: 13, margin: 0 }}
-          data-testid="backstory-empty"
-        >
-          Nenhuma história registrada ainda.
-        </p>
+        <div data-testid="backstory-empty">
+          <p style={{ color: '#7A7788', fontStyle: 'italic', fontSize: 13, margin: '0 0 6px' }}>
+            {t('backstory.empty_state_title')}
+          </p>
+          <p style={{ color: '#7A7788', fontSize: 11, margin: 0, opacity: 0.7 }}>
+            {t('backstory.empty_state_hint')}
+          </p>
+        </div>
       )}
     </div>
   )

@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { CurrencyBlock } from '@/components/sheet/parts/CurrencyBlock'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'kael_01',
@@ -38,13 +39,15 @@ const EMPTY_CURRENCY: Character = {
 }
 
 describe('CurrencyBlock', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders currency-block testid', () => {
-    render(<CurrencyBlock character={BASE} />)
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('currency-block')).toBeDefined()
   })
 
   it('renders all 5 denomination cells', () => {
-    render(<CurrencyBlock character={BASE} />)
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('currency-pp')).toBeDefined()
     expect(screen.getByTestId('currency-gp')).toBeDefined()
     expect(screen.getByTestId('currency-ep')).toBeDefined()
@@ -53,39 +56,66 @@ describe('CurrencyBlock', () => {
   })
 
   it('shows correct GP value', () => {
-    render(<CurrencyBlock character={BASE} />)
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     const gpCell = screen.getByTestId('currency-gp')
     expect(gpCell.textContent).toContain('25')
   })
 
   it('shows correct SP value', () => {
-    render(<CurrencyBlock character={BASE} />)
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     const spCell = screen.getByTestId('currency-sp')
     expect(spCell.textContent).toContain('10')
   })
 
   it('shows correct PP value', () => {
-    render(<CurrencyBlock character={BASE} />)
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     const ppCell = screen.getByTestId('currency-pp')
     expect(ppCell.textContent).toContain('1')
   })
 
   it('shows all zeros for empty currency', () => {
-    render(<CurrencyBlock character={EMPTY_CURRENCY} />)
+    renderWithI18n(<CurrencyBlock character={EMPTY_CURRENCY} />, 'pt')
     const block = screen.getByTestId('currency-block')
-    // All 5 cells should contain "0"
     const zeros = block.querySelectorAll('div')
     const hasZero = [...zeros].some((el) => el.textContent?.trim() === '0')
     expect(hasZero).toBe(true)
   })
 
-  it('has accessible aria-label for GP cell', () => {
-    render(<CurrencyBlock character={BASE} />)
+  it('has accessible aria-label for GP cell in PT', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     expect(screen.getByRole('generic', { name: 'Ouro: 25' })).toBeDefined()
   })
 
-  it('shows "MOEDAS" label', () => {
-    render(<CurrencyBlock character={BASE} />)
+  it('shows MOEDAS section label in PT', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     expect(screen.getByText('MOEDAS')).toBeDefined()
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('shows CURRENCY section label in EN', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'en')
+    expect(screen.getByText('CURRENCY')).toBeDefined()
+  })
+
+  it('has accessible aria-label for GP cell in EN', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'en')
+    expect(screen.getByRole('generic', { name: 'Gold: 25' })).toBeDefined()
+  })
+
+  it('has accessible aria-label for PP cell in PT', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
+    expect(screen.getByRole('generic', { name: 'Platina: 1' })).toBeDefined()
+  })
+
+  it('has accessible aria-label for PP cell in EN', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'en')
+    expect(screen.getByRole('generic', { name: 'Platinum: 1' })).toBeDefined()
+  })
+
+  it('PP/GP labels are always PP/GP regardless of language', () => {
+    renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
+    expect(screen.getByTestId('currency-pp').textContent).toContain('PP')
+    expect(screen.getByTestId('currency-gp').textContent).toContain('GP')
   })
 })

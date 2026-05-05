@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { LoreHero } from '@/components/sheet/parts/LoreHero'
+import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
   id: 'eira_01',
@@ -38,18 +39,20 @@ const WITH_PORTRAIT: Character = {
 }
 
 describe('LoreHero', () => {
+  beforeEach(() => { localStorage.clear() })
+
   it('renders lore-hero testid', () => {
-    render(<LoreHero character={BASE} />)
+    renderWithI18n(<LoreHero character={BASE} />, 'pt')
     expect(screen.getByTestId('lore-hero')).toBeDefined()
   })
 
   it('shows character name', () => {
-    render(<LoreHero character={BASE} />)
+    renderWithI18n(<LoreHero character={BASE} />, 'pt')
     expect(screen.getByTestId('lore-name').textContent).toBe('Eira Thornwood')
   })
 
   it('shows meta line with race, class, level, background, and alignment', () => {
-    render(<LoreHero character={BASE} />)
+    renderWithI18n(<LoreHero character={BASE} />, 'pt')
     const meta = screen.getByTestId('lore-meta').textContent ?? ''
     expect(meta).toContain('Wood Elf')
     expect(meta).toContain('Ranger 5')
@@ -57,26 +60,49 @@ describe('LoreHero', () => {
     expect(meta).toContain('Neutral Good')
   })
 
-  it('shows portrait with aria-label when image exists', () => {
-    render(<LoreHero character={WITH_PORTRAIT} />)
+  it('shows portrait with aria-label when image exists (PT)', () => {
+    renderWithI18n(<LoreHero character={WITH_PORTRAIT} />, 'pt')
     expect(screen.getByRole('img', { name: 'Retrato de Eira Thornwood' })).toBeDefined()
   })
 
   it('shows placeholder initial when no portrait', () => {
-    render(<LoreHero character={BASE} />)
+    renderWithI18n(<LoreHero character={BASE} />, 'pt')
     const initial = screen.getByTestId('lore-portrait-initial')
     expect(initial.textContent).toBe('E')
   })
 
   it('does not show initial when portrait is provided', () => {
-    render(<LoreHero character={WITH_PORTRAIT} />)
+    renderWithI18n(<LoreHero character={WITH_PORTRAIT} />, 'pt')
     expect(screen.queryByTestId('lore-portrait-initial')).toBeNull()
   })
 
-  it('shows level and XP line', () => {
-    render(<LoreHero character={BASE} />)
+  it('shows level and XP line in PT', () => {
+    renderWithI18n(<LoreHero character={BASE} />, 'pt')
     const hero = screen.getByTestId('lore-hero')
     expect(hero.textContent).toContain('Nível 5')
     expect(hero.textContent).toContain('6500 XP')
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('shows level and XP line in EN', () => {
+    renderWithI18n(<LoreHero character={BASE} />, 'en')
+    const hero = screen.getByTestId('lore-hero')
+    expect(hero.textContent).toContain('Level 5')
+    expect(hero.textContent).toContain('6500 XP')
+  })
+
+  it('shows portrait aria-label in EN', () => {
+    renderWithI18n(<LoreHero character={WITH_PORTRAIT} />, 'en')
+    expect(screen.getByRole('img', { name: 'Portrait of Eira Thornwood' })).toBeDefined()
+  })
+
+  it('character name, race, class, alignment are not translated (free-text)', () => {
+    renderWithI18n(<LoreHero character={BASE} />, 'en')
+    expect(screen.getByTestId('lore-name').textContent).toBe('Eira Thornwood')
+    const meta = screen.getByTestId('lore-meta').textContent ?? ''
+    expect(meta).toContain('Wood Elf')
+    expect(meta).toContain('Ranger 5')
+    expect(meta).toContain('Neutral Good')
   })
 })

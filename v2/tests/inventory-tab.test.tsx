@@ -1,8 +1,9 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
 import { useCharacterStore } from '@/store/character'
 import type { Character } from '@/domain/character'
+import { renderWithI18n } from './helpers/render'
 
 const KANAAN: Character = {
   id: 'kanaan_01',
@@ -39,37 +40,38 @@ const KANAAN: Character = {
 }
 
 describe('InventoryTab integration', () => {
+  beforeEach(() => { localStorage.clear() })
+
   afterEach(() => {
     useCharacterStore.setState({ character: null, loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
-    const { container } = render(<InventoryTab />)
+    const { container } = renderWithI18n(<InventoryTab />, 'pt')
     expect(container.firstChild).toBeNull()
   })
 
   it('renders InventoryList when character is loaded', () => {
     useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
-    render(<InventoryTab />)
+    renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByTestId('inventory-list').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders CurrencyBlock when character is loaded', () => {
     useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
-    render(<InventoryTab />)
+    renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByTestId('currency-block').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows item names', () => {
     useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
-    render(<InventoryTab />)
+    renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByText('Shortsword').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows currency values', () => {
     useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
-    render(<InventoryTab />)
-    // GP cell should show "15"
+    renderWithI18n(<InventoryTab />, 'pt')
     const gpCells = screen.getAllByTestId('currency-gp')
     expect(gpCells[0]?.textContent).toContain('15')
   })

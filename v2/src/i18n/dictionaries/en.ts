@@ -182,6 +182,26 @@ const en = {
   'spells.non_caster_title': 'This class does not cast spells.',
   'spells.non_caster_hint': 'Spells are accessed by classes like Druid, Bard, Cleric, Wizard, Sorcerer and others.',
 
+  // Inventory — InventoryList + ItemRow
+  'inventory.section_title':     'ITEMS',
+  'inventory.add_button':        'Add',
+  'inventory.count_label':       '({count})',
+  'inventory.empty_state_title': 'No items recorded.',
+  'inventory.empty_state_hint':  'Add your equipment, consumables, and treasure.',
+
+  // Currency — CurrencyBlock
+  'currency.section_title': 'CURRENCY',
+  'currency.pp_label':      'PP',
+  'currency.gp_label':      'GP',
+  'currency.ep_label':      'EP',
+  'currency.sp_label':      'SP',
+  'currency.cp_label':      'CP',
+  'currency.pp_aria':       'Platinum: {count}',
+  'currency.gp_aria':       'Gold: {count}',
+  'currency.ep_aria':       'Electrum: {count}',
+  'currency.sp_aria':       'Silver: {count}',
+  'currency.cp_aria':       'Copper: {count}',
+
   // Proficiencies
   'proficiencies.label': 'PROFICIENCIES',
   'proficiencies.weapons_armor': 'WEAPONS & ARMOR',
@@ -189,11 +209,32 @@ const en = {
   'proficiencies.languages': 'LANGUAGES',
   'proficiencies.other': 'OTHER',
 
+  // Lore hero — LoreHero
+  'lore.hero.level_xp': 'Level {level} · {xp} XP',
+
+  // Backstory — BackstoryBlock
+  'backstory.section_title':     'BACKSTORY',
+  'backstory.empty_state_title': 'No story recorded yet.',
+  'backstory.empty_state_hint':  "Document your character's past, motivations, and pivotal moments.",
+
+  // Personality — PersonalityBlock
+  'personality.section_title': 'PERSONALITY',
+  'personality.traits_label':  'Traits',
+  'personality.ideals_label':  'Ideals',
+  'personality.bonds_label':   'Bonds',
+  'personality.flaws_label':   'Flaws',
+
+  // Notes — NotesBlock
+  'notes.section_title':     'NOTES',
+  'notes.empty_state_title': 'No notes yet.',
+  'notes.empty_state_hint':  'Use this space for session notes, NPCs, and reminders.',
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
   'aria.generate_ai': 'Generate with AI',
-  'aria.remove_spell': 'Remove spell {name}',
+  'aria.item_weight':   'Item: {name}, weight: {weight}',
+  'aria.remove_item':   'Remove {name}',
+  'aria.remove_spell':  'Remove spell {name}',
   'aria.remove_attack': 'Remove attack {name}',
   'aria.spell_slot': 'Level {level} slot ({current} of {max} available)',
 

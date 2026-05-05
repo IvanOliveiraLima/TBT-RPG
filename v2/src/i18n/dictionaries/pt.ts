@@ -184,6 +184,26 @@ const pt: Record<keyof typeof en, string> = {
   'spells.non_caster_title': 'Esta classe não possui conjuração de magias.',
   'spells.non_caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
 
+  // Inventory — InventoryList + ItemRow
+  'inventory.section_title':     'ITENS',
+  'inventory.add_button':        'Adicionar',
+  'inventory.count_label':       '({count})',
+  'inventory.empty_state_title': 'Nenhum item registrado.',
+  'inventory.empty_state_hint':  'Adicione seus equipamentos, consumíveis e tesouros.',
+
+  // Currency — CurrencyBlock
+  'currency.section_title': 'MOEDAS',
+  'currency.pp_label':      'PP',
+  'currency.gp_label':      'GP',
+  'currency.ep_label':      'EP',
+  'currency.sp_label':      'SP',
+  'currency.cp_label':      'CP',
+  'currency.pp_aria':       'Platina: {count}',
+  'currency.gp_aria':       'Ouro: {count}',
+  'currency.ep_aria':       'Electrum: {count}',
+  'currency.sp_aria':       'Prata: {count}',
+  'currency.cp_aria':       'Cobre: {count}',
+
   // Proficiencies
   'proficiencies.label': 'PROFICIÊNCIAS',
   'proficiencies.weapons_armor': 'ARMAS E ARMADURAS',
@@ -191,11 +211,32 @@ const pt: Record<keyof typeof en, string> = {
   'proficiencies.languages': 'IDIOMAS',
   'proficiencies.other': 'OUTRAS',
 
+  // Lore hero — LoreHero
+  'lore.hero.level_xp': 'Nível {level} · {xp} XP',
+
+  // Backstory — BackstoryBlock
+  'backstory.section_title':     'HISTÓRIA',
+  'backstory.empty_state_title': 'Nenhuma história registrada ainda.',
+  'backstory.empty_state_hint':  'Documente o passado, motivações e momentos marcantes do seu personagem.',
+
+  // Personality — PersonalityBlock
+  'personality.section_title': 'PERSONALIDADE',
+  'personality.traits_label':  'Traços',
+  'personality.ideals_label':  'Ideais',
+  'personality.bonds_label':   'Vínculos',
+  'personality.flaws_label':   'Defeitos',
+
+  // Notes — NotesBlock
+  'notes.section_title':     'NOTAS',
+  'notes.empty_state_title': 'Nenhuma nota registrada ainda.',
+  'notes.empty_state_hint':  'Use este espaço para anotações de sessão, NPCs e lembretes.',
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
   'aria.generate_ai': 'Gerar com IA',
-  'aria.remove_spell': 'Remover magia {name}',
+  'aria.item_weight':   'Item: {name}, peso: {weight}',
+  'aria.remove_item':   'Remover {name}',
+  'aria.remove_spell':  'Remover magia {name}',
   'aria.remove_attack': 'Remover ataque {name}',
   'aria.spell_slot': 'Slot de nível {level} ({current} de {max} disponíveis)',
 
