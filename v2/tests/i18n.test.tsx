@@ -129,7 +129,7 @@ describe('useTranslation — interpolation', () => {
   it('substitutes numeric placeholders', () => {
     const { result } = renderHook(() => useTranslation(), { wrapper })
     act(() => result.current.setLang('en'))
-    expect(result.current.t('lore.level_xp', { level: 5, xp: 6500 }))
+    expect(result.current.t('lore.hero.level_xp', { level: 5, xp: 6500 }))
       .toBe('Level 5 · 6500 XP')
   })
 
