@@ -129,8 +129,8 @@ describe('useTranslation — interpolation', () => {
   it('substitutes numeric placeholders', () => {
     const { result } = renderHook(() => useTranslation(), { wrapper })
     act(() => result.current.setLang('en'))
-    expect(result.current.t('lore.level_xp', { level: 5, xp: 6500 }))
-      .toBe('Level 5 · 6500 XP')
+    expect(result.current.t('aria.spell_slot', { level: 5, current: 2, max: 4 }))
+      .toBe('Level 5 slot (2 of 4 available)')
   })
 
   it('leaves unmatched placeholder intact when param missing', () => {

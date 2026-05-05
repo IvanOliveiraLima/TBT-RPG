@@ -2,6 +2,7 @@ import type { Character } from '@/domain/character'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { Pip } from '../ui/Pip'
+import { useTranslation } from '@/i18n'
 
 const T = {
   textMuted:    '#7A7788',
@@ -16,6 +17,8 @@ interface SpellSlotsProps {
 }
 
 export function SpellSlots({ character }: SpellSlotsProps) {
+  const { t } = useTranslation()
+
   if (!character.spells) return null
 
   const activeSlots = character.spells.slots.filter((s) => s.max > 0)
@@ -24,14 +27,18 @@ export function SpellSlots({ character }: SpellSlotsProps) {
   return (
     <div data-testid="spell-slots">
       <Card padding="md">
-        <Label style={{ marginBottom: 10 }}>ESPAÇOS DE MAGIA</Label>
+        <Label style={{ marginBottom: 10 }}>{t('spell_slots.section_title')}</Label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {activeSlots.map((s) => (
             <div
               key={s.level}
               data-testid={`spell-slot-level-${s.level}`}
               role="group"
-              aria-label={`Slot de nível ${s.level} (${s.current} de ${s.max} disponíveis)`}
+              aria-label={t('spell_slots.pip_aria', {
+                level:   String(s.level),
+                current: String(s.current),
+                max:     String(s.max),
+              })}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -53,7 +60,7 @@ export function SpellSlots({ character }: SpellSlotsProps) {
                   minWidth: 52,
                 }}
               >
-                NÍVEL {s.level}
+                {t('spell_slots.level_label', { level: String(s.level) })}
               </div>
               <div style={{ flex: 1, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                 {Array.from({ length: s.max }).map((_, i) => (
@@ -76,7 +83,7 @@ export function SpellSlots({ character }: SpellSlotsProps) {
                   textAlign: 'right',
                 }}
               >
-                {s.current}/{s.max}
+                {t('spell_slots.count_label', { current: String(s.current), max: String(s.max) })}
               </div>
             </div>
           ))}

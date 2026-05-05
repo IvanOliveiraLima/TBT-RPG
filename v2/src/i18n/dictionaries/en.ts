@@ -1,29 +1,15 @@
 const en = {
-  // Common UI
-  'common.loading': 'Loading…',
-  'common.error': 'Error',
-  'common.cancel': 'Cancel',
-  'common.save': 'Save',
-  'common.add': '+ Add',
-  'common.remove': 'Remove',
-  'common.empty_dash': '—',
+  // Common UI (only entries with active usage)
   'common.back': 'Back',
   'common.level_abbr': 'Lv',
-  'common.feet_abbr': 'ft',
 
-  // Ability scores
+  // Ability score abbreviations
   'ability.str': 'STR',
   'ability.dex': 'DEX',
   'ability.con': 'CON',
   'ability.int': 'INT',
   'ability.wis': 'WIS',
   'ability.cha': 'CHA',
-  'ability.strength': 'Strength',
-  'ability.dexterity': 'Dexterity',
-  'ability.constitution': 'Constitution',
-  'ability.intelligence': 'Intelligence',
-  'ability.wisdom': 'Wisdom',
-  'ability.charisma': 'Charisma',
 
   // Navigation / sidebar
   'nav.my_characters': 'My characters',
@@ -66,13 +52,7 @@ const en = {
   // Topbar actions
   'topbar.export': 'Export',
   'topbar.unlock': 'Unlock',
-  'topbar.lock': 'Lock',
   'topbar.synced': 'Synced',
-
-  // Sync status
-  'sync.synced': 'Synced',
-  'sync.syncing': 'Syncing…',
-  'sync.offline': 'Offline',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',
@@ -96,7 +76,6 @@ const en = {
   'charselect.export_unavailable': 'Export — not yet available in v2.',
   'charselect.v1_prefix': 'Full sheet available in the',
   'charselect.v1_link': 'current version (v1) →',
-  'charselect.inspired': 'Inspired',
 
   // State screens
   'screens.loading_character': 'Loading character…',
@@ -123,8 +102,7 @@ const en = {
   'saves.ability.wis': 'Wisdom',
   'saves.ability.cha': 'Charisma',
 
-  // Individual skill names (18)
-  'skills.section_title': 'Skills',
+  // Individual skill names (18, via template literal t(`skills.${k}`))
   'skills.acrobatics': 'Acrobatics',
   'skills.animal_handling': 'Animal Handling',
   'skills.arcana': 'Arcana',
@@ -144,28 +122,22 @@ const en = {
   'skills.stealth': 'Stealth',
   'skills.survival': 'Survival',
 
+  // Skills section label (used in StatusTab mobile/desktop labels)
+  'skills.label': 'Skills',
+
   // Attributes section
   'attributes.section_title': 'Attributes',
 
   // Hero card
   'hero.inspired_badge': 'Inspired',
 
-  // Combat stats (strip labels)
+  // Combat stats strip labels
   'combat.ac': 'AC',
   'combat.initiative': 'INIT',
   'combat.speed': 'SPD',
   'combat.passive_perception': 'PP',
   'combat.spell_save_dc': 'DC',
   'combat.proficiency_bonus': 'PROF',
-  'combat.hit_points': 'Hit Points',
-  'combat.death_saves': 'Death Saves',
-  'combat.hit_dice': 'Hit Dice',
-  'combat.heal': '＋ Heal',
-  'combat.damage': '− Damage',
-  'combat.saving_throws': 'Saving Throws',
-
-  // Skills section (legacy label key)
-  'skills.label': 'Skills',
 
   // Features & Traits
   'features.label': 'Features & Traits',
@@ -173,10 +145,6 @@ const en = {
   'features.empty': 'No features recorded.',
 
   // Attacks
-  'attacks.label': 'Attacks',
-  'attacks.add': '+ Add',
-  'attacks.empty': 'No attacks recorded.',
-  'attacks.empty_hint': 'Add an attack to record your weapons and offensive spells.',
   'attacks.section_title': 'ATTACKS',
   'attacks.add_button': 'Add',
   'attacks.empty_state_title': 'No attacks registered.',
@@ -184,34 +152,35 @@ const en = {
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Attack {name}, {bonus_or_dc}, {damage}',
 
-  // Spells
-  'spells.label': 'Spells',
-  'spells.cantrips': 'CANTRIPS',
-  'spells.level_label': 'LEVEL {level}',
-  'spells.slots_label': 'SPELL SLOTS',
-  'spells.header_class': 'CLASS',
-  'spells.header_ability': 'ABILITY',
-  'spells.header_save_dc': 'SPELL SAVE DC',
-  'spells.header_attack_bonus': 'ATTACK BONUS',
-  'spells.not_caster': '{name} does not cast spells.',
-  'spells.no_spellcasting': 'This class does not have spellcasting.',
-  'spells.caster_hint': 'Spells are accessed by classes such as Druid, Bard, Cleric, Wizard, Sorcerer, and others.',
-  'spells.empty': 'No spells recorded.',
-  'spells.empty_hint': 'Add cantrips and spells to manage slots.',
+  // SpellHeader cell labels
+  'spells.header.class': 'CLASS',
+  'spells.header.ability': 'ABILITY',
+  'spells.header.save_dc': 'SAVE DC',
+  'spells.header.attack_bonus': 'ATTACK BONUS',
 
-  // Inventory
-  'inventory.label': 'ITEMS ({count})',
-  'inventory.empty': 'No items recorded.',
-  'inventory.empty_hint': 'Add items to manage your inventory.',
-  'inventory.add': '+ Add',
+  // SpellSlots
+  'spell_slots.section_title': 'SPELL SLOTS',
+  'spell_slots.level_label': 'LEVEL {level}',
+  'spell_slots.count_label': '{current}/{max}',
+  'spell_slots.pip_aria': 'Level {level} slot ({current} of {max} available)',
 
-  // Currency
-  'currency.label': 'CURRENCY',
-  'currency.pp': 'Platinum',
-  'currency.gp': 'Gold',
-  'currency.ep': 'Electrum',
-  'currency.sp': 'Silver',
-  'currency.cp': 'Copper',
+  // SpellList
+  'spells.section_title': 'SPELLS',
+  'spells.add_button': 'Add',
+  'spells.count_label': '({count})',
+  'spells.cantrips_section': 'CANTRIPS',
+  'spells.level_section': 'LEVEL {level}',
+  'spells.section_count': '{count}',
+  'spells.empty_state_title': 'No spells registered.',
+  'spells.empty_state_hint': 'Add cantrips and spells to manage slots.',
+
+  // SpellRow
+  'spells.row.unprepared_aria': 'Not prepared',
+  'spells.row.row_aria': 'Spell {name}',
+
+  // SpellsTab non-caster
+  'spells.non_caster_title': 'This class does not cast spells.',
+  'spells.non_caster_hint': 'Spells are accessed by classes like Druid, Bard, Cleric, Wizard, Sorcerer and others.',
 
   // Proficiencies
   'proficiencies.label': 'PROFICIENCIES',
@@ -220,24 +189,10 @@ const en = {
   'proficiencies.languages': 'LANGUAGES',
   'proficiencies.other': 'OTHER',
 
-  // Lore / backstory
-  'lore.history_label': 'History',
-  'lore.backstory_empty': 'No history recorded yet.',
-  'lore.notes_label': 'Notes',
-  'lore.notes_empty': 'No notes recorded.',
-  'lore.personality_label': 'Personality',
-  'lore.traits': 'Traits',
-  'lore.ideals': 'Ideals',
-  'lore.bonds': 'Bonds',
-  'lore.flaws': 'Flaws',
-  'lore.level_xp': 'Level {level} · {xp} XP',
-
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
   'aria.generate_ai': 'Generate with AI',
-  'aria.item_weight': 'Item: {name}, weight: {weight}',
-  'aria.remove_item': 'Remove {name}',
   'aria.remove_spell': 'Remove spell {name}',
   'aria.remove_attack': 'Remove attack {name}',
   'aria.spell_slot': 'Level {level} slot ({current} of {max} available)',

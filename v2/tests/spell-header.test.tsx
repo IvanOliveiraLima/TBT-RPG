@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { SpellHeader } from '@/components/sheet/parts/SpellHeader'
+import { renderWithI18n } from './helpers/render'
 
 const KAEL: Character = {
   id: 'kael_01',
@@ -46,35 +47,37 @@ const KAEL: Character = {
 }
 
 describe('SpellHeader', () => {
-  it('renders CLASSE cell with first class name', () => {
-    render(<SpellHeader character={KAEL} />)
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders class name (Bard)', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
     expect(screen.getByText('Bard')).toBeDefined()
   })
 
-  it('renders HABILIDADE cell with uppercase ability key', () => {
-    render(<SpellHeader character={KAEL} />)
+  it('renders ability abbreviation (CHA in EN)', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
     expect(screen.getByText('CHA')).toBeDefined()
   })
 
-  it('renders DC DE SALVAGUARDA cell with numeric value', () => {
-    render(<SpellHeader character={KAEL} />)
+  it('renders saveDC numeric value', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
     expect(screen.getByText('15')).toBeDefined()
   })
 
-  it('renders BÔNUS DE ATAQUE cell with signed bonus', () => {
-    render(<SpellHeader character={KAEL} />)
+  it('renders attack bonus with sign', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
     expect(screen.getByText('+7')).toBeDefined()
   })
 
   it('attack bonus has "+" prefix for positive values', () => {
-    render(<SpellHeader character={KAEL} />)
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
     const header = screen.getByTestId('spell-header')
     expect(header.textContent).toContain('+7')
   })
 
   it('returns null for non-caster (spells undefined)', () => {
     const nonCaster = { ...KAEL, spells: undefined }
-    const { container } = render(<SpellHeader character={nonCaster} />)
+    const { container } = renderWithI18n(<SpellHeader character={nonCaster} />, 'en')
     expect(container.firstChild).toBeNull()
   })
 
@@ -84,7 +87,7 @@ describe('SpellHeader', () => {
       classes: [{ name: 'Druid', level: 5, hitDie: 8 }],
       spells: { ...KAEL.spells!, ability: 'wis' as const, saveDC: 14, attackBonus: 6 },
     }
-    render(<SpellHeader character={druid} />)
+    renderWithI18n(<SpellHeader character={druid} />, 'en')
     expect(screen.getByText('WIS')).toBeDefined()
     expect(screen.getByText('Druid')).toBeDefined()
   })
@@ -95,16 +98,46 @@ describe('SpellHeader', () => {
       classes: [{ name: 'Wizard', level: 5, hitDie: 6 }],
       spells: { ...KAEL.spells!, ability: 'int' as const },
     }
-    render(<SpellHeader character={wizard} />)
+    renderWithI18n(<SpellHeader character={wizard} />, 'en')
     expect(screen.getByText('INT')).toBeDefined()
   })
 
   it('negative attack bonus shows without "+"', () => {
-    const weak = {
-      ...KAEL,
-      spells: { ...KAEL.spells!, attackBonus: -1 },
-    }
-    render(<SpellHeader character={weak} />)
+    const weak = { ...KAEL, spells: { ...KAEL.spells!, attackBonus: -1 } }
+    renderWithI18n(<SpellHeader character={weak} />, 'en')
     expect(screen.getByText('-1')).toBeDefined()
+  })
+
+  // ── i18n dual-lang tests ──────────────────────────────────────────
+
+  it('renders PT cell labels: CLASSE / HABILIDADE / DC DE SALVAGUARDA / BÔNUS DE ATAQUE', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'pt')
+    expect(screen.getByText('CLASSE')).toBeDefined()
+    expect(screen.getByText('HABILIDADE')).toBeDefined()
+    expect(screen.getByText('DC DE SALVAGUARDA')).toBeDefined()
+    expect(screen.getByText('BÔNUS DE ATAQUE')).toBeDefined()
+  })
+
+  it('renders EN cell labels: CLASS / ABILITY / SAVE DC / ATTACK BONUS', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'en')
+    expect(screen.getByText('CLASS')).toBeDefined()
+    expect(screen.getByText('ABILITY')).toBeDefined()
+    expect(screen.getByText('SAVE DC')).toBeDefined()
+    expect(screen.getByText('ATTACK BONUS')).toBeDefined()
+  })
+
+  it('uses CAR abbreviation for CHA ability in PT', () => {
+    renderWithI18n(<SpellHeader character={KAEL} />, 'pt')
+    expect(screen.getByText('CAR')).toBeDefined()
+  })
+
+  it('uses SAB abbreviation for WIS ability in PT', () => {
+    const druid = {
+      ...KAEL,
+      classes: [{ name: 'Druid', level: 5, hitDie: 8 }],
+      spells: { ...KAEL.spells!, ability: 'wis' as const },
+    }
+    renderWithI18n(<SpellHeader character={druid} />, 'pt')
+    expect(screen.getByText('SAB')).toBeDefined()
   })
 })

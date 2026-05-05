@@ -1,16 +1,9 @@
-import type { Character, AbilityKey } from '@/domain/character'
+import type { Character } from '@/domain/character'
 import { formatSigned } from '@/domain/calculations'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
-
-const ABILITY_LABEL: Record<AbilityKey, string> = {
-  str: 'STR',
-  dex: 'DEX',
-  con: 'CON',
-  int: 'INT',
-  wis: 'WIS',
-  cha: 'CHA',
-}
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 
 const T = {
   textPrimary: '#F4EFE0',
@@ -23,16 +16,19 @@ interface SpellHeaderProps {
 }
 
 export function SpellHeader({ character }: SpellHeaderProps) {
+  const { t } = useTranslation()
+
   if (!character.spells) return null
 
   const { spells, classes } = character
   const casterClass = classes[0]?.name ?? '—'
+  const abilityAbbrev = t(`ability.${spells.ability}` as TranslationKey)
 
-  const cells: { label: string; value: string; gold?: boolean }[] = [
-    { label: 'CLASSE',            value: casterClass },
-    { label: 'HABILIDADE',        value: ABILITY_LABEL[spells.ability] },
-    { label: 'DC DE SALVAGUARDA', value: String(spells.saveDC), gold: true },
-    { label: 'BÔNUS DE ATAQUE',   value: formatSigned(spells.attackBonus) },
+  const cells: { key: string; label: string; value: string; gold?: boolean }[] = [
+    { key: 'class',        label: t('spells.header.class'),        value: casterClass },
+    { key: 'ability',      label: t('spells.header.ability'),      value: abilityAbbrev },
+    { key: 'save_dc',      label: t('spells.header.save_dc'),      value: String(spells.saveDC), gold: true },
+    { key: 'attack_bonus', label: t('spells.header.attack_bonus'), value: formatSigned(spells.attackBonus) },
   ]
 
   return (
@@ -46,8 +42,8 @@ export function SpellHeader({ character }: SpellHeaderProps) {
           }}
           className="sm:grid-cols-4"
         >
-          {cells.map(({ label, value, gold }) => (
-            <div key={label} style={{ textAlign: 'center' }}>
+          {cells.map(({ key, label, value, gold }) => (
+            <div key={key} style={{ textAlign: 'center' }}>
               <Label>{label}</Label>
               <div
                 style={{
