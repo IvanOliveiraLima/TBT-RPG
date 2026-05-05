@@ -117,6 +117,12 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 | `v2/src/pages/Login.tsx` | Login page (email + password via Supabase) |
 | `v2/src/routes.tsx` | React Router v6 config (/, /login, * → /) |
 | `v2/tests/db.test.ts` | Basic test for IndexedDB wrapper |
+| `v2/src/i18n/index.ts` | Re-exports: `I18nProvider`, `useTranslation`, `pluralKey`, types |
+| `v2/src/i18n/i18n.tsx` | `I18nProvider` — holds lang state, `setLang`, `t()` function |
+| `v2/src/i18n/dictionaries/en.ts` | English dictionary — source of truth for all keys |
+| `v2/src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
+| `v2/src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
+| `v2/tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
 
 ### v2 derived-model philosophy
 
@@ -209,3 +215,79 @@ This order matters: components built on a broken adapter produce invisible data 
 - **Tailwind** is available for other components but CharSelect/Login use inline styles for pixel-perfect fidelity
 - **exactOptionalPropertyTypes + noUncheckedIndexedAccess** enabled — be careful with optional chaining
 - `vite-plugin-pwa` installed with `--legacy-peer-deps` (Vite 8 not yet in peer dep range of v1.2.0)
+
+### v2 internationalization (i18n)
+
+The v2 ships with a **custom Context-based i18n system** — no react-i18next,
+no external library. Built incrementally across Fase C.4 (sub-phases C.4.0
+through C.4.2), reached ~202 keys covering all five tabs by the end.
+
+#### Type safety
+
+`pt.ts` is typed as `Record<keyof typeof en, string>` — TypeScript fails the
+build if PT is missing any EN key. `en.ts` is the source of truth; PT mirrors
+it exactly. This guarantees no production-time "missing key" surprises.
+
+#### Key naming convention
+
+Modern pattern established from Fase C.4.1c onwards:
+
+- `<section>.section_title` — visible header (`'STATUS'`, `'COMBATE'`, `'MAGIAS'`)
+- `<section>.add_button` — primary CTA (`'Add'` / `'Adicionar'`)
+- `<section>.empty_state_title` and `<section>.empty_state_hint` — empty UI states
+- `<section>.row.row_aria` — aria-label for clickable rows
+- `<section>.count_label` — usually `({count})`
+
+When in doubt, look at C.4.1d (Spells) or C.4.1e (Inventory/Lore) for the
+canonical examples.
+
+#### Reuse over duplication
+
+Before creating a new `aria.*` key, grep existing ones — generic keys like
+`aria.remove_attack`, `aria.remove_spell`, `aria.item_weight`, `aria.portrait`
+are intentionally cross-component. Adding a duplicate with a slightly
+different name is a code smell.
+
+#### Detection order
+
+Initial language is determined by `detectInitialLang()`:
+
+1. `localStorage.getItem('tbt-rpg-v2-lang')` — explicit user preference (highest priority)
+2. `navigator.language.startsWith('pt')` — browser locale
+3. Fallback: `'pt'`
+
+Once the user clicks PT or EN in the Sidebar/MobileShell, localStorage takes
+over permanently for that browser.
+
+#### Translation policy
+
+- **Translated:** UI labels, ability abbreviations (FOR/DES/CON/INT/SAB/CAR
+  in PT, STR/DEX/CON/INT/WIS/CHA in EN), skill names following PHB-PT
+  (Atletismo, Furtividade, Prestidigitação...), saves ("Testes de
+  Resistência"), Hit Dice ("Dados de Vida"), empty state messages, aria-labels.
+- **Not translated** (free-text from adapter): character name, race, class,
+  alignment, item names, spell names, damage type, backstory text, notes.
+- **Not translated** (international D&D standards): currency abbreviations
+  (PP/GP/EP/SP/CP), speed unit (FT), weight unit (lb).
+
+When adding a new field, decide which bucket it falls into. Free-text from
+the adapter is the most common case for "do not translate".
+
+#### Toggle activation
+
+PT/EN buttons in `Sidebar.tsx` (desktop) and `MobileShell.tsx` (mobile drawer)
+call `setLang()` from the I18n context. The switch is **instant via React
+re-render** — no page reload. The active button has `aria-pressed="true"` and
+visual highlight (gold border + elevated background).
+
+#### Testing pattern
+
+Components are rendered via `renderWithI18n(ui, 'pt' | 'en')` from
+`v2/tests/helpers/render.tsx` — pre-sets localStorage and wraps with
+`<I18nProvider>`. Most components have **dual-lang test coverage** — same
+assertions duplicated for PT and EN expected text. Adding a new translated
+component without dual-lang tests is incomplete.
+
+### v2 known layout issues (to fix when touching mobile layout)
+
+- **Mobile drawer — PT/EN toggle pushed too far down**: `MobileShell.tsx` uses `marginTop: 'auto'` on the toggle wrapper, which pushes it to the bottom of the drawer via the flex-spacer. On short screens the toggle may be hidden or hard to reach. Consider either moving the toggle closer to the nav menu items or constraining the drawer height so it doesn't rely on `auto` margin.
