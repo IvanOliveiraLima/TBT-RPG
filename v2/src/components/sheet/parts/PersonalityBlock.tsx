@@ -1,5 +1,7 @@
 import type React from 'react'
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 import { Label } from '../ui/Label'
 
 const CARD: React.CSSProperties = {
@@ -9,16 +11,16 @@ const CARD: React.CSSProperties = {
   padding: 18,
 }
 
-const PERSONALITY_FIELDS: { key: keyof Character['personality']; label: string }[] = [
-  { key: 'traits', label: 'Traços' },
-  { key: 'ideals', label: 'Ideais' },
-  { key: 'bonds',  label: 'Vínculos' },
-  { key: 'flaws',  label: 'Defeitos' },
+const PERSONALITY_FIELDS: { key: keyof Character['personality']; labelKey: TranslationKey }[] = [
+  { key: 'traits', labelKey: 'personality.traits_label' },
+  { key: 'ideals', labelKey: 'personality.ideals_label' },
+  { key: 'bonds',  labelKey: 'personality.bonds_label' },
+  { key: 'flaws',  labelKey: 'personality.flaws_label' },
 ]
 
-function PersonalityField({ label, value }: { label: string; value: string }) {
+function PersonalityField({ testId, label, value }: { testId: string; label: string; value: string }) {
   return (
-    <div data-testid={`personality-field-${label.toLowerCase()}`}>
+    <div data-testid={`personality-field-${testId}`}>
       <h4
         style={{
           fontSize: 10,
@@ -52,14 +54,16 @@ function PersonalityField({ label, value }: { label: string; value: string }) {
 }
 
 export function PersonalityBlock({ character }: { character: Character }) {
+  const { t } = useTranslation()
   return (
     <div style={CARD} data-testid="personality-block">
-      <Label style={{ marginBottom: 14 }}>Personalidade</Label>
+      <Label style={{ marginBottom: 14 }}>{t('personality.section_title')}</Label>
       <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 16 }}>
         {PERSONALITY_FIELDS.map((f) => (
           <PersonalityField
             key={f.key}
-            label={f.label}
+            testId={f.key}
+            label={t(f.labelKey)}
             value={character.personality[f.key]}
           />
         ))}

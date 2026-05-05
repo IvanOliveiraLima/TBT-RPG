@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { Character } from '@/domain/character'
+import { useTranslation } from '@/i18n'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -14,6 +15,7 @@ const PORTRAIT_GRADIENT =
   'linear-gradient(135deg, #2A1F3D, #0F0D14)'
 
 export function LoreHero({ character }: { character: Character }) {
+  const { t } = useTranslation()
   const portrait = character.images.character
   const firstClass = character.classes[0]
   const initial = (character.name[0] ?? '?').toUpperCase()
@@ -32,7 +34,7 @@ export function LoreHero({ character }: { character: Character }) {
         {/* Portrait */}
         <div
           role="img"
-          aria-label={`Retrato de ${character.name}`}
+          aria-label={t('aria.portrait', { name: character.name })}
           className="w-40 h-40 lg:w-[200px] lg:h-[200px]"
           style={{
             flexShrink: 0,
@@ -87,7 +89,7 @@ export function LoreHero({ character }: { character: Character }) {
           </div>
 
           <div style={{ fontSize: 12, color: '#7A7788' }}>
-            Nível {character.totalLevel} · {character.experience} XP
+            {t('lore.hero.level_xp', { level: String(character.totalLevel), xp: String(character.experience) })}
           </div>
         </div>
       </div>
