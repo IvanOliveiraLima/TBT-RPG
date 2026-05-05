@@ -28,7 +28,7 @@ interface MobileShellProps {
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, lang, setLang } = useTranslation()
 
   return (
     <div style={{
@@ -131,31 +131,27 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                 paddingTop: 10,
                 borderTop: `1px solid ${T.borderSubtle}`,
               }}>
-                {/* Language toggle — inactive until C.4.2 (all tabs migrated) */}
-                <button
-                  style={{
-                    flex: 1, background: 'transparent',
-                    color: T.textMuted,
-                    border: `1px solid ${T.borderSubtle}`,
-                    borderRadius: 6, padding: '6px',
-                    fontSize: 11, fontWeight: 600, cursor: 'default',
-                    fontFamily: T.sans,
-                  }}
-                >
-                  PT
-                </button>
-                <button
-                  style={{
-                    flex: 1, background: 'transparent',
-                    color: T.textMuted,
-                    border: `1px solid ${T.borderSubtle}`,
-                    borderRadius: 6, padding: '6px',
-                    fontSize: 11, fontWeight: 600, cursor: 'default',
-                    fontFamily: T.sans,
-                  }}
-                >
-                  EN
-                </button>
+                {(['pt', 'en'] as const).map(l => {
+                  const isActive = lang === l
+                  return (
+                    <button
+                      key={l}
+                      aria-pressed={isActive}
+                      onClick={() => { if (!isActive) setLang(l) }}
+                      style={{
+                        flex: 1,
+                        background: isActive ? '#1B1725' : 'transparent',
+                        color: isActive ? T.textPrimary : T.textMuted,
+                        border: `1px solid ${isActive ? '#D4A017' : T.borderSubtle}`,
+                        borderRadius: 6, padding: '6px',
+                        fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                        fontFamily: T.sans,
+                      }}
+                    >
+                      {l.toUpperCase()}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
