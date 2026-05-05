@@ -3,16 +3,18 @@ import { SpellHeader } from '../parts/SpellHeader'
 import { SpellSlots } from '../parts/SpellSlots'
 import { SpellList } from '../parts/SpellList'
 import { Card } from '../ui/Card'
+import { useTranslation } from '@/i18n'
 
 const T = {
-  textPrimary: '#F4EFE0',
-  textMuted:   '#7A7788',
+  textPrimary:  '#F4EFE0',
+  textMuted:    '#7A7788',
   borderStrong: '#3A3450',
-  serif:       "'Cinzel', Georgia, serif",
-  sans:        "'Inter', system-ui, sans-serif",
+  serif:        "'Cinzel', Georgia, serif",
+  sans:         "'Inter', system-ui, sans-serif",
 } as const
 
 export function SpellsTab() {
+  const { t } = useTranslation()
   const character = useCharacterStore((s) => s.character)
   if (!character) return null
 
@@ -30,13 +32,10 @@ export function SpellsTab() {
               margin: '0 0 8px',
             }}
           >
-            {character.name} não conjura magias.
-          </p>
-          <p style={{ fontSize: 13, color: T.textMuted, margin: '0 0 4px' }}>
-            Esta classe não possui conjuração de magias.
+            {t('spells.non_caster_title')}
           </p>
           <p style={{ fontSize: 12, color: T.textMuted, margin: 0, opacity: 0.7 }}>
-            Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.
+            {t('spells.non_caster_hint')}
           </p>
         </div>
       </Card>

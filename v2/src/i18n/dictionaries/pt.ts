@@ -1,31 +1,17 @@
 import type en from './en';
 
 const pt: Record<keyof typeof en, string> = {
-  // Common UI
-  'common.loading': 'Carregando…',
-  'common.error': 'Erro',
-  'common.cancel': 'Cancelar',
-  'common.save': 'Salvar',
-  'common.add': '+ Adicionar',
-  'common.remove': 'Remover',
-  'common.empty_dash': '—',
+  // Common UI (only entries with active usage)
   'common.back': 'Voltar',
   'common.level_abbr': 'Nv',
-  'common.feet_abbr': 'ft',
 
-  // Ability scores (PT usa abreviações localizadas)
+  // Ability score abbreviations (PT padrão PHB-PT)
   'ability.str': 'FOR',
   'ability.dex': 'DES',
   'ability.con': 'CON',
   'ability.int': 'INT',
   'ability.wis': 'SAB',
   'ability.cha': 'CAR',
-  'ability.strength': 'Força',
-  'ability.dexterity': 'Destreza',
-  'ability.constitution': 'Constituição',
-  'ability.intelligence': 'Inteligência',
-  'ability.wisdom': 'Sabedoria',
-  'ability.charisma': 'Carisma',
 
   // Navigation / sidebar
   'nav.my_characters': 'Meus personagens',
@@ -68,13 +54,7 @@ const pt: Record<keyof typeof en, string> = {
   // Topbar actions
   'topbar.export': 'Exportar',
   'topbar.unlock': 'Destravar',
-  'topbar.lock': 'Travar',
   'topbar.synced': 'Sincronizado',
-
-  // Sync status
-  'sync.synced': 'Sincronizado',
-  'sync.syncing': 'Sincronizando…',
-  'sync.offline': 'Offline',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
@@ -98,7 +78,6 @@ const pt: Record<keyof typeof en, string> = {
   'charselect.export_unavailable': 'Exportar — não implementado na v2 ainda.',
   'charselect.v1_prefix': 'Ficha completa disponível na',
   'charselect.v1_link': 'versão atual (v1) →',
-  'charselect.inspired': 'Inspirado',
 
   // State screens
   'screens.loading_character': 'Carregando personagem…',
@@ -125,8 +104,7 @@ const pt: Record<keyof typeof en, string> = {
   'saves.ability.wis': 'Sabedoria',
   'saves.ability.cha': 'Carisma',
 
-  // Individual skill names (18, padrão PHB-PT)
-  'skills.section_title': 'Perícias',
+  // Individual skill names (18, padrão PHB-PT, via template literal t(`skills.${k}`))
   'skills.acrobatics': 'Acrobacia',
   'skills.animal_handling': 'Adestrar Animais',
   'skills.arcana': 'Arcanismo',
@@ -146,28 +124,22 @@ const pt: Record<keyof typeof en, string> = {
   'skills.stealth': 'Furtividade',
   'skills.survival': 'Sobrevivência',
 
+  // Skills section label (used in StatusTab mobile/desktop labels)
+  'skills.label': 'Perícias',
+
   // Attributes section
   'attributes.section_title': 'Atributos',
 
   // Hero card
   'hero.inspired_badge': 'Inspirado',
 
-  // Combat stats (strip labels)
+  // Combat stats strip labels
   'combat.ac': 'CA',
   'combat.initiative': 'INIC',
   'combat.speed': 'VEL',
   'combat.passive_perception': 'PP',
   'combat.spell_save_dc': 'DC',
   'combat.proficiency_bonus': 'PROF',
-  'combat.hit_points': 'Pontos de Vida',
-  'combat.death_saves': 'Testes de Morte',
-  'combat.hit_dice': 'Dados de Vida',
-  'combat.heal': '＋ Curar',
-  'combat.damage': '− Dano',
-  'combat.saving_throws': 'Testes de Resistência',
-
-  // Skills section (legacy label key)
-  'skills.label': 'Perícias',
 
   // Features & Traits
   'features.label': 'Características & Traços',
@@ -175,10 +147,6 @@ const pt: Record<keyof typeof en, string> = {
   'features.empty': 'Nenhuma feature registrada.',
 
   // Attacks
-  'attacks.label': 'Ataques',
-  'attacks.add': '+ Adicionar',
-  'attacks.empty': 'Nenhum ataque cadastrado.',
-  'attacks.empty_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
   'attacks.section_title': 'ATAQUES',
   'attacks.add_button': 'Adicionar',
   'attacks.empty_state_title': 'Nenhum ataque cadastrado.',
@@ -186,20 +154,35 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Ataque {name}, {bonus_or_dc}, {damage}',
 
-  // Spells
-  'spells.label': 'Magias',
-  'spells.cantrips': 'TRUQUES',
-  'spells.level_label': 'NÍVEL {level}',
-  'spells.slots_label': 'ESPAÇOS DE MAGIA',
-  'spells.header_class': 'CLASSE',
-  'spells.header_ability': 'HABILIDADE',
-  'spells.header_save_dc': 'DC DE SALVAGUARDA',
-  'spells.header_attack_bonus': 'BÔNUS DE ATAQUE',
-  'spells.not_caster': '{name} não conjura magias.',
-  'spells.no_spellcasting': 'Esta classe não possui conjuração de magias.',
-  'spells.caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
-  'spells.empty': 'Nenhuma magia cadastrada.',
-  'spells.empty_hint': 'Adicione cantrips e magias para gerenciar slots.',
+  // SpellHeader cell labels
+  'spells.header.class': 'CLASSE',
+  'spells.header.ability': 'HABILIDADE',
+  'spells.header.save_dc': 'DC DE SALVAGUARDA',
+  'spells.header.attack_bonus': 'BÔNUS DE ATAQUE',
+
+  // SpellSlots
+  'spell_slots.section_title': 'ESPAÇOS DE MAGIA',
+  'spell_slots.level_label': 'NÍVEL {level}',
+  'spell_slots.count_label': '{current}/{max}',
+  'spell_slots.pip_aria': 'Espaço de nível {level} ({current} de {max} disponíveis)',
+
+  // SpellList
+  'spells.section_title': 'MAGIAS',
+  'spells.add_button': 'Adicionar',
+  'spells.count_label': '({count})',
+  'spells.cantrips_section': 'TRUQUES',
+  'spells.level_section': 'NÍVEL {level}',
+  'spells.section_count': '{count}',
+  'spells.empty_state_title': 'Nenhuma magia cadastrada.',
+  'spells.empty_state_hint': 'Adicione truques e magias para gerenciar espaços.',
+
+  // SpellRow
+  'spells.row.unprepared_aria': 'Não preparada',
+  'spells.row.row_aria': 'Magia {name}',
+
+  // SpellsTab non-caster
+  'spells.non_caster_title': 'Esta classe não possui conjuração de magias.',
+  'spells.non_caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
 
   // Inventory — InventoryList + ItemRow
   'inventory.section_title':     'ITENS',
@@ -247,14 +230,13 @@ const pt: Record<keyof typeof en, string> = {
   'notes.section_title':     'NOTAS',
   'notes.empty_state_title': 'Nenhuma nota registrada ainda.',
   'notes.empty_state_hint':  'Use este espaço para anotações de sessão, NPCs e lembretes.',
-
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
   'aria.generate_ai': 'Gerar com IA',
-  'aria.item_weight': 'Item: {name}, peso: {weight}',
-  'aria.remove_item': 'Remover {name}',
-  'aria.remove_spell': 'Remover magia {name}',
+  'aria.item_weight':   'Item: {name}, peso: {weight}',
+  'aria.remove_item':   'Remover {name}',
+  'aria.remove_spell':  'Remover magia {name}',
   'aria.remove_attack': 'Remover ataque {name}',
   'aria.spell_slot': 'Slot de nível {level} ({current} de {max} disponíveis)',
 

@@ -1,6 +1,7 @@
 import type { Character, SpellKnown } from '@/domain/character'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
+import { useTranslation } from '@/i18n'
 
 const T = {
   elevated:      '#1B1725',
@@ -31,15 +32,13 @@ function groupSpells(known: SpellKnown[]): Map<number, SpellKnown[]> {
   return map
 }
 
-function sectionLabel(level: number): string {
-  return level === 0 ? 'TRUQUES' : `NÍVEL ${level}`
-}
-
 function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '-')
 }
 
 export function SpellList({ character }: SpellListProps) {
+  const { t } = useTranslation()
+
   if (!character.spells) return null
 
   const { known } = character.spells
@@ -65,7 +64,7 @@ export function SpellList({ character }: SpellListProps) {
               fontFamily: T.sans,
             }}
           >
-            MAGIAS
+            {t('spells.section_title')}
           </h3>
           <span
             style={{
@@ -75,11 +74,11 @@ export function SpellList({ character }: SpellListProps) {
               fontFamily: T.sans,
             }}
           >
-            ({total})
+            {t('spells.count_label', { count: String(total) })}
           </span>
           <button
             data-testid="add-spell-btn"
-            onClick={() => alert('Edição virá na Fase C')}
+            onClick={() => alert(t('phase_c.editing_coming_soon'))}
             style={{
               background: 'transparent',
               border: `1px solid ${T.borderDefault}`,
@@ -92,7 +91,7 @@ export function SpellList({ character }: SpellListProps) {
               fontFamily: T.sans,
             }}
           >
-            + Adicionar
+            + {t('spells.add_button')}
           </button>
         </div>
 
@@ -103,16 +102,20 @@ export function SpellList({ character }: SpellListProps) {
             style={{ textAlign: 'center', padding: '24px 0', fontFamily: T.sans }}
           >
             <p style={{ fontSize: 13, color: T.textMuted, margin: '0 0 6px' }}>
-              Nenhuma magia cadastrada.
+              {t('spells.empty_state_title')}
             </p>
             <p style={{ fontSize: 11, color: T.textMuted, opacity: 0.7, margin: 0 }}>
-              Adicione cantrips e magias para gerenciar slots.
+              {t('spells.empty_state_hint')}
             </p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {levels.map((lv) => {
               const levelSpells = grouped.get(lv)!
+              const sectionLabel = lv === 0
+                ? t('spells.cantrips_section')
+                : t('spells.level_section', { level: String(lv) })
+
               return (
                 <div key={lv} data-testid={`spell-section-${lv}`}>
                   {/* Section header */}
@@ -136,11 +139,11 @@ export function SpellList({ character }: SpellListProps) {
                         marginBottom: 0,
                       }}
                     >
-                      {sectionLabel(lv)}
+                      {sectionLabel}
                     </Label>
                     <span style={{ flex: 1 }} />
                     <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
-                      {levelSpells.length}
+                      {t('spells.section_count', { count: String(levelSpells.length) })}
                     </span>
                   </div>
 
@@ -165,20 +168,25 @@ interface SpellRowProps {
 }
 
 function SpellRow({ spell }: SpellRowProps) {
+  const { t } = useTranslation()
+
   const unprepared = spell.prepared === false
   const textColor = unprepared ? T.textMuted : T.textPrimary
+
+  const handleRow = () => alert(t('phase_c.details_coming_soon'))
 
   return (
     <div
       role="button"
       tabIndex={0}
+      aria-label={t('spells.row.row_aria', { name: spell.name })}
       data-testid={`spell-row-${slugify(spell.name)}`}
       data-prepared={unprepared ? 'false' : 'true'}
-      onClick={() => alert('Detalhes virão na Fase C')}
+      onClick={handleRow}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          alert('Detalhes virão na Fase C')
+          handleRow()
         }
       }}
       style={{
@@ -212,13 +220,27 @@ function SpellRow({ spell }: SpellRowProps) {
       >
         {spell.name}
       </span>
+      {/* Unprepared indicator */}
+      {unprepared && (
+        <span
+          style={{
+            fontSize: 10,
+            color: T.textMuted,
+            opacity: 0.7,
+          }}
+          aria-label={t('spells.row.unprepared_aria')}
+          title={t('spells.row.unprepared_aria')}
+        >
+          ☐
+        </span>
+      )}
       {/* Remove button */}
       <button
         data-testid={`remove-spell-${slugify(spell.name)}`}
-        aria-label={`Remover magia ${spell.name}`}
+        aria-label={t('aria.remove_spell', { name: spell.name })}
         onClick={(e) => {
           e.stopPropagation()
-          alert('Remoção virá na Fase C')
+          alert(t('phase_c.editing_coming_soon'))
         }}
         style={{
           background: 'transparent',
