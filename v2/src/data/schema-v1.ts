@@ -131,6 +131,8 @@ export interface V1AttackEntry {
   toHit?:       string
   damage?:      string
   damage_type?: string
+  /** v2-additive: attack proficiency, not tracked in v1. v1 ignores this field. */
+  proficient?:  boolean
 }
 
 export interface V1Proficiencies {
@@ -170,8 +172,10 @@ export interface V1Page1 {
 /* ── Page 2 ───────────────────────────────────────────────────────────── */
 
 export interface V1EquipmentRow {
-  name?:   string
-  weight?: string
+  name?:     string
+  weight?:   string
+  /** v2-additive: item quantity, not tracked in v1. v1 ignores this field. */
+  quantity?: number
 }
 
 export interface V1Currency {
@@ -223,10 +227,13 @@ export interface V1SpellCantripsBlock {
 /**
  * Leveled spell block — includes slot total AND spell list.
  * v1 does NOT track used slots; current = max at session start.
+ * v2-additive: `used` stores consumed slot count. v1 ignores this field.
  */
 export interface V1SpellLevelBlock {
   total?:  string          // slot count, e.g. "4" or ""
   spells?: V1SpellEntry[]
+  /** v2-additive: number of slots used this session. v1 ignores this field. */
+  used?:   number
 }
 
 export interface V1Spells {

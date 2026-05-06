@@ -350,9 +350,8 @@ function adaptAttacks(raw: V1Character): Attack[] {
     damage:     str(a.damage),
     damageType: str(a.damage_type),
     rollType:   detectRollType(a.toHit),
-    // v1 does not store proficiency on attacks — defaults to false on import.
-    // v2 edit mode (Phase C) will let users toggle this.
-    proficient: false,
+    // v1 does not store proficiency; v2-additive field read when present.
+    proficient: a.proficient ?? false,
   }))
 }
 
@@ -374,7 +373,9 @@ function adaptSpellSlots(raw: V1Character): SpellSlot[] {
     if (!block || typeof block !== 'object' || Array.isArray(block)) continue
 
     const max = parseIntSafe(block.total)
-    if (max > 0) slots.push({ level, current: max, max })
+    // v2-additive: `used` stores consumed slots; v1 records default to 0
+    const used = block.used ?? 0
+    if (max > 0) slots.push({ level, current: Math.max(0, max - used), max })
   }
   return slots
 }
@@ -442,7 +443,8 @@ function adaptInventory(raw: V1Character): InventoryItem[] {
         items.push({
           id:       itemId('inv', i++),
           name,
-          quantity: 1,
+          // v2-additive: `quantity` stored when present; v1 records default to 1
+          quantity: item.quantity ?? 1,
           weight:   parseFloatSafe(item.weight),
         })
       }
