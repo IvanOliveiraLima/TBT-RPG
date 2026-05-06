@@ -127,6 +127,30 @@ export async function getCharacter(id: string): Promise<Character | null> {
 }
 
 /**
+ * Fetch the raw V1Character for a given id, without adapting to domain.
+ * Checks v2 DB first (v2 wins on collision), falls back to v1 DB.
+ * Used by serializeCharacter to preserve fields not modeled in the domain.
+ * Returns null if not found in either DB.
+ */
+export async function getRawCharacter(id: string): Promise<V1Character | null> {
+  let v1db: IDBPDatabase | null = null
+  let v2db: IDBPDatabase | null = null
+  try {
+    ;[v1db, v2db] = await Promise.all([openV1(), openV2()])
+    const v2raw = await v2db.get(V2_STORE, id) as V1Character | undefined
+    if (v2raw) return v2raw
+    const v1raw = await v1db.get(V1_STORE, id) as V1Character | undefined
+    return v1raw ?? null
+  } catch (err) {
+    console.error('[getRawCharacter] Failed:', err)
+    return null
+  } finally {
+    v1db?.close()
+    v2db?.close()
+  }
+}
+
+/**
  * Copy a character from v1 → v2 DB. Call before first edit in v2.
  * Returns the domain Character if found, null otherwise.
  */
