@@ -17,8 +17,8 @@
  *       Legacy char_class/level/level_two fields are removed.
  *     - Proficiencies normalised to standard schema (weapon_profs + armor_profs
  *       separate). Legacy weapon_armor combined field is removed.
- *     - Notes merged into notes_1; notes_2 cleared.
- *       (Original v1 had two separate textarea fields.)
+ *     - Notes preserved with split intact: notes_1 ↔ notes1, notes_2 ↔ notes2.
+ *       The v2 domain holds both fields separately and round-trips them faithfully.
  *     - insperation typo preserved (v1 HTML input named "insperation").
  *     - Initiative normalised to signed string (e.g. "+3", "-1", "+0").
  *
@@ -32,7 +32,14 @@
  *   - Feature descriptions created in v2 are not preserved in v1 (CSV format
  *     has no description field).
  *   - Inspiration stored as "" (false) or "true" (true) — v1 stored various
- *     truthy strings; the serializer normalises to this canonical pair.
+ *     truthy strings; the serialiser normalises to this canonical pair.
+ *   - Inventory column layout: v1 splits items between col_1 and col_2 (purely
+ *     for display). The v2 domain holds a flat list. On save, all items go to
+ *     col_1 and col_2 is cleared. To be revisited in C.1.f if column semantics
+ *     turn out to matter for some users.
+ *   - The insperation typo in page1.top_bar.insperation is structural (the v1
+ *     HTML form uses name="insperation"). The v2 serializer must write to that
+ *     exact path; correcting the spelling would silently break v1 read.
  */
 
 import type {
@@ -356,12 +363,11 @@ export function serializeCharacter(
 
   // ── Page 5 ────────────────────────────────────────────────────────────────
 
-  // Notes merged into notes_1; notes_2 cleared.
-  // KNOWN NORMALISATION: original v1 may have had text split across both fields.
+  // Notes preserved with split intact — 1:1 mapping to v1 fields.
   out.page5 = {
     ...out.page5,
-    notes_1: character.notes,
-    notes_2: '',
+    notes_1: character.notes1,
+    notes_2: character.notes2,
   }
 
   // ── Images ────────────────────────────────────────────────────────────────

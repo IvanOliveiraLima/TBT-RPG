@@ -581,7 +581,6 @@ export function adaptCharacter(raw: V1Character): Character {
 
   const notes1 = str(p5?.notes_1)
   const notes2 = str(p5?.notes_2)
-  const notes  = [notes1, notes2].filter(Boolean).join('\n\n')
 
   const now = Date.now()
 
@@ -633,7 +632,8 @@ export function adaptCharacter(raw: V1Character): Character {
       bonds:  str(p4?.personality?.bonds),
       flaws:  str(p4?.personality?.flaws),
     },
-    notes,
+    notes1,
+    notes2,
 
     images: {
       ...(raw.images?.character ? { character: raw.images.character } : {}),

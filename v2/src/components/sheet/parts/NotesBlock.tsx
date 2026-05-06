@@ -12,10 +12,11 @@ const CARD: React.CSSProperties = {
 
 export function NotesBlock({ character }: { character: Character }) {
   const { t } = useTranslation()
+  const display = [character.notes1, character.notes2].filter(Boolean).join('\n\n')
   return (
     <div style={CARD} data-testid="notes-block">
       <Label style={{ marginBottom: 10 }}>{t('notes.section_title')}</Label>
-      {character.notes ? (
+      {display ? (
         <p
           style={{
             whiteSpace: 'pre-wrap',
@@ -26,7 +27,7 @@ export function NotesBlock({ character }: { character: Character }) {
           }}
           data-testid="notes-text"
         >
-          {character.notes}
+          {display}
         </p>
       ) : (
         <div data-testid="notes-empty">

@@ -147,7 +147,8 @@ export interface Character {
   features: Feature[]
   backstory: string
   personality: { traits: string; ideals: string; bonds: string; flaws: string }
-  notes: string
+  notes1: string
+  notes2: string
 
   // Images (base64 data URLs)
   images: {
