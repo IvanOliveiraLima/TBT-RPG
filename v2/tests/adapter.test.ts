@@ -348,10 +348,10 @@ describe('adaptCharacter — full fixture', () => {
     expect(result.backstory).toContain('monastery')
   })
 
-  it('notes are concatenated from notes_1 and notes_2', () => {
+  it('notes_1 and notes_2 are mapped separately into domain notes1/notes2', () => {
     const result = adaptCharacter(fullChar)
-    expect(result.notes).toContain('Ki points')
-    expect(result.notes).toContain('Flurry of Blows')
+    expect(result.notes1).toContain('Ki points')
+    expect(result.notes2).toContain('Flurry of Blows')
   })
 
   it('passivePerception is derived correctly', () => {

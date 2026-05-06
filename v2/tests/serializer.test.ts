@@ -385,6 +385,42 @@ describe('Rule 9 — spell slots used written as additive field', () => {
   })
 })
 
+/* ── Spell slot clamp — max decrease below current ──────────────────────── */
+
+describe('Spell slot clamp — max decreases below current (used cannot exceed max)', () => {
+  it('clamps used to 0 when max is set below current (serializer guard)', () => {
+    // Set up: 5 slots total, 3 used → current = 2
+    const v1 = minV1()
+    v1.page1!.basic_info!.classes = [{ name: 'Wizard', level: '7' }]
+    v1.page3!.spells!.level_1 = { total: '5', spells: [], used: 3 }
+    v1.page1!.saves_skills!.spell_casting = 'int'
+
+    const domain = adaptCharacter(v1)
+    expect(domain.spells?.slots.find(s => s.level === 1)).toEqual({ level: 1, current: 2, max: 5 })
+
+    // Simulate user decreasing max below current:
+    // domain has current=2, but we set max=1 (inconsistent state)
+    const mutated = {
+      ...domain,
+      spells: domain.spells
+        ? {
+            ...domain.spells,
+            slots: domain.spells.slots.map(s =>
+              s.level === 1 ? { ...s, max: 1 } : s
+            ),
+          }
+        : undefined,
+    }
+
+    const out = serializeCharacter(mutated, v1)
+    // used = max - current = 1 - 2 = -1 → clamped to 0 by serializer
+    expect(out.page3?.spells?.level_1).toMatchObject({ total: '1' })
+    const used = (out.page3?.spells?.level_1 as { used?: number } | undefined)?.used ?? 0
+    expect(used).toBeGreaterThanOrEqual(0)
+    expect(used).toBeLessThanOrEqual(1) // used cannot exceed max
+  })
+})
+
 /* ── Rule 10: attack proficient (additive field) ────────────────────────── */
 
 describe('Rule 10 — attack proficient written as additive field', () => {
@@ -448,28 +484,39 @@ describe('Preservation — images.symbol preserved from original', () => {
   })
 })
 
-/* ── Notes normalization ────────────────────────────────────────────────── */
+/* ── Notes split preservation ───────────────────────────────────────────── */
 
-describe('Notes normalization — merged into notes_1', () => {
-  it('writes full notes to notes_1 and clears notes_2', () => {
+describe('Notes split — notes_1 and notes_2 preserved separately', () => {
+  it('preserves notes_1 and notes_2 as separate domain fields', () => {
     const v1 = minV1()
     v1.page5!.notes_1 = 'First note.'
     v1.page5!.notes_2 = 'Second note.'
     const domain = adaptCharacter(v1)
-    expect(domain.notes).toBe('First note.\n\nSecond note.')
+    expect(domain.notes1).toBe('First note.')
+    expect(domain.notes2).toBe('Second note.')
 
     const out = serializeCharacter(domain, v1)
-    expect(out.page5?.notes_1).toBe('First note.\n\nSecond note.')
-    expect(out.page5?.notes_2).toBe('')
+    expect(out.page5?.notes_1).toBe('First note.')
+    expect(out.page5?.notes_2).toBe('Second note.')
   })
 
-  it('round-trips notes through adapter after merge', () => {
+  it('round-trips notes_1 and notes_2 split through the full cycle', () => {
     const v1 = minV1()
     v1.page5!.notes_1 = 'Note A.'
     v1.page5!.notes_2 = 'Note B.'
     const out = serializeCharacter(adaptCharacter(v1), v1)
     const domain2 = adaptCharacter(out)
-    expect(domain2.notes).toBe('Note A.\n\nNote B.')
+    expect(domain2.notes1).toBe('Note A.')
+    expect(domain2.notes2).toBe('Note B.')
+  })
+
+  it('handles notes_2 empty without injecting empty string into display', () => {
+    const v1 = minV1()
+    v1.page5!.notes_1 = 'Only notes_1'
+    v1.page5!.notes_2 = ''
+    const out = serializeCharacter(adaptCharacter(v1), v1)
+    expect(out.page5?.notes_1).toBe('Only notes_1')
+    expect(out.page5?.notes_2).toBe('')
   })
 })
 

@@ -27,13 +27,14 @@ const BASE: Character = {
   features: [],
   backstory: 'Guardian of the Thornwood Forest.',
   personality: { traits: 'Quiet observer', ideals: 'Protecting nature', bonds: 'The forest', flaws: 'Distrusts cities' },
-  notes: 'Ki points: 5 remaining.\n\nFlurry of Blows used twice this session.',
+  notes1: 'Ki points: 5 remaining.',
+  notes2: 'Flurry of Blows used twice this session.',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
 }
 
-const EMPTY_NOTES: Character = { ...BASE, notes: '' }
+const EMPTY_NOTES: Character = { ...BASE, notes1: '', notes2: '' }
 
 describe('NotesBlock', () => {
   beforeEach(() => { localStorage.clear() })

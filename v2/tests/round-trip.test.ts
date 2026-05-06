@@ -10,7 +10,7 @@
  *   are preserved verbatim from original.
  *
  * Intentional normalizations documented in each test where applicable:
- *   - Notes merged into notes_1 (notes_2 cleared)
+ *   - Notes preserved split (notes_1 ↔ notes1, notes_2 ↔ notes2)
  *   - Proficiencies weapon_profs + armor_profs merged into weapon_profs
  *   - Legacy class formats normalized to modern classes[]
  *   - Initiative normalized to "+N"/"-N" signed format
@@ -22,11 +22,13 @@ import { adaptCharacter } from '@/data/adapter'
 import { serializeCharacter } from '@/data/serializer'
 import type { V1Character } from '@/data/schema-v1'
 
-import fullCharFixture    from './fixtures/full-character.json'
-import spellcasterFixture from './fixtures/spellcaster-character.json'
+import fullCharFixture       from './fixtures/full-character.json'
+import spellcasterFixture    from './fixtures/spellcaster-character.json'
+import multiclassCasterFixture from './fixtures/multiclass-caster.json'
 
-const fullChar    = fullCharFixture    as V1Character
-const spellcaster = spellcasterFixture as V1Character
+const fullChar       = fullCharFixture       as V1Character
+const spellcaster    = spellcasterFixture    as V1Character
+const multiclassCaster = multiclassCasterFixture as V1Character
 
 /* ── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -105,11 +107,10 @@ describe('Round-trip: full-character.json (Kanaan Duskwalker, Monk 5)', () => {
     expect(domain2.personality).toEqual(domain1.personality)
   })
 
-  it('preserves notes (merged normalization)', () => {
+  it('preserves notes_1 and notes_2 split through round-trip', () => {
     const { domain1, domain2 } = roundTrip(fullChar)
-    // Domain notes = notes_1 + '\n\n' + notes_2 (adapter merges)
-    // After serialization notes are merged into notes_1; adapter reads same combined text
-    expect(domain2.notes).toBe(domain1.notes)
+    expect(domain2.notes1).toBe(domain1.notes1)
+    expect(domain2.notes2).toBe(domain1.notes2)
   })
 
   it('preserves death saves', () => {
@@ -127,14 +128,10 @@ describe('Round-trip: full-character.json (Kanaan Duskwalker, Monk 5)', () => {
     expect(serialized.page2?.mount_pet).toEqual({})
   })
 
-  it('normalizes notes_1/notes_2 into notes_1', () => {
+  it('preserves notes_1 and notes_2 in output without merging', () => {
     const { serialized } = roundTrip(fullChar)
-    const merged = [
-      (fullChar.page5?.notes_1 ?? '').trim(),
-      (fullChar.page5?.notes_2 ?? '').trim(),
-    ].filter(Boolean).join('\n\n')
-    expect(serialized.page5?.notes_1).toBe(merged)
-    expect(serialized.page5?.notes_2).toBe('')
+    expect(serialized.page5?.notes_1).toBe(fullChar.page5?.notes_1 ?? '')
+    expect(serialized.page5?.notes_2).toBe(fullChar.page5?.notes_2 ?? '')
   })
 
   it('writes classes in modern format only', () => {
@@ -346,5 +343,80 @@ describe('Round-trip: legacy weapon_armor combined proficiency format', () => {
     const { domain1, domain2 } = roundTrip(v1)
     expect(domain2.proficiencies.weaponsAndArmor).toBe(domain1.proficiencies.weaponsAndArmor)
     expect(domain2.proficiencies.weaponsAndArmor).toBe('All weapons and armor')
+  })
+})
+
+/* ── multiclass-caster fixture (Soren, Paladin 3 / Sorcerer 2) ────────── */
+
+describe('Round-trip: multiclass-caster.json (Soren Ashveil, Paladin 3 / Sorcerer 2)', () => {
+  it('preserves both classes in modern array format', () => {
+    const { serialized } = roundTrip(multiclassCaster)
+    const classes = serialized.page1?.basic_info?.classes ?? []
+    expect(classes).toHaveLength(2)
+    expect(classes[0]).toEqual({ name: 'Paladin', level: '3' })
+    expect(classes[1]).toEqual({ name: 'Sorcerer', level: '2' })
+    expect(serialized.page1?.basic_info).not.toHaveProperty('char_class')
+    expect(serialized.page1?.basic_info).not.toHaveProperty('level')
+  })
+
+  it('preserves identity fields', () => {
+    const { domain1, domain2 } = roundTrip(multiclassCaster)
+    expect(domain2.name).toBe(domain1.name)
+    expect(domain2.totalLevel).toBe(5)
+  })
+
+  it('preserves spell slots with used field — level_1 (4 total, 2 used)', () => {
+    const { serialized } = roundTrip(multiclassCaster)
+    const l1 = serialized.page3?.spells?.level_1 as { total?: string; used?: number } | undefined
+    expect(l1?.total).toBe('4')
+    expect(l1?.used).toBe(2)
+  })
+
+  it('preserves spell slots with used field — level_2 (2 total, 1 used)', () => {
+    const { serialized } = roundTrip(multiclassCaster)
+    const l2 = serialized.page3?.spells?.level_2 as { total?: string; used?: number } | undefined
+    expect(l2?.total).toBe('2')
+    expect(l2?.used).toBe(1)
+  })
+
+  it('round-trips spell slot current through adapt → serialize → adapt', () => {
+    const { domain1, domain2 } = roundTrip(multiclassCaster)
+    // level_1: 4 total, 2 used → current = 2
+    const slot1a = domain1.spells?.slots.find(s => s.level === 1)
+    const slot1b = domain2.spells?.slots.find(s => s.level === 1)
+    expect(slot1a?.max).toBe(4)
+    expect(slot1a?.current).toBe(2)
+    expect(slot1b?.current).toBe(slot1a?.current)
+    // level_2: 2 total, 1 used → current = 1
+    const slot2a = domain1.spells?.slots.find(s => s.level === 2)
+    const slot2b = domain2.spells?.slots.find(s => s.level === 2)
+    expect(slot2a?.max).toBe(2)
+    expect(slot2a?.current).toBe(1)
+    expect(slot2b?.current).toBe(slot2a?.current)
+  })
+
+  it('sums multiclass hit dice into single current_hd (known lossy behaviour)', () => {
+    // Soren has Paladin 3 (d10) and Sorcerer 2 (d6); fixture records current_hd=3, max_hd=5
+    // After adapt → serialize the sum of all hd.current is written to current_hd
+    const { domain1, serialized } = roundTrip(multiclassCaster)
+    const totalCurrent = domain1.hitDice.reduce((s, hd) => s + hd.current, 0)
+    expect(serialized.page1?.status?.hit_dice?.current_hd).toBe(String(totalCurrent))
+  })
+
+  it('preserves notes_1 and notes_2 split for multiclass character', () => {
+    const { serialized } = roundTrip(multiclassCaster)
+    expect(serialized.page5?.notes_1).toBe('Lay on Hands pool: 15 HP remaining (used 0).')
+    expect(serialized.page5?.notes_2).toBe('Font of Magic: 2 sorcery points remaining.')
+  })
+
+  it('preserves spellcasting ability (cha)', () => {
+    const { domain1, domain2 } = roundTrip(multiclassCaster)
+    expect(domain1.spells?.ability).toBe('cha')
+    expect(domain2.spells?.ability).toBe('cha')
+  })
+
+  it('preserves allies_organizations from original', () => {
+    const { serialized } = roundTrip(multiclassCaster)
+    expect((serialized.page4?.allies_organizations as { name?: string } | undefined)?.name).toBe('Order of the Silver Flame')
   })
 })

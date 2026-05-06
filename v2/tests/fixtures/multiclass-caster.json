@@ -1,0 +1,190 @@
+{
+  "id": "char_multiclass_caster_001",
+  "schemaVersion": 1,
+  "updatedAt": 1700000000001,
+  "page1": {
+    "basic_info": {
+      "char_name": "Soren Ashveil",
+      "classes": [
+        { "name": "Paladin", "level": "3" },
+        { "name": "Sorcerer", "level": "2" }
+      ],
+      "total_level": 5
+    },
+    "character_info": {
+      "race_class": "Humano",
+      "background": "Noble",
+      "player_name": "Maria",
+      "exp": "6500",
+      "alignment": "Lawful Good",
+      "age": "28",
+      "height": "5'11\"",
+      "weight": "185 lb",
+      "eye_color": "Grey",
+      "skin_color": "Tan",
+      "hair_color": "Black"
+    },
+    "top_bar": {
+      "proficiency": "3",
+      "initiative": "+2",
+      "passive_perception": "12",
+      "ac": "18",
+      "speed": "30",
+      "spell_dc": "14",
+      "insperation": "true"
+    },
+    "attributes": {
+      "str": "16", "str_mod": "+3",
+      "dex": "14", "dex_mod": "+2",
+      "con": "14", "con_mod": "+2",
+      "int": "10", "int_mod": "+0",
+      "wis": "12", "wis_mod": "+1",
+      "cha": "18", "cha_mod": "+4"
+    },
+    "saves_skills": {
+      "spell_casting": "cha",
+      "saves": {
+        "str_save": { "prof": false, "val": "+3" },
+        "dex_save": { "prof": false, "val": "+2" },
+        "con_save": { "prof": false, "val": "+2" },
+        "int_save": { "prof": false, "val": "+0" },
+        "wis_save": { "prof": true,  "val": "+4" },
+        "cha_save": { "prof": true,  "val": "+7" }
+      },
+      "skills": {
+        "athletics":      { "prof": true,  "expr": false, "val": "+6" },
+        "insight":        { "prof": true,  "expr": false, "val": "+4" },
+        "persuasion":     { "prof": true,  "expr": false, "val": "+7" },
+        "religion":       { "prof": false, "expr": false, "val": "+0" },
+        "acrobatics":     { "prof": false, "expr": false, "val": "+2" },
+        "animal_handling":{ "prof": false, "expr": false, "val": "+1" },
+        "arcana":         { "prof": false, "expr": false, "val": "+0" },
+        "deception":      { "prof": false, "expr": false, "val": "+4" },
+        "history":        { "prof": false, "expr": false, "val": "+0" },
+        "intimidation":   { "prof": false, "expr": false, "val": "+4" },
+        "investigation":  { "prof": false, "expr": false, "val": "+0" },
+        "medicine":       { "prof": false, "expr": false, "val": "+1" },
+        "nature":         { "prof": false, "expr": false, "val": "+0" },
+        "perception":     { "prof": false, "expr": false, "val": "+1" },
+        "performance":    { "prof": false, "expr": false, "val": "+4" },
+        "sleight_of_hand":{ "prof": false, "expr": false, "val": "+2" },
+        "stealth":        { "prof": false, "expr": false, "val": "+2" },
+        "survival":       { "prof": false, "expr": false, "val": "+1" }
+      }
+    },
+    "proficiencies": {
+      "weapon_profs":   "Simple weapons, martial weapons",
+      "armor_profs":    "",
+      "tool_profs":     "",
+      "language_profs": "Common, Celestial",
+      "other_profs":    ""
+    },
+    "features": "Divine Smite,Lay on Hands,Divine Sense,Sorcerous Origin,Font of Magic",
+    "status": {
+      "current_health": "36",
+      "max_health":     "43",
+      "temp_health":    "",
+      "death_saves": {
+        "success_1": false, "success_2": false, "success_3": false,
+        "fail_1":    false, "fail_2":    false, "fail_3":    false
+      },
+      "hit_dice": {
+        "current_hd": "3",
+        "max_hd":     "5",
+        "hd_die":     "10"
+      }
+    },
+    "attacks_spells": [
+      {
+        "name": "Longsword",
+        "stat": "str",
+        "toHit": "+6",
+        "damage": "1d8+3",
+        "damage_type": "Slashing",
+        "proficient": true
+      },
+      {
+        "name": "Sacred Flame",
+        "toHit": "DC 14",
+        "damage": "1d8",
+        "damage_type": "Radiant"
+      }
+    ]
+  },
+  "page2": {
+    "equipment": {
+      "val": {
+        "col_1": [
+          { "name": "Longsword",      "weight": "3" },
+          { "name": "Chain Mail",     "weight": "55" },
+          { "name": "Holy Symbol",    "weight": "1" },
+          { "name": "Explorer's Pack","weight": "59" }
+        ],
+        "col_2": []
+      },
+      "currency": {
+        "cp": "0", "sp": "20", "ep": "0", "gp": "150", "pp": "2"
+      }
+    }
+  },
+  "page3": {
+    "spell_info": {
+      "att": "+7",
+      "dc":  "14"
+    },
+    "spells": {
+      "cantrips": {
+        "spells": [
+          { "spell_name": "Sacred Flame" },
+          { "spell_name": "Light" },
+          { "spell_name": "Prestidigitation" }
+        ]
+      },
+      "level_1": {
+        "total": "4",
+        "used":  2,
+        "spells": [
+          { "spell_name": "Cure Wounds",  "preped": true  },
+          { "spell_name": "Shield of Faith", "preped": true },
+          { "spell_name": "Thunderwave",  "preped": false }
+        ]
+      },
+      "level_2": {
+        "total": "2",
+        "used":  1,
+        "spells": [
+          { "spell_name": "Misty Step",   "preped": true  },
+          { "spell_name": "Shatter",      "preped": false }
+        ]
+      },
+      "level_3": { "total": "", "spells": [] },
+      "level_4": { "total": "", "spells": [] },
+      "level_5": { "total": "", "spells": [] },
+      "level_6": { "total": "", "spells": [] },
+      "level_7": { "total": "", "spells": [] },
+      "level_8": { "total": "", "spells": [] },
+      "level_9": { "total": "", "spells": [] }
+    }
+  },
+  "page4": {
+    "backstory": "Born into a noble family, Soren discovered magical talent early. After a divine vision he pledged himself to Bahamut.",
+    "personality": {
+      "personality_traits": "I always keep my word, even at great personal cost.",
+      "ideals": "Justice must be tempered with mercy.",
+      "bonds": "My oath to Bahamut guides every action.",
+      "flaws": "I am inflexible in my moral convictions."
+    },
+    "allies_organizations": {
+      "name": "Order of the Silver Flame",
+      "symbol": ""
+    }
+  },
+  "page5": {
+    "notes_1": "Lay on Hands pool: 15 HP remaining (used 0).",
+    "notes_2": "Font of Magic: 2 sorcery points remaining."
+  },
+  "images": {
+    "character": "",
+    "symbol": ""
+  }
+}
