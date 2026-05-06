@@ -171,16 +171,30 @@ export async function copyFromV1(id: string): Promise<Character | null> {
 }
 
 /**
- * Persist a character to v2 DB.
- * Accepts the raw V1Character shape so the record remains readable by v1.
- * Phase C will define a proper v2 save flow with domain → v1 shape conversion.
+ * Persist a character to both v1 DB and v2 DB.
+ *
+ * Writing to v1 DB: ensures v1 can read edits made in v2 (cross-version
+ * round-trip invariant). v1 uses the same schema; additive v2 fields
+ * (proficient, quantity, used) are ignored by v1 but do not break it.
+ *
+ * Writing to v2 DB: preserves additive v2 fields that would be lost if v1
+ * later saves the character (v2 wins on collision in getCharacter/listCharacters).
+ *
+ * Both writes share the same updatedAt timestamp to keep the records in sync.
  */
 export async function saveCharacter(data: V1Character): Promise<void> {
-  const db = await openV2()
+  let v1db: IDBPDatabase | null = null
+  let v2db: IDBPDatabase | null = null
   try {
-    await db.put(V2_STORE, { ...data, updatedAt: Date.now() })
+    ;[v1db, v2db] = await Promise.all([openV1(), openV2()])
+    const record = { ...data, updatedAt: Date.now() }
+    await Promise.all([
+      v1db.put(V1_STORE, record),
+      v2db.put(V2_STORE, record),
+    ])
   } finally {
-    db.close()
+    v1db?.close()
+    v2db?.close()
   }
 }
 
