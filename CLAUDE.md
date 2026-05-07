@@ -192,10 +192,27 @@ If `design-reference/` is absent in a new session, ask the user to provide the f
 
 ### v2 IndexedDB strategy
 
-- v1 DB: `dnd-character-sheet` (version 3) — **read-only** from v2
-- v2 DB: `dnd-character-sheet-v2` (version 1) — read + write
-- `listCharacters()` merges both; v2 records win on id collision
-- `copyFromV1(id)` migrates one character to v2 DB before first edit
+**Contract (never violate):**
+
+| | v1 DB (`dnd-character-sheet`) | v2 DB (`dnd-character-sheet-v2`) |
+|---|---|---|
+| **v1 reads** | yes | yes (bridge in `storage.js`) |
+| **v1 writes** | yes | **no** |
+| **v2 reads** | yes | yes |
+| **v2 writes** | **no** | yes |
+
+**Bridge — v1 reads from both DBs:**
+`js/modules/storage.js` — `listCharacters()` and `loadCharacter()` merge both DBs at read time; v2 records win on ID collisions. `openV2DbReadonly()` uses `indexedDB.databases()` to check existence before opening, so it never creates or migrates the v2 DB schema. v1 write paths (`saveCharacter`, `importCharacters`, etc.) remain v1 DB only.
+
+**Bridge — v2 reads from both DBs (unchanged):**
+`v2/src/data/db.ts` — `listCharacters()` and `getCharacter()` merge both DBs; v2 wins on collision. `saveCharacter()` writes only to v2 DB.
+
+**Migration:**
+`copyFromV1(id)` copies a character from v1 DB → v2 DB before first edit in v2. After migration, both DBs hold the character; subsequent v2 edits update only v2 DB. The v1 entry becomes stale — the bridge shows the v2 version via v2-wins collision semantics.
+
+**Tombstones and cross-DB deletes:**
+When a character is deleted in v1 (while logged in), `markAsDeleted` writes a tombstone to `deleted_characters`. The `listCharacters` bridge filters tombstoned IDs from both DBs, preventing resurrection of characters deleted in v1 but still present in v2. Characters deleted only in v2 (no v2 delete UI exists yet) are not handled — tracked as future debt for when v2 gets a delete flow.
+
 - Character HP is stored as strings in v1 (`page1.status.current_health`, `max_health`, `temp_health`)
 - `CharacterSummary` adapter normalises to `{ hp: { current, max, temp } }` as numbers
 
