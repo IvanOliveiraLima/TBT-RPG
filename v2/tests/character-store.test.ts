@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('@/data/db', () => ({
   getCharacter: vi.fn(),
   listCharacters: vi.fn().mockResolvedValue([]),
-  copyFromV1: vi.fn(),
   saveCharacter: vi.fn(),
   deleteCharacter: vi.fn(),
 }))
@@ -22,6 +21,7 @@ const MOCK_CHARACTER: Character = {
   classes: [{ name: 'Fighter', level: 5, hitDie: 10 }],
   totalLevel: 5,
   experience: 6500,
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 18, dex: 10, con: 16, int: 8, wis: 12, cha: 6 },
   proficiencyBonus: 3,
   hp: { current: 45, max: 45, temp: 0 },
@@ -37,6 +37,8 @@ const MOCK_CHARACTER: Character = {
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
+  notes1: '', notes2: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,

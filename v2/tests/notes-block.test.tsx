@@ -13,6 +13,7 @@ const BASE: Character = {
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
   totalLevel: 5,
   experience: 6500,
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
@@ -27,13 +28,15 @@ const BASE: Character = {
   features: [],
   backstory: 'Guardian of the Thornwood Forest.',
   personality: { traits: 'Quiet observer', ideals: 'Protecting nature', bonds: 'The forest', flaws: 'Distrusts cities' },
-  notes: 'Ki points: 5 remaining.\n\nFlurry of Blows used twice this session.',
+  notes1: 'Ki points: 5 remaining.',
+  notes2: 'Flurry of Blows used twice this session.',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
 }
 
-const EMPTY_NOTES: Character = { ...BASE, notes: '' }
+const EMPTY_NOTES: Character = { ...BASE, notes1: '', notes2: '' }
 
 describe('NotesBlock', () => {
   beforeEach(() => { localStorage.clear() })
