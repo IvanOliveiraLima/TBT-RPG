@@ -1,15 +1,31 @@
 import { create } from 'zustand'
-import { listCharacters } from '@/data/db'
+import { listCharacters, saveCharacter } from '@/data/db'
 import type { Character } from '@/domain/character'
+
+const SAVE_DEBOUNCE_MS = 800
+
+/** Map of character id → pending save timer handle */
+const saveTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
 interface CharactersState {
   characters: Character[]
   loading:    boolean
   error:      string | null
   fetchCharacters: () => Promise<void>
+  /**
+   * Apply a partial update to a character in the store.
+   * Optimistically updates local state immediately, then debounces
+   * the IndexedDB write by 800ms. Coalesces rapid updates.
+   */
+  updateCharacter: (id: string, partial: Partial<Character>) => Promise<void>
+  /**
+   * Flush all pending debounced saves to IndexedDB immediately.
+   * Call before page unload or cross-version validation.
+   */
+  flushPendingSaves: () => Promise<void>
 }
 
-export const useCharactersStore = create<CharactersState>((set) => ({
+export const useCharactersStore = create<CharactersState>((set, get) => ({
   characters: [],
   loading:    false,
   error:      null,
@@ -25,5 +41,45 @@ export const useCharactersStore = create<CharactersState>((set) => ({
         loading: false,
       })
     }
+  },
+
+  updateCharacter: async (id, partial) => {
+    const current = get().characters.find(c => c.id === id)
+    if (!current) return
+
+    const updated: Character = { ...current, ...partial }
+
+    // Optimistic local update
+    set(state => ({
+      characters: state.characters.map(c => c.id === id ? updated : c),
+    }))
+
+    // Debounced save — cancel previous timer if any, start a new one
+    const existing = saveTimers.get(id)
+    if (existing !== undefined) clearTimeout(existing)
+
+    const timer = setTimeout(async () => {
+      saveTimers.delete(id)
+      try {
+        await saveCharacter(updated)
+      } catch (err) {
+        console.error('[characters] Failed to persist character', id, err)
+      }
+    }, SAVE_DEBOUNCE_MS)
+    saveTimers.set(id, timer)
+  },
+
+  flushPendingSaves: async () => {
+    // Cancel all pending timers and save current state immediately
+    const ids = [...saveTimers.keys()]
+    for (const id of ids) {
+      const timer = saveTimers.get(id)
+      if (timer !== undefined) clearTimeout(timer)
+      saveTimers.delete(id)
+    }
+
+    const { characters } = get()
+    const toSave = characters.filter(c => ids.includes(c.id))
+    await Promise.all(toSave.map(c => saveCharacter(c)))
   },
 }))
