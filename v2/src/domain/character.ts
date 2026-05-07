@@ -94,6 +94,14 @@ export interface Character {
   totalLevel: number     // sum of all class levels
   experience: number
 
+  // Demographics (v2-native; blank for characters migrated from v1 which has no such fields)
+  age: string
+  height: string
+  weight: string
+  eyeColor: string
+  skinColor: string
+  hairColor: string
+
   // Core stats
   abilities: Abilities
   proficiencyBonus: number   // derived from totalLevel
@@ -147,12 +155,23 @@ export interface Character {
   features: Feature[]
   backstory: string
   personality: { traits: string; ideals: string; bonds: string; flaws: string }
-  notes: string
+
+  // Notes split — v1 stores two separate note blocks (notes_1 and notes_2)
+  notes1: string
+  notes2: string
+
+  // Companions (from v1 page2.mount_pet / mount_pet2 — name field only)
+  mountPet: string
+  mountPet2: string
+
+  // Affiliations (from v1 page4.allies_organizations.val — the textarea description)
+  alliesOrganizations: string
 
   // Images (base64 data URLs)
   images: {
     character?: string
   }
+  symbolImage?: string   // from v1 images.symbol (organization/emblem symbol)
 
   // Metadata
   createdAt: number
