@@ -8,6 +8,8 @@ interface CharacterState {
 
   loadCharacter: (id: string) => Promise<void>
   clearCharacter: () => void
+  /** Apply a partial update to the current character in-memory (for immediate UI reactivity). */
+  patchCharacter: (partial: Partial<Character>) => void
 }
 
 export const useCharacterStore = create<CharacterState>((set) => ({
@@ -32,4 +34,7 @@ export const useCharacterStore = create<CharacterState>((set) => ({
   },
 
   clearCharacter: () => set({ character: null, loading: false, error: null }),
+
+  patchCharacter: (partial) =>
+    set((s) => ({ character: s.character ? { ...s.character, ...partial } : null })),
 }))
