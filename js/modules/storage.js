@@ -7,6 +7,36 @@ const DB_VERSION = 3;
 const STORE = 'characters';
 const TOMBSTONE_STORE = 'deleted_characters';
 
+// v2 DB — read-only from v1. v1 never writes here; v2 never writes to DB_NAME.
+// See CLAUDE.md → v2 IndexedDB strategy.
+const DB_NAME_V2 = 'dnd-character-sheet-v2';
+
+/**
+ * Try to open the v2 DB for reading. Returns null if:
+ *  - The v2 DB has never been created (user hasn't opened v2 yet)
+ *  - indexedDB.databases() is unavailable (old browser)
+ *  - Any other error (network issue, private browsing restriction, etc.)
+ *
+ * IMPORTANT: no upgrade callback — v1 must never create or migrate the v2 DB.
+ * Uses indexedDB.databases() to check existence before opening, avoiding the
+ * side-effect of creating an empty DB when calling openDB on a non-existent store.
+ *
+ * Known limitation: if a character was deleted in v1 (tombstone in
+ * deleted_characters) but still exists in the v2 DB, the merge in
+ * listCharacters/loadCharacter will NOT show it because tombstone IDs are
+ * filtered out. Characters deleted only in v2 (no v2 delete UI exists yet)
+ * are not handled — future work when v2 gets a delete flow.
+ */
+async function openV2DbReadonly() {
+    try {
+        const dbs = await indexedDB.databases();
+        if (!dbs.some(db => db.name === DB_NAME_V2)) return null;
+        return await openDB(DB_NAME_V2);
+    } catch {
+        return null;
+    }
+}
+
 function getDB() {
     return openDB(DB_NAME, DB_VERSION, {
         upgrade(db) {
@@ -66,34 +96,72 @@ export async function saveCharacter(data) {
 
 /**
  * Load a character by ID. Defaults to 'active' for backwards compatibility.
- * Returns null if not found.
+ * Checks v2 DB first (v2 wins on collision), falls back to v1 DB.
+ * Returns null if not found in either DB.
  * @param {string} [id='active']
  * @returns {Promise<object|null>}
  */
 export async function loadCharacter(id = 'active') {
+    // v2 wins on collision — check v2 DB first
+    const v2db = await openV2DbReadonly();
+    if (v2db) {
+        try {
+            const v2data = await v2db.get(STORE, id);
+            if (v2data) return migrateSchema(v2data);
+        } catch {
+            // v2 DB open but read failed — fall through to v1
+        }
+    }
     const db = await getDB();
     const data = await db.get(STORE, id);
     return data ? migrateSchema(data) : null;
 }
 
 /**
- * Returns a summary list of all characters (excluding the legacy 'active' record),
- * sorted by most recently updated.
+ * Returns a summary list of all characters from both v1 and v2 DBs, merged
+ * and deduplicated. v2 wins on ID collisions. Characters with tombstones
+ * (deleted in v1 while logged in) are excluded even if they still exist in
+ * the v2 DB. Sorted by most recently updated.
  * @returns {Promise<Array>}
  */
 export async function listCharacters() {
     const db = await getDB();
-    const all = await db.getAll(STORE);
-    return all
-        .filter(c => c.id !== 'active')
+    const [v1All, tombstones] = await Promise.all([
+        db.getAll(STORE),
+        db.getAll(TOMBSTONE_STORE),
+    ]);
+    const deletedIds = new Set(tombstones.map(t => t.id));
+
+    // Start with v1 records
+    const byId = new Map();
+    for (const c of v1All) {
+        if (c.id === 'active' || deletedIds.has(c.id)) continue;
+        byId.set(c.id, c);
+    }
+
+    // Overlay v2 records (v2 wins on collision); skip tombstoned ids
+    const v2db = await openV2DbReadonly();
+    if (v2db) {
+        try {
+            const v2All = await v2db.getAll(STORE);
+            for (const c of v2All) {
+                if (c.id === 'active' || deletedIds.has(c.id)) continue;
+                byId.set(c.id, c);
+            }
+        } catch {
+            // v2 read failed — continue with v1-only results
+        }
+    }
+
+    return [...byId.values()]
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
         .map(c => ({
             id: c.id,
             name: c.page1?.basic_info?.char_name || 'Unnamed',
-            class: c.page1?.basic_info?.char_class || '',
+            class: c.page1?.basic_info?.char_class || c.page1?.basic_info?.classes?.[0]?.name || '',
             level: c.page1?.basic_info?.total_level || '',
             race: c.page1?.character_info?.race_class || '',
-            updatedAt: c.updatedAt
+            updatedAt: c.updatedAt,
         }));
 }
 
