@@ -109,10 +109,11 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 | File | Role |
 |------|------|
 | `v2/src/types/character.ts` | TypeScript interfaces mirroring v1 IndexedDB schema exactly |
-| `v2/src/lib/db.ts` | IndexedDB wrapper: reads v1 DB read-only, writes to v2 DB |
+| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 2) |
+| `v2/src/data/migration.ts` | One-time v1→v2 migration via `migrateV1Characters()` |
 | `v2/src/lib/supabase.ts` | Supabase client singleton (same project as v1) |
 | `v2/src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
-| `v2/src/store/characters.ts` | Zustand characters store (fetchCharacters) |
+| `v2/src/store/characters.ts` | Zustand characters store (fetchCharacters, updateCharacter, flushPendingSaves) |
 | `v2/src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
 | `v2/src/pages/Login.tsx` | Login page (email + password via Supabase) |
 | `v2/src/routes.tsx` | React Router v6 config (/, /login, * → /) |
@@ -190,14 +191,64 @@ The visual source of truth is in `design-reference/tbt-rpg/project/` (in `.gitig
 
 If `design-reference/` is absent in a new session, ask the user to provide the files.
 
-### v2 IndexedDB strategy
+### v2 IndexedDB strategy (Phase C.1.0 — v2-native)
 
-- v1 DB: `dnd-character-sheet` (version 3) — **read-only** from v2
-- v2 DB: `dnd-character-sheet-v2` (version 1) — read + write
-- `listCharacters()` merges both; v2 records win on id collision
-- `copyFromV1(id)` migrates one character to v2 DB before first edit
-- Character HP is stored as strings in v1 (`page1.status.current_health`, `max_health`, `temp_health`)
-- `CharacterSummary` adapter normalises to `{ hp: { current, max, temp } }` as numbers
+The v2 uses its own database (`dnd-character-sheet-v2`, version 2) and stores
+domain `Character` objects directly (v2-native schema). The v1 database
+(`dnd-character-sheet`, version 3) is read **once** during boot migration and
+is never written to from v2.
+
+#### Contract table
+
+|             | v1 DB | v2 DB |
+|-------------|-------|-------|
+| v1 reads    | yes   | no    |
+| v1 writes   | yes   | no    |
+| v2 reads    | migration only | yes |
+| v2 writes   | never | yes   |
+
+#### Migration (`v2/src/data/migration.ts`)
+
+`migrateV1Characters()` runs once per boot:
+1. Reads all characters from v1 DB (read-only; no upgrade callback — v2 never touches v1 schema)
+2. For each v1 character whose id is not already in v2 DB:
+   - Runs `adaptCharacter()` to produce a domain `Character`
+   - Persists to v2 DB via `saveCharacter()`
+3. Idempotent — subsequent boots skip already-migrated characters
+4. Graceful when v1 DB does not exist (fresh install): returns `{ migrated: 0, skipped: 0 }`
+
+After migration, v2 reads and writes only its own DB. The v1 DB stays
+untouched as a historical snapshot.
+
+#### v1 status
+
+The v1 app at `/TBT-RPG/` is **frozen**. It continues to function with the
+v1 DB exclusively, unaware of v2's existence. New edits made in v2 do not
+propagate back to v1. v1 will eventually be replaced by v2.
+
+#### Schema upgrade (v1 → v2)
+
+v2 DB version was bumped from 1 to 2 because stored records changed shape
+from `V1Character` (C.1.a era) to `Character` (v2-native). The upgrade
+handler deletes and recreates the object store so migration can repopulate
+from v1 DB with correctly adapted records. This only affects dev environments
+that had C.1.a phase data.
+
+#### v2 adapter role
+
+`adapter.ts` is now exclusively a **migration utility**. It runs once per
+character during `migrateV1Characters()` and is not part of the runtime read
+path. Once migrated, the v2 reads and writes domain `Character` directly.
+
+If new fields are added to `Character` after initial migration, a backfill
+migration step may be needed — plan for that explicitly.
+
+#### Demographics fields
+
+`Character` has `age`, `height`, `weight`, `eyeColor`, `skinColor`,
+`hairColor` as v2-native fields. The v1 schema has no equivalents — migrated
+characters start with these fields as empty strings. v2 edit flow (Phase C.1.b+)
+will allow users to fill them in.
 
 ### v2 development phase pattern
 
