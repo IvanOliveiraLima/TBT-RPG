@@ -5,7 +5,6 @@
  * nesting. Every UI component consumes Character; none should touch V1Character.
  *
  * v1 fields intentionally discarded:
- * - page2.mount_pet / mount_pet2 — feature discontinued in v2
  * - page1.character_info.player_name — not part of the character's own domain model
  * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
  * - page1.top_bar.passive_perception — recalculated via passivePerception()
@@ -17,8 +16,14 @@
  * - page1.features — parsed from comma-separated string; v1 has no structured array
  * - page1.saves_skills.*.val — skill/save values recalculated from ability scores
  * - page1.attributes.*_mod — modifier strings recalculated by abilityModifier()
- * - page4.allies_organizations.* — organization concept removed in v2 (Lore tab has no allies field)
- * - images.symbol — organization symbol image, removed alongside allies
+ *
+ * v1 fields that were previously discarded but are now first-class domain fields:
+ * - page2.mount_pet.name → Character.mountPet
+ * - page2.mount_pet2.name2 → Character.mountPet2
+ * - page4.allies_organizations.val → Character.alliesOrganizations
+ * - images.symbol → Character.symbolImage
+ * - page5.notes_1 → Character.notes1 (split preserved, not joined)
+ * - page5.notes_2 → Character.notes2
  *
  * v1 fields with typo/rename preserved in raw schema but corrected in domain:
  * - top_bar.insperation → Character.inspiration (string → boolean)
@@ -577,10 +582,6 @@ export function adaptCharacter(raw: V1Character): Character {
       }
     : undefined
 
-  const notes1 = str(p5?.notes_1)
-  const notes2 = str(p5?.notes_2)
-  const notes  = [notes1, notes2].filter(Boolean).join('\n\n')
-
   const now = Date.now()
 
   return {
@@ -593,6 +594,14 @@ export function adaptCharacter(raw: V1Character): Character {
     classes,
     totalLevel: totalLvl,
     experience: parseIntSafe(ci?.exp),
+
+    // Demographics — v1 does not store these fields; they start blank for migrated chars.
+    age:       '',
+    height:    '',
+    weight:    '',
+    eyeColor:  '',
+    skinColor: '',
+    hairColor: '',
 
     abilities,
     proficiencyBonus: profBonus,
@@ -631,11 +640,22 @@ export function adaptCharacter(raw: V1Character): Character {
       bonds:  str(p4?.personality?.bonds),
       flaws:  str(p4?.personality?.flaws),
     },
-    notes,
+
+    // Notes preserved split — v1 stores two separate textarea blocks
+    notes1: str(p5?.notes_1),
+    notes2: str(p5?.notes_2),
+
+    // Companions — v1 page2 mount_pet/mount_pet2 (name field only for now)
+    mountPet:  str(raw.page2?.mount_pet?.['name']),
+    mountPet2: str(raw.page2?.mount_pet2?.['name2']),
+
+    // Affiliations — v1 page4 allies_organizations textarea description
+    alliesOrganizations: str(raw.page4?.allies_organizations?.val),
 
     images: {
       ...(raw.images?.character ? { character: raw.images.character } : {}),
     },
+    ...(raw.images?.symbol ? { symbolImage: raw.images.symbol } : {}),
 
     createdAt: raw.updatedAt ?? now,
     updatedAt: raw.updatedAt ?? now,
