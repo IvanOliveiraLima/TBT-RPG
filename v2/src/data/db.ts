@@ -171,30 +171,19 @@ export async function copyFromV1(id: string): Promise<Character | null> {
 }
 
 /**
- * Persist a character to both v1 DB and v2 DB.
+ * Persists a V1Character to the v2 IndexedDB only.
  *
- * Writing to v1 DB: ensures v1 can read edits made in v2 (cross-version
- * round-trip invariant). v1 uses the same schema; additive v2 fields
- * (proficient, quantity, used) are ignored by v1 but do not break it.
- *
- * Writing to v2 DB: preserves additive v2 fields that would be lost if v1
- * later saves the character (v2 wins on collision in getCharacter/listCharacters).
- *
- * Both writes share the same updatedAt timestamp to keep the records in sync.
+ * IMPORTANT: This function writes ONLY to the v2 DB. The v1 DB is treated
+ * as read-only from v2's perspective (see CLAUDE.md → v2 IndexedDB strategy).
+ * The bridge for v1 to see v2 edits lives on the v1 side: storage.js merges
+ * both DBs at read time, with v2 winning on ID collisions.
  */
 export async function saveCharacter(data: V1Character): Promise<void> {
-  let v1db: IDBPDatabase | null = null
-  let v2db: IDBPDatabase | null = null
+  const db = await openV2()
   try {
-    ;[v1db, v2db] = await Promise.all([openV1(), openV2()])
-    const record = { ...data, updatedAt: Date.now() }
-    await Promise.all([
-      v1db.put(V1_STORE, record),
-      v2db.put(V2_STORE, record),
-    ])
+    await db.put(V2_STORE, { ...data, updatedAt: Date.now() })
   } finally {
-    v1db?.close()
-    v2db?.close()
+    db.close()
   }
 }
 
