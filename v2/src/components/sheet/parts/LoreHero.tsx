@@ -1,6 +1,8 @@
 import type React from 'react'
+import { useState } from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
+import { CharacterImageModal } from './CharacterImageModal'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -14,8 +16,23 @@ const PORTRAIT_GRADIENT =
   'radial-gradient(circle at 40% 70%, rgba(91,63,168,0.25), transparent 50%),' +
   'linear-gradient(135deg, #2A1F3D, #0F0D14)'
 
-export function LoreHero({ character }: { character: Character }) {
+const INPUT_RESET: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  padding: 0,
+  fontFamily: 'inherit',
+}
+
+interface LoreHeroProps {
+  character: Character
+  onUpdate: (partial: Partial<Character>) => void
+}
+
+export function LoreHero({ character, onUpdate }: LoreHeroProps) {
   const { t } = useTranslation()
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+
   const portrait = character.images.character
   const firstClass = character.classes[0]
   const initial = (character.name[0] ?? '?').toUpperCase()
@@ -27,14 +44,20 @@ export function LoreHero({ character }: { character: Character }) {
     character.alignment || null,
   ].filter(Boolean)
 
+  const handleImageApply = (dataUrl: string) => {
+    onUpdate({ images: { ...character.images, character: dataUrl } })
+    setImageModalOpen(false)
+  }
+
   return (
     <div style={CARD} data-testid="lore-hero">
       <div className="flex flex-col lg:flex-row" style={{ gap: 18, alignItems: 'flex-start' }}>
 
-        {/* Portrait */}
-        <div
-          role="img"
-          aria-label={t('aria.portrait', { name: character.name })}
+        {/* Portrait — clickable to open image modal */}
+        <button
+          type="button"
+          aria-label={t('aria.edit_image')}
+          onClick={() => setImageModalOpen(true)}
           className="w-40 h-40 lg:w-[200px] lg:h-[200px]"
           style={{
             flexShrink: 0,
@@ -46,6 +69,8 @@ export function LoreHero({ character }: { character: Character }) {
             alignItems: 'center',
             justifyContent: 'center',
             alignSelf: 'center',
+            cursor: 'pointer',
+            padding: 0,
           }}
           data-testid="lore-portrait"
         >
@@ -64,22 +89,27 @@ export function LoreHero({ character }: { character: Character }) {
               {initial}
             </span>
           )}
-        </div>
+        </button>
 
         {/* Identity info */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, minWidth: 0 }}>
-          <div
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, minWidth: 0, flex: 1 }}>
+          {/* Name input */}
+          <input
+            type="text"
+            value={character.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            aria-label={t('aria.character_name_input')}
+            data-testid="lore-name"
             style={{
+              ...INPUT_RESET,
               fontFamily: "'Cinzel', Georgia, serif",
               fontSize: 26,
               fontWeight: 700,
               color: '#F4EFE0',
               lineHeight: 1.2,
+              width: '100%',
             }}
-            data-testid="lore-name"
-          >
-            {character.name}
-          </div>
+          />
 
           <div
             style={{ fontSize: 13, color: '#B8B4C8', lineHeight: 1.6 }}
@@ -88,11 +118,44 @@ export function LoreHero({ character }: { character: Character }) {
             {metaParts.join(' · ')}
           </div>
 
-          <div style={{ fontSize: 12, color: '#7A7788' }}>
-            {t('lore.hero.level_xp', { level: String(character.totalLevel), xp: String(character.experience) })}
+          {/* Level (read-only derived) + XP (editable) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#7A7788' }}>
+            {/* Split translation key to extract level-only portion for display */}
+            <span data-testid="lore-level-text">
+              {t('lore.hero.level_xp', { level: String(character.totalLevel), xp: '' })
+                .split('·')[0]!.trim()}
+            </span>
+            <span aria-hidden>·</span>
+            <input
+              type="number"
+              min="0"
+              value={character.experience}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                if (!Number.isNaN(val)) onUpdate({ experience: val })
+              }}
+              aria-label={t('aria.xp_input')}
+              data-testid="lore-xp-input"
+              style={{
+                ...INPUT_RESET,
+                fontSize: 12,
+                color: '#7A7788',
+                width: 70,
+                textAlign: 'right',
+              }}
+            />
+            <span>XP</span>
           </div>
         </div>
       </div>
+
+      {/* Character image modal */}
+      <CharacterImageModal
+        isOpen={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        onApply={handleImageApply}
+        {...(portrait !== undefined ? { initialImage: portrait } : {})}
+      />
     </div>
   )
 }
