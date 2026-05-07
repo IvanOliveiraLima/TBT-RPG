@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { NotesBlock } from '@/components/sheet/parts/NotesBlock'
 import { renderWithI18n } from './helpers/render'
@@ -36,69 +36,80 @@ const BASE: Character = {
   updatedAt: 1700000000000,
 }
 
+const NOTES1_ONLY: Character = { ...BASE, notes1: 'Session summary here.', notes2: '' }
 const EMPTY_NOTES: Character = { ...BASE, notes1: '', notes2: '' }
 
 describe('NotesBlock', () => {
   beforeEach(() => { localStorage.clear() })
 
   it('renders notes-block testid', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'pt')
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
-  it('shows notes text when present', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'pt')
-    const el = screen.getByTestId('notes-text')
-    expect(el.textContent).toContain('Ki points: 5 remaining.')
-    expect(el.textContent).toContain('Flurry of Blows used twice this session.')
+  it('shows notes1 in editable textarea', () => {
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.value).toBe('Ki points: 5 remaining.')
   })
 
-  it('preserves newlines (whitespace-pre-wrap) in notes text', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'pt')
-    const el = screen.getByTestId('notes-text') as HTMLElement
-    expect(el.style.whiteSpace).toBe('pre-wrap')
+  it('shows notes2 as read-only text when both notes present', () => {
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ro = screen.getByTestId('notes-readonly')
+    expect(ro.textContent).toContain('Flurry of Blows used twice this session.')
   })
 
-  it('shows empty state when notes is empty', () => {
-    renderWithI18n(<NotesBlock character={EMPTY_NOTES} />, 'pt')
-    expect(screen.getByTestId('notes-empty')).toBeDefined()
-    expect(screen.getByText('Nenhuma nota registrada ainda.')).toBeDefined()
+  it('does not show notes-readonly when notes2 is empty', () => {
+    renderWithI18n(<NotesBlock character={NOTES1_ONLY} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.queryByTestId('notes-readonly')).toBeNull()
   })
 
-  it('does not show empty state when notes is present', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'pt')
-    expect(screen.queryByTestId('notes-empty')).toBeNull()
+  it('shows placeholder when both notes are empty (PT)', () => {
+    renderWithI18n(<NotesBlock character={EMPTY_NOTES} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.placeholder).toBe('Anotações de sessão, NPCs, lembretes...')
+  })
+
+  it('shows placeholder when both notes are empty (EN)', () => {
+    renderWithI18n(<NotesBlock character={EMPTY_NOTES} onUpdate={vi.fn()} />, 'en')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.placeholder).toBe('Session notes, NPCs, reminders...')
+  })
+
+  // ── editing ───────────────────────────────────────────────────────────────
+
+  it('calls onUpdate with notes1 when textarea changes', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea')
+    fireEvent.change(ta, { target: { value: 'Updated notes' } })
+    expect(onUpdate).toHaveBeenCalledWith({ notes1: 'Updated notes' })
+  })
+
+  it('editing notes does NOT include notes2 in onUpdate payload', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea')
+    fireEvent.change(ta, { target: { value: 'Changed' } })
+    const payload = onUpdate.mock.calls[0]![0] as Record<string, unknown>
+    expect(payload).not.toHaveProperty('notes2')
   })
 
   // ── i18n dual-lang tests ──────────────────────────────────────────
 
   it('shows section title NOTAS in PT', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'pt')
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByText('NOTAS')).toBeDefined()
   })
 
   it('shows section title NOTES in EN', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'en')
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'en')
     expect(screen.getByText('NOTES')).toBeDefined()
   })
 
-  it('shows empty state title in EN', () => {
-    renderWithI18n(<NotesBlock character={EMPTY_NOTES} />, 'en')
-    expect(screen.getByText('No notes yet.')).toBeDefined()
-  })
-
-  it('shows empty state hint in PT', () => {
-    renderWithI18n(<NotesBlock character={EMPTY_NOTES} />, 'pt')
-    expect(screen.getByText('Use este espaço para anotações de sessão, NPCs e lembretes.')).toBeDefined()
-  })
-
-  it('shows empty state hint in EN', () => {
-    renderWithI18n(<NotesBlock character={EMPTY_NOTES} />, 'en')
-    expect(screen.getByText('Use this space for session notes, NPCs, and reminders.')).toBeDefined()
-  })
-
   it('notes content is not translated (free-text)', () => {
-    renderWithI18n(<NotesBlock character={BASE} />, 'en')
-    expect(screen.getByTestId('notes-text').textContent).toContain('Ki points: 5 remaining.')
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'en')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.value).toContain('Ki points: 5 remaining.')
   })
 })
