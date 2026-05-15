@@ -32,6 +32,7 @@ interface LoreHeroProps {
 export function LoreHero({ character, onUpdate }: LoreHeroProps) {
   const { t } = useTranslation()
   const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [modalOpenCount, setModalOpenCount] = useState(0)
 
   const portrait = character.images.character
   const firstClass = character.classes[0]
@@ -57,7 +58,7 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
         <button
           type="button"
           aria-label={t('aria.edit_image')}
-          onClick={() => setImageModalOpen(true)}
+          onClick={() => { setModalOpenCount(c => c + 1); setImageModalOpen(true) }}
           className="w-40 h-40 lg:w-[200px] lg:h-[200px]"
           style={{
             flexShrink: 0,
@@ -149,8 +150,9 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
         </div>
       </div>
 
-      {/* Character image modal */}
+      {/* Character image modal — key changes on every open, forcing a fresh state */}
       <CharacterImageModal
+        key={modalOpenCount}
         isOpen={imageModalOpen}
         onClose={() => setImageModalOpen(false)}
         onApply={handleImageApply}

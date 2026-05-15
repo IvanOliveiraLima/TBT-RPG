@@ -1,9 +1,10 @@
 import type React from 'react'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useTranslation } from '@/i18n'
 
-const VIEWPORT_W = 360
-const VIEWPORT_H = 270
+const VIEWPORT_W = 320
+const VIEWPORT_H = 320
+const OUTPUT_SIZE = 600
 const MAX_FILE_BYTES = 2 * 1024 * 1024  // 2 MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const ACCEPTED_EXTS = ['.jpg', '.jpeg', '.png', '.webp']
@@ -15,34 +16,55 @@ export interface CharacterImageModalProps {
   initialImage?: string
 }
 
-interface DragState {
-  active: boolean
-  startX: number
-  startY: number
-  startOX: number
-  startOY: number
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value))
-}
-
 export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: CharacterImageModalProps) {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const imgRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const draggingRef = useRef<{ startX: number; startY: number } | null>(null)
 
-  const [sourceUrl, setSourceUrl] = useState<string | null>(initialImage ?? null)
-  const [naturalW, setNaturalW] = useState(0)
-  const [naturalH, setNaturalH] = useState(0)
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [baseScale, setBaseScale] = useState(1)
   const [zoomFactor, setZoomFactor] = useState(1)
-  const [offsetX, setOffsetX] = useState(0)
-  const [offsetY, setOffsetY] = useState(0)
-  const [error, setError] = useState<string | null>(null)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const drag = useRef<DragState>({ active: false, startX: 0, startY: 0, startOX: 0, startOY: 0 })
+  const [error, setError] = useState<string | null>(null)
+
+  const loadImageUrl = useCallback((url: string) => {
+    const img = new Image()
+    img.onload = () => {
+      const scale = Math.min(VIEWPORT_W / img.naturalWidth, VIEWPORT_H / img.naturalHeight)
+      setBaseScale(scale)
+      setZoomFactor(1)
+      setOffset({ x: 0, y: 0 })
+      setImage(img)
+    }
+    img.src = url
+  }, [])
+
+  // Load initial image when modal opens.
+  // State reset is handled by the parent via key prop — a new key forces
+  // React to remount the component, giving fresh state on each open.
+  useEffect(() => {
+    if (isOpen && initialImage) loadImageUrl(initialImage)
+  }, [isOpen, initialImage, loadImageUrl])
+
+  // Draw preview on canvas whenever image / zoom / offset changes
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !image) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.clearRect(0, 0, VIEWPORT_W, VIEWPORT_H)
+
+    const scale = baseScale * zoomFactor
+    const drawW = image.naturalWidth * scale
+    const drawH = image.naturalHeight * scale
+    const drawX = (VIEWPORT_W - drawW) / 2 + offset.x
+    const drawY = (VIEWPORT_H - drawH) / 2 + offset.y
+
+    ctx.drawImage(image, drawX, drawY, drawW, drawH)
+  }, [image, baseScale, zoomFactor, offset])
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -61,89 +83,58 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
     const reader = new FileReader()
     reader.onload = (ev) => {
       const url = ev.target?.result as string
-      setSourceUrl(url)
-      setZoomFactor(1)
+      loadImageUrl(url)
     }
     reader.readAsDataURL(file)
-    // Reset file input so same file can be re-selected
     e.target.value = ''
-  }, [t])
-
-  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget
-    const w = img.naturalWidth
-    const h = img.naturalHeight
-    setNaturalW(w)
-    setNaturalH(h)
-    const scale = Math.min(VIEWPORT_W / w, VIEWPORT_H / h)
-    setBaseScale(scale)
-    setZoomFactor(1)
-    // Center image in viewport
-    setOffsetX((VIEWPORT_W - w * scale) / 2)
-    setOffsetY((VIEWPORT_H - h * scale) / 2)
-  }, [])
-
-  const effectiveZoom = baseScale * zoomFactor
-  const displayW = naturalW * effectiveZoom
-  const displayH = naturalH * effectiveZoom
-
-  const clampedOffsets = useCallback((ox: number, oy: number, dw: number, dh: number) => {
-    const maxX = 0
-    const minX = VIEWPORT_W - dw
-    const maxY = 0
-    const minY = VIEWPORT_H - dh
-    return {
-      x: dw <= VIEWPORT_W ? (VIEWPORT_W - dw) / 2 : clamp(ox, minX, maxX),
-      y: dh <= VIEWPORT_H ? (VIEWPORT_H - dh) / 2 : clamp(oy, minY, maxY),
-    }
-  }, [])
+  }, [t, loadImageUrl])
 
   const onMouseDown = (e: React.MouseEvent) => {
-    drag.current = { active: true, startX: e.clientX, startY: e.clientY, startOX: offsetX, startOY: offsetY }
+    draggingRef.current = {
+      startX: e.clientX - offset.x,
+      startY: e.clientY - offset.y,
+    }
     setIsDragging(true)
     e.preventDefault()
   }
 
   const onMouseMove = (e: React.MouseEvent) => {
-    if (!drag.current.active) return
-    const dx = e.clientX - drag.current.startX
-    const dy = e.clientY - drag.current.startY
-    const { x, y } = clampedOffsets(drag.current.startOX + dx, drag.current.startOY + dy, displayW, displayH)
-    setOffsetX(x)
-    setOffsetY(y)
+    if (!draggingRef.current) return
+    setOffset({
+      x: e.clientX - draggingRef.current.startX,
+      y: e.clientY - draggingRef.current.startY,
+    })
   }
 
   const endDrag = () => {
-    drag.current.active = false
+    draggingRef.current = null
     setIsDragging(false)
   }
 
   const onZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFactor = Number(e.target.value)
-    setZoomFactor(newFactor)
-    const newDW = naturalW * baseScale * newFactor
-    const newDH = naturalH * baseScale * newFactor
-    const { x, y } = clampedOffsets(offsetX, offsetY, newDW, newDH)
-    setOffsetX(x)
-    setOffsetY(y)
+    setZoomFactor(Number(e.target.value))
   }
 
+  // Apply: render the same transformation at OUTPUT_SIZE resolution
   const handleApply = () => {
-    if (!sourceUrl || !imgRef.current) return
-    const canvas = canvasRef.current ?? document.createElement('canvas')
-    canvas.width = VIEWPORT_W
-    canvas.height = VIEWPORT_H
-    const ctx = canvas.getContext('2d')
+    if (!image) return
+
+    const finalCanvas = document.createElement('canvas')
+    finalCanvas.width = OUTPUT_SIZE
+    finalCanvas.height = OUTPUT_SIZE
+    const ctx = finalCanvas.getContext('2d')
     if (!ctx) return
 
-    // Calculate source region visible in viewport
-    const sx = Math.max(0, -offsetX / effectiveZoom)
-    const sy = Math.max(0, -offsetY / effectiveZoom)
-    const sw = Math.min(naturalW - sx, VIEWPORT_W / effectiveZoom)
-    const sh = Math.min(naturalH - sy, VIEWPORT_H / effectiveZoom)
+    const scaleFactor = OUTPUT_SIZE / VIEWPORT_W
+    const scale = baseScale * zoomFactor * scaleFactor
+    const drawW = image.naturalWidth * scale
+    const drawH = image.naturalHeight * scale
+    const drawX = (OUTPUT_SIZE - drawW) / 2 + offset.x * scaleFactor
+    const drawY = (OUTPUT_SIZE - drawH) / 2 + offset.y * scaleFactor
 
-    ctx.drawImage(imgRef.current, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
-    onApply(canvas.toDataURL('image/jpeg', 0.9))
+    ctx.drawImage(image, drawX, drawY, drawW, drawH)
+    onApply(finalCanvas.toDataURL('image/jpeg', 0.9))
+    onClose()
   }
 
   if (!isOpen) return null
@@ -223,65 +214,59 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
           )}
         </div>
 
-        {/* Viewport */}
+        {/* Canvas preview — single element for both display and final crop */}
         <div
-          role="img"
-          aria-label={t('image.modal.drag_hint')}
-          style={{
-            width: VIEWPORT_W,
-            height: VIEWPORT_H,
-            overflow: 'hidden',
-            position: 'relative',
-            background: '#0F0D14',
-            borderRadius: 8,
-            border: '1px solid #2A2537',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            userSelect: 'none',
-          }}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={endDrag}
-          onMouseLeave={endDrag}
+          style={{ position: 'relative' }}
           data-testid="image-modal-viewport"
         >
-          {sourceUrl ? (
-            <img
-              ref={imgRef}
-              src={sourceUrl}
-              alt=""
-              onLoad={handleImageLoad}
-              draggable={false}
-              style={{
-                position: 'absolute',
-                left: offsetX,
-                top: offsetY,
-                width: displayW,
-                height: displayH,
-                pointerEvents: 'none',
-              }}
-              data-testid="image-modal-preview"
-            />
-          ) : (
+          {!image && (
             <div
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                height: '100%', color: '#7A7788', fontSize: 13, fontStyle: 'italic',
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#7A7788',
+                fontSize: 13,
+                fontStyle: 'italic',
+                pointerEvents: 'none',
+                zIndex: 1,
               }}
             >
               {t('image.modal.select_file')}
             </div>
           )}
+          <canvas
+            ref={canvasRef}
+            width={VIEWPORT_W}
+            height={VIEWPORT_H}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={endDrag}
+            onMouseLeave={endDrag}
+            style={{
+              display: 'block',
+              background: '#0F0D14',
+              borderRadius: 8,
+              border: '1px solid #2A2537',
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
+            }}
+            aria-label={t('image.modal.drag_hint')}
+            data-testid="image-modal-canvas"
+          />
         </div>
 
-        {/* Zoom slider */}
-        {sourceUrl && (
+        {/* Zoom slider — only shown when an image is loaded */}
+        {image && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 12, color: '#7A7788', flexShrink: 0 }}>
               {t('image.modal.zoom_label')}
             </span>
             <input
               type="range"
-              min="1"
+              min="0.5"
               max="3"
               step="0.05"
               value={zoomFactor}
@@ -295,9 +280,6 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
             </span>
           </div>
         )}
-
-        {/* Hidden canvas for rendering */}
-        <canvas ref={canvasRef} style={{ display: 'none' }} data-testid="image-modal-canvas" />
 
         {/* Actions */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
@@ -320,14 +302,14 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
           <button
             type="button"
             onClick={handleApply}
-            disabled={!sourceUrl}
+            disabled={!image}
             style={{
-              background: sourceUrl ? 'rgba(212,160,23,0.2)' : 'transparent',
+              background: image ? 'rgba(212,160,23,0.2)' : 'transparent',
               border: '1px solid rgba(212,160,23,0.4)',
               borderRadius: 8,
-              color: sourceUrl ? '#D4A017' : '#7A7788',
+              color: image ? '#D4A017' : '#7A7788',
               padding: '7px 18px',
-              cursor: sourceUrl ? 'pointer' : 'not-allowed',
+              cursor: image ? 'pointer' : 'not-allowed',
               fontSize: 13,
             }}
             data-testid="image-modal-apply"
