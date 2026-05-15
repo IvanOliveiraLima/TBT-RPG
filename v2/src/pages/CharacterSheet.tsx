@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useCharacterStore } from '@/store/character'
+import { useCharacterStore, useActiveCharacter } from '@/store/character'
 import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { TabKey } from '@/components/sheet/types'
 import { LoadingScreen } from '@/components/sheet/states/LoadingScreen'
@@ -24,7 +24,8 @@ function TabContent({ tabKey }: { tabKey: TabKey }) {
 
 export default function CharacterSheet() {
   const { id } = useParams<{ id: string }>()
-  const { character, loading, error, loadCharacter, clearCharacter } = useCharacterStore()
+  const character = useActiveCharacter()
+  const { loading, error, loadCharacter, clearCharacter } = useCharacterStore()
   const [activeTab, setActiveTab] = useState<TabKey>('status')
 
   useEffect(() => {
