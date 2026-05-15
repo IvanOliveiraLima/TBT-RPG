@@ -113,7 +113,8 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 | `v2/src/data/migration.ts` | One-time v1→v2 migration via `migrateV1Characters()` |
 | `v2/src/lib/supabase.ts` | Supabase client singleton (same project as v1) |
 | `v2/src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
-| `v2/src/store/characters.ts` | Zustand characters store (fetchCharacters, updateCharacter, flushPendingSaves) |
+| `v2/src/store/characters.ts` | Zustand characters store — single source of truth for all character data; `updateCharacter(id, partial)` does optimistic in-memory update + 800ms debounced IndexedDB persist |
+| `v2/src/store/character.ts` | Zustand UI store — holds only `activeId` (the id of the character open in the sheet) and loading/error state; exports `useActiveCharacter()` derived hook |
 | `v2/src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
 | `v2/src/pages/Login.tsx` | Login page (email + password via Supabase) |
 | `v2/src/routes.tsx` | React Router v6 config (/, /login, * → /) |
@@ -124,6 +125,70 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 | `v2/src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
 | `v2/src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
 | `v2/tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
+
+### v2 store architecture
+
+The v2 uses two Zustand stores with clearly separated responsibilities and a
+derived hook that composes them at read time. There is no duplication of
+character state.
+
+| Store | Responsibility |
+|-------|---------------|
+| `useCharactersStore` | List of all characters. `updateCharacter(id, partial)` is the **single write path** for any character mutation: applies the partial optimistically in memory, then debounces a full persist to IndexedDB after 800 ms. |
+| `useCharacterStore` | Holds only `activeId` (the id currently open in the sheet) and loading/error state. Never stores the character object itself. |
+
+The active character is exposed through a **derived hook** that composes
+both stores at read time:
+
+```ts
+export function useActiveCharacter(): Character | null {
+  const activeId = useCharacterStore(s => s.activeId)
+  return useCharactersStore(s =>
+    activeId ? (s.characters.find(c => c.id === activeId) ?? null) : null
+  )
+}
+```
+
+Any component that calls `useActiveCharacter()` re-renders automatically
+whenever `updateCharacter` mutates the matching entry in `characters[]`.
+No secondary patch or synchronization is needed.
+
+#### Why derived
+
+A previous iteration kept a copy of the active character in `useCharacterStore`
+in parallel with `useCharactersStore.characters[]`. Keeping the two stores
+in sync required a dual-call pattern (`patchCharacter` for memory +
+`updateCharacter` for DB) and caused silent persistence bugs when the
+character list was empty.
+
+Deriving the active character eliminates the second source of truth.
+
+#### The one write path
+
+```ts
+const character = useActiveCharacter()
+const updateCharacter = useCharactersStore(s => s.updateCharacter)
+
+function onEditField(partial: Partial<Character>) {
+  if (!character) return
+  void updateCharacter(character.id, partial)
+  // Component re-renders via Zustand selector; DB persists after 800 ms debounce
+}
+```
+
+#### Critical invariant
+
+**Do not introduce a separate state field for the active character.** If
+during a feature you feel the need for a `patchCharacter`-style action that
+updates only memory, that is a sign something downstream is reading from the
+wrong source — find and fix that reader instead.
+
+#### loadCharacter
+
+`loadCharacter(id)` reads from IndexedDB and inserts the character into
+`useCharactersStore.characters[]` if not already present. This guarantees
+that `updateCharacter` can locate the character via
+`characters.find(c => c.id === id)` on every subsequent edit.
 
 ### v2 derived-model philosophy
 
