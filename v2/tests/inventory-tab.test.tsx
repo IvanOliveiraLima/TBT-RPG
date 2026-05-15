@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
 import { useCharacterStore } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import type { Character } from '@/domain/character'
 import { renderWithI18n } from './helpers/render'
+
+vi.mock('@/data/db', () => ({
+  listCharacters:  vi.fn().mockResolvedValue([]),
+  saveCharacter:   vi.fn().mockResolvedValue(undefined),
+  deleteCharacter: vi.fn().mockResolvedValue(undefined),
+}))
 
 const KANAAN: Character = {
   id: 'kanaan_01',
@@ -43,7 +50,8 @@ describe('InventoryTab integration', () => {
   beforeEach(() => { localStorage.clear() })
 
   afterEach(() => {
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
@@ -52,25 +60,29 @@ describe('InventoryTab integration', () => {
   })
 
   it('renders InventoryList when character is loaded', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByTestId('inventory-list').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders CurrencyBlock when character is loaded', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByTestId('currency-block').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows item names', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<InventoryTab />, 'pt')
     expect(screen.getAllByText('Shortsword').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows currency values', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<InventoryTab />, 'pt')
     const gpCells = screen.getAllByTestId('currency-gp')
     expect(gpCells[0]?.textContent).toContain('15')

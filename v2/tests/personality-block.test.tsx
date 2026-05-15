@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { PersonalityBlock } from '@/components/sheet/parts/PersonalityBlock'
 import { renderWithI18n } from './helpers/render'
@@ -13,6 +13,7 @@ const BASE: Character = {
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
   totalLevel: 5,
   experience: 6500,
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
@@ -32,7 +33,8 @@ const BASE: Character = {
     bonds: 'Bonded to the forest',
     flaws: 'Distrusts cities',
   },
-  notes: '',
+  notes1: '', notes2: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
@@ -47,66 +49,115 @@ describe('PersonalityBlock', () => {
   beforeEach(() => { localStorage.clear() })
 
   it('renders personality-block testid', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByTestId('personality-block')).toBeDefined()
   })
 
-  it('renders all 4 personality fields (stable key-based testids)', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+  it('renders all 4 personality field containers (stable key-based testids)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByTestId('personality-field-traits')).toBeDefined()
     expect(screen.getByTestId('personality-field-ideals')).toBeDefined()
     expect(screen.getByTestId('personality-field-bonds')).toBeDefined()
     expect(screen.getByTestId('personality-field-flaws')).toBeDefined()
   })
 
+  it('renders 4 textareas (one per field)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('personality-textarea-traits')).toBeDefined()
+    expect(screen.getByTestId('personality-textarea-ideals')).toBeDefined()
+    expect(screen.getByTestId('personality-textarea-bonds')).toBeDefined()
+    expect(screen.getByTestId('personality-textarea-flaws')).toBeDefined()
+  })
+
   it('shows PT labels: Traços, Ideais, Vínculos, Defeitos', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByText('Traços')).toBeDefined()
     expect(screen.getByText('Ideais')).toBeDefined()
     expect(screen.getByText('Vínculos')).toBeDefined()
     expect(screen.getByText('Defeitos')).toBeDefined()
   })
 
-  it('shows traits text', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
-    expect(screen.getByText('Quiet and observant')).toBeDefined()
+  it('shows traits value in textarea', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-traits') as HTMLTextAreaElement
+    expect(ta.value).toBe('Quiet and observant')
   })
 
-  it('shows ideals text', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
-    expect(screen.getByText('Protecting the wild')).toBeDefined()
+  it('shows ideals value in textarea', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-ideals') as HTMLTextAreaElement
+    expect(ta.value).toBe('Protecting the wild')
   })
 
-  it('shows bonds text', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
-    expect(screen.getByText('Bonded to the forest')).toBeDefined()
+  it('shows bonds value in textarea', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-bonds') as HTMLTextAreaElement
+    expect(ta.value).toBe('Bonded to the forest')
   })
 
-  it('shows flaws text', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
-    expect(screen.getByText('Distrusts cities')).toBeDefined()
+  it('shows flaws value in textarea', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-flaws') as HTMLTextAreaElement
+    expect(ta.value).toBe('Distrusts cities')
   })
 
-  it('empty field shows "—" placeholder', () => {
-    renderWithI18n(<PersonalityBlock character={EMPTY_PERSONALITY} />, 'pt')
-    const dashes = screen.getAllByText('—')
-    expect(dashes.length).toBe(4)
+  it('shows placeholder for empty field (PT)', () => {
+    renderWithI18n(<PersonalityBlock character={EMPTY_PERSONALITY} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-traits') as HTMLTextAreaElement
+    expect(ta.placeholder).toBe('Traços de personalidade...')
+  })
+
+  it('shows placeholder for empty field (EN)', () => {
+    renderWithI18n(<PersonalityBlock character={EMPTY_PERSONALITY} onUpdate={vi.fn()} />, 'en')
+    const ta = screen.getByTestId('personality-textarea-traits') as HTMLTextAreaElement
+    expect(ta.placeholder).toBe('Personality traits...')
+  })
+
+  // ── editing ───────────────────────────────────────────────────────────────
+
+  it('calls onUpdate with updated traits on change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-traits')
+    fireEvent.change(ta, { target: { value: 'New trait' } })
+    expect(onUpdate).toHaveBeenCalledWith({
+      personality: { ...BASE.personality, traits: 'New trait' },
+    })
+  })
+
+  it('editing traits does not affect ideals in onUpdate payload', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-traits')
+    fireEvent.change(ta, { target: { value: 'New trait' } })
+    const payload = onUpdate.mock.calls[0]![0] as { personality: Character['personality'] }
+    expect(payload.personality.ideals).toBe(BASE.personality.ideals)
+  })
+
+  it('calls onUpdate with updated flaws on change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    const ta = screen.getByTestId('personality-textarea-flaws')
+    fireEvent.change(ta, { target: { value: 'Reckless' } })
+    expect(onUpdate).toHaveBeenCalledWith({
+      personality: { ...BASE.personality, flaws: 'Reckless' },
+    })
   })
 
   // ── i18n dual-lang tests ──────────────────────────────────────────
 
   it('shows section title PERSONALIDADE in PT', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'pt')
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByText('PERSONALIDADE')).toBeDefined()
   })
 
   it('shows section title PERSONALITY in EN', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'en')
     expect(screen.getByText('PERSONALITY')).toBeDefined()
   })
 
   it('shows EN labels: Traits, Ideals, Bonds, Flaws', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'en')
     expect(screen.getByText('Traits')).toBeDefined()
     expect(screen.getByText('Ideals')).toBeDefined()
     expect(screen.getByText('Bonds')).toBeDefined()
@@ -114,8 +165,8 @@ describe('PersonalityBlock', () => {
   })
 
   it('personality values are not translated (free-text)', () => {
-    renderWithI18n(<PersonalityBlock character={BASE} />, 'en')
-    expect(screen.getByText('Quiet and observant')).toBeDefined()
-    expect(screen.getByText('Protecting the wild')).toBeDefined()
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'en')
+    const ta = screen.getByTestId('personality-textarea-traits') as HTMLTextAreaElement
+    expect(ta.value).toBe('Quiet and observant')
   })
 })

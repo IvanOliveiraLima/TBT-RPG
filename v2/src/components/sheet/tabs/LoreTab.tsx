@@ -1,19 +1,27 @@
-import { useCharacterStore } from '@/store/character'
+import type { Character } from '@/domain/character'
+import { useActiveCharacter } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import { LoreHero } from '../parts/LoreHero'
 import { BackstoryBlock } from '../parts/BackstoryBlock'
 import { PersonalityBlock } from '../parts/PersonalityBlock'
 import { NotesBlock } from '../parts/NotesBlock'
 
 export function LoreTab() {
-  const character = useCharacterStore((s) => s.character)
+  const character = useActiveCharacter()
+  const updateCharacter = useCharactersStore((s) => s.updateCharacter)
+
   if (!character) return null
+
+  const onUpdate = (partial: Partial<Character>) => {
+    void updateCharacter(character.id, partial)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <LoreHero character={character} />
-      <BackstoryBlock character={character} />
-      <PersonalityBlock character={character} />
-      <NotesBlock character={character} />
+      <LoreHero character={character} onUpdate={onUpdate} />
+      <BackstoryBlock character={character} onUpdate={onUpdate} />
+      <PersonalityBlock character={character} onUpdate={onUpdate} />
+      <NotesBlock character={character} onUpdate={onUpdate} />
     </div>
   )
 }

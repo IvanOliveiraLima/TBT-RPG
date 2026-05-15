@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { SpellsTab } from '@/components/sheet/tabs/SpellsTab'
 import { useCharacterStore } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import type { Character } from '@/domain/character'
 import { renderWithI18n } from './helpers/render'
+
+vi.mock('@/data/db', () => ({
+  listCharacters:  vi.fn().mockResolvedValue([]),
+  saveCharacter:   vi.fn().mockResolvedValue(undefined),
+  deleteCharacter: vi.fn().mockResolvedValue(undefined),
+}))
 
 // Kael Brightweave — Bard 5, full spells (caster with spells)
 const KAEL: Character = {
@@ -87,7 +94,8 @@ describe('SpellsTab integration', () => {
   beforeEach(() => { localStorage.clear() })
 
   afterEach(() => {
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
@@ -96,75 +104,87 @@ describe('SpellsTab integration', () => {
   })
 
   it('non-caster (Kanaan): shows non-caster title in PT', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('Esta classe não possui conjuração de magias.')).toBeDefined()
   })
 
   it('non-caster (Kanaan): does not show spell-header', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.queryByTestId('spell-header')).toBeNull()
   })
 
   it('non-caster (Kanaan): does not show spell-list', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.queryByTestId('spell-list')).toBeNull()
   })
 
   it('caster with spells (Kael): shows spell-header', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByTestId('spell-header')).toBeDefined()
   })
 
   it('caster with spells (Kael): shows spell-slots', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByTestId('spell-slots')).toBeDefined()
   })
 
   it('caster with spells (Kael): shows spell-list', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByTestId('spell-list')).toBeDefined()
   })
 
   it('caster with spells (Kael): header shows class name', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('Bard')).toBeDefined()
   })
 
   it('caster with spells (Kael): header shows CHA ability in EN', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'en')
     expect(screen.getByText('CHA')).toBeDefined()
   })
 
   it('caster without spells (Eira): shows spell-header with WIS in EN', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'en')
     expect(screen.getByTestId('spell-header')).toBeDefined()
     expect(screen.getByText('WIS')).toBeDefined()
   })
 
   it('caster without spells (Eira): does NOT show spell-slots', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.queryByTestId('spell-slots')).toBeNull()
   })
 
   it('caster without spells (Eira): shows spell-list with empty state', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByTestId('spell-list')).toBeDefined()
     expect(screen.getByTestId('spell-empty-state')).toBeDefined()
   })
 
   it('caster without spells (Eira): shows header DC 14', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('14')).toBeDefined()
   })
@@ -172,37 +192,43 @@ describe('SpellsTab integration', () => {
   // ── i18n dual-lang tests ──────────────────────────────────────────
 
   it('non-caster shows title in EN', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'en')
     expect(screen.getByText('This class does not cast spells.')).toBeDefined()
   })
 
   it('non-caster shows hint in PT', () => {
-    useCharacterStore.setState({ character: KANAAN, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.')).toBeDefined()
   })
 
   it('caster header shows CAR for CHA ability in PT', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('CAR')).toBeDefined()
   })
 
   it('caster header shows SAB for WIS ability (Eira) in PT', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('SAB')).toBeDefined()
   })
 
   it('spell-slots section label shows ESPAÇOS DE MAGIA in PT', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'pt')
     expect(screen.getByText('ESPAÇOS DE MAGIA')).toBeDefined()
   })
 
   it('spell-slots section label shows SPELL SLOTS in EN', () => {
-    useCharacterStore.setState({ character: KAEL, loading: false, error: null })
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<SpellsTab />, 'en')
     expect(screen.getByText('SPELL SLOTS')).toBeDefined()
   })

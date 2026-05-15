@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
@@ -7,11 +7,18 @@ import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { TabKey } from '@/components/sheet/types'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
 import { useCharacterStore } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import { CombatTab } from '@/components/sheet/tabs/CombatTab'
 import { SpellsTab } from '@/components/sheet/tabs/SpellsTab'
 import { InventoryTab } from '@/components/sheet/tabs/InventoryTab'
 import { LoreTab } from '@/components/sheet/tabs/LoreTab'
 import type { Character } from '@/domain/character'
+
+vi.mock('@/data/db', () => ({
+  listCharacters:  vi.fn().mockResolvedValue([]),
+  saveCharacter:   vi.fn().mockResolvedValue(undefined),
+  deleteCharacter: vi.fn().mockResolvedValue(undefined),
+}))
 
 const MOCK_CHARACTER: Character = {
   id: 'char_tab_test',
@@ -81,18 +88,21 @@ describe('tab switching', () => {
   })
 
   afterEach(() => {
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
 
   it('starts on the Status tab and renders HpBlock when store is populated', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     // HpBlock renders "Pontos de Vida" label in PT
     expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Combate in the bottom tab bar shows Combat tab content', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     // Mobile bottom tab bar - find "Combate" buttons and click the first
     const combateBtns = screen.getAllByText('Combate')
@@ -102,7 +112,8 @@ describe('tab switching', () => {
   })
 
   it('clicking Magias shows SpellsTab content', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     const magiasBtns = screen.getAllByText('Magias')
     fireEvent.click(magiasBtns[0]!)
@@ -118,7 +129,8 @@ describe('tab switching', () => {
   })
 
   it('clicking Histórico (lore tab) shows LoreTab content', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     const loreBtns = screen.getAllByText('Histórico')
     fireEvent.click(loreBtns[0]!)
@@ -126,7 +138,8 @@ describe('tab switching', () => {
   })
 
   it('clicking Lore (EN) shows LoreTab content', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'en')
     const loreBtns = screen.getAllByText('Lore')
     fireEvent.click(loreBtns[0]!)
@@ -139,7 +152,8 @@ describe('tab switching', () => {
   })
 
   it('switching tabs back to Status shows HpBlock content again', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: null })
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     // Go to Combat
     const combateBtns = screen.getAllByText('Combate')

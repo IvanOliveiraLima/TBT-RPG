@@ -218,18 +218,35 @@ const pt: Record<keyof typeof en, string> = {
   'backstory.section_title':     'HISTÓRIA',
   'backstory.empty_state_title': 'Nenhuma história registrada ainda.',
   'backstory.empty_state_hint':  'Documente o passado, motivações e momentos marcantes do seu personagem.',
+  'backstory.placeholder':       'Documente o passado do seu personagem...',
 
   // Personality — PersonalityBlock
-  'personality.section_title': 'PERSONALIDADE',
-  'personality.traits_label':  'Traços',
-  'personality.ideals_label':  'Ideais',
-  'personality.bonds_label':   'Vínculos',
-  'personality.flaws_label':   'Defeitos',
+  'personality.section_title':          'PERSONALIDADE',
+  'personality.traits_label':           'Traços',
+  'personality.ideals_label':           'Ideais',
+  'personality.bonds_label':            'Vínculos',
+  'personality.flaws_label':            'Defeitos',
+  'personality.traits.placeholder':     'Traços de personalidade...',
+  'personality.ideals.placeholder':     'Ideais...',
+  'personality.bonds.placeholder':      'Vínculos...',
+  'personality.flaws.placeholder':      'Defeitos...',
 
   // Notes — NotesBlock
   'notes.section_title':     'NOTAS',
   'notes.empty_state_title': 'Nenhuma nota registrada ainda.',
   'notes.empty_state_hint':  'Use este espaço para anotações de sessão, NPCs e lembretes.',
+  'notes.placeholder':       'Anotações de sessão, NPCs, lembretes...',
+
+  // Image modal — CharacterImageModal
+  'image.modal.title':            'Editar imagem do personagem',
+  'image.modal.select_file':      'Selecionar imagem',
+  'image.modal.zoom_label':       'Zoom',
+  'image.modal.apply':            'Aplicar',
+  'image.modal.cancel':           'Cancelar',
+  'image.modal.error.too_large':  'Imagem excede o limite de 2 MB',
+  'image.modal.error.bad_format': 'Formato não suportado. Use JPG, PNG ou WebP.',
+  'image.modal.drag_hint':        'Arraste para reposicionar',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
@@ -239,6 +256,9 @@ const pt: Record<keyof typeof en, string> = {
   'aria.remove_spell':  'Remover magia {name}',
   'aria.remove_attack': 'Remover ataque {name}',
   'aria.spell_slot': 'Slot de nível {level} ({current} de {max} disponíveis)',
+  'aria.edit_image':           'Editar imagem do personagem',
+  'aria.character_name_input': 'Nome do personagem',
+  'aria.xp_input':             'Pontos de experiência',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
