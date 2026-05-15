@@ -48,64 +48,71 @@ const EIRA: Character = {
   updatedAt: 1700000000000,
 }
 
+/** Activate EIRA as the open character in both stores. */
+function activateEira() {
+  useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+  useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
+}
+
 describe('LoreTab integration', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.useFakeTimers()
     useCharactersStore.setState({ characters: [], loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
   })
 
   afterEach(() => {
     vi.useRealTimers()
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
     useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
 
-  it('renders nothing when character store is empty', () => {
+  it('renders nothing when no active character', () => {
     const { container } = renderWithI18n(<LoreTab />, 'pt')
     expect(container.firstChild).toBeNull()
   })
 
   it('renders LoreHero when character is loaded', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('lore-hero')).toBeDefined()
   })
 
   it('renders BackstoryBlock', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('backstory-block')).toBeDefined()
   })
 
   it('renders PersonalityBlock', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('personality-block')).toBeDefined()
   })
 
   it('renders NotesBlock', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
   it('shows character name in LoreHero name input', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     const input = screen.getByTestId('lore-name') as HTMLInputElement
     expect(input.value).toBe('Eira Thornwood')
   })
 
   it('shows backstory value in BackstoryBlock textarea', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     const ta = screen.getByTestId('backstory-textarea') as HTMLTextAreaElement
     expect(ta.value).toContain('Guardian of the Thornwood Forest.')
   })
 
   it('shows all 4 personality values in textareas', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     expect((screen.getByTestId('personality-textarea-traits') as HTMLTextAreaElement).value).toBe('Silent and vigilant')
     expect((screen.getByTestId('personality-textarea-ideals') as HTMLTextAreaElement).value).toBe('Protecting all living things')
@@ -114,27 +121,29 @@ describe('LoreTab integration', () => {
   })
 
   it('shows notes placeholder when notes are empty', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
     expect(ta.placeholder).toBe('Anotações de sessão, NPCs, lembretes...')
   })
 
-  // ── edit integration: character store updates reactively ─────────────────
+  // ── edit integration: updateCharacter is the single write path ───────────
 
-  it('editing backstory updates character store immediately (reactive display)', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+  it('editing backstory updates characters store optimistically', () => {
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     const ta = screen.getByTestId('backstory-textarea')
     fireEvent.change(ta, { target: { value: 'New backstory' } })
-    expect(useCharacterStore.getState().character?.backstory).toBe('New backstory')
+    const updated = useCharactersStore.getState().characters.find(c => c.id === EIRA.id)
+    expect(updated?.backstory).toBe('New backstory')
   })
 
-  it('editing name updates character store immediately', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+  it('editing name updates characters store optimistically', () => {
+    activateEira()
     renderWithI18n(<LoreTab />, 'pt')
     const input = screen.getByTestId('lore-name')
     fireEvent.change(input, { target: { value: 'Lyra' } })
-    expect(useCharacterStore.getState().character?.name).toBe('Lyra')
+    const updated = useCharactersStore.getState().characters.find(c => c.id === EIRA.id)
+    expect(updated?.name).toBe('Lyra')
   })
 })

@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
 import { useCharacterStore } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import type { Character, SkillState, SavingThrowState, Feature } from '@/domain/character'
 import { renderWithI18n } from './helpers/render'
+
+vi.mock('@/data/db', () => ({
+  listCharacters:  vi.fn().mockResolvedValue([]),
+  saveCharacter:   vi.fn().mockResolvedValue(undefined),
+  deleteCharacter: vi.fn().mockResolvedValue(undefined),
+}))
 
 function save(ability: SavingThrowState['ability'], proficient: boolean, bonus: number): SavingThrowState {
   return { ability, proficient, bonus }
@@ -67,7 +74,8 @@ describe('StatusTab integration', () => {
   beforeEach(() => { localStorage.clear() })
 
   afterEach(() => {
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
 
   it('renders nothing when character store is empty', () => {
@@ -76,25 +84,29 @@ describe('StatusTab integration', () => {
   })
 
   it('renders HeroCard when character is in store', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Eira Thornwood').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders HpBlock with "Hit Points" in EN', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'en')
     expect(screen.getAllByText('Hit Points').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders HpBlock with "Pontos de Vida" in PT', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Pontos de Vida').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders CombatStrip with AC', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const acStats = screen.getAllByTestId('combat-stat-ac')
     expect(acStats.length).toBeGreaterThanOrEqual(1)
@@ -102,7 +114,8 @@ describe('StatusTab integration', () => {
   })
 
   it('renders AttrGrid with all 6 abilities', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const strAttrs = screen.getAllByTestId('attr-str')
     expect(strAttrs.length).toBeGreaterThanOrEqual(1)
@@ -111,7 +124,8 @@ describe('StatusTab integration', () => {
   })
 
   it('renders AttrGrid with PT abbreviations (FOR/DES/SAB)', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('FOR').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('DES').length).toBeGreaterThanOrEqual(1)
@@ -119,28 +133,32 @@ describe('StatusTab integration', () => {
   })
 
   it('renders SavingThrows with all 6 saves', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const savesContainers = screen.getAllByTestId('saving-throws')
     expect(savesContainers.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders SavingThrows with PT ability names', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Força').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Destreza').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders SkillsBlock', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const skillsContainers = screen.getAllByTestId('skills-block')
     expect(skillsContainers.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders SkillsBlock with PT skill names', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Atletismo').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Percepção').length).toBeGreaterThanOrEqual(1)
@@ -148,14 +166,16 @@ describe('StatusTab integration', () => {
   })
 
   it('renders FeaturesList with Eira features', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Favored Enemy').length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText('Extra Attack').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows spellSaveDC in CombatStrip when character is caster', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const dcStats = screen.getAllByTestId('combat-stat-dc')
     expect(dcStats.length).toBeGreaterThanOrEqual(1)
@@ -163,7 +183,8 @@ describe('StatusTab integration', () => {
   })
 
   it('skill with expertise shows filled expertise pip', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const perceptionRows = screen.getAllByTestId('skill-Perception')
     expect(perceptionRows.length).toBeGreaterThanOrEqual(1)
@@ -173,32 +194,37 @@ describe('StatusTab integration', () => {
   })
 
   it('features list shows uses badge for active feature', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('1/1').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows correct DEX modifier (+4) for Eira', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     const dexMods = screen.getAllByTestId('attr-dex-mod')
     expect(dexMods[0]!.textContent).toBe('+4')
   })
 
   it('renders ProficienciesBlock in Status tab', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByTestId('proficiencies-block').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows proficiencies text from character', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Longbow, Shortsword, Light, Medium').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows languages in proficiencies block', () => {
-    useCharacterStore.setState({ character: EIRA, loading: false, error: null })
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Common, Elvish, Sylvan').length).toBeGreaterThanOrEqual(1)
   })
