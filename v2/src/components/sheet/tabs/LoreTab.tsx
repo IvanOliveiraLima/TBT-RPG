@@ -1,5 +1,5 @@
 import type { Character } from '@/domain/character'
-import { useCharacterStore } from '@/store/character'
+import { useActiveCharacter } from '@/store/character'
 import { useCharactersStore } from '@/store/characters'
 import { LoreHero } from '../parts/LoreHero'
 import { BackstoryBlock } from '../parts/BackstoryBlock'
@@ -7,15 +7,13 @@ import { PersonalityBlock } from '../parts/PersonalityBlock'
 import { NotesBlock } from '../parts/NotesBlock'
 
 export function LoreTab() {
-  const character = useCharacterStore((s) => s.character)
-  const patchCharacter = useCharacterStore((s) => s.patchCharacter)
-  const updateInList = useCharactersStore((s) => s.updateCharacter)
+  const character = useActiveCharacter()
+  const updateCharacter = useCharactersStore((s) => s.updateCharacter)
 
   if (!character) return null
 
   const onUpdate = (partial: Partial<Character>) => {
-    patchCharacter(partial)               // immediate reactive display
-    void updateInList(character.id, partial) // debounced DB write
+    void updateCharacter(character.id, partial)
   }
 
   return (

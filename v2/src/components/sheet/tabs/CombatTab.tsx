@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCharacterStore } from '@/store/character'
+import { useActiveCharacter } from '@/store/character'
 import { CombatStrip } from '../parts/CombatStrip'
 import { AttacksList } from '../parts/AttacksList'
 
@@ -11,7 +11,7 @@ const CARD: React.CSSProperties = {
 }
 
 export function CombatTab() {
-  const character = useCharacterStore((s) => s.character)
+  const character = useActiveCharacter()
   if (!character) return null
 
   return (

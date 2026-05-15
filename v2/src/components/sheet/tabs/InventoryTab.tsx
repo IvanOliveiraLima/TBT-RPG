@@ -1,9 +1,9 @@
-import { useCharacterStore } from '@/store/character'
+import { useActiveCharacter } from '@/store/character'
 import { InventoryList } from '../parts/InventoryList'
 import { CurrencyBlock } from '../parts/CurrencyBlock'
 
 export function InventoryTab() {
-  const character = useCharacterStore((s) => s.character)
+  const character = useActiveCharacter()
   if (!character) return null
 
   return (

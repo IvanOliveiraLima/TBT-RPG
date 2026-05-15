@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCharacterStore } from '@/store/character'
+import { useActiveCharacter } from '@/store/character'
 import { useTranslation } from '@/i18n'
 import { HeroCard } from '../parts/HeroCard'
 import { HpBlock } from '../parts/HpBlock'
@@ -20,7 +20,7 @@ const CARD: React.CSSProperties = {
 
 export function StatusTab() {
   const { t } = useTranslation()
-  const character = useCharacterStore((s) => s.character)
+  const character = useActiveCharacter()
   if (!character) return null
 
   return (
