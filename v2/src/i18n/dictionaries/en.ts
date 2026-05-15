@@ -216,18 +216,35 @@ const en = {
   'backstory.section_title':     'BACKSTORY',
   'backstory.empty_state_title': 'No story recorded yet.',
   'backstory.empty_state_hint':  "Document your character's past, motivations, and pivotal moments.",
+  'backstory.placeholder':       "Document your character's past...",
 
   // Personality — PersonalityBlock
-  'personality.section_title': 'PERSONALITY',
-  'personality.traits_label':  'Traits',
-  'personality.ideals_label':  'Ideals',
-  'personality.bonds_label':   'Bonds',
-  'personality.flaws_label':   'Flaws',
+  'personality.section_title':          'PERSONALITY',
+  'personality.traits_label':           'Traits',
+  'personality.ideals_label':           'Ideals',
+  'personality.bonds_label':            'Bonds',
+  'personality.flaws_label':            'Flaws',
+  'personality.traits.placeholder':     'Personality traits...',
+  'personality.ideals.placeholder':     'Ideals...',
+  'personality.bonds.placeholder':      'Bonds...',
+  'personality.flaws.placeholder':      'Flaws...',
 
   // Notes — NotesBlock
   'notes.section_title':     'NOTES',
   'notes.empty_state_title': 'No notes yet.',
   'notes.empty_state_hint':  'Use this space for session notes, NPCs, and reminders.',
+  'notes.placeholder':       'Session notes, NPCs, reminders...',
+
+  // Image modal — CharacterImageModal
+  'image.modal.title':            'Edit character image',
+  'image.modal.select_file':      'Select image',
+  'image.modal.zoom_label':       'Zoom',
+  'image.modal.apply':            'Apply',
+  'image.modal.cancel':           'Cancel',
+  'image.modal.error.too_large':  'Image exceeds 2 MB limit',
+  'image.modal.error.bad_format': 'Unsupported format. Use JPG, PNG, or WebP.',
+  'image.modal.drag_hint':        'Drag to reposition',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
@@ -237,6 +254,9 @@ const en = {
   'aria.remove_spell':  'Remove spell {name}',
   'aria.remove_attack': 'Remove attack {name}',
   'aria.spell_slot': 'Level {level} slot ({current} of {max} available)',
+  'aria.edit_image':           'Edit character image',
+  'aria.character_name_input': 'Character name',
+  'aria.xp_input':             'Experience points',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

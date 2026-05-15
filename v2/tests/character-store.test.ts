@@ -9,6 +9,7 @@ vi.mock('@/data/db', () => ({
 }))
 
 import { useCharacterStore } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import { getCharacter } from '@/data/db'
 import type { Character } from '@/domain/character'
 
@@ -46,35 +47,40 @@ const MOCK_CHARACTER: Character = {
 
 describe('useCharacterStore', () => {
   beforeEach(() => {
-    useCharacterStore.setState({ character: null, loading: false, error: null })
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
     vi.clearAllMocks()
   })
 
-  it('has null character and no error in initial state', () => {
-    const { character, loading, error } = useCharacterStore.getState()
-    expect(character).toBeNull()
+  it('has null activeId and no error in initial state', () => {
+    const { activeId, loading, error } = useCharacterStore.getState()
+    expect(activeId).toBeNull()
     expect(loading).toBe(false)
     expect(error).toBeNull()
   })
 
-  it('clearCharacter resets character, loading, and error', () => {
-    useCharacterStore.setState({ character: MOCK_CHARACTER, loading: false, error: 'old error' })
+  it('clearCharacter resets activeId, loading, and error', () => {
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: 'old error' })
     useCharacterStore.getState().clearCharacter()
-    const { character, loading, error } = useCharacterStore.getState()
-    expect(character).toBeNull()
+    const { activeId, loading, error } = useCharacterStore.getState()
+    expect(activeId).toBeNull()
     expect(loading).toBe(false)
     expect(error).toBeNull()
   })
 
-  it('loadCharacter resolves with a character and sets it in state', async () => {
+  it('loadCharacter resolves with a character and sets activeId in state and character in characters list', async () => {
     vi.mocked(getCharacter).mockResolvedValueOnce(MOCK_CHARACTER)
 
     await useCharacterStore.getState().loadCharacter('char_test_1')
 
-    const { character, loading, error } = useCharacterStore.getState()
-    expect(character).toEqual(MOCK_CHARACTER)
+    const { activeId, loading, error } = useCharacterStore.getState()
+    expect(activeId).toBe('char_test_1')
     expect(loading).toBe(false)
     expect(error).toBeNull()
+
+    const charInStore = useCharactersStore.getState().characters.find(c => c.id === 'char_test_1')
+    expect(charInStore).toEqual(MOCK_CHARACTER)
   })
 
   it('loadCharacter sets error when getCharacter returns null (not found)', async () => {
@@ -82,8 +88,8 @@ describe('useCharacterStore', () => {
 
     await useCharacterStore.getState().loadCharacter('nonexistent_id')
 
-    const { character, error } = useCharacterStore.getState()
-    expect(character).toBeNull()
+    const { activeId, error } = useCharacterStore.getState()
+    expect(activeId).toBeNull()
     expect(error).toBe('Personagem não encontrado')
   })
 
@@ -92,8 +98,8 @@ describe('useCharacterStore', () => {
 
     await useCharacterStore.getState().loadCharacter('char_test_1')
 
-    const { character, error } = useCharacterStore.getState()
-    expect(character).toBeNull()
+    const { activeId, error } = useCharacterStore.getState()
+    expect(activeId).toBeNull()
     expect(error).toBe('Erro ao carregar personagem')
   })
 

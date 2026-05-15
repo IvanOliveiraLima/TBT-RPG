@@ -1,4 +1,4 @@
-import { useCharacterStore } from '@/store/character'
+import { useActiveCharacter } from '@/store/character'
 import { SpellHeader } from '../parts/SpellHeader'
 import { SpellSlots } from '../parts/SpellSlots'
 import { SpellList } from '../parts/SpellList'
@@ -15,7 +15,7 @@ const T = {
 
 export function SpellsTab() {
   const { t } = useTranslation()
-  const character = useCharacterStore((s) => s.character)
+  const character = useActiveCharacter()
   if (!character) return null
 
   // Non-caster: show informational message

@@ -11,14 +11,41 @@ const CARD: React.CSSProperties = {
   padding: 18,
 }
 
-const PERSONALITY_FIELDS: { key: keyof Character['personality']; labelKey: TranslationKey }[] = [
-  { key: 'traits', labelKey: 'personality.traits_label' },
-  { key: 'ideals', labelKey: 'personality.ideals_label' },
-  { key: 'bonds',  labelKey: 'personality.bonds_label' },
-  { key: 'flaws',  labelKey: 'personality.flaws_label' },
+const PERSONALITY_FIELDS: {
+  key: keyof Character['personality']
+  labelKey: TranslationKey
+  placeholderKey: TranslationKey
+}[] = [
+  { key: 'traits', labelKey: 'personality.traits_label', placeholderKey: 'personality.traits.placeholder' },
+  { key: 'ideals', labelKey: 'personality.ideals_label', placeholderKey: 'personality.ideals.placeholder' },
+  { key: 'bonds',  labelKey: 'personality.bonds_label',  placeholderKey: 'personality.bonds.placeholder' },
+  { key: 'flaws',  labelKey: 'personality.flaws_label',  placeholderKey: 'personality.flaws.placeholder' },
 ]
 
-function PersonalityField({ testId, label, value }: { testId: string; label: string; value: string }) {
+const TEXTAREA: React.CSSProperties = {
+  width: '100%',
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  resize: 'vertical',
+  minHeight: 72,
+  padding: 0,
+  fontFamily: 'inherit',
+  fontSize: 13,
+  color: '#B8B4C8',
+  lineHeight: 1.6,
+  whiteSpace: 'pre-wrap',
+}
+
+interface PersonalityFieldProps {
+  testId: string
+  label: string
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+}
+
+function PersonalityField({ testId, label, placeholder, value, onChange }: PersonalityFieldProps) {
   return (
     <div data-testid={`personality-field-${testId}`}>
       <h4
@@ -34,26 +61,24 @@ function PersonalityField({ testId, label, value }: { testId: string; label: str
       >
         {label}
       </h4>
-      {value ? (
-        <p
-          style={{
-            whiteSpace: 'pre-wrap',
-            fontSize: 13,
-            color: '#B8B4C8',
-            lineHeight: 1.6,
-            margin: 0,
-          }}
-        >
-          {value}
-        </p>
-      ) : (
-        <p style={{ color: '#7A7788', margin: 0, fontSize: 13 }}>—</p>
-      )}
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        data-testid={`personality-textarea-${testId}`}
+        style={TEXTAREA}
+      />
     </div>
   )
 }
 
-export function PersonalityBlock({ character }: { character: Character }) {
+interface PersonalityBlockProps {
+  character: Character
+  onUpdate: (partial: Partial<Character>) => void
+}
+
+export function PersonalityBlock({ character, onUpdate }: PersonalityBlockProps) {
   const { t } = useTranslation()
   return (
     <div style={CARD} data-testid="personality-block">
@@ -64,7 +89,9 @@ export function PersonalityBlock({ character }: { character: Character }) {
             key={f.key}
             testId={f.key}
             label={t(f.labelKey)}
+            placeholder={t(f.placeholderKey)}
             value={character.personality[f.key]}
+            onChange={(value) => onUpdate({ personality: { ...character.personality, [f.key]: value } })}
           />
         ))}
       </div>
