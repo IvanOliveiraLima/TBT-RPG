@@ -245,6 +245,18 @@ const en = {
   'image.modal.error.bad_format': 'Unsupported format. Use JPG, PNG, or WebP.',
   'image.modal.drag_hint':        'Drag to reposition',
 
+  // Identity block — IdentityBlock
+  'identity.section_title':           'IDENTITY',
+  'identity.race_label':              'Race',
+  'identity.background_label':        'Background',
+  'identity.alignment_label':         'Alignment',
+  'identity.alignment_unselected':    'Select alignment…',
+  'identity.alignment_custom_label':  'Custom: {value}',
+  'identity.classes_label':           'Classes',
+  'identity.class_name_placeholder':  'Class name',
+  'identity.add_class_button':        '+ Add class',
+  'identity.inspiration_label':       'Inspiration',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
@@ -257,6 +269,13 @@ const en = {
   'aria.edit_image':           'Edit character image',
   'aria.character_name_input': 'Character name',
   'aria.xp_input':             'Experience points',
+  'aria.race_input':           'Character race',
+  'aria.background_input':     'Character background',
+  'aria.alignment_input':      'Character alignment',
+  'aria.class_name_input':     'Class {index} name',
+  'aria.class_level_input':    'Class {index} level',
+  'aria.remove_class':         'Remove class {name}',
+  'aria.inspiration_toggle':   'Toggle inspiration',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

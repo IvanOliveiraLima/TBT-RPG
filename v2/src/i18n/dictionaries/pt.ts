@@ -247,6 +247,18 @@ const pt: Record<keyof typeof en, string> = {
   'image.modal.error.bad_format': 'Formato não suportado. Use JPG, PNG ou WebP.',
   'image.modal.drag_hint':        'Arraste para reposicionar',
 
+  // Identity block — IdentityBlock
+  'identity.section_title':           'IDENTIDADE',
+  'identity.race_label':              'Raça',
+  'identity.background_label':        'Antecedente',
+  'identity.alignment_label':         'Alinhamento',
+  'identity.alignment_unselected':    'Selecione um alinhamento…',
+  'identity.alignment_custom_label':  'Customizado: {value}',
+  'identity.classes_label':           'Classes',
+  'identity.class_name_placeholder':  'Nome da classe',
+  'identity.add_class_button':        '+ Adicionar classe',
+  'identity.inspiration_label':       'Inspiração',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
@@ -259,6 +271,13 @@ const pt: Record<keyof typeof en, string> = {
   'aria.edit_image':           'Editar imagem do personagem',
   'aria.character_name_input': 'Nome do personagem',
   'aria.xp_input':             'Pontos de experiência',
+  'aria.race_input':           'Raça do personagem',
+  'aria.background_input':     'Antecedente do personagem',
+  'aria.alignment_input':      'Alinhamento do personagem',
+  'aria.class_name_input':     'Nome da classe {index}',
+  'aria.class_level_input':    'Nível da classe {index}',
+  'aria.remove_class':         'Remover classe {name}',
+  'aria.inspiration_toggle':   'Alternar inspiração',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
