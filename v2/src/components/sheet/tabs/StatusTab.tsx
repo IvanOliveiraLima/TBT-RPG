@@ -1,7 +1,9 @@
 import type React from 'react'
 import { useActiveCharacter } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import { useTranslation } from '@/i18n'
 import { HeroCard } from '../parts/HeroCard'
+import { IdentityBlock } from '../parts/IdentityBlock'
 import { HpBlock } from '../parts/HpBlock'
 import { CombatStrip } from '../parts/CombatStrip'
 import { AttrGrid } from '../parts/AttrGrid'
@@ -10,6 +12,7 @@ import { SkillsBlock } from '../parts/SkillsBlock'
 import { FeaturesList } from '../parts/FeaturesList'
 import { ProficienciesBlock } from '../parts/ProficienciesBlock'
 import { Label } from '../ui/Label'
+import type { Character } from '@/domain/character'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -21,13 +24,24 @@ const CARD: React.CSSProperties = {
 export function StatusTab() {
   const { t } = useTranslation()
   const character = useActiveCharacter()
+  const updateCharacter = useCharactersStore(s => s.updateCharacter)
   if (!character) return null
+
+  const onUpdate = (partial: Partial<Character>) =>
+    void updateCharacter(character.id, partial)
 
   return (
     <>
       {/* ── MOBILE STACK (hidden on lg+) ── */}
       <div className="lg:hidden flex flex-col gap-3">
         <HeroCard character={character} compact />
+
+        {/* Identity editing */}
+        <div style={CARD}>
+          <Label>{t('identity.section_title')}</Label>
+          <IdentityBlock character={character} onUpdate={onUpdate} />
+        </div>
+
         <HpBlock character={character} />
         <CombatStrip character={character} cols={3} />
 
@@ -64,6 +78,17 @@ export function StatusTab() {
 
       {/* ── DESKTOP (hidden below lg) ── */}
       <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
+
+        {/* Row 0: HeroCard + Identity side by side */}
+        <div className="grid grid-cols-3" style={{ gap: 14 }}>
+          <div style={{ gridColumn: 'span 2' }}>
+            <HeroCard character={character} />
+          </div>
+          <div style={CARD}>
+            <Label>{t('identity.section_title')}</Label>
+            <IdentityBlock character={character} onUpdate={onUpdate} />
+          </div>
+        </div>
 
         {/* Rows 1–2: 3-col grid (HpBlock + Combate, AttrGrid) */}
         <div className="grid grid-cols-3" style={{ gap: 14 }}>
