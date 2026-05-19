@@ -1,17 +1,38 @@
-import type { Character, AbilityKey } from '@/domain/character'
-import { formatSigned } from '@/domain/calculations'
+import type { Character, AbilityKey, SavingThrowState } from '@/domain/character'
+import {
+  proficiencyBonus,
+  savingThrowBonus,
+  formatSigned,
+} from '@/domain/calculations'
+import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Pip } from '../ui/Pip'
 
 interface SavingThrowsProps {
   character: Character
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
-export function SavingThrows({ character }: SavingThrowsProps) {
+export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
   const { t } = useTranslation()
-  const saveMap = new Map(character.savingThrows.map((st) => [st.ability, st]))
+  const profMap = new Map(character.savingThrows.map((st) => [st.ability, st.proficient]))
+  const profBonus = proficiencyBonus(deriveTotalLevel(character))
+
+  function handleToggle(k: AbilityKey) {
+    if (!onUpdate) return
+    const currentProf = profMap.get(k) ?? false
+    const newSavingThrows: SavingThrowState[] = ABILITY_ORDER.map((ability) => {
+      const prof = ability === k ? !currentProf : (profMap.get(ability) ?? false)
+      return {
+        ability,
+        proficient: prof,
+        bonus: savingThrowBonus(character.abilities[ability], prof, profBonus),
+      }
+    })
+    onUpdate({ savingThrows: newSavingThrows })
+  }
 
   return (
     <div
@@ -19,9 +40,8 @@ export function SavingThrows({ character }: SavingThrowsProps) {
       style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 4 }}
     >
       {ABILITY_ORDER.map((k) => {
-        const st = saveMap.get(k)
-        const proficient = st?.proficient ?? false
-        const bonus = st?.bonus ?? 0
+        const proficient = profMap.get(k) ?? false
+        const bonus = savingThrowBonus(character.abilities[k], proficient, profBonus)
 
         return (
           <div
@@ -35,7 +55,26 @@ export function SavingThrows({ character }: SavingThrowsProps) {
               borderRadius: 8,
             }}
           >
-            <Pip state={proficient ? 'filled' : 'empty'} color="gold" size="sm" />
+            <button
+              type="button"
+              onClick={() => handleToggle(k)}
+              disabled={!onUpdate}
+              aria-label={t('aria.save_proficiency_toggle', { ability: t(`saves.ability.${k}`) })}
+              aria-pressed={proficient}
+              data-testid={`save-${k}-toggle`}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                cursor: onUpdate ? 'pointer' : 'default',
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Pip state={proficient ? 'filled' : 'empty'} color="gold" size="sm" />
+            </button>
             <span style={{ flex: 1, fontSize: 12, color: '#C8C4D6' }}>
               {t(`saves.ability.${k}`)}
             </span>

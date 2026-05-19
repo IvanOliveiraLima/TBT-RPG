@@ -1,5 +1,11 @@
 import type { Character } from '@/domain/character'
-import { formatSigned } from '@/domain/calculations'
+import {
+  proficiencyBonus,
+  passivePerception,
+  initiativeBonus,
+  formatSigned,
+} from '@/domain/calculations'
+import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 
 interface CombatStripProps {
@@ -9,15 +15,27 @@ interface CombatStripProps {
 
 export function CombatStrip({ character, cols = 3 }: CombatStripProps) {
   const { t } = useTranslation()
+
+  // Derive live — ignores stale stored values
+  const profBonus = proficiencyBonus(deriveTotalLevel(character))
+  const percSkill = character.skills.find(s => s.name === 'Perception')
+  const pp = passivePerception(
+    character.abilities.wis,
+    percSkill?.proficient ?? false,
+    percSkill?.expertise ?? false,
+    profBonus,
+  )
+  const initiative = initiativeBonus(character.abilities.dex)
+
   const items: { key: string; label: string; value: string }[] = [
-    { key: 'ac',   label: t('combat.ac'),                 value: String(character.ac) },
-    { key: 'init', label: t('combat.initiative'),          value: formatSigned(character.initiative) },
-    { key: 'spd',  label: t('combat.speed'),               value: `${character.speed} ft` },
-    { key: 'pp',   label: t('combat.passive_perception'),  value: String(character.passivePerception) },
+    { key: 'ac',   label: t('combat.ac'),                value: String(character.ac) },
+    { key: 'init', label: t('combat.initiative'),         value: formatSigned(initiative) },
+    { key: 'spd',  label: t('combat.speed'),              value: `${character.speed} ft` },
+    { key: 'pp',   label: t('combat.passive_perception'), value: String(pp) },
     ...(character.spellSaveDC > 0
       ? [{ key: 'dc', label: t('combat.spell_save_dc'), value: String(character.spellSaveDC) }]
       : []),
-    { key: 'prof', label: t('combat.proficiency_bonus'),   value: formatSigned(character.proficiencyBonus) },
+    { key: 'prof', label: t('combat.proficiency_bonus'),  value: formatSigned(profBonus) },
   ]
 
   return (

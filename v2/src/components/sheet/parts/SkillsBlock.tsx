@@ -1,5 +1,6 @@
 import type { Character } from '@/domain/character'
-import { formatSigned } from '@/domain/calculations'
+import { skillBonus, proficiencyBonus, formatSigned } from '@/domain/calculations'
+import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Pip } from '../ui/Pip'
@@ -32,6 +33,7 @@ const SKILL_DISPLAY_TO_KEY: Record<string, string> = {
 
 export function SkillsBlock({ character }: SkillsBlockProps) {
   const { t } = useTranslation()
+  const profBonus = proficiencyBonus(deriveTotalLevel(character))
 
   function skillLabel(name: string): string {
     const k = SKILL_DISPLAY_TO_KEY[name]
@@ -48,6 +50,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
       style={{ display: 'flex', flexDirection: 'column', gap: 1 }}
     >
       {sorted.map((s) => {
+        const bonus = skillBonus(character.abilities[s.ability], s.proficient, s.expertise, profBonus)
         const active = s.proficient || s.expertise
         const valueColor = s.expertise ? '#8B1A2E' : s.proficient ? '#D4A017' : '#F4EFE0'
 
@@ -108,7 +111,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
                 textAlign: 'right',
               }}
             >
-              {formatSigned(s.bonus)}
+              {formatSigned(bonus)}
             </span>
           </div>
         )

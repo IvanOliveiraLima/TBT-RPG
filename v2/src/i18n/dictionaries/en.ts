@@ -276,6 +276,8 @@ const en = {
   'aria.class_level_input':    'Class {index} level',
   'aria.remove_class':         'Remove class {name}',
   'aria.inspiration_toggle':   'Toggle inspiration',
+  'aria.ability_score_input':     '{ability} score',
+  'aria.save_proficiency_toggle': 'Toggle {ability} saving throw proficiency',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

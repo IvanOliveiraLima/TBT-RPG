@@ -27,9 +27,9 @@ describe('adaptCharacter — empty input', () => {
     expect(result.name).toBe('Unnamed')
   })
 
-  it('returns default numeric zeros for abilities', () => {
+  it('defaults abilities to 10 (PHB neutral) when v1 fields are missing', () => {
     const result = adaptCharacter(emptyChar())
-    expect(result.abilities).toEqual({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 })
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
   })
 
   it('returns deriveTotalLevel 0 for empty classes', () => {
@@ -304,6 +304,64 @@ describe('adaptCharacter — spells', () => {
     // Kael: CHA 18 (+4 mod), level 5 (profBonus 3) → bonus = 3 + 4 = 7
     // v1 spell_info.att stores "+6" (stale) — must be ignored
     expect(result.spells?.attackBonus).toBe(7)
+  })
+})
+
+describe('adaptCharacter — ability score normalization', () => {
+  function charWithAbilities(
+    attrs: Record<string, string | number | null | undefined>
+  ): V1Character {
+    return { page1: { attributes: attrs as V1Character['page1']['attributes'] } }
+  }
+
+  it('normalizes empty string to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '', dex: '', con: '', int: '', wis: '', cha: '' }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('normalizes null to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: null, dex: null, con: null, int: null, wis: null, cha: null }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('normalizes 0 to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('preserves valid score 8', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '8', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(8)
+  })
+
+  it('preserves score 1 (minimum valid)', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '1', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(1)
+  })
+
+  it('preserves score 30 (maximum valid)', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '30', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(30)
+  })
+
+  it('clamps score above 30 to 30', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '35', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(30)
+  })
+
+  it('floors decimal to integer', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '14.7', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(14)
+  })
+
+  it('normalizes mixed invalid/valid values per ability independently', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '16', dex: '', con: 0, int: '12', wis: null, cha: '8' }))
+    expect(result.abilities.str).toBe(16)
+    expect(result.abilities.dex).toBe(10)
+    expect(result.abilities.con).toBe(10)
+    expect(result.abilities.int).toBe(12)
+    expect(result.abilities.wis).toBe(10)
+    expect(result.abilities.cha).toBe(8)
   })
 })
 
