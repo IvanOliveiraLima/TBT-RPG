@@ -36,6 +36,18 @@ const LABEL_STYLE: React.CSSProperties = {
   display: 'block',
 }
 
+const SELECT_STYLE: React.CSSProperties = {
+  ...FIELD_INPUT,
+  cursor: 'pointer',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  paddingRight: 28,
+  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%237A7788' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 8px center',
+  backgroundSize: '1em',
+}
+
 interface IdentityBlockProps {
   character: Character
   onUpdate: (partial: Partial<Character>) => void
@@ -60,10 +72,7 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
     const newClasses = character.classes.map((c, i) =>
       i === index ? { ...c, ...partial } : c
     )
-    onUpdate({
-      classes: newClasses,
-      totalLevel: newClasses.reduce((sum, c) => sum + (c.level || 0), 0),
-    })
+    onUpdate({ classes: newClasses })
   }
 
   function addClass() {
@@ -71,18 +80,12 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
       ...character.classes,
       { name: '', level: 1, hitDie: 8 },
     ]
-    onUpdate({
-      classes: newClasses,
-      totalLevel: newClasses.reduce((sum, c) => sum + (c.level || 0), 0),
-    })
+    onUpdate({ classes: newClasses })
   }
 
   function removeClass(index: number) {
     const newClasses = character.classes.filter((_, i) => i !== index)
-    onUpdate({
-      classes: newClasses,
-      totalLevel: newClasses.reduce((sum, c) => sum + (c.level || 0), 0),
-    })
+    onUpdate({ classes: newClasses })
   }
 
   return (
@@ -133,7 +136,8 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
             value={isCustomAlignment ? '__custom__' : character.alignment}
             onChange={handleAlignmentChange}
             aria-label={t('aria.alignment_input')}
-            style={{ ...FIELD_INPUT, cursor: 'pointer' }}
+            className="identity-block-select"
+            style={SELECT_STYLE}
             data-testid="identity-alignment-select"
           >
             <option value="">{t('identity.alignment_unselected')}</option>
