@@ -184,7 +184,7 @@ export function AttrGrid({ character, cols = 3, compact = false, onUpdate }: Att
           abilities={character.abilities}
           proficient={saveProf.get(k) ?? false}
           compact={compact}
-          onUpdate={onUpdate}
+          {...(onUpdate !== undefined ? { onUpdate } : {})}
         />
       ))}
     </div>
