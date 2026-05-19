@@ -222,6 +222,27 @@ AC 17 because of magical armor), the adapter respects it. The rule is:
 - **If v1 value is empty/zero/default**: calculate from state.
 - **If v1 value is a meaningful override**: use it.
 
+#### Per-field override policy (C.1.c.2+)
+
+After C.1.c.2, the sheet components support **live editing of ability scores**.
+This makes the override policy concrete — each derived field either **always
+re-derives** from live base stats, or **respects a stored override**.
+
+| Field | Policy | Reason |
+|-------|--------|--------|
+| `initiative` | **Always derived** — `abilityModifier(dex)` | No override UI; editing DEX is the correct way to change initiative |
+| `passivePerception` | **Always derived** — PP formula | Derived live; too complex for manual override |
+| `proficiencyBonus` | **Always derived** — from total class level | Always rule-legal; no freeform override |
+| `savingThrow.bonus` | **Always derived** — from ability + profBonus | Bonus is the formula; user edits ability score or toggling proficiency |
+| `skill.bonus` | **Always derived** — from ability + profBonus | Same as saves |
+| `ability.mod` | **Always derived** — `abilityModifier(score)` | Never stored; computed at render |
+| `ac` | **Respects stored override** | User may wear non-formula armor |
+| `spellSaveDC` | **Respects stored override** | May depend on class features not modeled yet |
+
+**Implication for components:** never add an `initiative` input field. If a user
+wants a custom initiative bonus, it belongs in a separate bonus field (not yet
+modeled). The `CombatStrip` component must always display `abilityModifier(dex)`.
+
 #### Why this matters for future fields
 
 When implementing new fields/components, **always ask**: is this derivable from
