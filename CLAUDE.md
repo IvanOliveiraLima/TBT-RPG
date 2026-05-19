@@ -404,6 +404,29 @@ Components are rendered via `renderWithI18n(ui, 'pt' | 'en')` from
 assertions duplicated for PT and EN expected text. Adding a new translated
 component without dual-lang tests is incomplete.
 
+#### Test integrity baseline
+
+After a clean `npm install` (no flags), `npm test` should report:
+
+| Metric | Baseline (end of C.1.c.1) |
+|--------|--------------------------|
+| Test files | 43 |
+| Tests | 774 |
+
+These numbers grow with each phase — check the latest merged PR for the
+current baseline. If `npm test` reports significantly fewer test files,
+a peer dependency is likely missing from `node_modules`.
+
+Run `npx vitest list` to see which files Vitest detects. If a file is on
+disk but not listed, an import error is silently failing — check that
+file's imports against `node_modules`.
+
+All testing-related packages are declared explicitly in `devDependencies`
+(`@testing-library/dom`, `@testing-library/react`, `@testing-library/jest-dom`,
+`@testing-library/user-event`, `jsdom`, `vitest`) — `npm install` without
+any flags should produce a complete environment. No `--legacy-peer-deps`
+required.
+
 ### v2 known layout issues (to fix when touching mobile layout)
 
 - **Mobile drawer — PT/EN toggle pushed too far down**: `MobileShell.tsx` uses `marginTop: 'auto'` on the toggle wrapper, which pushes it to the bottom of the drawer via the flex-spacer. On short screens the toggle may be hidden or hard to reach. Consider either moving the toggle closer to the nav menu items or constraining the drawer height so it doesn't rely on `auto` margin.
