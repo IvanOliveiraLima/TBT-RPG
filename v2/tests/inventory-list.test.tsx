@@ -12,7 +12,6 @@ const KANAAN: Character = {
   background: 'Hermit',
   alignment: 'Lawful Neutral',
   classes: [{ name: 'Monk', level: 5, hitDie: 8 }],
-  totalLevel: 5,
   experience: 6500,
   abilities: { str: 14, dex: 16, con: 14, int: 10, wis: 14, cha: 8 },
   proficiencyBonus: 3,

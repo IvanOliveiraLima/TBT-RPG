@@ -14,6 +14,8 @@ export type {
 
 export { CLASS_HIT_DIE, getHitDie } from './classes'
 
+export { deriveTotalLevel, formatClassesShort } from './derived'
+
 export {
   abilityModifier,
   proficiencyBonus,

@@ -91,7 +91,6 @@ export interface Character {
   background: string
   alignment: string
   classes: ClassEntry[]
-  totalLevel: number     // sum of all class levels
   experience: number
 
   // Demographics (v2-native; blank for characters migrated from v1 which has no such fields)
@@ -104,7 +103,7 @@ export interface Character {
 
   // Core stats
   abilities: Abilities
-  proficiencyBonus: number   // derived from totalLevel
+  proficiencyBonus: number   // derived from sum of class levels
 
   // Status
   hp: {

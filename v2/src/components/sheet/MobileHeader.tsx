@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 
 const T = {
@@ -19,7 +20,6 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
   const { t } = useTranslation()
-  const firstClass = character.classes[0]
   return (
     <div style={{
       position: 'sticky', top: 0, zIndex: 10,
@@ -59,7 +59,7 @@ export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
         <div style={{
           fontSize: 10, color: T.textTertiary, marginTop: 2, letterSpacing: 0.3,
         }}>
-          {firstClass?.name ?? ''} {character.totalLevel} · {character.race}
+          {formatClassesShort(character)} · {character.race}
         </div>
       </div>
 

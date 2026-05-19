@@ -1,4 +1,5 @@
 import type { Character } from '@/domain/character'
+import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Badge } from '../ui/Badge'
 
@@ -10,7 +11,8 @@ interface HeroCardProps {
 export function HeroCard({ character, compact = false }: HeroCardProps) {
   const { t } = useTranslation()
   const portrait = character.images.character
-  const firstClass = character.classes[0]
+  const classLine = formatClassesShort(character)
+  const totalLevel = deriveTotalLevel(character)
   const portraitSize = compact ? 58 : 72
   const nameFontSize = compact ? 18 : 22
 
@@ -74,7 +76,7 @@ export function HeroCard({ character, compact = false }: HeroCardProps) {
               fontSize: 12,
             }}
           >
-            {character.totalLevel}
+            {totalLevel}
           </div>
         </div>
 
@@ -107,15 +109,13 @@ export function HeroCard({ character, compact = false }: HeroCardProps) {
             }}
           >
             {character.race && <span>{character.race}</span>}
-            {character.race && firstClass && (
+            {character.race && classLine && (
               <span style={{ color: '#3A3450' }}>•</span>
             )}
-            {firstClass && (
-              <span style={{ color: '#C8C4D6' }}>
-                {firstClass.name} {character.totalLevel}
-              </span>
+            {classLine && (
+              <span style={{ color: '#C8C4D6' }}>{classLine}</span>
             )}
-            {firstClass && character.background && (
+            {classLine && character.background && (
               <span style={{ color: '#3A3450' }}>•</span>
             )}
             {character.background && <span>{character.background}</span>}

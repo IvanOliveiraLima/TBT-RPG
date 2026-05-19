@@ -13,7 +13,6 @@ const BASE: Character = {
   background: 'Outlander',
   alignment: 'Leal e Bom',
   classes: [{ name: 'Fighter', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   abilities: { str: 18, dex: 10, con: 16, int: 8, wis: 12, cha: 6 },
   proficiencyBonus: 3,

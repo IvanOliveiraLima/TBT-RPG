@@ -6,7 +6,7 @@
  *
  * v1 fields intentionally discarded:
  * - page1.character_info.player_name — not part of the character's own domain model
- * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
+ * - page1.top_bar.proficiency — recalculated from sum of class levels via proficiencyBonus()
  * - page1.top_bar.passive_perception — recalculated via passivePerception()
  * - page1.top_bar.ac — recalculated as 10+DEX when blank/zero (v1 often empty)
  * - page1.top_bar.initiative — recalculated as DEX mod when blank (v1 often empty)
@@ -592,7 +592,6 @@ export function adaptCharacter(raw: V1Character): Character {
     background: str(ci?.background),
     alignment:  str(ci?.alignment),
     classes,
-    totalLevel: totalLvl,
     experience: parseIntSafe(ci?.exp),
 
     // Demographics — v1 does not store these fields; they start blank for migrated chars.
