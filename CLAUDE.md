@@ -336,6 +336,22 @@ migration step may be needed — plan for that explicitly.
 characters start with these fields as empty strings. v2 edit flow (Phase C.1.b+)
 will allow users to fill them in.
 
+### Local validation before push
+
+Before pushing any branch, run all three checks in order:
+
+```bash
+npm run lint   # ESLint — catches style and hook rule violations
+npm run test   # Vitest — unit/integration tests (transpile-only, no full tsc)
+npm run build  # tsc -b + vite build — full type check including strict flags
+```
+
+The build step is the critical one: Vitest uses transpile-only mode and does
+**not** enforce strict TypeScript flags such as `exactOptionalPropertyTypes`
+or `noUncheckedIndexedAccess`. Errors from those flags only surface in
+`npm run build`. Skipping the build before push is the most common cause of
+CI failures on branches that have passing tests locally.
+
 ### v2 development phase pattern
 
 Each v2 feature follows a three-step cycle:
