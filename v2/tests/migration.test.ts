@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Character } from '@/domain/character'
+import { deriveTotalLevel } from '@/domain/derived'
 import type { V1Character } from '@/data/schema-v1'
 
 // ── Dual-store mock: v1 DB and v2 DB as separate Maps ───────────────────────
@@ -79,7 +80,7 @@ describe('migrateV1Characters', () => {
     await migrateV1Characters()
     const migrated = v2Store.get('char_001') as Character
     expect(migrated.name).toBe('Grimbold')
-    expect(migrated.totalLevel).toBe(5)
+    expect(deriveTotalLevel(migrated)).toBe(5)
   })
 
   it('migrates multiple v1 characters', async () => {

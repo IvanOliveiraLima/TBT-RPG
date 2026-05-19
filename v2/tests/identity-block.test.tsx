@@ -11,7 +11,6 @@ const BASE: Character = {
   background: 'Outlander',
   alignment: 'Neutral Good',
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
@@ -218,43 +217,39 @@ describe('IdentityBlock', () => {
         { name: 'Fighter', level: 3, hitDie: 10 },
         { name: 'Wizard', level: 2, hitDie: 6 },
       ],
-      totalLevel: 5,
     }
     renderWithI18n(<IdentityBlock character={multiclass} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByTestId('identity-class-row-0')).toBeDefined()
     expect(screen.getByTestId('identity-class-row-1')).toBeDefined()
   })
 
-  it('updating class name calls onUpdate with updated classes array and totalLevel', () => {
+  it('updating class name calls onUpdate with updated classes array', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.change(screen.getByTestId('identity-class-name-0'), { target: { value: 'Druid' } })
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Druid', level: 5, hitDie: 10 }],
-      totalLevel: 5,
     })
   })
 
-  it('updating class level calls onUpdate with updated classes and recalculated totalLevel', () => {
+  it('updating class level calls onUpdate with updated classes array', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.change(screen.getByTestId('identity-class-level-0'), { target: { value: '8' } })
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Ranger', level: 8, hitDie: 10 }],
-      totalLevel: 8,
     })
   })
 
-  it('adding a class increases classes array length and updates totalLevel', () => {
+  it('adding a class increases classes array length', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('identity-add-class'))
-    const call = onUpdate.mock.calls[0]![0] as { classes: unknown[]; totalLevel: number }
+    const call = onUpdate.mock.calls[0]![0] as { classes: unknown[] }
     expect(call.classes).toHaveLength(2)
-    expect(call.totalLevel).toBe(6)  // 5 (Ranger) + 1 (new empty class level 1)
   })
 
-  it('removing a class calls onUpdate with filtered array and recalculated totalLevel', () => {
+  it('removing a class calls onUpdate with filtered classes array', () => {
     const onUpdate = vi.fn()
     const multiclass = {
       ...BASE,
@@ -262,13 +257,11 @@ describe('IdentityBlock', () => {
         { name: 'Fighter', level: 3, hitDie: 10 },
         { name: 'Wizard', level: 2, hitDie: 6 },
       ],
-      totalLevel: 5,
     }
     renderWithI18n(<IdentityBlock character={multiclass} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('identity-remove-class-1'))
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Fighter', level: 3, hitDie: 10 }],
-      totalLevel: 3,
     })
   })
 

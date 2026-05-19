@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Character } from '@/domain/character'
+import { formatClassesShort } from '@/domain/derived'
 import type { TabKey } from './types'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
@@ -35,7 +36,6 @@ interface SidebarProps {
 export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
   const { t, lang, setLang } = useTranslation()
   const portrait = character.images.character
-  const firstClass = character.classes[0]
 
   return (
     <div style={{
@@ -130,7 +130,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
             {character.name}
           </div>
           <div style={{ fontSize: 10, color: T.textTertiary }}>
-            {firstClass?.name ?? ''} {character.totalLevel}
+            {formatClassesShort(character)}
           </div>
         </div>
       </div>

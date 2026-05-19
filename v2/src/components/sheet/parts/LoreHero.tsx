@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useState } from 'react'
 import type { Character } from '@/domain/character'
+import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { CharacterImageModal } from './CharacterImageModal'
 
@@ -35,12 +36,12 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
   const [modalOpenCount, setModalOpenCount] = useState(0)
 
   const portrait = character.images.character
-  const firstClass = character.classes[0]
   const initial = (character.name[0] ?? '?').toUpperCase()
+  const classStr = formatClassesShort(character)
 
   const metaParts = [
     character.race,
-    firstClass ? `${firstClass.name} ${character.totalLevel}` : null,
+    classStr || null,
     character.background || null,
     character.alignment || null,
   ].filter(Boolean)
@@ -123,7 +124,7 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#7A7788' }}>
             {/* Split translation key to extract level-only portion for display */}
             <span data-testid="lore-level-text">
-              {t('lore.hero.level_xp', { level: String(character.totalLevel), xp: '' })
+              {t('lore.hero.level_xp', { level: String(deriveTotalLevel(character)), xp: '' })
                 .split('·')[0]!.trim()}
             </span>
             <span aria-hidden>·</span>

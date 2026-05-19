@@ -11,7 +11,6 @@ const BASE: Character = {
   background: 'Entertainer',
   alignment: 'Chaotic Good',
   classes: [{ name: 'Bard', level: 5, hitDie: 8 }],
-  totalLevel: 5,
   experience: 6500,
   abilities: { str: 8, dex: 14, con: 12, int: 12, wis: 10, cha: 18 },
   proficiencyBonus: 3,
