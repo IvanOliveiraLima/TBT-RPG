@@ -214,15 +214,29 @@ function adaptClasses(raw: V1Character): ClassEntry[] {
   return [{ name, level: parseIntSafe(bi?.level), hitDie: getHitDie(name) }]
 }
 
+/**
+ * Reads an ability score from a raw v1 value.
+ * Defaults to 10 (the PHB neutral baseline, modifier +0) for any value that
+ * is missing, empty, zero, or otherwise invalid. Scores below 1 are treated
+ * as unset — a character with STR 0 cannot exist in D&D 5e.
+ * Caps at 30 and floors to integer.
+ */
+function readAbilityScore(val: string | number | boolean | null | undefined): number {
+  const n = parseIntSafe(val)
+  if (n < 1) return 10
+  if (n > 30) return 30
+  return n
+}
+
 function adaptAbilities(raw: V1Character): Abilities {
   const a = raw.page1?.attributes
   return {
-    str: parseIntSafe(a?.str),
-    dex: parseIntSafe(a?.dex),
-    con: parseIntSafe(a?.con),
-    int: parseIntSafe(a?.int),
-    wis: parseIntSafe(a?.wis),
-    cha: parseIntSafe(a?.cha),
+    str: readAbilityScore(a?.str),
+    dex: readAbilityScore(a?.dex),
+    con: readAbilityScore(a?.con),
+    int: readAbilityScore(a?.int),
+    wis: readAbilityScore(a?.wis),
+    cha: readAbilityScore(a?.cha),
   }
 }
 
