@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
 import { useCharacterStore } from '@/store/character'
 import { useCharactersStore } from '@/store/characters'
@@ -226,5 +226,85 @@ describe('StatusTab integration', () => {
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
     expect(screen.getAllByText('Common, Elvish, Sylvan').length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+// ── Cascade tests: ability scores → derived displays ─────────────────────────
+
+describe('StatusTab cascade — ability score editing', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  afterEach(() => {
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  function setup() {
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
+    renderWithI18n(<StatusTab />, 'pt')
+  }
+
+  it('changing STR score updates STR modifier display', () => {
+    setup()
+    // EIRA str=14 → mod +2. Change to 20 → mod +5.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const strMods = screen.getAllByTestId('attr-str-mod')
+    expect(strMods[0]!.textContent).toBe('+5')
+  })
+
+  it('changing STR score updates STR save bonus display', () => {
+    setup()
+    // EIRA str save: proficient=false. str 14 → +2. Change str to 20 → +5.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const strSaveBonuses = screen.getAllByTestId('save-str-bonus')
+    expect(strSaveBonuses[0]!.textContent).toBe('+5')
+  })
+
+  it('changing STR score updates Athletics skill bonus display', () => {
+    setup()
+    // EIRA Athletics: str=14, proficient=true, profBonus=3 → 2+3=5.
+    // After str=20 (mod +5): 5+3=8.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const athleticsBonuses = screen.getAllByTestId('skill-Athletics-bonus')
+    expect(athleticsBonuses[0]!.textContent).toBe('+8')
+  })
+
+  it('changing DEX score updates initiative display', () => {
+    setup()
+    // EIRA dex=18 → init +4. Change to 10 → init +0.
+    const dexInputs = screen.getAllByTestId('attr-dex-score')
+    fireEvent.change(dexInputs[0]!, { target: { value: '10' } })
+    const initStats = screen.getAllByTestId('combat-stat-init')
+    expect(initStats[0]!.textContent).toContain('+0')
+  })
+
+  it('changing WIS score updates passive perception display', () => {
+    setup()
+    // EIRA wis=16, Perception proficient+expertise, profBonus=3 → PP = 10+(3+6) = 19.
+    // Change wis=10 (mod 0) → PP = 10+(0+6) = 16.
+    const wisInputs = screen.getAllByTestId('attr-wis-score')
+    fireEvent.change(wisInputs[0]!, { target: { value: '10' } })
+    const ppStats = screen.getAllByTestId('combat-stat-pp')
+    expect(ppStats[0]!.textContent).toContain('16')
+  })
+
+  it('changing CON score does NOT auto-update HP max (Q1=A)', () => {
+    setup()
+    // EIRA hp.max = 42. Changing CON should NOT change HP max.
+    const conInputs = screen.getAllByTestId('attr-con-score')
+    fireEvent.change(conInputs[0]!, { target: { value: '20' } })
+    // HP max still shows 42
+    expect(screen.getAllByText('/ 42').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('changing STR score updates proficiency bonus for level 5 character', () => {
+    setup()
+    // EIRA level 5 → profBonus = 3. Changing str doesn't affect profBonus.
+    const profStats = screen.getAllByTestId('combat-stat-prof')
+    expect(profStats[0]!.textContent).toContain('+3')
   })
 })
