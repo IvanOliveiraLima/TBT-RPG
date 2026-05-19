@@ -51,13 +51,13 @@ export function StatusTab() {
             <span style={{ color: '#D4A017', fontSize: 12 }}>⬢</span>
             <Label style={{ marginBottom: 0 }}>{t('attributes.section_title')}</Label>
           </div>
-          <AttrGrid character={character} cols={3} compact />
+          <AttrGrid character={character} cols={3} compact onUpdate={onUpdate} />
         </div>
 
         {/* Saving Throws — before Skills (numeric → numeric → descriptive) */}
         <div style={CARD}>
           <Label>{t('saves.section_title')}</Label>
-          <SavingThrows character={character} />
+          <SavingThrows character={character} onUpdate={onUpdate} />
         </div>
 
         {/* Skills */}
@@ -107,7 +107,7 @@ export function StatusTab() {
           <div style={{ gridColumn: 'span 3' }}>
             <div style={CARD}>
               <Label>{t('attributes.section_title')}</Label>
-              <AttrGrid character={character} cols={6} />
+              <AttrGrid character={character} cols={6} onUpdate={onUpdate} />
             </div>
           </div>
         </div>
@@ -121,7 +121,7 @@ export function StatusTab() {
           <div className="flex flex-col" style={{ gap: 14 }}>
             <div style={CARD}>
               <Label>{t('saves.section_title')}</Label>
-              <SavingThrows character={character} />
+              <SavingThrows character={character} onUpdate={onUpdate} />
             </div>
             <div style={CARD}>
               <Label>{t('features.title')}</Label>

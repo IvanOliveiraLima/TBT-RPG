@@ -1,3 +1,4 @@
+import type React from 'react'
 import type { Character, AbilityKey } from '@/domain/character'
 import { abilityModifier, formatSigned } from '@/domain/calculations'
 import { useTranslation } from '@/i18n'
@@ -6,15 +7,40 @@ interface AttrGridProps {
   character: Character
   cols?: 2 | 3 | 6
   compact?: boolean
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
-export function AttrGrid({ character, cols = 3, compact = false }: AttrGridProps) {
+const SCORE_INPUT: React.CSSProperties = {
+  width: '100%',
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  padding: 0,
+  margin: 0,
+  textAlign: 'center',
+  fontFamily: 'inherit',
+  fontSize: 11,
+  color: '#A09DB0',
+  fontVariantNumeric: 'tabular-nums',
+  cursor: 'text',
+  MozAppearance: 'textfield',
+}
+
+export function AttrGrid({ character, cols = 3, compact = false, onUpdate }: AttrGridProps) {
   const { t } = useTranslation()
   const saveProf = new Map(
     character.savingThrows.map((st) => [st.ability, st.proficient]),
   )
+
+  function handleScoreChange(k: AbilityKey, raw: string) {
+    if (!onUpdate) return
+    const parsed = parseInt(raw, 10)
+    if (Number.isNaN(parsed)) return
+    const clamped = Math.max(1, Math.min(30, parsed))
+    onUpdate({ abilities: { ...character.abilities, [k]: clamped } })
+  }
 
   return (
     <div
@@ -86,17 +112,22 @@ export function AttrGrid({ character, cols = 3, compact = false }: AttrGridProps
               {formatSigned(mod)}
             </div>
             <div
-              data-testid={`attr-${k}-score`}
               style={{
-                fontSize: 11,
-                color: '#A09DB0',
                 marginTop: 6,
                 paddingTop: 4,
                 borderTop: '1px solid #2A2537',
-                fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {score}
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={score}
+                onChange={e => handleScoreChange(k, e.target.value)}
+                aria-label={t('aria.ability_score_input', { ability: t(`ability.${k}`) })}
+                data-testid={`attr-${k}-score`}
+                style={SCORE_INPUT}
+              />
             </div>
           </div>
         )
