@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { adaptCharacter } from '@/data/adapter'
+import { deriveTotalLevel } from '@/domain/derived'
 import type { V1Character } from '@/data/schema-v1'
 
 import fullCharFixture    from './fixtures/full-character.json'
@@ -31,9 +32,9 @@ describe('adaptCharacter — empty input', () => {
     expect(result.abilities).toEqual({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 })
   })
 
-  it('returns totalLevel 0 for empty classes', () => {
+  it('returns deriveTotalLevel 0 for empty classes', () => {
     const result = adaptCharacter(emptyChar())
-    expect(result.totalLevel).toBe(0)
+    expect(deriveTotalLevel(result)).toBe(0)
   })
 
   it('returns proficiencyBonus 2 even at level 0', () => {
@@ -118,7 +119,7 @@ describe('adaptCharacter — HP edge cases', () => {
 })
 
 describe('adaptCharacter — classes and level', () => {
-  it('derives totalLevel from classes array', () => {
+  it('classes are correctly mapped for multiclass (Fighter 5 / Rogue 3)', () => {
     const raw: V1Character = {
       page1: {
         basic_info: {
@@ -127,7 +128,7 @@ describe('adaptCharacter — classes and level', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.totalLevel).toBe(8)
+    expect(deriveTotalLevel(result)).toBe(8)
   })
 
   it('proficiencyBonus is correct for level 8 (+3)', () => {
@@ -150,7 +151,7 @@ describe('adaptCharacter — classes and level', () => {
     expect(result.classes).toHaveLength(1)
     expect(result.classes[0]?.name).toBe('Wizard')
     expect(result.classes[0]?.level).toBe(7)
-    expect(result.totalLevel).toBe(7)
+    expect(deriveTotalLevel(result)).toBe(7)
   })
 
   it('converts class level from string to number', () => {

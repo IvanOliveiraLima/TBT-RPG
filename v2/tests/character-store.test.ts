@@ -20,7 +20,6 @@ const MOCK_CHARACTER: Character = {
   background: 'Outlander',
   alignment: 'Leal e Bom',
   classes: [{ name: 'Fighter', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 18, dex: 10, con: 16, int: 8, wis: 12, cha: 6 },

@@ -12,7 +12,6 @@ const MOCK_CHARACTER: Character = {
   background: 'Outlander',
   alignment: 'Caótico e Bom',
   classes: [{ name: 'Ranger', level: 4, hitDie: 10 }],
-  totalLevel: 4,
   experience: 2700,
   abilities: { str: 10, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 2,

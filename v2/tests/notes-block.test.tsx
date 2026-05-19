@@ -11,7 +11,6 @@ const BASE: Character = {
   background: 'Outlander',
   alignment: 'Neutral Good',
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
