@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { AttrGrid } from '@/components/sheet/parts/AttrGrid'
+import { I18nProvider } from '@/i18n'
 import { renderWithI18n } from './helpers/render'
 
 const BASE: Character = {
@@ -180,11 +181,38 @@ describe('AttrGrid', () => {
     expect(call.abilities.str).toBe(1)
   })
 
-  it('does not call onUpdate when input is cleared (NaN)', () => {
+  it('allows empty input without calling onUpdate (intermediate state)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<AttrGrid character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.change(screen.getByTestId('attr-str-score'), { target: { value: '' } })
     expect(onUpdate).not.toHaveBeenCalled()
+    // Input is visually empty
+    expect((screen.getByTestId('attr-str-score') as HTMLInputElement).value).toBe('')
+  })
+
+  it('modifier keeps last valid domain value when input is empty', () => {
+    renderWithI18n(<AttrGrid character={BASE} onUpdate={vi.fn()} />, 'pt')
+    fireEvent.change(screen.getByTestId('attr-str-score'), { target: { value: '' } })
+    // STR 18 → modifier +4 still shown (not +0)
+    expect(screen.getByTestId('attr-str-mod').textContent).toBe('+4')
+  })
+
+  it('restores domain value on blur when input is empty', () => {
+    renderWithI18n(<AttrGrid character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('attr-str-score') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '' } })
+    fireEvent.blur(input)
+    expect(input.value).toBe('18')
+  })
+
+  it('accepts low value (8) after clearing and typing', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<AttrGrid character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('attr-str-score'), { target: { value: '' } })
+    fireEvent.change(screen.getByTestId('attr-str-score'), { target: { value: '8' } })
+    expect(onUpdate).toHaveBeenCalledWith({
+      abilities: { str: 8, dex: 14, con: 16, int: 10, wis: 12, cha: 8 },
+    })
   })
 
   it('does not call onUpdate when no onUpdate prop is provided', () => {
@@ -192,6 +220,13 @@ describe('AttrGrid', () => {
     renderWithI18n(<AttrGrid character={BASE} />, 'pt')
     fireEvent.change(screen.getByTestId('attr-str-score'), { target: { value: '20' } })
     // No assertion needed — just verifying no exception is thrown
+  })
+
+  it('syncs to external domain score change', () => {
+    const { rerender } = render(<I18nProvider><AttrGrid character={BASE} /></I18nProvider>)
+    const updated = { ...BASE, abilities: { ...BASE.abilities, str: 20 } }
+    rerender(<I18nProvider><AttrGrid character={updated} /></I18nProvider>)
+    expect((screen.getByTestId('attr-str-score') as HTMLInputElement).value).toBe('20')
   })
 
   it('score input has aria-label with ability name in PT', () => {
