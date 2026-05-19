@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Character } from '@/domain/character'
+import { formatClassesShort } from '@/domain/derived'
 import type { TabKey } from './types'
 import { Sidebar } from './Sidebar'
 import { useTranslation } from '@/i18n'
@@ -44,7 +45,6 @@ interface DesktopShellProps {
 
 export function DesktopShell({ character, activeTab, onTabChange, children }: DesktopShellProps) {
   const { t } = useTranslation()
-  const firstClass = character.classes[0]
   return (
     <div style={{
       display: 'flex',
@@ -81,10 +81,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
             <div style={{ fontSize: 12, color: T.textTertiary, marginTop: 2 }}>
               {character.race}
               {' · '}
-              {firstClass?.name ?? ''}
-              {firstClass?.subclass ? ` (${firstClass.subclass})` : ''}
-              {' · '}{t('common.level_abbr')}{' '}
-              {character.totalLevel}
+              {formatClassesShort(character)}
               {character.background ? ` · ${character.background}` : ''}
               {character.alignment ? ` · ${character.alignment}` : ''}
             </div>

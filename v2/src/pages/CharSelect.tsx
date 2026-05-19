@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCharactersStore } from '@/store/characters'
 import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
+import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation, pluralKey } from '@/i18n'
 
 /* ── V1 production URL ────────────────────────────────────────────────── */
@@ -90,7 +91,6 @@ function HpBar({ current, max }: { current: number; max: number }) {
 /* ── Character card ────────────────────────────────────────────────────── */
 function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
   const navigate = useNavigate()
-  const firstClass = ch.classes[0]
   const portrait = ch.images.character ?? null
 
   function handleClick() {
@@ -143,7 +143,7 @@ function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10,
         }}>
-          {ch.totalLevel || '?'}
+          {deriveTotalLevel(ch) || '?'}
         </div>
       </div>
 
@@ -163,7 +163,7 @@ function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
           <span>{ch.race || '—'}</span>
           <span style={{ color: T.borderDefault }}>·</span>
           <span style={{ color: T.textSecondary }}>
-            {firstClass?.name || '—'} {ch.totalLevel || ''}
+            {formatClassesShort(ch) || '—'}
           </span>
         </div>
         <HpBar current={ch.hp.current} max={ch.hp.max} />
