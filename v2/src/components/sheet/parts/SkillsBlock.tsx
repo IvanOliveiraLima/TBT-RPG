@@ -105,7 +105,7 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
               borderRadius: 8,
             }}
           >
-            <div style={{ display: 'flex', gap: 3 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               <button
                 type="button"
                 data-testid={`skill-${s.name}-prof-toggle`}
