@@ -262,6 +262,7 @@ const en = {
   'identity.classes_label':           'Classes',
   'identity.class_name_placeholder':  'Class name',
   'identity.add_class_button':        '+ Add class',
+  'identity.class_default_name':      'New class',
   'identity.inspiration_label':       'Inspiration',
 
   // Aria labels (accessibility)

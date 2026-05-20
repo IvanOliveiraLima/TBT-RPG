@@ -264,6 +264,7 @@ const pt: Record<keyof typeof en, string> = {
   'identity.classes_label':           'Classes',
   'identity.class_name_placeholder':  'Nome da classe',
   'identity.add_class_button':        '+ Adicionar classe',
+  'identity.class_default_name':      'Nova classe',
   'identity.inspiration_label':       'Inspiração',
 
   // Aria labels (accessibility)
