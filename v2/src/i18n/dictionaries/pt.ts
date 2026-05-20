@@ -88,12 +88,19 @@ const pt: Record<keyof typeof en, string> = {
 
   // HP block
   'hp.section_title': 'Pontos de Vida',
-  'hp.heal_button': 'Curar',
-  'hp.damage_button': 'Dano',
+  'hp.current_label': 'Atual',
+  'hp.max_label': 'Máx',
   'hp.temp_label': '+{n} temp',
+  'hp.temp_input_label': 'Temp',
 
   // Hit Dice
   'hit_dice.section_title': 'Dados de Vida',
+  'hit_dice.total_label': 'Total: {current}/{max}',
+
+  // Death saves
+  'deathsaves.section_title': 'Testes de Morte',
+  'deathsaves.success_label': 'Sucessos',
+  'deathsaves.failure_label': 'Falhas',
 
   // Saving throws section
   'saves.section_title': 'Testes de Resistência',
@@ -282,6 +289,12 @@ const pt: Record<keyof typeof en, string> = {
   'aria.save_proficiency_toggle':    'Alternar proficiência do teste de {ability}',
   'aria.skill_proficient_toggle':    'Alternar proficiência em {skill}',
   'aria.skill_expertise_toggle':     'Alternar especialização em {skill}',
+  'aria.hp_current_input':           'PV atual',
+  'aria.hp_max_input':               'PV máximo',
+  'aria.hp_temp_input':              'PV temporário',
+  'aria.deathsave_success_toggle':   'Alternar sucesso {n} de teste de morte',
+  'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
+  'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
