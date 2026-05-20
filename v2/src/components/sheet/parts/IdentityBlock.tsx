@@ -95,12 +95,21 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
   }
 
   function addClass() {
-    const newClass: ClassEntry = { name: '', level: 1, hitDie: 8 }
+    // Generate a unique non-empty default name to preserve className-based linkage
+    const existing = character.classes.map(c => c.name)
+    const baseName = t('identity.class_default_name')
+    let defaultName = baseName
+    let suffix = 2
+    while (existing.includes(defaultName)) {
+      defaultName = `${baseName} ${suffix}`
+      suffix++
+    }
+    const newClass: ClassEntry = { name: defaultName, level: 1, hitDie: 8 }
     onUpdate({
       classes: [...character.classes, newClass],
       hitDice: [
         ...character.hitDice,
-        { className: '', dieSize: 8, current: 1, max: 1 },
+        { className: defaultName, dieSize: 8, current: 1, max: 1 },
       ],
     })
   }
