@@ -150,6 +150,43 @@ const en = {
   'features.label': 'Features & Traits',
   'features.title': 'Features',
   'features.empty': 'No features recorded.',
+  'features.section_title':            'Features and Traits',
+  'features.add_button':               '+ Add feature',
+  'features.name_placeholder':         'Feature name',
+  'features.description_placeholder':  'Description, mechanics...',
+  'features.source_placeholder':       'Source (Class, Race...)',
+  'features.empty_state_hint':         'No features registered.',
+  'features.uses_hint':                'uses',
+  'features.type_passive':             'Passive',
+  'features.type_active':              'Active',
+  'features.type_reaction':            'Reaction',
+  'features.source_class':             'Class',
+  'features.source_race':              'Race',
+  'features.source_background':        'Background',
+  'features.source_feat':              'Feat',
+  'features.source_item':              'Item',
+
+  // Languages
+  'languages.section_title':    'Languages',
+  'languages.add_button':       '+ Add language',
+  'languages.placeholder':      'Language name',
+  'languages.empty_state_hint': 'No languages added yet.',
+
+  // Proficiencies (editable lists)
+  'proficiencies.section_title':         'Proficiencies',
+  'proficiencies.weapons_label':         'Weapons',
+  'proficiencies.armor_label':           'Armor',
+  'proficiencies.tools_label':           'Tools',
+  'proficiencies.other_label':           'Other',
+  'proficiencies.add_button':            '+ Add',
+  'proficiencies.weapons_placeholder':   'Weapon proficiency',
+  'proficiencies.armor_placeholder':     'Armor proficiency',
+  'proficiencies.tools_placeholder':     'Tool proficiency',
+  'proficiencies.other_placeholder':     'Other proficiency',
+  'proficiencies.weapons_empty_hint':    'No weapon proficiencies.',
+  'proficiencies.armor_empty_hint':      'No armor proficiencies.',
+  'proficiencies.tools_empty_hint':      'No tool proficiencies.',
+  'proficiencies.other_empty_hint':      'No other proficiencies.',
 
   // Attacks
   'attacks.section_title': 'ATTACKS',
@@ -294,6 +331,23 @@ const en = {
   'aria.deathsave_success_toggle':   'Toggle death save success {n}',
   'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
   'aria.hitdice_class_input':        'Hit dice remaining for {className}',
+
+  // Languages & Proficiencies
+  'aria.language_input':    'Language {index}',
+  'aria.remove_language':   'Remove language {name}',
+  'aria.weapons_list':   'Weapons proficiencies',
+  'aria.armor_list':     'Armor proficiencies',
+  'aria.tools_list':     'Tools proficiencies',
+  'aria.other_list':     'Other proficiencies',
+
+  // Features
+  'aria.feature_name':        'Feature name',
+  'aria.feature_source':      'Feature source',
+  'aria.feature_type':        'Feature type',
+  'aria.feature_description': 'Feature description',
+  'aria.remove_feature':      'Remove feature {name}',
+  'aria.feature_uses_left':   'Uses remaining',
+  'aria.feature_uses_max':    'Uses maximum',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',
