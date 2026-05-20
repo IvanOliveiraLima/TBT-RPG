@@ -165,6 +165,7 @@ function adaptFeatures(raw: V1Character): Feature[] {
     .map((name, idx) => ({
       id:          `feat-${idx}`,
       name,
+      source:      '',
       description: '',
       type:        'passive' as const,
     }))
@@ -483,23 +484,51 @@ function adaptCurrency(raw: V1Character) {
   }
 }
 
-function joinNonEmpty(a: string | undefined, b: string | undefined, sep: string): string {
-  const aTrim = (a ?? '').trim()
-  const bTrim = (b ?? '').trim()
-  if (aTrim && bTrim) return `${aTrim}${sep}${bTrim}`
-  return aTrim || bTrim
+/**
+ * Converts a free-text proficiency/language string to a structured array.
+ * Splits on common separators (comma, semicolon, newline) and trims.
+ * Empty/non-string input returns empty array.
+ *
+ * Exported for use in DB migration and tests.
+ */
+export function migrateProfString(raw: unknown): string[] {
+  if (!raw || typeof raw !== 'string') return []
+  return raw
+    .split(/[,;\n]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
 }
 
-function adaptProficiencies(raw: V1Character): Character['proficiencies'] {
+function adaptProficienciesAndLanguages(
+  raw: V1Character,
+): { proficiencies: Character['proficiencies']; languages: string[] } {
   const p = raw.page1?.proficiencies
-  if (!p) return { weaponsAndArmor: '', tools: '', languages: '', other: '' }
-  // Legacy schema has weapon_armor combined; standard schema has weapon_profs + armor_profs separate
-  const weaponsAndArmor = p.weapon_armor ?? joinNonEmpty(p.weapon_profs, p.armor_profs, ', ')
+  if (!p) return {
+    proficiencies: { weapons: [], armor: [], tools: [], other: [] },
+    languages: [],
+  }
+
+  let weapons: string[]
+  let armor: string[]
+  if (p.weapon_armor) {
+    // Legacy schema: weapon_armor combines weapons + armor in one field.
+    // Goes entirely into weapons[] — user can re-sort into armor[] manually.
+    weapons = migrateProfString(p.weapon_armor)
+    armor   = []
+  } else {
+    // Standard schema: weapon_profs and armor_profs are kept separate.
+    weapons = migrateProfString(p.weapon_profs)
+    armor   = migrateProfString(p.armor_profs)
+  }
+
   return {
-    weaponsAndArmor: str(weaponsAndArmor),
-    tools:           str(p.tool_profs ?? p.tools),
-    languages:       str(p.language_profs ?? p.languages),
-    other:           str(p.other_profs ?? p.other),
+    proficiencies: {
+      weapons,
+      armor,
+      tools: migrateProfString(p.tool_profs ?? p.tools),
+      other: migrateProfString(p.other_profs ?? p.other),
+    },
+    languages: migrateProfString(p.language_profs ?? p.languages),
   }
 }
 
@@ -633,7 +662,7 @@ export function adaptCharacter(raw: V1Character): Character {
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
     skills,
 
-    proficiencies: adaptProficiencies(raw),
+    ...adaptProficienciesAndLanguages(raw),
 
     attacks: adaptAttacks(raw),
     ...(spells !== undefined ? { spells } : {}),
