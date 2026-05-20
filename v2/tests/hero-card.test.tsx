@@ -15,7 +15,7 @@ const BASE: Character = {
   abilities: { str: 10, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 2,
   hp: { current: 32, max: 32, temp: 0 },
-  hitDice: [{ current: 4, max: 4, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 4, max: 4, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 15, initiative: 4, speed: 35,
   passivePerception: 15, spellSaveDC: 13, inspiration: false,

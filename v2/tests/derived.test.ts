@@ -15,7 +15,7 @@ function makeChar(overrides: Partial<Character> = {}): Character {
     abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     proficiencyBonus: 3,
     hp: { current: 10, max: 10, temp: 0 },
-    hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+    hitDice: [{ className: 'Fighter', current: 5, max: 5, dieSize: 10 }],
     deathSaves: { successes: 0, failures: 0 },
     ac: 10, initiative: 0, speed: 30,
     passivePerception: 10, spellSaveDC: 0, inspiration: false,

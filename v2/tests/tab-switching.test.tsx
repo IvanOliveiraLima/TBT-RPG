@@ -31,7 +31,7 @@ const MOCK_CHARACTER: Character = {
   abilities: { str: 8, dex: 12, con: 14, int: 14, wis: 20, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 56, max: 56, temp: 0 },
-  hitDice: [{ current: 7, max: 7, dieSize: 8 }],
+  hitDice: [{ className: 'Druid', current: 7, max: 7, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14, initiative: 1, speed: 30,
   passivePerception: 18, spellSaveDC: 16, inspiration: false,

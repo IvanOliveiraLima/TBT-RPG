@@ -15,7 +15,7 @@ const BASE: Character = {
   abilities: { str: 14, dex: 10, con: 16, int: 12, wis: 18, cha: 10 },
   proficiencyBonus: 2,
   hp: { current: 24, max: 24, temp: 0 },
-  hitDice: [{ current: 3, max: 3, dieSize: 8 }],
+  hitDice: [{ className: 'Cleric', current: 3, max: 3, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 0, speed: 25,
   passivePerception: 14, spellSaveDC: 14, inspiration: false,

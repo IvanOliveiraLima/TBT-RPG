@@ -24,7 +24,7 @@ const KAEL: Character = {
   abilities: { str: 8, dex: 14, con: 12, int: 12, wis: 10, cha: 18 },
   proficiencyBonus: 3,
   hp: { current: 35, max: 35, temp: 0 },
-  hitDice: [{ current: 5, max: 5, dieSize: 8 }],
+  hitDice: [{ className: 'Bard', current: 5, max: 5, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14,
   initiative: 2,

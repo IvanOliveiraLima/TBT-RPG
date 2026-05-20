@@ -16,7 +16,7 @@ const BASE: Character = {
   abilities: { str: 18, dex: 14, con: 16, int: 10, wis: 12, cha: 8 },
   proficiencyBonus: 3,
   hp: { current: 50, max: 50, temp: 0 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Fighter', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 18, initiative: 2, speed: 30,
   passivePerception: 11, spellSaveDC: 0, inspiration: false,

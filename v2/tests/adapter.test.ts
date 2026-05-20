@@ -693,7 +693,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     expect(result.hitDice).toHaveLength(1)
-    expect(result.hitDice[0]).toEqual({ current: 5, max: 5, dieSize: 8 })
+    expect(result.hitDice[0]).toEqual({ className: 'Druid', current: 5, max: 5, dieSize: 8 })
   })
 
   it('Ranger 4 with blank v1 hit_dice → hitDice[0] = { current:4, max:4, dieSize:10 }', () => {
@@ -701,7 +701,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
       page1: { basic_info: { classes: [{ name: 'Ranger', level: '4' }] } },
     }
     const result = adaptCharacter(raw)
-    expect(result.hitDice[0]).toEqual({ current: 4, max: 4, dieSize: 10 })
+    expect(result.hitDice[0]).toEqual({ className: 'Ranger', current: 4, max: 4, dieSize: 10 })
   })
 
   it('uses current_hd from v1 when it is explicitly set', () => {
@@ -713,7 +713,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     // current comes from v1 (3 dice spent), max and dieSize from class
-    expect(result.hitDice[0]).toEqual({ current: 3, max: 5, dieSize: 10 })
+    expect(result.hitDice[0]).toEqual({ className: 'Fighter', current: 3, max: 5, dieSize: 10 })
   })
 
   it('falls back to max when current_hd is empty string', () => {
@@ -724,7 +724,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.hitDice[0]).toEqual({ current: 6, max: 6, dieSize: 8 })
+    expect(result.hitDice[0]).toEqual({ className: 'Cleric', current: 6, max: 6, dieSize: 8 })
   })
 
   it('multiclass Fighter 3 / Rogue 2 → two hit dice entries', () => {
@@ -740,8 +740,8 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     expect(result.hitDice).toHaveLength(2)
-    expect(result.hitDice[0]).toEqual({ current: 3, max: 3, dieSize: 10 }) // Fighter d10
-    expect(result.hitDice[1]).toEqual({ current: 2, max: 2, dieSize: 8 })  // Rogue d8
+    expect(result.hitDice[0]).toEqual({ className: 'Fighter', current: 3, max: 3, dieSize: 10 }) // Fighter d10
+    expect(result.hitDice[1]).toEqual({ className: 'Rogue', current: 2, max: 2, dieSize: 8 })  // Rogue d8
   })
 
   it('multiclass uses max for current (no per-class tracking in v1)', () => {
