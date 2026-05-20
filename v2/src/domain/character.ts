@@ -111,7 +111,7 @@ export interface Character {
     max: number
     temp: number
   }
-  hitDice: { current: number; max: number; dieSize: number }[]
+  hitDice: { className: string; current: number; max: number; dieSize: number }[]
   deathSaves: { successes: number; failures: number }
 
   // Combat
