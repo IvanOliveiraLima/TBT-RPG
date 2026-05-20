@@ -21,14 +21,14 @@ import type { Character } from '@/domain/character'
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 2
+const V2_DB_VER  = 3
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
 
 function openV2() {
   return openDB(V2_DB_NAME, V2_DB_VER, {
-    upgrade(db, oldVersion) {
+    async upgrade(db, oldVersion, _newVersion, transaction) {
       if (oldVersion < 1) {
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
       }
@@ -41,6 +41,25 @@ function openV2() {
           db.deleteObjectStore(V2_STORE)
         }
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
+      }
+      if (oldVersion < 3) {
+        // Add className to each hitDice entry, deriving it from classes[i].name.
+        // Characters stored in v2 DB have hitDice without className (C.1.c.4 shape change).
+        // For fresh installs (store just recreated above), cursor is null and this loop is a no-op.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          if (Array.isArray(char.hitDice)) {
+            const classes = (char.classes as Array<{ name: string }> | undefined) ?? []
+            char.hitDice = (char.hitDice as Array<Record<string, unknown>>).map((hd, i) => ({
+              className: classes[i]?.name ?? '',
+              ...hd,
+            }))
+            await cursor.update(char)
+          }
+          cursor = await cursor.continue()
+        }
       }
     },
   })
