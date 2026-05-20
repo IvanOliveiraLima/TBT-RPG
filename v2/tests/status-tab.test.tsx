@@ -31,7 +31,7 @@ const EIRA: Character = {
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
   passivePerception: 16, spellSaveDC: 14, inspiration: false,
@@ -297,8 +297,9 @@ describe('StatusTab cascade — ability score editing', () => {
     // EIRA hp.max = 42. Changing CON should NOT change HP max.
     const conInputs = screen.getAllByTestId('attr-con-score')
     fireEvent.change(conInputs[0]!, { target: { value: '20' } })
-    // HP max still shows 42
-    expect(screen.getAllByText('/ 42').length).toBeGreaterThanOrEqual(1)
+    // HP max input still shows 42 (not auto-recalculated)
+    const maxInputs = screen.getAllByTestId('hp-max-input')
+    expect((maxInputs[0] as HTMLInputElement).value).toBe('42')
   })
 
   it('changing STR score updates proficiency bonus for level 5 character', () => {

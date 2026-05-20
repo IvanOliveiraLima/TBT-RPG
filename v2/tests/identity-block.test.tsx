@@ -16,7 +16,7 @@ const BASE: Character = {
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 0 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
   passivePerception: 16, spellSaveDC: 14, inspiration: false,
@@ -223,21 +223,23 @@ describe('IdentityBlock', () => {
     expect(screen.getByTestId('identity-class-row-1')).toBeDefined()
   })
 
-  it('updating class name calls onUpdate with updated classes array', () => {
+  it('updating class name calls onUpdate with updated classes and hitDice', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.change(screen.getByTestId('identity-class-name-0'), { target: { value: 'Druid' } })
     expect(onUpdate).toHaveBeenCalledWith({
-      classes: [{ name: 'Druid', level: 5, hitDie: 10 }],
+      classes: [{ name: 'Druid', level: 5, hitDie: 8 }],  // hitDie updated via getHitDie('Druid')
+      hitDice: [{ className: 'Druid', current: 5, max: 5, dieSize: 8 }],
     })
   })
 
-  it('updating class level calls onUpdate with updated classes array', () => {
+  it('updating class level calls onUpdate with updated classes and hitDice', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.change(screen.getByTestId('identity-class-level-0'), { target: { value: '8' } })
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Ranger', level: 8, hitDie: 10 }],
+      hitDice: [{ className: 'Ranger', current: 5, max: 8, dieSize: 10 }],
     })
   })
 
@@ -249,7 +251,7 @@ describe('IdentityBlock', () => {
     expect(call.classes).toHaveLength(2)
   })
 
-  it('removing a class calls onUpdate with filtered classes array', () => {
+  it('removing a class calls onUpdate with filtered classes and hitDice', () => {
     const onUpdate = vi.fn()
     const multiclass = {
       ...BASE,
@@ -257,11 +259,16 @@ describe('IdentityBlock', () => {
         { name: 'Fighter', level: 3, hitDie: 10 },
         { name: 'Wizard', level: 2, hitDie: 6 },
       ],
+      hitDice: [
+        { className: 'Fighter', current: 3, max: 3, dieSize: 10 },
+        { className: 'Wizard', current: 2, max: 2, dieSize: 6 },
+      ],
     }
     renderWithI18n(<IdentityBlock character={multiclass} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('identity-remove-class-1'))
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Fighter', level: 3, hitDie: 10 }],
+      hitDice: [{ className: 'Fighter', current: 3, max: 3, dieSize: 10 }],
     })
   })
 
@@ -294,12 +301,15 @@ describe('IdentityBlock', () => {
     expect(screen.getByTestId('identity-add-class').textContent).toBe('+ Add class')
   })
 
-  it('class level clamps to minimum 1 on invalid input', () => {
+  it('class level allows intermediate empty state without calling onUpdate', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // NumberField allows empty intermediate state — onChange is not called on empty input
     fireEvent.change(screen.getByTestId('identity-class-level-0'), { target: { value: '' } })
-    const call = onUpdate.mock.calls[0]![0] as { classes: Array<{ level: number }> }
-    expect(call.classes[0]!.level).toBe(1)
+    expect(onUpdate).not.toHaveBeenCalled()
+    // On blur, input restores to last valid value
+    fireEvent.blur(screen.getByTestId('identity-class-level-0'))
+    expect((screen.getByTestId('identity-class-level-0') as HTMLInputElement).value).toBe('5')
   })
 
   // ── inspiration toggle ────────────────────────────────────────────────────
@@ -318,5 +328,40 @@ describe('IdentityBlock', () => {
     )
     fireEvent.click(screen.getByTestId('identity-inspiration-checkbox'))
     expect(onUpdate).toHaveBeenCalledWith({ inspiration: false })
+  })
+
+  // ── hitDice sync on class changes ────────────────────────────────────────
+
+  it('adding a class also adds a hitDice entry', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('identity-add-class'))
+    const call = onUpdate.mock.calls[0]![0] as { hitDice: unknown[] }
+    expect(call.hitDice).toHaveLength(2)
+  })
+
+  it('reducing class level clamps hitDice current to new level', () => {
+    const onUpdate = vi.fn()
+    const char = {
+      ...BASE,
+      classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
+      hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
+    }
+    renderWithI18n(<IdentityBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('identity-class-level-0'), { target: { value: '3' } })
+    const call = onUpdate.mock.calls[0]![0] as { hitDice: { current: number; max: number }[] }
+    expect(call.hitDice[0]!.max).toBe(3)
+    expect(call.hitDice[0]!.current).toBe(3)  // clamped from 5 to new max 3
+  })
+
+  it('renaming a class updates hitDice className and dieSize', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('identity-class-name-0'), { target: { value: 'Wizard' } })
+    const call = onUpdate.mock.calls[0]![0] as {
+      hitDice: { className: string; dieSize: number }[]
+    }
+    expect(call.hitDice[0]!.className).toBe('Wizard')
+    expect(call.hitDice[0]!.dieSize).toBe(6)  // Wizard uses d6
   })
 })
