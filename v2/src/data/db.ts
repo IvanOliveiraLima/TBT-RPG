@@ -65,6 +65,29 @@ function openV2() {
   })
 }
 
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+
+/**
+ * Remove hitDice entries that are orphaned from the classes array.
+ *
+ * This handles characters that were persisted before the C.1.c.4 follow-up
+ * fix: when addClass created entries with className '' and a subsequent rename
+ * left the hitDice entry behind with an empty className. Cleaning on read is
+ * O(n) over hitDice.length (≤ 3 entries in practice) and is a no-op for
+ * characters that are already consistent.
+ *
+ * The next character save will persist the cleaned shape, self-healing the DB.
+ */
+function normalizeHitDice(char: Character): Character {
+  if (!Array.isArray(char.classes) || !Array.isArray(char.hitDice)) return char
+  const classNames = new Set(char.classes.map(c => c.name).filter(n => n !== ''))
+  const cleaned = char.hitDice.filter(
+    hd => hd.className !== '' && classNames.has(hd.className),
+  )
+  if (cleaned.length === char.hitDice.length) return char
+  return { ...char, hitDice: cleaned }
+}
+
 /* ── Public API ───────────────────────────────────────────────────────── */
 
 /**
@@ -75,7 +98,7 @@ export async function listCharacters(): Promise<Character[]> {
   const db = await openV2()
   try {
     const all = await db.getAll(V2_STORE) as Character[]
-    return all.sort((a, b) => b.updatedAt - a.updatedAt)
+    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice)
   } finally {
     db.close()
   }
@@ -89,7 +112,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
   const db = await openV2()
   try {
     const result = await db.get(V2_STORE, id) as Character | undefined
-    return result ?? null
+    return result != null ? normalizeHitDice(result) : null
   } finally {
     db.close()
   }
