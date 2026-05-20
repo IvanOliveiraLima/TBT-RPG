@@ -148,4 +148,61 @@ describe('v2-native db (Character persisted directly)', () => {
       await expect(deleteCharacter('nonexistent')).resolves.toBeUndefined()
     })
   })
+
+  // ── hitDice normalization ────────────────────────────────────────────────
+
+  describe('hitDice normalization on read', () => {
+    it('listCharacters removes hitDice entries with empty className', async () => {
+      store.set('char_001', makeChar({
+        classes: [{ name: 'Fighter', level: 3, hitDie: 10 }],
+        hitDice: [
+          { className: '', current: 1, max: 1, dieSize: 8 },
+          { className: 'Fighter', current: 3, max: 3, dieSize: 10 },
+        ],
+      }))
+      const result = await listCharacters()
+      expect(result[0]!.hitDice).toHaveLength(1)
+      expect(result[0]!.hitDice[0]!.className).toBe('Fighter')
+    })
+
+    it('listCharacters removes hitDice entries orphaned from classes', async () => {
+      store.set('char_001', makeChar({
+        classes: [{ name: 'Fighter', level: 3, hitDie: 10 }],
+        hitDice: [
+          { className: 'Fighter', current: 3, max: 3, dieSize: 10 },
+          { className: 'Cleric', current: 2, max: 2, dieSize: 8 },  // orphan
+        ],
+      }))
+      const result = await listCharacters()
+      expect(result[0]!.hitDice).toHaveLength(1)
+      expect(result[0]!.hitDice[0]!.className).toBe('Fighter')
+    })
+
+    it('listCharacters leaves consistent hitDice unchanged', async () => {
+      store.set('char_001', makeChar({
+        classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
+        hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
+      }))
+      const result = await listCharacters()
+      expect(result[0]!.hitDice).toHaveLength(1)
+      expect(result[0]!.hitDice[0]!.className).toBe('Ranger')
+    })
+
+    it('getCharacter removes hitDice entries with empty className', async () => {
+      store.set('char_001', makeChar({
+        classes: [{ name: 'Wizard', level: 4, hitDie: 6 }],
+        hitDice: [
+          { className: '', current: 1, max: 1, dieSize: 8 },
+          { className: 'Wizard', current: 4, max: 4, dieSize: 6 },
+        ],
+      }))
+      const result = await getCharacter('char_001')
+      expect(result!.hitDice).toHaveLength(1)
+      expect(result!.hitDice[0]!.className).toBe('Wizard')
+    })
+
+    it('getCharacter returns null for missing id (unaffected by normalization)', async () => {
+      expect(await getCharacter('missing')).toBeNull()
+    })
+  })
 })

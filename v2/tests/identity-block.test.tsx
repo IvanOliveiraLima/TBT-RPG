@@ -365,3 +365,84 @@ describe('IdentityBlock', () => {
     expect(call.hitDice[0]!.dieSize).toBe(6)  // Wizard uses d6
   })
 })
+
+// ── Edge cases: className-based sync invariants ───────────────────────────────
+
+describe('IdentityBlock — class/hitDice sync edge cases', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('adding a class uses a non-empty default name (PT)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('identity-add-class'))
+    const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[]; hitDice: { className: string }[] }
+    expect(call.classes.at(-1)!.name).not.toBe('')
+    expect(call.hitDice.at(-1)!.className).not.toBe('')
+  })
+
+  it('adding a class uses a non-empty default name (EN)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<IdentityBlock character={BASE} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('identity-add-class'))
+    const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[]; hitDice: { className: string }[] }
+    expect(call.classes.at(-1)!.name).toBe('New class')
+    expect(call.hitDice.at(-1)!.className).toBe('New class')
+  })
+
+  it('adding two classes generates distinct non-empty default names', () => {
+    const onUpdate = vi.fn()
+    // Simulate character that already has the first default ("Nova classe") as a class
+    const charWithDefault = {
+      ...BASE,
+      classes: [{ name: 'Nova classe', level: 1, hitDie: 8 }],
+      hitDice: [{ className: 'Nova classe', current: 1, max: 1, dieSize: 8 }],
+    }
+    renderWithI18n(<IdentityBlock character={charWithDefault} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('identity-add-class'))
+    const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[] }
+    // Second default must not collide with "Nova classe"
+    expect(call.classes.at(-1)!.name).toBe('Nova classe 2')
+  })
+
+  it('removing a class removes its hitDice entry by name (not by index)', () => {
+    const onUpdate = vi.fn()
+    const multiclass = {
+      ...BASE,
+      classes: [
+        { name: 'Cleric', level: 5, hitDie: 8 },
+        { name: 'Fighter', level: 3, hitDie: 10 },
+      ],
+      hitDice: [
+        { className: 'Cleric', current: 5, max: 5, dieSize: 8 },
+        { className: 'Fighter', current: 3, max: 3, dieSize: 10 },
+      ],
+    }
+    renderWithI18n(<IdentityBlock character={multiclass} onUpdate={onUpdate} />, 'pt')
+    // Remove Cleric (index 0)
+    fireEvent.click(screen.getByTestId('identity-remove-class-0'))
+    const call = onUpdate.mock.calls[0]![0] as {
+      classes: { name: string }[]
+      hitDice: { className: string }[]
+    }
+    expect(call.classes).toHaveLength(1)
+    expect(call.classes[0]!.name).toBe('Fighter')
+    expect(call.hitDice).toHaveLength(1)
+    expect(call.hitDice[0]!.className).toBe('Fighter')
+  })
+
+  it('renaming a class during incremental typing keeps hitDice in sync', () => {
+    // Simulates: type 'C' → 'Cl' → 'Cleric'. Each rename should track correctly.
+    const onUpdate = vi.fn()
+    const char = {
+      ...BASE,
+      classes: [{ name: 'C', level: 3, hitDie: 8 }],
+      hitDice: [{ className: 'C', current: 3, max: 3, dieSize: 8 }],
+    }
+    renderWithI18n(<IdentityBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('identity-class-name-0'), { target: { value: 'Cl' } })
+    const call = onUpdate.mock.calls[0]![0] as { hitDice: { className: string }[] }
+    expect(call.hitDice[0]!.className).toBe('Cl')
+    // No orphaned entries
+    expect(call.hitDice).toHaveLength(1)
+  })
+})
