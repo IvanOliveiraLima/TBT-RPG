@@ -42,7 +42,7 @@ export function StatusTab() {
           <IdentityBlock character={character} onUpdate={onUpdate} />
         </div>
 
-        <HpBlock character={character} />
+        <HpBlock character={character} onUpdate={onUpdate} />
         <CombatStrip character={character} cols={3} />
 
         {/* Atributos */}
@@ -94,7 +94,7 @@ export function StatusTab() {
         <div className="grid grid-cols-3" style={{ gap: 14 }}>
           {/* Row 1: HpBlock (1 col) + Combate card (2 cols) */}
           <div>
-            <HpBlock character={character} />
+            <HpBlock character={character} onUpdate={onUpdate} />
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <div style={{ ...CARD, height: '100%' }}>
