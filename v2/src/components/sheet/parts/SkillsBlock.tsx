@@ -1,4 +1,5 @@
-import type { Character } from '@/domain/character'
+import type React from 'react'
+import type { Character, SkillState } from '@/domain/character'
 import { skillBonus, proficiencyBonus, formatSigned } from '@/domain/calculations'
 import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
@@ -7,6 +8,7 @@ import { Pip } from '../ui/Pip'
 
 interface SkillsBlockProps {
   character: Character
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 // Maps English display names (from domain) to i18n key suffixes
@@ -31,13 +33,49 @@ const SKILL_DISPLAY_TO_KEY: Record<string, string> = {
   'Survival':       'survival',
 }
 
-export function SkillsBlock({ character }: SkillsBlockProps) {
+const PIP_BUTTON: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: '8px',
+  margin: '-8px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 4,
+}
+
+export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
   const { t } = useTranslation()
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
 
   function skillLabel(name: string): string {
     const k = SKILL_DISPLAY_TO_KEY[name]
     return k !== undefined ? t(`skills.${k}` as TranslationKey) : name
+  }
+
+  function handleToggleProficient(s: SkillState) {
+    if (!onUpdate) return
+    const newProficient = !s.proficient
+    // D&D invariant: disabling proficient also disables expertise
+    const newExpertise = newProficient ? s.expertise : false
+    onUpdate({
+      skills: character.skills.map(sk =>
+        sk.name === s.name ? { ...sk, proficient: newProficient, expertise: newExpertise } : sk,
+      ),
+    })
+  }
+
+  function handleToggleExpertise(s: SkillState) {
+    if (!onUpdate) return
+    const newExpertise = !s.expertise
+    // D&D invariant: enabling expertise also enables proficient
+    const newProficient = newExpertise ? true : s.proficient
+    onUpdate({
+      skills: character.skills.map(sk =>
+        sk.name === s.name ? { ...sk, proficient: newProficient, expertise: newExpertise } : sk,
+      ),
+    })
   }
 
   const sorted = [...character.skills].sort((a, b) =>
@@ -53,6 +91,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
         const bonus = skillBonus(character.abilities[s.ability], s.proficient, s.expertise, profBonus)
         const active = s.proficient || s.expertise
         const valueColor = s.expertise ? '#8B1A2E' : s.proficient ? '#D4A017' : '#F4EFE0'
+        const label = skillLabel(s.name)
 
         return (
           <div
@@ -67,16 +106,36 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
             }}
           >
             <div style={{ display: 'flex', gap: 3 }}>
-              <Pip
-                state={s.proficient ? 'filled' : 'empty'}
-                color="gold"
-                size="sm"
-              />
-              <Pip
-                state={s.expertise ? 'filled' : 'empty'}
-                color="ruby"
-                size="sm"
-              />
+              <button
+                type="button"
+                data-testid={`skill-${s.name}-prof-toggle`}
+                disabled={!onUpdate}
+                aria-pressed={s.proficient}
+                aria-label={t('aria.skill_proficient_toggle', { skill: label })}
+                onClick={() => { handleToggleProficient(s) }}
+                style={{ ...PIP_BUTTON, cursor: onUpdate ? 'pointer' : 'default' }}
+              >
+                <Pip
+                  state={s.proficient ? 'filled' : 'empty'}
+                  color="gold"
+                  size="sm"
+                />
+              </button>
+              <button
+                type="button"
+                data-testid={`skill-${s.name}-exp-toggle`}
+                disabled={!onUpdate}
+                aria-pressed={s.expertise}
+                aria-label={t('aria.skill_expertise_toggle', { skill: label })}
+                onClick={() => { handleToggleExpertise(s) }}
+                style={{ ...PIP_BUTTON, cursor: onUpdate ? 'pointer' : 'default' }}
+              >
+                <Pip
+                  state={s.expertise ? 'filled' : 'empty'}
+                  color="ruby"
+                  size="sm"
+                />
+              </button>
             </div>
             <span
               style={{
@@ -86,7 +145,7 @@ export function SkillsBlock({ character }: SkillsBlockProps) {
                 fontWeight: active ? 500 : 400,
               }}
             >
-              {skillLabel(s.name)}
+              {label}
             </span>
             <span
               style={{

@@ -63,7 +63,7 @@ export function StatusTab() {
         {/* Skills */}
         <div style={CARD}>
           <Label>{t('skills.label')}</Label>
-          <SkillsBlock character={character} />
+          <SkillsBlock character={character} onUpdate={onUpdate} />
         </div>
 
         {/* Features & Traits */}
@@ -116,7 +116,7 @@ export function StatusTab() {
         <div className="grid grid-cols-2" style={{ gap: 14 }}>
           <div style={{ ...CARD, maxHeight: 420, overflowY: 'auto' }}>
             <Label>{t('skills.label')}</Label>
-            <SkillsBlock character={character} />
+            <SkillsBlock character={character} onUpdate={onUpdate} />
           </div>
           <div className="flex flex-col" style={{ gap: 14 }}>
             <div style={CARD}>
