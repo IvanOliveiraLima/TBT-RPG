@@ -28,7 +28,7 @@ const BASE: Character = {
     { ability: 'cha', proficient: false, bonus: 0 },
   ],
   skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },

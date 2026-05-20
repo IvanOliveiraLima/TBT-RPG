@@ -21,7 +21,7 @@ const KANAAN: Character = {
   ac: 15, initiative: 3, speed: 40,
   passivePerception: 15, spellSaveDC: 0, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   inventory: [
     { id: 'inv_0', name: 'Shortsword',      quantity: 1, weight: 2   },

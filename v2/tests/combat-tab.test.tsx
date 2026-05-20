@@ -45,7 +45,7 @@ const KAEL: Character = {
   inspiration: false,
   savingThrows: [],
   skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [
     makeAttack({ id: 'atk_0', name: 'Rapier', baseStat: 'dex', bonus: '+5', damage: '1d8+2', damageType: 'Piercing', rollType: 'attack' }),
     makeAttack({ id: 'atk_1', name: 'Vicious Mockery', baseStat: 'cha', bonus: 'DC 14', damage: '2d4', damageType: 'Psychic', rollType: 'dc' }),
