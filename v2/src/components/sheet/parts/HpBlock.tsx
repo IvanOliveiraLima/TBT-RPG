@@ -1,16 +1,56 @@
+import type React from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { Card } from '../ui/Card'
-import { Badge } from '../ui/Badge'
 import { HpBar } from './HpBar'
 import { HitDicePool } from './HitDicePool'
 import { DeathSaves } from './DeathSaves'
+import { NumberField } from '@/components/primitives/NumberField'
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 9,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+  color: '#7A7788',
+  display: 'block',
+  marginBottom: 3,
+}
+
+const HP_INPUT_STYLE: React.CSSProperties = {
+  width: '100%',
+  background: 'transparent',
+  border: 'none',
+  outline: 'none',
+  padding: 0,
+  margin: 0,
+  textAlign: 'center',
+  fontFamily: "'Cinzel', Georgia, serif",
+  fontSize: 28,
+  fontWeight: 600,
+  color: '#F4EFE0',
+  fontVariantNumeric: 'tabular-nums',
+  MozAppearance: 'textfield',
+}
+
+const HP_INPUT_STYLE_LOW: React.CSSProperties = {
+  ...HP_INPUT_STYLE,
+  color: '#E24B4A',
+  textShadow: '0 0 12px rgba(226,75,74,0.5)',
+}
+
+const TEMP_INPUT_STYLE: React.CSSProperties = {
+  ...HP_INPUT_STYLE,
+  fontSize: 22,
+  color: '#A07FC8',
+}
 
 interface HpBlockProps {
   character: Character
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
-export function HpBlock({ character }: HpBlockProps) {
+export function HpBlock({ character, onUpdate }: HpBlockProps) {
   const { t } = useTranslation()
   const { hp, deathSaves, hitDice } = character
   const current = hp.current
@@ -52,72 +92,64 @@ export function HpBlock({ character }: HpBlockProps) {
         </div>
       </div>
 
-      {/* Big HP numbers */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10 }}>
-        <div
-          data-testid="hp-current"
-          data-low={low ? 'true' : 'false'}
-          style={{
-            fontFamily: "'Cinzel', Georgia, serif",
-            fontSize: 42,
-            fontWeight: 600,
-            color: low ? '#E24B4A' : '#F4EFE0',
-            lineHeight: 1,
-            fontVariantNumeric: 'tabular-nums',
-            textShadow: low
-              ? '0 0 18px rgba(226,75,74,0.6)'
-              : '0 2px 8px rgba(0,0,0,0.6)',
-          }}
-        >
-          {max > 0 ? current : '—'}
+      {/* HP inputs row: Current | Max | Temp */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: 8,
+          marginBottom: 10,
+        }}
+        data-low={low ? 'true' : 'false'}
+        data-testid="hp-inputs"
+      >
+        {/* Current HP */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={LABEL_STYLE}>{t('hp.current_label')}</span>
+          <NumberField
+            value={current}
+            min={0}
+            max={max > 0 ? max + hp.temp : 999}
+            onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, current: n } }) }}
+            aria-label={t('aria.hp_current_input')}
+            data-testid="hp-current-input"
+            style={low ? HP_INPUT_STYLE_LOW : HP_INPUT_STYLE}
+            disabled={!onUpdate}
+          />
         </div>
-        <div style={{ color: '#7A7788', fontSize: 18 }}>/ {max > 0 ? max : '—'}</div>
-        {hp.temp > 0 && (
-          <div style={{ marginLeft: 'auto' }}>
-            <Badge variant="purple">{t('hp.temp_label', { n: String(hp.temp) })}</Badge>
-          </div>
-        )}
+
+        {/* Max HP */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={LABEL_STYLE}>{t('hp.max_label')}</span>
+          <NumberField
+            value={max}
+            min={1}
+            max={999}
+            onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, max: n } }) }}
+            aria-label={t('aria.hp_max_input')}
+            data-testid="hp-max-input"
+            style={HP_INPUT_STYLE}
+            disabled={!onUpdate}
+          />
+        </div>
+
+        {/* Temp HP */}
+        <div style={{ textAlign: 'center' }}>
+          <span style={LABEL_STYLE}>{t('hp.temp_input_label')}</span>
+          <NumberField
+            value={hp.temp}
+            min={0}
+            max={999}
+            onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, temp: n } }) }}
+            aria-label={t('aria.hp_temp_input')}
+            data-testid="hp-temp-input"
+            style={TEMP_INPUT_STYLE}
+            disabled={!onUpdate}
+          />
+        </div>
       </div>
 
       <HpBar current={current} max={max} temp={hp.temp} size="lg" />
-
-      {/* Heal / Damage buttons */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button
-          onClick={() => alert('Edição virá na Fase C')}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: '1px solid #2A2537',
-            color: '#5DCAA5',
-            borderRadius: 8,
-            padding: '8px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: "'Inter', system-ui, sans-serif",
-          }}
-        >
-          ＋ {t('hp.heal_button')}
-        </button>
-        <button
-          onClick={() => alert('Edição virá na Fase C')}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: '1px solid #2A2537',
-            color: '#E24B4A',
-            borderRadius: 8,
-            padding: '8px',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: "'Inter', system-ui, sans-serif",
-          }}
-        >
-          − {t('hp.damage_button')}
-        </button>
-      </div>
 
       {/* Hit Dice + Death Saves grid */}
       <div
@@ -129,8 +161,22 @@ export function HpBlock({ character }: HpBlockProps) {
           borderTop: '1px solid #2A2537',
         }}
       >
-        <HitDicePool hitDice={hitDice} />
-        <DeathSaves successes={deathSaves.successes} failures={deathSaves.failures} />
+        <HitDicePool
+          hitDice={hitDice}
+          {...(onUpdate !== undefined
+            ? { onUpdate: (updated) => onUpdate({ hitDice: updated }) }
+            : {})}
+        />
+        <DeathSaves
+          successes={deathSaves.successes}
+          failures={deathSaves.failures}
+          {...(onUpdate !== undefined
+            ? {
+                onUpdate: (ds) =>
+                  onUpdate({ deathSaves: ds }),
+              }
+            : {})}
+        />
       </div>
     </Card>
   )

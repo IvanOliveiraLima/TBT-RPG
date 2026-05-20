@@ -6,12 +6,17 @@ interface HpBarProps {
 }
 
 export function HpBar({ current, max, temp = 0, size = 'md' }: HpBarProps) {
-  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
-  const low = pct < 30
-  const tempPct = max > 0 ? Math.min(100 - pct, (temp / max) * 100) : 0
-  const barH = size === 'sm' ? 10 : size === 'lg' ? 20 : 14
+  // Low detection is based on current / max (temp HP is a buffer, not true health)
+  const healthPct = max > 0 ? (current / max) * 100 : 0
+  const low = healthPct < 30
 
-  const color = low ? '#E24B4A' : pct < 60 ? '#D4A017' : '#5DCAA5'
+  // Visual widths use effectiveMax so the bar always shows the full HP+temp capacity
+  const effectiveMax = max + temp
+  const hpWidthPct = effectiveMax > 0 ? Math.max(0, Math.min(100, (current / effectiveMax) * 100)) : 0
+  const tempWidthPct = effectiveMax > 0 ? (temp / effectiveMax) * 100 : 0
+
+  const barH = size === 'sm' ? 10 : size === 'lg' ? 20 : 14
+  const color = low ? '#E24B4A' : healthPct < 60 ? '#D4A017' : '#5DCAA5'
 
   return (
     <div
@@ -33,7 +38,7 @@ export function HpBar({ current, max, temp = 0, size = 'md' }: HpBarProps) {
         style={{
           position: 'absolute',
           inset: 0,
-          width: `${pct}%`,
+          width: `${hpWidthPct}%`,
           background: `linear-gradient(90deg, ${color}, ${color}dd)`,
           borderRadius: 999,
           transition: 'width 400ms ease',
@@ -43,15 +48,16 @@ export function HpBar({ current, max, temp = 0, size = 'md' }: HpBarProps) {
           animation: low ? 'hp-pulse-low 1.8s ease-in-out infinite' : 'none',
         }}
       />
-      {/* Temp HP stripe */}
+      {/* Temp HP stripe — starts immediately after the HP fill */}
       {temp > 0 && (
         <div
+          data-testid="hp-bar-temp"
           style={{
             position: 'absolute',
             top: 0,
             bottom: 0,
-            left: `${pct}%`,
-            width: `${tempPct}%`,
+            left: `${hpWidthPct}%`,
+            width: `${tempWidthPct}%`,
             background:
               'repeating-linear-gradient(45deg, #5B3FA8, #5B3FA8 4px, #6F4DC9 4px, #6F4DC9 8px)',
             opacity: 0.85,

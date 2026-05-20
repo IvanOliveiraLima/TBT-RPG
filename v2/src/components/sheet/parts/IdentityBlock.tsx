@@ -6,6 +6,8 @@ import { CANONICAL_CLASSES } from '@/data/canonical/classes'
 import { CANONICAL_BACKGROUNDS } from '@/data/canonical/backgrounds'
 import { ALIGNMENTS } from '@/data/canonical/alignments'
 import type { Alignment } from '@/data/canonical/alignments'
+import { NumberField } from '@/components/primitives/NumberField'
+import { getHitDie } from '@/domain/classes'
 
 const INPUT_RESET: React.CSSProperties = {
   background: 'transparent',
@@ -69,23 +71,55 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
 
   // ── Classes ─────────────────────────────────────────────────────────────────
   function updateClass(index: number, partial: Partial<ClassEntry>) {
-    const newClasses = character.classes.map((c, i) =>
-      i === index ? { ...c, ...partial } : c
-    )
-    onUpdate({ classes: newClasses })
+    const oldCls = character.classes[index]!
+    let newCls = { ...oldCls, ...partial }
+    // Keep ClassEntry.hitDie in sync with the class name
+    if (partial.name !== undefined && partial.name !== oldCls.name) {
+      newCls = { ...newCls, hitDie: getHitDie(newCls.name) }
+    }
+    const newClasses = character.classes.map((c, i) => i === index ? newCls : c)
+
+    // Sync hitDice: update the entry that matched the old class name
+    const newHitDice = character.hitDice.map(hd => {
+      if (hd.className !== oldCls.name) return hd
+      return {
+        ...hd,
+        className: newCls.name,
+        dieSize: getHitDie(newCls.name),
+        max: newCls.level,
+        current: Math.min(hd.current, newCls.level),
+      }
+    })
+
+    onUpdate({ classes: newClasses, hitDice: newHitDice })
   }
 
   function addClass() {
-    const newClasses: ClassEntry[] = [
-      ...character.classes,
-      { name: '', level: 1, hitDie: 8 },
-    ]
-    onUpdate({ classes: newClasses })
+    // Generate a unique non-empty default name to preserve className-based linkage
+    const existing = character.classes.map(c => c.name)
+    const baseName = t('identity.class_default_name')
+    let defaultName = baseName
+    let suffix = 2
+    while (existing.includes(defaultName)) {
+      defaultName = `${baseName} ${suffix}`
+      suffix++
+    }
+    const newClass: ClassEntry = { name: defaultName, level: 1, hitDie: 8 }
+    onUpdate({
+      classes: [...character.classes, newClass],
+      hitDice: [
+        ...character.hitDice,
+        { className: defaultName, dieSize: 8, current: 1, max: 1 },
+      ],
+    })
   }
 
   function removeClass(index: number) {
-    const newClasses = character.classes.filter((_, i) => i !== index)
-    onUpdate({ classes: newClasses })
+    const removedName = character.classes[index]?.name ?? ''
+    onUpdate({
+      classes: character.classes.filter((_, i) => i !== index),
+      hitDice: character.hitDice.filter(hd => hd.className !== removedName),
+    })
   }
 
   return (
@@ -172,15 +206,11 @@ export function IdentityBlock({ character, onUpdate }: IdentityBlockProps) {
               style={{ ...FIELD_INPUT, flex: 1 }}
               data-testid={`identity-class-name-${i}`}
             />
-            <input
-              type="number"
-              min="1"
-              max="20"
+            <NumberField
               value={cls.level}
-              onChange={e => {
-                const val = parseInt(e.target.value, 10)
-                updateClass(i, { level: Number.isNaN(val) ? 1 : Math.max(1, Math.min(20, val)) })
-              }}
+              min={1}
+              max={20}
+              onChange={n => updateClass(i, { level: n })}
               aria-label={t('aria.class_level_input', { index: String(i + 1) })}
               style={{ ...FIELD_INPUT, width: 52, textAlign: 'center' }}
               data-testid={`identity-class-level-${i}`}

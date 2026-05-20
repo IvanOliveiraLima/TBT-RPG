@@ -21,14 +21,14 @@ import type { Character } from '@/domain/character'
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 2
+const V2_DB_VER  = 3
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
 
 function openV2() {
   return openDB(V2_DB_NAME, V2_DB_VER, {
-    upgrade(db, oldVersion) {
+    async upgrade(db, oldVersion, _newVersion, transaction) {
       if (oldVersion < 1) {
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
       }
@@ -42,8 +42,50 @@ function openV2() {
         }
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
       }
+      if (oldVersion < 3) {
+        // Add className to each hitDice entry, deriving it from classes[i].name.
+        // Characters stored in v2 DB have hitDice without className (C.1.c.4 shape change).
+        // For fresh installs (store just recreated above), cursor is null and this loop is a no-op.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          if (Array.isArray(char.hitDice)) {
+            const classes = (char.classes as Array<{ name: string }> | undefined) ?? []
+            char.hitDice = (char.hitDice as Array<Record<string, unknown>>).map((hd, i) => ({
+              className: classes[i]?.name ?? '',
+              ...hd,
+            }))
+            await cursor.update(char)
+          }
+          cursor = await cursor.continue()
+        }
+      }
     },
   })
+}
+
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+
+/**
+ * Remove hitDice entries that are orphaned from the classes array.
+ *
+ * This handles characters that were persisted before the C.1.c.4 follow-up
+ * fix: when addClass created entries with className '' and a subsequent rename
+ * left the hitDice entry behind with an empty className. Cleaning on read is
+ * O(n) over hitDice.length (≤ 3 entries in practice) and is a no-op for
+ * characters that are already consistent.
+ *
+ * The next character save will persist the cleaned shape, self-healing the DB.
+ */
+function normalizeHitDice(char: Character): Character {
+  if (!Array.isArray(char.classes) || !Array.isArray(char.hitDice)) return char
+  const classNames = new Set(char.classes.map(c => c.name).filter(n => n !== ''))
+  const cleaned = char.hitDice.filter(
+    hd => hd.className !== '' && classNames.has(hd.className),
+  )
+  if (cleaned.length === char.hitDice.length) return char
+  return { ...char, hitDice: cleaned }
 }
 
 /* ── Public API ───────────────────────────────────────────────────────── */
@@ -56,7 +98,7 @@ export async function listCharacters(): Promise<Character[]> {
   const db = await openV2()
   try {
     const all = await db.getAll(V2_STORE) as Character[]
-    return all.sort((a, b) => b.updatedAt - a.updatedAt)
+    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice)
   } finally {
     db.close()
   }
@@ -70,7 +112,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
   const db = await openV2()
   try {
     const result = await db.get(V2_STORE, id) as Character | undefined
-    return result ?? null
+    return result != null ? normalizeHitDice(result) : null
   } finally {
     db.close()
   }

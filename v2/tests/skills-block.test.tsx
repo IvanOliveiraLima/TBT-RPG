@@ -47,7 +47,7 @@ const BASE: Character = {
   abilities: { str: 12, dex: 15, con: 13, int: 10, wis: 12, cha: 8 },
   proficiencyBonus: 2,
   hp: { current: 21, max: 21, temp: 0 },
-  hitDice: [{ current: 3, max: 3, dieSize: 8 }],
+  hitDice: [{ className: 'Rogue', current: 3, max: 3, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14, initiative: 2, speed: 30,
   passivePerception: 13, spellSaveDC: 0, inspiration: false,

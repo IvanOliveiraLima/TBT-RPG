@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import type React from 'react'
 import type { Character, AbilityKey, Abilities } from '@/domain/character'
 import { abilityModifier, formatSigned } from '@/domain/calculations'
 import { useTranslation } from '@/i18n'
+import { NumberField } from '@/components/primitives/NumberField'
 
 interface AttrGridProps {
   character: Character
@@ -44,42 +44,6 @@ interface AttrCellProps {
 function AttrCell({ k, score, abilities, proficient, compact, onUpdate }: AttrCellProps) {
   const { t } = useTranslation()
   const mod = abilityModifier(score)
-
-  // Local string state — allows intermediate empty value while user is typing.
-  // Domain score is the source of truth; input is purely a UI concern.
-  const [prevScore, setPrevScore] = useState(score)
-  const [inputValue, setInputValue] = useState(String(score))
-
-  // Sync input when domain score changes externally (reload, store update, etc.).
-  // React-recommended pattern: update during render instead of in an effect to
-  // avoid the double-render that useEffect + setState causes.
-  if (prevScore !== score) {
-    setPrevScore(score)
-    setInputValue(String(score))
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value
-    setInputValue(raw)
-
-    if (raw === '') return  // intermediate empty — wait for next keystroke
-
-    const parsed = parseInt(raw, 10)
-    if (Number.isNaN(parsed)) return
-
-    const clamped = Math.max(1, Math.min(30, parsed))
-    if (clamped !== score && onUpdate) {
-      onUpdate({ abilities: { ...abilities, [k]: clamped } })
-    }
-  }
-
-  function handleBlur() {
-    // If user left the input empty or invalid, restore the last valid domain value
-    const parsed = parseInt(inputValue, 10)
-    if (inputValue === '' || Number.isNaN(parsed)) {
-      setInputValue(String(score))
-    }
-  }
 
   return (
     <div
@@ -143,14 +107,11 @@ function AttrCell({ k, score, abilities, proficient, compact, onUpdate }: AttrCe
           borderTop: '1px solid #2A2537',
         }}
       >
-        <input
-          type="number"
+        <NumberField
+          value={score}
           min={1}
           max={30}
-          value={inputValue}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          inputMode="numeric"
+          onChange={n => { if (onUpdate) onUpdate({ abilities: { ...abilities, [k]: n } }) }}
           aria-label={t('aria.ability_score_input', { ability: t(`ability.${k}`) })}
           data-testid={`attr-${k}-score`}
           style={SCORE_INPUT}

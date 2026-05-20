@@ -4,6 +4,7 @@ import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { CharacterImageModal } from './CharacterImageModal'
+import { NumberField } from '@/components/primitives/NumberField'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -128,14 +129,11 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
                 .split('·')[0]!.trim()}
             </span>
             <span aria-hidden>·</span>
-            <input
-              type="number"
-              min="0"
+            <NumberField
               value={character.experience}
-              onChange={(e) => {
-                const val = Number(e.target.value)
-                if (!Number.isNaN(val)) onUpdate({ experience: val })
-              }}
+              min={0}
+              max={355000}
+              onChange={n => onUpdate({ experience: n })}
               aria-label={t('aria.xp_input')}
               data-testid="lore-xp-input"
               style={{

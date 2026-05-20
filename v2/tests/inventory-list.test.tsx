@@ -16,7 +16,7 @@ const KANAAN: Character = {
   abilities: { str: 14, dex: 16, con: 14, int: 10, wis: 14, cha: 8 },
   proficiencyBonus: 3,
   hp: { current: 38, max: 38, temp: 0 },
-  hitDice: [{ current: 5, max: 5, dieSize: 8 }],
+  hitDice: [{ className: 'Monk', current: 5, max: 5, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 15, initiative: 3, speed: 40,
   passivePerception: 15, spellSaveDC: 0, inspiration: false,

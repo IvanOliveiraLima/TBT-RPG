@@ -518,7 +518,7 @@ function adaptProficiencies(raw: V1Character): Character['proficiencies'] {
 function adaptHitDice(
   raw: V1Character,
   classes: ClassEntry[],
-): { current: number; max: number; dieSize: number }[] {
+): { className: string; current: number; max: number; dieSize: number }[] {
   if (classes.length === 0) return []
 
   if (classes.length === 1) {
@@ -526,11 +526,11 @@ function adaptHitDice(
     const maxFromClass = cls.level
     const currentRaw = parseIntSafe(raw.page1?.status?.hit_dice?.current_hd)
     const current = currentRaw > 0 ? currentRaw : maxFromClass
-    return [{ current, max: maxFromClass, dieSize: cls.hitDie }]
+    return [{ className: cls.name, current, max: maxFromClass, dieSize: cls.hitDie }]
   }
 
   // Multiclass: one entry per class; current = max since v1 has no per-class tracking
-  return classes.map((cls) => ({ current: cls.level, max: cls.level, dieSize: cls.hitDie }))
+  return classes.map((cls) => ({ className: cls.name, current: cls.level, max: cls.level, dieSize: cls.hitDie }))
 }
 
 function adaptDeathSaves(raw: V1Character): { successes: number; failures: number } {

@@ -25,7 +25,7 @@ const MOCK_CHARACTER: Character = {
   abilities: { str: 18, dex: 10, con: 16, int: 8, wis: 12, cha: 6 },
   proficiencyBonus: 3,
   hp: { current: 45, max: 45, temp: 0 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Fighter', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 17, initiative: 0, speed: 25,
   passivePerception: 11, spellSaveDC: 0, inspiration: false,

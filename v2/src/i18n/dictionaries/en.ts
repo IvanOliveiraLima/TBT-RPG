@@ -86,12 +86,19 @@ const en = {
 
   // HP block
   'hp.section_title': 'Hit Points',
-  'hp.heal_button': 'Heal',
-  'hp.damage_button': 'Damage',
+  'hp.current_label': 'Current',
+  'hp.max_label': 'Max',
   'hp.temp_label': '+{n} temp',
+  'hp.temp_input_label': 'Temp',
 
   // Hit Dice
   'hit_dice.section_title': 'Hit Dice',
+  'hit_dice.total_label': 'Total: {current}/{max}',
+
+  // Death saves
+  'deathsaves.section_title': 'Death Saves',
+  'deathsaves.success_label': 'Successes',
+  'deathsaves.failure_label': 'Failures',
 
   // Saving throws section
   'saves.section_title': 'Saving Throws',
@@ -255,6 +262,7 @@ const en = {
   'identity.classes_label':           'Classes',
   'identity.class_name_placeholder':  'Class name',
   'identity.add_class_button':        '+ Add class',
+  'identity.class_default_name':      'New class',
   'identity.inspiration_label':       'Inspiration',
 
   // Aria labels (accessibility)
@@ -280,6 +288,12 @@ const en = {
   'aria.save_proficiency_toggle':    'Toggle {ability} saving throw proficiency',
   'aria.skill_proficient_toggle':    'Toggle {skill} proficiency',
   'aria.skill_expertise_toggle':     'Toggle {skill} expertise',
+  'aria.hp_current_input':           'Current HP',
+  'aria.hp_max_input':               'Maximum HP',
+  'aria.hp_temp_input':              'Temporary HP',
+  'aria.deathsave_success_toggle':   'Toggle death save success {n}',
+  'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
+  'aria.hitdice_class_input':        'Hit dice remaining for {className}',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

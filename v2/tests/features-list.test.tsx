@@ -33,7 +33,7 @@ const BASE: Character = {
   abilities: { str: 10, dex: 12, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 2,
   hp: { current: 28, max: 28, temp: 0 },
-  hitDice: [{ current: 4, max: 4, dieSize: 8 }],
+  hitDice: [{ className: 'Druid', current: 4, max: 4, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14, initiative: 1, speed: 25,
   passivePerception: 13, spellSaveDC: 13, inspiration: false,
