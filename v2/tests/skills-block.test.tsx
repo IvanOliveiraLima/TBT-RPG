@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import type { Character, SkillState } from '@/domain/character'
 import { SkillsBlock } from '@/components/sheet/parts/SkillsBlock'
+import { I18nProvider } from '@/i18n'
 import { renderWithI18n } from './helpers/render'
 
 function skill(
@@ -71,46 +72,46 @@ describe('SkillsBlock', () => {
   it('renders all 18 skills', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const container = screen.getByTestId('skills-block')
-    expect(container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])')).toHaveLength(18)
+    expect(container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"]):not([data-testid$="-toggle"])')).toHaveLength(18)
   })
 
   it('renders skills in alphabetical order by EN label in EN mode', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'en')
     const container = screen.getByTestId('skills-block')
     const ids = Array.from(
-      container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])'),
+      container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"]):not([data-testid$="-toggle"])'),
     ).map((el) => el.getAttribute('data-testid')?.replace('skill-', ''))
     const sorted = [...ids].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
     expect(ids).toEqual(sorted)
   })
 
-  it('renders two pips per skill row', () => {
+  it('renders two toggle buttons per skill row', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
-    const acroRow = screen.getByTestId('skill-Acrobatics')
-    expect(acroRow.querySelectorAll('[role="presentation"]')).toHaveLength(2)
+    expect(screen.getByTestId('skill-Acrobatics-prof-toggle')).toBeDefined()
+    expect(screen.getByTestId('skill-Acrobatics-exp-toggle')).toBeDefined()
   })
 
   it('proficiency pip filled when proficient', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
-    const acroRow = screen.getByTestId('skill-Acrobatics')
-    const pips = acroRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
-    expect(pips[0]!.style.background).not.toBe('transparent')
+    const btn = screen.getByTestId('skill-Acrobatics-prof-toggle')
+    const pip = btn.querySelector('[role="presentation"]') as HTMLElement
+    expect(pip.style.background).not.toBe('transparent')
   })
 
   it('expertise pip filled when expertise', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
-    const insightRow = screen.getByTestId('skill-Insight')
-    const pips = insightRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
-    expect(pips[0]!.style.background).not.toBe('transparent')
-    expect(pips[1]!.style.background).not.toBe('transparent')
+    const profBtn = screen.getByTestId('skill-Insight-prof-toggle')
+    const expBtn  = screen.getByTestId('skill-Insight-exp-toggle')
+    expect((profBtn.querySelector('[role="presentation"]') as HTMLElement).style.background).not.toBe('transparent')
+    expect((expBtn.querySelector('[role="presentation"]') as HTMLElement).style.background).not.toBe('transparent')
   })
 
   it('both pips empty when neither proficient nor expertise', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
-    const arcanaRow = screen.getByTestId('skill-Arcana')
-    const pips = arcanaRow.querySelectorAll('[role="presentation"]') as NodeListOf<HTMLElement>
-    expect(pips[0]!.style.background).toBe('transparent')
-    expect(pips[1]!.style.background).toBe('transparent')
+    const profBtn = screen.getByTestId('skill-Arcana-prof-toggle')
+    const expBtn  = screen.getByTestId('skill-Arcana-exp-toggle')
+    expect((profBtn.querySelector('[role="presentation"]') as HTMLElement).style.background).toBe('transparent')
+    expect((expBtn.querySelector('[role="presentation"]') as HTMLElement).style.background).toBe('transparent')
   })
 
   it('formats bonus with + sign for proficient skill', () => {
@@ -168,7 +169,7 @@ describe('SkillsBlock', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
     const container = screen.getByTestId('skills-block')
     const rows = Array.from(
-      container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"])'),
+      container.querySelectorAll('[data-testid^="skill-"]:not([data-testid$="-bonus"]):not([data-testid$="-toggle"])'),
     )
     const perf = rows.findIndex((el) => el.getAttribute('data-testid') === 'skill-Performance')
     const decep = rows.findIndex((el) => el.getAttribute('data-testid') === 'skill-Deception')
@@ -187,5 +188,155 @@ describe('SkillsBlock', () => {
     renderWithI18n(<SkillsBlock character={BASE} />, 'en')
     const dexSpans = screen.getAllByText('DEX')
     expect(dexSpans.length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+// ── Toggle — proficient ───────────────────────────────────────────────────────
+
+describe('SkillsBlock — toggle proficient', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('enables proficient when toggled on', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Arcana: proficient=false
+    fireEvent.click(screen.getByTestId('skill-Arcana-prof-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const arcana = call.skills.find(s => s.name === 'Arcana')!
+    expect(arcana.proficient).toBe(true)
+    expect(arcana.expertise).toBe(false)
+  })
+
+  it('disables proficient when toggled off', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Acrobatics: proficient=true, expertise=false
+    fireEvent.click(screen.getByTestId('skill-Acrobatics-prof-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const acro = call.skills.find(s => s.name === 'Acrobatics')!
+    expect(acro.proficient).toBe(false)
+    expect(acro.expertise).toBe(false)
+  })
+
+  it('disabling proficient also disables expertise (D&D invariant)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Insight: proficient=true, expertise=true
+    fireEvent.click(screen.getByTestId('skill-Insight-prof-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const insight = call.skills.find(s => s.name === 'Insight')!
+    expect(insight.proficient).toBe(false)
+    expect(insight.expertise).toBe(false)
+  })
+
+  it('preserves all other skills when one is toggled (spread invariant)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('skill-Arcana-prof-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const acro    = call.skills.find(s => s.name === 'Acrobatics')!
+    const insight = call.skills.find(s => s.name === 'Insight')!
+    expect(acro.proficient).toBe(true)
+    expect(acro.expertise).toBe(false)
+    expect(insight.proficient).toBe(true)
+    expect(insight.expertise).toBe(true)
+  })
+
+  it('does not call onUpdate when no onUpdate prop (read-only)', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    // Should not throw
+    fireEvent.click(screen.getByTestId('skill-Arcana-prof-toggle'))
+  })
+
+  it('has correct aria-label in PT', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    expect(screen.getByTestId('skill-Acrobatics-prof-toggle').getAttribute('aria-label'))
+      .toBe('Alternar proficiência em Acrobacia')
+  })
+
+  it('has correct aria-label in EN', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'en')
+    expect(screen.getByTestId('skill-Acrobatics-prof-toggle').getAttribute('aria-label'))
+      .toBe('Toggle Acrobatics proficiency')
+  })
+})
+
+// ── Toggle — expertise ────────────────────────────────────────────────────────
+
+describe('SkillsBlock — toggle expertise', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('enables expertise when toggled on', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Acrobatics: proficient=true, expertise=false
+    fireEvent.click(screen.getByTestId('skill-Acrobatics-exp-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const acro = call.skills.find(s => s.name === 'Acrobatics')!
+    expect(acro.proficient).toBe(true)
+    expect(acro.expertise).toBe(true)
+  })
+
+  it('enabling expertise also enables proficient (D&D invariant)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Arcana: proficient=false, expertise=false
+    fireEvent.click(screen.getByTestId('skill-Arcana-exp-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const arcana = call.skills.find(s => s.name === 'Arcana')!
+    expect(arcana.proficient).toBe(true)
+    expect(arcana.expertise).toBe(true)
+  })
+
+  it('disabling expertise keeps proficient on', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SkillsBlock character={BASE} onUpdate={onUpdate} />, 'pt')
+    // Insight: proficient=true, expertise=true
+    fireEvent.click(screen.getByTestId('skill-Insight-exp-toggle'))
+    const call = onUpdate.mock.calls[0]![0] as { skills: SkillState[] }
+    const insight = call.skills.find(s => s.name === 'Insight')!
+    expect(insight.proficient).toBe(true)
+    expect(insight.expertise).toBe(false)
+  })
+
+  it('has correct aria-label in PT', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    expect(screen.getByTestId('skill-Acrobatics-exp-toggle').getAttribute('aria-label'))
+      .toBe('Alternar especialização em Acrobacia')
+  })
+
+  it('has correct aria-label in EN', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'en')
+    expect(screen.getByTestId('skill-Acrobatics-exp-toggle').getAttribute('aria-label'))
+      .toBe('Toggle Acrobatics expertise')
+  })
+})
+
+// ── Bonus cascade with live derivation ───────────────────────────────────────
+
+describe('SkillsBlock — bonus derived live', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  // Rogue 3: profBonus = +2, DEX 15 → mod +2
+  // Acrobatics proficient → bonus = +2 + 2 = +4 ✓ (already in BASE)
+  // Insight expertise → bonus = +2 + 2*2 = +6 ✓ (already in BASE)
+
+  it('derives proficient bonus from ability + profBonus', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    expect(screen.getByTestId('skill-Acrobatics-bonus').textContent).toBe('+4')
+  })
+
+  it('derives expertise bonus as ability + 2×profBonus', () => {
+    renderWithI18n(<SkillsBlock character={BASE} />, 'pt')
+    // Insight: WIS 12 (+1) + 2×2 = +5
+    expect(screen.getByTestId('skill-Insight-bonus').textContent).toBe('+5')
+  })
+
+  it('updates displayed bonus when character abilities change externally', () => {
+    const { rerender } = render(<I18nProvider><SkillsBlock character={BASE} /></I18nProvider>)
+    // Bump DEX 15 → 20 (+5 mod), Acrobatics proficient: +5 + 2 = +7
+    const updated = { ...BASE, abilities: { ...BASE.abilities, dex: 20 } }
+    rerender(<I18nProvider><SkillsBlock character={updated} /></I18nProvider>)
+    expect(screen.getByTestId('skill-Acrobatics-bonus').textContent).toBe('+7')
   })
 })

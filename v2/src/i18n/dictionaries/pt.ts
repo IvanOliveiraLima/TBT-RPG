@@ -278,8 +278,10 @@ const pt: Record<keyof typeof en, string> = {
   'aria.class_level_input':    'Nível da classe {index}',
   'aria.remove_class':         'Remover classe {name}',
   'aria.inspiration_toggle':   'Alternar inspiração',
-  'aria.ability_score_input':     'Pontuação de {ability}',
-  'aria.save_proficiency_toggle': 'Alternar proficiência do teste de {ability}',
+  'aria.ability_score_input':        'Pontuação de {ability}',
+  'aria.save_proficiency_toggle':    'Alternar proficiência do teste de {ability}',
+  'aria.skill_proficient_toggle':    'Alternar proficiência em {skill}',
+  'aria.skill_expertise_toggle':     'Alternar especialização em {skill}',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
