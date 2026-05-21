@@ -119,6 +119,98 @@ describe('HpBlock', () => {
   })
 })
 
+describe('HpBlock — current HP clamp', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('current HP max attribute equals hp.max (not max + temp)', () => {
+    const char = { ...BASE, hp: { current: 45, max: 45, temp: 10 } }
+    renderWithI18n(<HpBlock character={char} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hp-current-input') as HTMLInputElement
+    expect(Number(input.max)).toBe(45)
+  })
+
+  it('current HP does not allow temp HP to extend the max', () => {
+    const char = { ...BASE, hp: { current: 45, max: 45, temp: 10 } }
+    renderWithI18n(<HpBlock character={char} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hp-current-input') as HTMLInputElement
+    expect(Number(input.max)).not.toBe(55) // 45 + 10 = 55 was the old bug
+  })
+
+  it('clamps current to max base when user types above max', () => {
+    // value=30, max=45 — typing 50 clamps to 45
+    const char = { ...BASE, hp: { current: 30, max: 45, temp: 10 } }
+    const onUpdate = vi.fn()
+    renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hp-current-input'), { target: { value: '50' } })
+    expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 45, max: 45, temp: 10 } })
+  })
+
+  it('allows current to equal max', () => {
+    const char = { ...BASE, hp: { current: 30, max: 45, temp: 0 } }
+    const onUpdate = vi.fn()
+    renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hp-current-input'), { target: { value: '45' } })
+    expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 45, max: 45, temp: 0 } })
+  })
+})
+
+describe('HpBlock — HP steppers', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('current HP has decrement and increment buttons when editable (PT)', () => {
+    renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByRole('button', { name: 'Diminuir' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Aumentar' })).toBeDefined()
+  })
+
+  it('current HP has decrement and increment buttons when editable (EN)', () => {
+    renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByRole('button', { name: 'Decrement' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Increment' })).toBeDefined()
+  })
+
+  it('max HP and temp HP do not have stepper buttons — only current HP does', () => {
+    renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    // Exactly 1 decrement button total (from current HP only)
+    expect(screen.queryAllByRole('button', { name: 'Diminuir' }).length).toBe(1)
+    expect(screen.queryAllByRole('button', { name: 'Aumentar' }).length).toBe(1)
+  })
+
+  it('no stepper buttons when no onUpdate provided', () => {
+    renderWithI18n(<HpBlock character={BASE} />, 'pt')
+    expect(screen.queryByRole('button', { name: 'Diminuir' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Aumentar' })).toBeNull()
+  })
+
+  it('decrement button calls onUpdate with current - 1', () => {
+    const char = { ...BASE, hp: { current: 30, max: 45, temp: 0 } }
+    const onUpdate = vi.fn()
+    renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByRole('button', { name: 'Diminuir' }))
+    expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 29, max: 45, temp: 0 } })
+  })
+
+  it('increment button calls onUpdate with current + 1', () => {
+    const char = { ...BASE, hp: { current: 30, max: 45, temp: 0 } }
+    const onUpdate = vi.fn()
+    renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar' }))
+    expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 31, max: 45, temp: 0 } })
+  })
+
+  it('decrement button is disabled when current HP is 0', () => {
+    const char = { ...BASE, hp: { current: 0, max: 45, temp: 0 } }
+    renderWithI18n(<HpBlock character={char} onUpdate={vi.fn()} />, 'pt')
+    expect((screen.getByRole('button', { name: 'Diminuir' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('increment button is disabled when current HP equals max', () => {
+    renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    // BASE has current=45, max=45
+    expect((screen.getByRole('button', { name: 'Aumentar' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
 describe('HitDicePool', () => {
   beforeEach(() => { localStorage.clear() })
 
