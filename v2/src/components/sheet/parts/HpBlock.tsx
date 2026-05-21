@@ -109,10 +109,11 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
           <NumberField
             value={current}
             min={0}
-            max={max > 0 ? max + hp.temp : 999}
+            max={max > 0 ? max : 999}
             onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, current: n } }) }}
             aria-label={t('aria.hp_current_input')}
             data-testid="hp-current-input"
+            showSteppers={!!onUpdate}
             style={low ? HP_INPUT_STYLE_LOW : HP_INPUT_STYLE}
             disabled={!onUpdate}
           />
