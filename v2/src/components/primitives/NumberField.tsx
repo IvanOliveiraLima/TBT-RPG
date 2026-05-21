@@ -19,7 +19,8 @@ interface NumberFieldProps
  * field is left empty or invalid. Clamps the emitted value to [min, max].
  *
  * When showSteppers is true, wraps the input with decrement (−) and increment (+)
- * buttons. The buttons respect the disabled state of the field.
+ * buttons. The wrapper fills its parent width and uses flex layout so the buttons
+ * (flex-shrink: 0) never overlap the input (flex: 1 1 0, min-width: 48px).
  */
 export function NumberField({
   value,
@@ -67,6 +68,16 @@ export function NumberField({
 
   const fieldDisabled = rest.disabled === true
 
+  // When steppers are active, separate the passed style so we can override
+  // width-related properties. The input must use flex: 1 1 0 to consume
+  // remaining space after the buttons, not width: 100% which would size it
+  // relative to the flex container and cause overlap on narrow viewports.
+  const { style: passedStyle, ...inputRest } = rest
+
+  const inputStyle: React.CSSProperties | undefined = showSteppers
+    ? { ...passedStyle, width: 'auto', flex: '1 1 0', minWidth: 48 }
+    : passedStyle
+
   const input = (
     <input
       type="number"
@@ -76,43 +87,53 @@ export function NumberField({
       value={inputValue}
       onChange={handleChange}
       onBlur={handleBlur}
-      {...rest}
+      style={inputStyle}
+      {...inputRest}
     />
   )
 
   if (!showSteppers) return input
 
+  const btnStyle = (disabled: boolean): React.CSSProperties => ({
+    flexShrink: 0,
+    minWidth: 32,
+    minHeight: 32,
+    background: '#1E1B2A',
+    border: '1px solid #2A2537',
+    borderRadius: 6,
+    color: '#A09DB0',
+    fontSize: 18,
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.35 : 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    padding: 0,
+    userSelect: 'none',
+  })
+
+  const decrementDisabled = fieldDisabled || value <= min
+  const incrementDisabled = fieldDisabled || value >= max
+
   return (
     <div
+      data-testid="number-field-stepper-wrapper"
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 4,
+        gap: 8,
+        width: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
       }}
     >
       <button
         type="button"
         onClick={decrement}
-        disabled={fieldDisabled || value <= min}
+        disabled={decrementDisabled}
         aria-label={t('aria.decrement_value')}
-        style={{
-          minWidth: 32,
-          minHeight: 32,
-          background: '#1E1B2A',
-          border: '1px solid #2A2537',
-          borderRadius: 6,
-          color: '#A09DB0',
-          fontSize: 18,
-          cursor: fieldDisabled || value <= min ? 'default' : 'pointer',
-          opacity: fieldDisabled || value <= min ? 0.35 : 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          lineHeight: 1,
-          padding: 0,
-          userSelect: 'none',
-        }}
+        style={btnStyle(decrementDisabled)}
       >
         −
       </button>
@@ -122,26 +143,9 @@ export function NumberField({
       <button
         type="button"
         onClick={increment}
-        disabled={fieldDisabled || value >= max}
+        disabled={incrementDisabled}
         aria-label={t('aria.increment_value')}
-        style={{
-          minWidth: 32,
-          minHeight: 32,
-          background: '#1E1B2A',
-          border: '1px solid #2A2537',
-          borderRadius: 6,
-          color: '#A09DB0',
-          fontSize: 18,
-          cursor: fieldDisabled || value >= max ? 'default' : 'pointer',
-          opacity: fieldDisabled || value >= max ? 0.35 : 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          lineHeight: 1,
-          padding: 0,
-          userSelect: 'none',
-        }}
+        style={btnStyle(incrementDisabled)}
       >
         +
       </button>

@@ -197,3 +197,66 @@ describe('NumberField — steppers', () => {
     expect((screen.getByRole('button', { name: 'Increment' }) as HTMLButtonElement).disabled).toBe(true)
   })
 })
+
+describe('NumberField — stepper layout structure', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders a wrapper with exactly 3 children (button, input, button)', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const wrapper = container.querySelector('[data-testid="number-field-stepper-wrapper"]')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper!.children.length).toBe(3)
+  })
+
+  it('buttons have flex-shrink: 0 (prevent overlap with input)', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const buttons = container.querySelectorAll('button')
+    expect(buttons.length).toBe(2)
+    // Inline style flexShrink is readable via element.style in jsdom
+    expect((buttons[0] as HTMLButtonElement).style.flexShrink).toBe('0')
+    expect((buttons[1] as HTMLButtonElement).style.flexShrink).toBe('0')
+  })
+
+  it('stepper wrapper has explicit gap for breathing room', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const wrapper = container.querySelector('[data-testid="number-field-stepper-wrapper"]') as HTMLElement
+    expect(wrapper.style.gap).toBeTruthy() // gap is set
+  })
+
+  it('overrides width: 100% with width: auto and sets minWidth for layout safety', () => {
+    const { container } = renderWithI18n(
+      // Simulate what HpBlock does: pass a style with width: '100%'
+      <NumberField
+        value={50}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+        showSteppers
+        style={{ width: '100%', textAlign: 'center' }}
+      />,
+      'en',
+    )
+    const input = container.querySelector('input') as HTMLInputElement
+    // width: '100%' from the passed style must be overridden to prevent overlap
+    expect(input.style.width).toBe('auto')
+    // minWidth ensures the number is never clipped
+    expect(input.style.minWidth).toBe('48px')
+  })
+
+  it('no wrapper rendered when showSteppers is false', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} />,
+      'en',
+    )
+    expect(container.querySelector('[data-testid="number-field-stepper-wrapper"]')).toBeNull()
+  })
+})
