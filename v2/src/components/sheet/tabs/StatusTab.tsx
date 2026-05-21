@@ -35,7 +35,7 @@ export function StatusTab() {
     <>
       {/* ── MOBILE STACK (hidden on lg+) ── */}
       <div className="lg:hidden flex flex-col gap-3">
-        <HeroCard character={character} compact />
+        <HeroCard character={character} onUpdate={onUpdate} compact />
 
         {/* Identity editing */}
         <div style={CARD}>
@@ -86,7 +86,7 @@ export function StatusTab() {
         {/* Row 0: HeroCard + Identity side by side */}
         <div className="grid grid-cols-3" style={{ gap: 14 }}>
           <div style={{ gridColumn: 'span 2' }}>
-            <HeroCard character={character} />
+            <HeroCard character={character} onUpdate={onUpdate} />
           </div>
           <div style={CARD}>
             <Label>{t('identity.section_title')}</Label>

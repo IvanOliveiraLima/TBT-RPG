@@ -84,11 +84,11 @@ describe('StatusTab integration', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders HeroCard when character is in store', () => {
+  it('renders HeroCard with editable name when character is in store', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Eira Thornwood').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Eira Thornwood').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders HpBlock with "Hit Points" in EN', () => {

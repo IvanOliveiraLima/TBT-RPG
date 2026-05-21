@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
 import { HeroCard } from '@/components/sheet/parts/HeroCard'
 import type { Character } from '@/domain/character'
 import { renderWithI18n } from './helpers/render'
@@ -108,5 +108,77 @@ describe('HeroCard', () => {
       'pt',
     )
     expect(container.firstChild).not.toBeNull()
+  })
+})
+
+describe('HeroCard — editable mode', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders name as input when onUpdate is provided', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hero-name-input') as HTMLInputElement
+    expect(input.value).toBe('Eira Swiftwind')
+  })
+
+  it('calls onUpdate with new name on input change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hero-name-input'), { target: { value: 'Lyra Moonveil' } })
+    expect(onUpdate).toHaveBeenCalledWith({ name: 'Lyra Moonveil' })
+  })
+
+  it('renders XP input when onUpdate is provided', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hero-xp-input') as HTMLInputElement
+    expect(input.value).toBe('2700')
+  })
+
+  it('calls onUpdate with new XP on input change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hero-xp-input'), { target: { value: '5000' } })
+    expect(onUpdate).toHaveBeenCalledWith({ experience: 5000 })
+  })
+
+  it('shows derived total level (read-only) in hero-level span', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const levelSpan = screen.getByTestId('hero-level')
+    expect(levelSpan.textContent).toBe('4')
+  })
+
+  it('shows name label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Nome')).toBeDefined()
+  })
+
+  it('shows name label in EN', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByText('Name')).toBeDefined()
+  })
+
+  it('shows level label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Nível')).toBeDefined()
+  })
+
+  it('shows level label in EN', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getAllByText('Level').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows XP label in both PT and EN', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('XP')).toBeDefined()
+  })
+
+  it('read-only mode: name shown as text not input', () => {
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
+    expect(screen.queryByTestId('hero-name-input')).toBeNull()
+    expect(screen.getByText('Eira Swiftwind')).toBeDefined()
+  })
+
+  it('read-only mode: XP not rendered', () => {
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
+    expect(screen.queryByTestId('hero-xp-input')).toBeNull()
   })
 })

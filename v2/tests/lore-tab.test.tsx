@@ -96,11 +96,12 @@ describe('LoreTab integration', () => {
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
-  it('shows character name in LoreHero name input', () => {
+  it('shows character meta (race, class) in LoreHero', () => {
     activateEira()
     renderWithI18n(<LoreTab />, 'pt')
-    const input = screen.getByTestId('lore-name') as HTMLInputElement
-    expect(input.value).toBe('Eira Thornwood')
+    const meta = screen.getByTestId('lore-meta').textContent ?? ''
+    expect(meta).toContain('Wood Elf')
+    expect(meta).toContain('Ranger 5')
   })
 
   it('shows backstory value in BackstoryBlock textarea', () => {
@@ -137,12 +138,12 @@ describe('LoreTab integration', () => {
     expect(updated?.backstory).toBe('New backstory')
   })
 
-  it('editing name updates characters store optimistically', () => {
+  it('editing backstory in LoreTab updates characters store optimistically', () => {
     activateEira()
     renderWithI18n(<LoreTab />, 'pt')
-    const input = screen.getByTestId('lore-name')
-    fireEvent.change(input, { target: { value: 'Lyra' } })
+    const ta = screen.getByTestId('backstory-textarea')
+    fireEvent.change(ta, { target: { value: 'New adventure begins.' } })
     const updated = useCharactersStore.getState().characters.find(c => c.id === EIRA.id)
-    expect(updated?.name).toBe('Lyra')
+    expect(updated?.backstory).toBe('New adventure begins.')
   })
 })

@@ -137,6 +137,9 @@ const en = {
 
   // Hero card
   'hero.inspired_badge': 'Inspired',
+  'hero.name_label':     'Name',
+  'hero.level_label':    'Level',
+  'hero.xp_label':       'XP',
 
   // Combat stats strip labels
   'combat.ac': 'AC',
@@ -350,6 +353,8 @@ const en = {
   'aria.remove_feature':      'Remove feature {name}',
   'aria.feature_uses_left':   'Uses remaining',
   'aria.feature_uses_max':    'Uses maximum',
+  'aria.decrement_value':     'Decrement',
+  'aria.increment_value':     'Increment',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

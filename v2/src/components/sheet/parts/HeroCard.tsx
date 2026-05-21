@@ -1,20 +1,48 @@
+import type React from 'react'
 import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Badge } from '../ui/Badge'
+import { NumberField } from '@/components/primitives/NumberField'
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontSize: 9,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+  color: '#7A7788',
+  display: 'block',
+  marginBottom: 2,
+}
 
 interface HeroCardProps {
   character: Character
+  onUpdate?: (partial: Partial<Character>) => void
   compact?: boolean
 }
 
-export function HeroCard({ character, compact = false }: HeroCardProps) {
+export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps) {
   const { t } = useTranslation()
   const portrait = character.images.character
   const classLine = formatClassesShort(character)
   const totalLevel = deriveTotalLevel(character)
   const portraitSize = compact ? 58 : 72
   const nameFontSize = compact ? 18 : 22
+
+  const nameInputStyle: React.CSSProperties = {
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    padding: 0,
+    fontFamily: "'Cinzel', Georgia, serif",
+    fontSize: nameFontSize,
+    fontWeight: 600,
+    color: '#F4EFE0',
+    letterSpacing: 0.3,
+    lineHeight: 1.1,
+    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+    width: '100%',
+  }
 
   return (
     <div
@@ -82,19 +110,34 @@ export function HeroCard({ character, compact = false }: HeroCardProps) {
 
         {/* Identity */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: "'Cinzel', Georgia, serif",
-              fontSize: nameFontSize,
-              fontWeight: 600,
-              color: '#F4EFE0',
-              letterSpacing: 0.3,
-              lineHeight: 1.1,
-              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-            }}
-          >
-            {character.name}
-          </div>
+          {/* Name — editable if onUpdate is provided, otherwise read-only text */}
+          {onUpdate ? (
+            <div>
+              <span style={LABEL_STYLE}>{t('hero.name_label')}</span>
+              <input
+                type="text"
+                value={character.name}
+                onChange={e => onUpdate({ name: e.target.value })}
+                aria-label={t('aria.character_name_input')}
+                data-testid="hero-name-input"
+                style={nameInputStyle}
+              />
+            </div>
+          ) : (
+            <div
+              style={{
+                fontFamily: "'Cinzel', Georgia, serif",
+                fontSize: nameFontSize,
+                fontWeight: 600,
+                color: '#F4EFE0',
+                letterSpacing: 0.3,
+                lineHeight: 1.1,
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+              }}
+            >
+              {character.name}
+            </div>
+          )}
 
           {/* Meta: race · class level · background */}
           <div
@@ -120,6 +163,54 @@ export function HeroCard({ character, compact = false }: HeroCardProps) {
             )}
             {character.background && <span>{character.background}</span>}
           </div>
+
+          {/* Level + XP row — only when editable */}
+          {onUpdate && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 16,
+                marginTop: 6,
+              }}
+            >
+              <div>
+                <span style={LABEL_STYLE}>{t('hero.level_label')}</span>
+                <span
+                  data-testid="hero-level"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: '#C8C4D6',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {totalLevel}
+                </span>
+              </div>
+              <div>
+                <span style={LABEL_STYLE}>{t('hero.xp_label')}</span>
+                <NumberField
+                  value={character.experience}
+                  min={0}
+                  max={355000}
+                  onChange={n => onUpdate({ experience: n })}
+                  aria-label={t('aria.xp_input')}
+                  data-testid="hero-xp-input"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    padding: 0,
+                    fontSize: 14,
+                    color: '#C8C4D6',
+                    width: 70,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Inspiration / condition badges */}
           {character.inspiration && (

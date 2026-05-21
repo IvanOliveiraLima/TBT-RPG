@@ -139,6 +139,9 @@ const pt: Record<keyof typeof en, string> = {
 
   // Hero card
   'hero.inspired_badge': 'Inspirado',
+  'hero.name_label':     'Nome',
+  'hero.level_label':    'Nível',
+  'hero.xp_label':       'XP',
 
   // Combat stats strip labels
   'combat.ac': 'CA',
@@ -354,6 +357,8 @@ const pt: Record<keyof typeof en, string> = {
   'aria.feature_uses_left':   'Usos restantes',
   'aria.feature_uses_max':    'Usos máximos',
   'aria.remove_feature':      'Remover característica {name}',
+  'aria.decrement_value':     'Diminuir',
+  'aria.increment_value':     'Aumentar',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',

@@ -1,52 +1,54 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, fireEvent, render } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { NumberField } from '@/components/primitives/NumberField'
+import { I18nProvider } from '@/i18n'
+import { renderWithI18n } from './helpers/render'
 
 describe('NumberField', () => {
   beforeEach(() => { localStorage.clear() })
 
   it('renders with the given value', () => {
-    render(<NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />, 'en')
     expect((screen.getByTestId('nf') as HTMLInputElement).value).toBe('10')
   })
 
   it('calls onChange with clamped value when valid number is typed', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: '18' } })
     expect(onChange).toHaveBeenCalledWith(18)
   })
 
   it('does not call onChange when input is empty (intermediate state)', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: '' } })
     expect(onChange).not.toHaveBeenCalled()
   })
 
   it('does not call onChange for non-numeric input', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: 'abc' } })
     expect(onChange).not.toHaveBeenCalled()
   })
 
   it('clamps value to min', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: '0' } })
     expect(onChange).toHaveBeenCalledWith(1)
   })
 
   it('clamps value to max', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: '99' } })
     expect(onChange).toHaveBeenCalledWith(30)
   })
 
   it('restores last valid value on blur when empty', () => {
-    render(<NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />, 'en')
     const input = screen.getByTestId('nf') as HTMLInputElement
     fireEvent.change(input, { target: { value: '' } })
     expect(input.value).toBe('')
@@ -55,7 +57,7 @@ describe('NumberField', () => {
   })
 
   it('restores last valid value on blur when non-numeric', () => {
-    render(<NumberField value={5} min={1} max={20} onChange={vi.fn()} data-testid="nf" />)
+    renderWithI18n(<NumberField value={5} min={1} max={20} onChange={vi.fn()} data-testid="nf" />, 'en')
     const input = screen.getByTestId('nf') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'xyz' } })
     fireEvent.blur(input)
@@ -63,22 +65,27 @@ describe('NumberField', () => {
   })
 
   it('syncs to external value changes (update during render)', () => {
-    const { rerender } = render(
-      <NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />
+    const { rerender } = renderWithI18n(
+      <NumberField value={10} min={1} max={30} onChange={vi.fn()} data-testid="nf" />, 'en'
     )
-    rerender(<NumberField value={20} min={1} max={30} onChange={vi.fn()} data-testid="nf" />)
+    // Must re-wrap with I18nProvider since renderWithI18n's rerender doesn't auto-wrap
+    rerender(
+      <I18nProvider>
+        <NumberField value={20} min={1} max={30} onChange={vi.fn()} data-testid="nf" />
+      </I18nProvider>
+    )
     expect((screen.getByTestId('nf') as HTMLInputElement).value).toBe('20')
   })
 
   it('does not call onChange when new value equals current value', () => {
     const onChange = vi.fn()
-    render(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />)
+    renderWithI18n(<NumberField value={10} min={1} max={30} onChange={onChange} data-testid="nf" />, 'en')
     fireEvent.change(screen.getByTestId('nf'), { target: { value: '10' } })
     expect(onChange).not.toHaveBeenCalled()
   })
 
   it('passes extra props to the input element', () => {
-    render(
+    renderWithI18n(
       <NumberField
         value={5}
         min={0}
@@ -87,10 +94,169 @@ describe('NumberField', () => {
         data-testid="nf"
         aria-label="Test field"
         disabled
-      />
+      />,
+      'en',
     )
     const input = screen.getByTestId('nf') as HTMLInputElement
     expect(input.getAttribute('aria-label')).toBe('Test field')
     expect(input.disabled).toBe(true)
+  })
+})
+
+describe('NumberField — steppers', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('does not render stepper buttons by default', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={vi.fn()} data-testid="nf" />,
+      'en',
+    )
+    expect(container.querySelectorAll('button').length).toBe(0)
+  })
+
+  it('renders decrement and increment buttons when showSteppers is true (EN)', () => {
+    renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={vi.fn()} data-testid="nf" showSteppers />,
+      'en',
+    )
+    expect(screen.getByRole('button', { name: 'Decrement' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Increment' })).toBeDefined()
+  })
+
+  it('renders decrement and increment buttons with PT labels (PT)', () => {
+    renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={vi.fn()} data-testid="nf" showSteppers />,
+      'pt',
+    )
+    expect(screen.getByRole('button', { name: 'Diminuir' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Aumentar' })).toBeDefined()
+  })
+
+  it('decrement button decreases value by 1', () => {
+    const onChange = vi.fn()
+    renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={onChange} data-testid="nf" showSteppers />,
+      'en',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Decrement' }))
+    expect(onChange).toHaveBeenCalledWith(4)
+  })
+
+  it('increment button increases value by 1', () => {
+    const onChange = vi.fn()
+    renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={onChange} data-testid="nf" showSteppers />,
+      'en',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Increment' }))
+    expect(onChange).toHaveBeenCalledWith(6)
+  })
+
+  it('decrement button is disabled when value equals min', () => {
+    renderWithI18n(
+      <NumberField value={0} min={0} max={10} onChange={vi.fn()} data-testid="nf" showSteppers />,
+      'en',
+    )
+    expect((screen.getByRole('button', { name: 'Decrement' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('increment button is disabled when value equals max', () => {
+    renderWithI18n(
+      <NumberField value={10} min={0} max={10} onChange={vi.fn()} data-testid="nf" showSteppers />,
+      'en',
+    )
+    expect((screen.getByRole('button', { name: 'Increment' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('clicking decrement at min does not call onChange', () => {
+    const onChange = vi.fn()
+    renderWithI18n(
+      <NumberField value={0} min={0} max={10} onChange={onChange} data-testid="nf" showSteppers />,
+      'en',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Decrement' }))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('clicking increment at max does not call onChange', () => {
+    const onChange = vi.fn()
+    renderWithI18n(
+      <NumberField value={10} min={0} max={10} onChange={onChange} data-testid="nf" showSteppers />,
+      'en',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Increment' }))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('both stepper buttons are disabled when field is disabled', () => {
+    renderWithI18n(
+      <NumberField value={5} min={0} max={10} onChange={vi.fn()} data-testid="nf" showSteppers disabled />,
+      'en',
+    )
+    expect((screen.getByRole('button', { name: 'Decrement' }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: 'Increment' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('NumberField — stepper layout structure', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders a wrapper with exactly 3 children (button, input, button)', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const wrapper = container.querySelector('[data-testid="number-field-stepper-wrapper"]')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper!.children.length).toBe(3)
+  })
+
+  it('buttons have flex-shrink: 0 (prevent overlap with input)', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const buttons = container.querySelectorAll('button')
+    expect(buttons.length).toBe(2)
+    // Inline style flexShrink is readable via element.style in jsdom
+    expect((buttons[0] as HTMLButtonElement).style.flexShrink).toBe('0')
+    expect((buttons[1] as HTMLButtonElement).style.flexShrink).toBe('0')
+  })
+
+  it('stepper wrapper has explicit gap for breathing room', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} showSteppers />,
+      'en',
+    )
+    const wrapper = container.querySelector('[data-testid="number-field-stepper-wrapper"]') as HTMLElement
+    expect(wrapper.style.gap).toBeTruthy() // gap is set
+  })
+
+  it('overrides width: 100% with width: auto and sets minWidth for layout safety', () => {
+    const { container } = renderWithI18n(
+      // Simulate what HpBlock does: pass a style with width: '100%'
+      <NumberField
+        value={50}
+        min={0}
+        max={100}
+        onChange={vi.fn()}
+        showSteppers
+        style={{ width: '100%', textAlign: 'center' }}
+      />,
+      'en',
+    )
+    const input = container.querySelector('input') as HTMLInputElement
+    // width: '100%' from the passed style must be overridden to prevent overlap
+    expect(input.style.width).toBe('auto')
+    // minWidth ensures the number is never clipped
+    expect(input.style.minWidth).toBe('48px')
+  })
+
+  it('no wrapper rendered when showSteppers is false', () => {
+    const { container } = renderWithI18n(
+      <NumberField value={50} min={0} max={100} onChange={vi.fn()} />,
+      'en',
+    )
+    expect(container.querySelector('[data-testid="number-field-stepper-wrapper"]')).toBeNull()
   })
 })
