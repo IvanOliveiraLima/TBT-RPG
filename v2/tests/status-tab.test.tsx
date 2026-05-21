@@ -52,6 +52,8 @@ const EIRA: Character = {
     skill('Survival', 'wis', 6, true),
   ],
   proficiencies: { weapons: ['Longbow', 'Shortsword', 'Light', 'Medium'], armor: [], tools: [], other: [] }, languages: ['Common', 'Elvish', 'Sylvan'],
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 20, cp: 5 },

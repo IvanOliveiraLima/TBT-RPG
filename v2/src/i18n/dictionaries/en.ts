@@ -333,8 +333,10 @@ const en = {
   'aria.hitdice_class_input':        'Hit dice remaining for {className}',
 
   // Languages & Proficiencies
-  'aria.language_input':    'Language {index}',
-  'aria.remove_language':   'Remove language {name}',
+  'aria.language_input':       'Language {index}',
+  'aria.remove_language':      'Remove language {name}',
+  'aria.proficiency_input':    'Proficiency {index}',
+  'aria.remove_proficiency':   'Remove proficiency {name}',
   'aria.weapons_list':   'Weapons proficiencies',
   'aria.armor_list':     'Armor proficiencies',
   'aria.tools_list':     'Tools proficiencies',

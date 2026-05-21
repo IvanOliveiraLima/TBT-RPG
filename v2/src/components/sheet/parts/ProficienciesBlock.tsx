@@ -98,8 +98,8 @@ export function ProficienciesBlock({ character, onUpdate }: ProficienciesBlockPr
                 items={character.proficiencies[key]}
                 onUpdate={newList => updateSubList(key, newList)}
                 placeholder={t(placeholderKey as Parameters<typeof t>[0])}
-                inputAriaKey="aria.language_input"
-                removeAriaKey="aria.remove_language"
+                inputAriaKey="aria.proficiency_input"
+                removeAriaKey="aria.remove_proficiency"
                 addLabel={t('proficiencies.add_button')}
                 emptyHint={t(emptyHintKey as Parameters<typeof t>[0])}
                 listTestId={`prof-items-${key}`}

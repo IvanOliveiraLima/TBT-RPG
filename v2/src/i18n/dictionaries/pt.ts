@@ -335,8 +335,10 @@ const pt: Record<keyof typeof en, string> = {
   'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
 
   // Aria — languages
-  'aria.language_input':    'Idioma {index}',
-  'aria.remove_language':   'Remover idioma {name}',
+  'aria.language_input':       'Idioma {index}',
+  'aria.remove_language':      'Remover idioma {name}',
+  'aria.proficiency_input':    'Proficiência {index}',
+  'aria.remove_proficiency':   'Remover proficiência {name}',
 
   // Aria — proficiency sub-lists
   'aria.weapons_list':   'Proficiências em armas',
