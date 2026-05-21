@@ -28,7 +28,7 @@ const KANAAN: Character = {
   ac: 15, initiative: 3, speed: 40,
   passivePerception: 15, spellSaveDC: 0, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: 'Simple weapons, shortswords', tools: 'Herbalism kit', languages: 'Common, Elvish', other: '' },
+  proficiencies: { weapons: ['Simple weapons', 'shortswords'], armor: [], tools: ['Herbalism kit'], other: [] }, languages: ['Common', 'Elvish'],
   attacks: [],
   inventory: [
     { id: 'inv_0', name: 'Shortsword',      quantity: 1, weight: 2   },

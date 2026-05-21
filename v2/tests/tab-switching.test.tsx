@@ -36,7 +36,7 @@ const MOCK_CHARACTER: Character = {
   ac: 14, initiative: 1, speed: 30,
   passivePerception: 18, spellSaveDC: 16, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   spells: {
     ability: 'wis' as const,

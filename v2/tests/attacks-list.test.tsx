@@ -57,7 +57,7 @@ const BASE: Character = {
   inspiration: false,
   savingThrows: [],
   skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [RAPIER, VICIOUS_MOCKERY],
   inventory: [],
   currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },

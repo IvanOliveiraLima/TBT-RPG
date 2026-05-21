@@ -152,6 +152,43 @@ const pt: Record<keyof typeof en, string> = {
   'features.label': 'Características & Traços',
   'features.title': 'Características',
   'features.empty': 'Nenhuma feature registrada.',
+  'features.section_title':            'Características e Traços',
+  'features.add_button':               '+ Adicionar característica',
+  'features.name_placeholder':         'Nome da característica',
+  'features.description_placeholder':  'Descrição, mecânica...',
+  'features.source_placeholder':       'Fonte (Classe, Raça...)',
+  'features.empty_state_hint':         'Nenhuma característica registrada.',
+  'features.uses_hint':                'usos',
+  'features.type_passive':             'Passiva',
+  'features.type_active':              'Ativa',
+  'features.type_reaction':            'Reação',
+  'features.source_class':             'Classe',
+  'features.source_race':              'Raça',
+  'features.source_background':        'Antecedente',
+  'features.source_feat':              'Talento',
+  'features.source_item':              'Item',
+
+  // Languages
+  'languages.section_title':    'Idiomas',
+  'languages.add_button':       '+ Adicionar idioma',
+  'languages.placeholder':      'Nome do idioma',
+  'languages.empty_state_hint': 'Nenhum idioma adicionado ainda.',
+
+  // Proficiencies (editable lists)
+  'proficiencies.section_title':         'Proficiências',
+  'proficiencies.weapons_label':         'Armas',
+  'proficiencies.armor_label':           'Armaduras',
+  'proficiencies.tools_label':           'Ferramentas',
+  'proficiencies.other_label':           'Outras',
+  'proficiencies.add_button':            '+ Adicionar',
+  'proficiencies.weapons_placeholder':   'Proficiência em arma',
+  'proficiencies.armor_placeholder':     'Proficiência em armadura',
+  'proficiencies.tools_placeholder':     'Proficiência em ferramenta',
+  'proficiencies.other_placeholder':     'Outra proficiência',
+  'proficiencies.weapons_empty_hint':    'Nenhuma proficiência em armas.',
+  'proficiencies.armor_empty_hint':      'Nenhuma proficiência em armaduras.',
+  'proficiencies.tools_empty_hint':      'Nenhuma proficiência em ferramentas.',
+  'proficiencies.other_empty_hint':      'Nenhuma outra proficiência.',
 
   // Attacks
   'attacks.section_title': 'ATAQUES',
@@ -296,6 +333,27 @@ const pt: Record<keyof typeof en, string> = {
   'aria.deathsave_success_toggle':   'Alternar sucesso {n} de teste de morte',
   'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
   'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
+
+  // Aria — languages
+  'aria.language_input':       'Idioma {index}',
+  'aria.remove_language':      'Remover idioma {name}',
+  'aria.proficiency_input':    'Proficiência {index}',
+  'aria.remove_proficiency':   'Remover proficiência {name}',
+
+  // Aria — proficiency sub-lists
+  'aria.weapons_list':   'Proficiências em armas',
+  'aria.armor_list':     'Proficiências em armaduras',
+  'aria.tools_list':     'Proficiências em ferramentas',
+  'aria.other_list':     'Outras proficiências',
+
+  // Aria — features
+  'aria.feature_name':        'Nome da característica',
+  'aria.feature_source':      'Fonte da característica',
+  'aria.feature_type':        'Tipo de característica',
+  'aria.feature_description': 'Descrição da característica',
+  'aria.feature_uses_left':   'Usos restantes',
+  'aria.feature_uses_max':    'Usos máximos',
+  'aria.remove_feature':      'Remover característica {name}',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',

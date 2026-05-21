@@ -51,7 +51,9 @@ const EIRA: Character = {
     skill('Stealth', 'dex', 7, true),
     skill('Survival', 'wis', 6, true),
   ],
-  proficiencies: { weaponsAndArmor: 'Longbow, Shortsword, Light, Medium', tools: '', languages: 'Common, Elvish, Sylvan', other: '' },
+  proficiencies: { weapons: ['Longbow', 'Shortsword', 'Light', 'Medium'], armor: [], tools: [], other: [] }, languages: ['Common', 'Elvish', 'Sylvan'],
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 20, cp: 5 },
@@ -168,8 +170,8 @@ describe('StatusTab integration', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Favored Enemy').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Extra Attack').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Favored Enemy').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Extra Attack').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows spellSaveDC in CombatStrip when character is caster', () => {
@@ -192,11 +194,11 @@ describe('StatusTab integration', () => {
     expect(pips[1]!.style.background).not.toBe('transparent')
   })
 
-  it('features list shows uses badge for active feature', () => {
+  it('features list shows uses inputs for active feature', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('1/1').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByTestId('feature-uses-row-colossus_slayer').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows correct DEX modifier (+4) for Eira', () => {
@@ -214,18 +216,18 @@ describe('StatusTab integration', () => {
     expect(screen.getAllByTestId('proficiencies-block').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows proficiencies text from character', () => {
+  it('shows weapons items from character in proficiencies block', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Longbow, Shortsword, Light, Medium').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Longbow').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows languages in proficiencies block', () => {
+  it('shows languages items from character in languages block', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Common, Elvish, Sylvan').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Common').length).toBeGreaterThanOrEqual(1)
   })
 })
 

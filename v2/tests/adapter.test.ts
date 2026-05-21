@@ -1036,7 +1036,7 @@ describe('adaptCharacter — currency schema variants', () => {
 })
 
 describe('adaptCharacter — proficiency schema variants', () => {
-  it('reads proficiencies from standard schema (weapon_profs + armor_profs combined)', () => {
+  it('reads proficiencies from standard schema (weapon_profs + armor_profs separate)', () => {
     const raw: V1Character = {
       page1: {
         proficiencies: {
@@ -1048,12 +1048,13 @@ describe('adaptCharacter — proficiency schema variants', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.proficiencies.weaponsAndArmor).toBe('Simple weapons, shortswords, Light armor')
-    expect(result.proficiencies.tools).toBe('Herbalism kit')
-    expect(result.proficiencies.languages).toBe('Common, Elvish')
+    expect(result.proficiencies.weapons).toEqual(['Simple weapons', 'shortswords'])
+    expect(result.proficiencies.armor).toEqual(['Light armor'])
+    expect(result.proficiencies.tools).toEqual(['Herbalism kit'])
+    expect(result.languages).toEqual(['Common', 'Elvish'])
   })
 
-  it('reads proficiencies from legacy schema (weapon_armor combined)', () => {
+  it('reads proficiencies from legacy schema (weapon_armor combined → weapons[])', () => {
     const raw: V1Character = {
       page1: {
         proficiencies: {
@@ -1064,20 +1065,23 @@ describe('adaptCharacter — proficiency schema variants', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.proficiencies.weaponsAndArmor).toBe('Light armor, shields, short swords')
-    expect(result.proficiencies.tools).toBe('Herbalism kit')
-    expect(result.proficiencies.languages).toBe('Elvish, Common, Sylvan')
+    expect(result.proficiencies.weapons).toEqual(['Light armor', 'shields', 'short swords'])
+    expect(result.proficiencies.armor).toEqual([])
+    expect(result.proficiencies.tools).toEqual(['Herbalism kit'])
+    expect(result.languages).toEqual(['Elvish', 'Common', 'Sylvan'])
   })
 
   it('handles only weapon_profs without armor_profs', () => {
     const raw: V1Character = {
       page1: { proficiencies: { weapon_profs: 'Simple weapons' } },
     }
-    expect(adaptCharacter(raw).proficiencies.weaponsAndArmor).toBe('Simple weapons')
+    expect(adaptCharacter(raw).proficiencies.weapons).toEqual(['Simple weapons'])
+    expect(adaptCharacter(raw).proficiencies.armor).toEqual([])
   })
 
   it('returns empty proficiencies when page1.proficiencies is absent', () => {
     const result = adaptCharacter({ page1: {} })
-    expect(result.proficiencies).toEqual({ weaponsAndArmor: '', tools: '', languages: '', other: '' })
+    expect(result.proficiencies).toEqual({ weapons: [], armor: [], tools: [], other: [] })
+    expect(result.languages).toEqual([])
   })
 })

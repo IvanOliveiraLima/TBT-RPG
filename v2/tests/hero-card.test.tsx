@@ -20,7 +20,7 @@ const BASE: Character = {
   ac: 15, initiative: 4, speed: 35,
   passivePerception: 15, spellSaveDC: 13, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 20, ep: 0, sp: 0, cp: 0 },

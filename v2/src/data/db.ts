@@ -2,7 +2,7 @@
  * IndexedDB wrapper for v2 — v2-native persistence.
  *
  * Strategy (Phase C.1.0 pivot):
- *   v2 DB  (dnd-character-sheet-v2, version 2) — read + write, stores Character directly
+ *   v2 DB  (dnd-character-sheet-v2, version 4) — read + write, stores Character directly
  *   v1 DB  (dnd-character-sheet, version 3)    — read-only, accessed only during migration
  *
  * Characters are stored as domain Character objects (v2-native schema).
@@ -10,18 +10,21 @@
  * never touched again from v2. The v1 app at /TBT-RPG/ remains frozen and
  * unaware of v2's existence.
  *
- * Schema upgrade v1 → v2: the store is cleared because v1-shape V1Character
- * records are not compatible with v2-native Character records. Migration
- * re-populates from the v1 DB via the adapter.
+ * Schema history:
+ *   v1 → v2: store cleared (V1Character shape incompatible with Character)
+ *   v2 → v3: backfill className on hitDice entries (C.1.c.4)
+ *   v3 → v4: migrate proficiencies strings→arrays; lift languages to top-level;
+ *             backfill id/source on features missing them (C.1.c.5)
  */
 
 import { openDB } from 'idb'
 import type { Character } from '@/domain/character'
+import { migrateProfString } from './adapter'
 
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 3
+const V2_DB_VER  = 4
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
@@ -37,7 +40,6 @@ function openV2() {
         // Clear the store so migration can re-populate with adapted records.
         // This only affects dev environments that had C.1.a phase data.
         if (db.objectStoreNames.contains(V2_STORE)) {
-          // Cannot use db.transaction during upgrade in this context — use deleteObjectStore + recreate
           db.deleteObjectStore(V2_STORE)
         }
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
@@ -58,6 +60,56 @@ function openV2() {
             }))
             await cursor.update(char)
           }
+          cursor = await cursor.continue()
+        }
+      }
+      if (oldVersion < 4) {
+        // Migrate proficiencies from string fields to arrays; lift languages to top-level.
+        // Also backfill id and source on Feature entries that are missing them.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          let updated = false
+
+          // Proficiencies migration: old shape has string fields
+          const profs = char.proficiencies as Record<string, unknown> | undefined
+          if (profs && typeof profs.weaponsAndArmor === 'string') {
+            char.proficiencies = {
+              weapons: migrateProfString(profs.weaponsAndArmor),
+              armor:   [],
+              tools:   migrateProfString(profs.tools),
+              other:   migrateProfString(profs.other),
+            }
+            // Languages move from proficiencies to top-level
+            char.languages = migrateProfString(profs.languages)
+            updated = true
+          }
+
+          // Ensure languages exists as array (fresh installs after v4 already have it)
+          if (!Array.isArray(char.languages)) {
+            char.languages = []
+            updated = true
+          }
+
+          // Feature backfill: add id and source if missing
+          if (Array.isArray(char.features)) {
+            const patched = (char.features as Array<Record<string, unknown>>).map((f, idx) => ({
+              id:     f.id ?? `feat-${idx}`,
+              source: f.source ?? '',
+              ...f,
+            }))
+            const changed = patched.some((f, i) => {
+              const orig = (char.features as Array<Record<string, unknown>>)[i]!
+              return f.id !== orig.id || f.source !== orig.source
+            })
+            if (changed) {
+              char.features = patched
+              updated = true
+            }
+          }
+
+          if (updated) await cursor.update(char)
           cursor = await cursor.continue()
         }
       }

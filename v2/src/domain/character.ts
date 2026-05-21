@@ -126,13 +126,16 @@ export interface Character {
   savingThrows: SavingThrowState[]
   skills: SkillState[]
 
-  // Proficiencies (free text)
+  // Proficiencies (structured arrays — v2-native; migrated from v1 free-text strings)
   proficiencies: {
-    weaponsAndArmor: string  // weapons + armor combined (v1 stores combined or separate)
-    tools: string
-    languages: string
-    other: string
+    weapons: string[]
+    armor: string[]
+    tools: string[]
+    other: string[]
   }
+
+  // Languages (top-level array — moved from proficiencies.languages in v2 schema v4)
+  languages: string[]
 
   // Combat items
   attacks: Attack[]

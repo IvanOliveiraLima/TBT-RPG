@@ -26,7 +26,7 @@ const KAEL: Character = {
   inspiration: false,
   savingThrows: [],
   skills: [],
-  proficiencies: { weapons: '', armor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   // spells intentionally unsorted to verify alphabetical rendering
   spells: {

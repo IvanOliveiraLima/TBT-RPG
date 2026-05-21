@@ -30,7 +30,7 @@ const MOCK_CHARACTER: Character = {
   ac: 17, initiative: 0, speed: 25,
   passivePerception: 11, spellSaveDC: 0, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 0, cp: 0 },

@@ -11,6 +11,7 @@ import { SavingThrows } from '../parts/SavingThrows'
 import { SkillsBlock } from '../parts/SkillsBlock'
 import { FeaturesList } from '../parts/FeaturesList'
 import { ProficienciesBlock } from '../parts/ProficienciesBlock'
+import { LanguagesBlock } from '../parts/LanguagesBlock'
 import { Label } from '../ui/Label'
 import type { Character } from '@/domain/character'
 
@@ -54,7 +55,7 @@ export function StatusTab() {
           <AttrGrid character={character} cols={3} compact onUpdate={onUpdate} />
         </div>
 
-        {/* Saving Throws — before Skills (numeric → numeric → descriptive) */}
+        {/* Saving Throws */}
         <div style={CARD}>
           <Label>{t('saves.section_title')}</Label>
           <SavingThrows character={character} onUpdate={onUpdate} />
@@ -66,14 +67,17 @@ export function StatusTab() {
           <SkillsBlock character={character} onUpdate={onUpdate} />
         </div>
 
-        {/* Features & Traits */}
+        {/* Features & Traits (editable) */}
         <div style={CARD}>
           <Label>{t('features.label')}</Label>
-          <FeaturesList character={character} />
+          <FeaturesList character={character} onUpdate={onUpdate} />
         </div>
 
-        {/* Proficiências */}
-        <ProficienciesBlock character={character} />
+        {/* Languages (editable) */}
+        <LanguagesBlock character={character} onUpdate={onUpdate} />
+
+        {/* Proficiencies (editable) */}
+        <ProficienciesBlock character={character} onUpdate={onUpdate} />
       </div>
 
       {/* ── DESKTOP (hidden below lg) ── */}
@@ -125,13 +129,14 @@ export function StatusTab() {
             </div>
             <div style={CARD}>
               <Label>{t('features.title')}</Label>
-              <FeaturesList character={character} />
+              <FeaturesList character={character} onUpdate={onUpdate} />
             </div>
           </div>
         </div>
 
-        {/* Row 4: Proficiências — full width */}
-        <ProficienciesBlock character={character} />
+        {/* Row 4: Languages + Proficiencies — full width */}
+        <LanguagesBlock character={character} onUpdate={onUpdate} />
+        <ProficienciesBlock character={character} onUpdate={onUpdate} />
       </div>
     </>
   )
