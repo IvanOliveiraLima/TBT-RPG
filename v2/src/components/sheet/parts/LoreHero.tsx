@@ -4,7 +4,6 @@ import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { CharacterImageModal } from './CharacterImageModal'
-import { NumberField } from '@/components/primitives/NumberField'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -17,14 +16,6 @@ const PORTRAIT_GRADIENT =
   'radial-gradient(circle at 50% 35%, rgba(212,160,23,0.3), transparent 50%),' +
   'radial-gradient(circle at 40% 70%, rgba(91,63,168,0.25), transparent 50%),' +
   'linear-gradient(135deg, #2A1F3D, #0F0D14)'
-
-const INPUT_RESET: React.CSSProperties = {
-  background: 'transparent',
-  border: 'none',
-  outline: 'none',
-  padding: 0,
-  fontFamily: 'inherit',
-}
 
 interface LoreHeroProps {
   character: Character
@@ -96,24 +87,6 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
 
         {/* Identity info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4, minWidth: 0, flex: 1 }}>
-          {/* Name input */}
-          <input
-            type="text"
-            value={character.name}
-            onChange={(e) => onUpdate({ name: e.target.value })}
-            aria-label={t('aria.character_name_input')}
-            data-testid="lore-name"
-            style={{
-              ...INPUT_RESET,
-              fontFamily: "'Cinzel', Georgia, serif",
-              fontSize: 26,
-              fontWeight: 700,
-              color: '#F4EFE0',
-              lineHeight: 1.2,
-              width: '100%',
-            }}
-          />
-
           <div
             style={{ fontSize: 13, color: '#B8B4C8', lineHeight: 1.6 }}
             data-testid="lore-meta"
@@ -121,30 +94,11 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
             {metaParts.join(' · ')}
           </div>
 
-          {/* Level (read-only derived) + XP (editable) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#7A7788' }}>
-            {/* Split translation key to extract level-only portion for display */}
+          {/* Level (read-only derived) */}
+          <div style={{ fontSize: 12, color: '#7A7788' }}>
             <span data-testid="lore-level-text">
-              {t('lore.hero.level_xp', { level: String(deriveTotalLevel(character)), xp: '' })
-                .split('·')[0]!.trim()}
+              {t('hero.level_label')} {deriveTotalLevel(character)}
             </span>
-            <span aria-hidden>·</span>
-            <NumberField
-              value={character.experience}
-              min={0}
-              max={355000}
-              onChange={n => onUpdate({ experience: n })}
-              aria-label={t('aria.xp_input')}
-              data-testid="lore-xp-input"
-              style={{
-                ...INPUT_RESET,
-                fontSize: 12,
-                color: '#7A7788',
-                width: 70,
-                textAlign: 'right',
-              }}
-            />
-            <span>XP</span>
           </div>
         </div>
       </div>
