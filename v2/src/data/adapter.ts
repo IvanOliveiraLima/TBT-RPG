@@ -345,12 +345,28 @@ function adaptSkills(
 }
 
 /**
- * Detects whether a v1 toHit string represents a spell save DC ("DC 14", "dc 12")
- * vs a normal attack roll bonus ("+5", "0").
+ * Infers AttackKind from v1 toHit string and ability stat.
+ * Heuristic — user can correct via the UI after migration.
+ *
+ * Exported for use in DB migration (db.ts v4→v5) and tests.
  */
-function detectRollType(toHit: string | undefined): 'attack' | 'dc' {
-  if (!toHit) return 'attack'
-  return /^DC\s*\d+/i.test(toHit) ? 'dc' : 'attack'
+export function inferAttackKind(toHit: string | undefined | null, stat: string): 'melee' | 'ranged' | 'spell' {
+  if (toHit && /^DC\s*\d+/i.test(toHit)) return 'spell'
+  if (stat === 'int' || stat === 'wis' || stat === 'cha') return 'spell'
+  if (stat === 'dex') return 'ranged'
+  return 'melee'
+}
+
+/**
+ * Parses a v1 toHit string ("+5", "DC 14", "5", "") to a numeric bonus.
+ *
+ * Exported for use in DB migration (db.ts v4→v5) and tests.
+ */
+export function parseBonusString(toHit: string | undefined | null): number {
+  const s = (toHit ?? '').trim()
+  if (/^DC\s*\d+/i.test(s)) return 0
+  const n = parseInt(s.replace(/^\+/, ''), 10)
+  return isNaN(n) ? 0 : n
 }
 
 /**
@@ -362,18 +378,21 @@ function detectRollType(toHit: string | undefined): 'attack' | 'dc' {
  */
 function adaptAttacks(raw: V1Character): Attack[] {
   const v1Attacks = toArray<V1AttackEntry>(raw.page1?.attacks_spells)
-  return v1Attacks.map((a, i) => ({
-    id:         itemId('atk', i),
-    name:       str(a.name),
-    baseStat:   toAbilityKey(a.stat),
-    bonus:      str(a.toHit),  // raw v1 string; can be "+5" or "DC 14"
-    damage:     str(a.damage),
-    damageType: str(a.damage_type),
-    rollType:   detectRollType(a.toHit),
-    // v1 does not store proficiency on attacks — defaults to false on import.
-    // v2 edit mode (Phase C) will let users toggle this.
-    proficient: false,
-  }))
+  return v1Attacks.map((a, i) => {
+    const ability = toAbilityKey(a.stat)
+    return {
+      id:          itemId('atk', i),
+      name:        str(a.name),
+      kind:        inferAttackKind(a.toHit, ability),
+      ability,
+      attackBonus: parseBonusString(a.toHit),
+      damage:      str(a.damage),
+      damageType:  str(a.damage_type),
+      range:       '',
+      properties:  '',
+      notes:       '',
+    }
+  })
 }
 
 /**
