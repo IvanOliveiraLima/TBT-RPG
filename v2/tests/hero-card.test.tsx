@@ -182,3 +182,114 @@ describe('HeroCard — editable mode', () => {
     expect(screen.queryByTestId('hero-xp-input')).toBeNull()
   })
 })
+
+describe('HeroCard — identity fields (editable)', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders race input with character.race value', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hero-race-input') as HTMLInputElement
+    expect(input.value).toBe('Elfo')
+  })
+
+  it('calls onUpdate with new race on input change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hero-race-input'), { target: { value: 'Anão' } })
+    expect(onUpdate).toHaveBeenCalledWith({ race: 'Anão' })
+  })
+
+  it('accepts non-canonical race values', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hero-race-input'), { target: { value: 'Half-Orc Custom' } })
+    expect(onUpdate).toHaveBeenCalledWith({ race: 'Half-Orc Custom' })
+  })
+
+  it('renders background input with character.background value', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const input = screen.getByTestId('hero-background-input') as HTMLInputElement
+    expect(input.value).toBe('Outlander')
+  })
+
+  it('calls onUpdate with new background on input change', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('hero-background-input'), { target: { value: 'Sage' } })
+    expect(onUpdate).toHaveBeenCalledWith({ background: 'Sage' })
+  })
+
+  it('renders AlignmentSelect in editable mode', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('alignment-select')).toBeDefined()
+  })
+
+  it('calls onUpdate with new alignment when AlignmentSelect changes', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('alignment-select'), { target: { value: 'Lawful Good' } })
+    expect(onUpdate).toHaveBeenCalledWith({ alignment: 'Lawful Good' })
+  })
+
+  it('renders ClassEditor with class rows', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('class-editor')).toBeDefined()
+    expect(screen.getByTestId('class-row-0')).toBeDefined()
+  })
+
+  it('renders inspiration checkbox reflecting character.inspiration=false', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const cb = screen.getByTestId('hero-inspiration-checkbox') as HTMLInputElement
+    expect(cb.checked).toBe(false)
+  })
+
+  it('renders inspiration checkbox reflecting character.inspiration=true', () => {
+    renderWithI18n(
+      <HeroCard character={{ ...BASE, inspiration: true }} onUpdate={vi.fn()} />, 'pt'
+    )
+    const cb = screen.getByTestId('hero-inspiration-checkbox') as HTMLInputElement
+    expect(cb.checked).toBe(true)
+  })
+
+  it('toggling inspiration calls onUpdate with new value', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<HeroCard character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('hero-inspiration-checkbox'))
+    expect(onUpdate).toHaveBeenCalledWith({ inspiration: true })
+  })
+
+  it('shows race label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Raça')).toBeDefined()
+  })
+
+  it('shows background label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Antecedente')).toBeDefined()
+  })
+
+  it('shows alignment label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Alinhamento')).toBeDefined()
+  })
+
+  it('shows classes label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Classes')).toBeDefined()
+  })
+
+  it('shows inspiration label in PT', () => {
+    renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByText('Inspiração')).toBeDefined()
+  })
+
+  it('read-only mode: race input not rendered', () => {
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
+    expect(screen.queryByTestId('hero-race-input')).toBeNull()
+  })
+
+  it('read-only mode: background input not rendered', () => {
+    renderWithI18n(<HeroCard character={BASE} />, 'pt')
+    expect(screen.queryByTestId('hero-background-input')).toBeNull()
+  })
+})
