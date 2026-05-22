@@ -8,12 +8,12 @@ interface AlignmentSelectProps {
   onChange: (alignment: string) => void
 }
 
+// backgroundColor (not 'background' shorthand) preserves backgroundImage (chevron) as a separate property
 const SELECT_STYLE: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid #2A2537',
+  backgroundColor: 'transparent',
+  border: '1px solid transparent',
   borderRadius: 6,
-  padding: '5px 8px',
-  paddingRight: 28,
+  padding: '4px 28px 4px 6px',  // matches SEAMLESS_INPUT top/left/bottom; 28px right reserves chevron space
   color: '#F4EFE0',
   fontSize: 13,
   fontFamily: 'inherit',
@@ -46,7 +46,7 @@ export function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
       onChange={handleChange}
       aria-label={t('aria.alignment_input')}
       data-testid="alignment-select"
-      className="alignment-select"
+      className="alignment-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
       style={SELECT_STYLE}
     >
       <option value="">{t('identity.alignment_unselected')}</option>
