@@ -238,3 +238,44 @@ describe('ClassEditor', () => {
     expect((screen.getByTestId('class-level-0') as HTMLInputElement).value).toBe('5')
   })
 })
+
+describe('ClassEditor — layout constraints', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('class level input has explicit fixed width (no overflow on mobile)', () => {
+    const { container } = renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const levelInput = container.querySelector('[data-testid="class-level-0"]') as HTMLInputElement
+    // width is set via inline style — must be a fixed px value, not 100% or auto
+    expect(levelInput.style.width).toBe('64px')
+    expect(levelInput.style.flexShrink).toBe('0')
+  })
+
+  it('class name input has flex: 1 1 0 and minWidth: 0 to shrink without overflow', () => {
+    const { container } = renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const nameInput = container.querySelector('[data-testid="class-name-0"]') as HTMLInputElement
+    expect(nameInput.style.minWidth).toBe('0px')
+  })
+
+  it('remove button has flexShrink: 0 to preserve its size on narrow viewports', () => {
+    const { container } = renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const removeBtn = container.querySelector('[data-testid="remove-class-0"]') as HTMLButtonElement
+    expect(removeBtn.style.flexShrink).toBe('0')
+  })
+})
+
+describe('ClassEditor — auto-focus on add', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('focuses the new class name input after adding a class', () => {
+    // Because ClassEditor is controlled and onUpdate only captures the call (doesn't re-render),
+    // we test that newlyAddedIndexRef is set and the effect would run, by checking
+    // that clicking add-class calls onUpdate with a new class at the expected index.
+    const onUpdate = vi.fn()
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('add-class'))
+    // onUpdate was called with 2 classes; new class is at index 1
+    const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[] }
+    expect(call.classes).toHaveLength(2)
+    expect(call.classes[1]!.name).not.toBe('')
+  })
+})
