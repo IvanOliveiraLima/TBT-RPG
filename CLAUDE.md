@@ -108,8 +108,8 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 
 | File | Role |
 |------|------|
-| `v2/src/types/character.ts` | TypeScript interfaces mirroring v1 IndexedDB schema exactly |
-| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 2) |
+| `v2/src/domain/character.ts` | Domain model for v2-native `Character` — canonical shape all UI components consume |
+| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 4) |
 | `v2/src/data/migration.ts` | One-time v1→v2 migration via `migrateV1Characters()` |
 | `v2/src/lib/supabase.ts` | Supabase client singleton (same project as v1) |
 | `v2/src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
@@ -445,10 +445,10 @@ component without dual-lang tests is incomplete.
 
 After a clean `npm install` (no flags), `npm test` should report:
 
-| Metric | Baseline (end of C.1.c.1) |
+| Metric | Baseline (end of C.1.c.7) |
 |--------|--------------------------|
-| Test files | 43 |
-| Tests | 774 |
+| Test files | 46 |
+| Tests | 935 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -467,3 +467,167 @@ required.
 ### v2 known layout issues (to fix when touching mobile layout)
 
 - **Mobile drawer — PT/EN toggle pushed too far down**: `MobileShell.tsx` uses `marginTop: 'auto'` on the toggle wrapper, which pushes it to the bottom of the drawer via the flex-spacer. On short screens the toggle may be hidden or hard to reach. Consider either moving the toggle closer to the nav menu items or constraining the drawer height so it doesn't rely on `auto` margin.
+
+---
+
+## Phase history (v2)
+
+### Phase C.1.c — Status tab fully editable (COMPLETED — PR #94–#100)
+
+All blocks in the Status tab are now editable in the v2. Sub-phases delivered:
+
+| PR | Sub-phase | Summary |
+|----|-----------|---------|
+| #94 | C.1.c.1 | Identity + Inspiration: race, background, alignment, classes (multiclass), inspiration, XP |
+| #95 | C.1.c.2 | Attributes + Saving Throws with live derived cascade |
+| #96 | C.1.c.3 | Skills with proficient + expertise toggles (D&D 5e invariant) |
+| #97 | C.1.c.4 | HP + Death Saves + Hit Dice multiclass (DB schema v3) |
+| #98 | C.1.c.5 | Languages + Proficiencies arrays + Features full editor (DB schema v4) |
+| #99 | C.1.c.6 | HP clamp fix, HP steppers, name/XP moved to HeroCard |
+| #100 | C.1.c.7 | Layout overhaul: IdentityBlock removed, identity migrated to HeroCard, B2 grid |
+
+**C.1.c.7 detail:** Extracted `AlignmentSelect` and `ClassEditor` as standalone subcomponents. `IdentityBlock.tsx` deleted. StatusTab reorganized to B2 grid (HeroCard full-width, Features full-width, Skills+Saves side-by-side). Follow-up polish: alphabetical datalists, AlignmentSelect dark theme fix, ClassEditor level input fixed-width (64px), auto-focus on new class, seamless inline editing on AlignmentSelect.
+
+---
+
+## Patterns established during C.1.c
+
+These patterns are in use across the Status tab and will repeat in C.1.d+.
+
+#### State-local string for number inputs
+
+Number inputs use a local string state to allow intermediate empty state during typing
+without contaminating the domain model with invalid values. The domain only updates with
+valid parsed numbers; derived displays always read from the domain (last valid state).
+
+`NumberField` in `v2/src/components/primitives/NumberField.tsx` implements this. See
+`AttrGrid.tsx` for the canonical in-component application, and `HpBlock`, `HitDicePool`,
+`ClassEditor` (level), and `LoreHero` (XP) for additional usages.
+
+#### Seamless inline editing
+
+Inputs have a transparent border at rest and a visible border on hover/focus. Pattern:
+
+```tsx
+const SEAMLESS_INPUT: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid transparent',
+  borderRadius: 6,
+  padding: '4px 6px',
+  // ...
+}
+// Tailwind hover/focus on top:
+className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+```
+
+`AlignmentSelect` uses the same pattern but must use `backgroundColor` (not `background`
+shorthand) to preserve the `backgroundImage` chevron SVG as a separate CSS property.
+
+#### Toggle pattern (pip-based)
+
+Boolean toggles use `<button>` wrapping a pip/circle visual. See `SavingThrows`,
+`SkillsBlock`, `DeathSaves`. Gap of 6px between adjacent pips for touch comfort.
+
+#### List editing pattern (add/update/remove)
+
+Arrays use:
+- Append on add (push to end)
+- Map with **item identity by name** for classes/hitDice, **by UUID** for features,
+  **by index** for languages/proficiencies/other simple lists
+- Filter on remove
+
+Default values for name-identified items must be **non-empty** (invariant from
+C.1.c.4 follow-up: prevents "ghost" hitDice entries with empty className).
+Deduplication: if default name already exists, append ` 2`, ` 3`, etc.
+
+#### Auto-focus after add
+
+When an add action creates a new row, focus the new input after render using
+`useRef<number | null>(null)` + `useEffect` (no deps array):
+
+```tsx
+const newlyAddedIndexRef = useRef<number | null>(null)
+
+function add() {
+  newlyAddedIndexRef.current = list.length  // index of the new entry
+  onUpdate({ ... })
+}
+
+useEffect(() => {
+  if (newlyAddedIndexRef.current !== null) {
+    const input = document.querySelector(`[data-testid="...-${newlyAddedIndexRef.current}"]`) as HTMLInputElement | null
+    input?.focus()
+    input?.select?.() ?? input?.setSelectionRange(0, input.value.length)
+    newlyAddedIndexRef.current = null
+  }
+})
+```
+
+Using `useRef` (not state) avoids triggering a re-render for the focus side-effect.
+
+#### Class/hitDice sync invariants
+
+`classes` and `hitDice` are parallel arrays but linked by `className` (not index):
+- Rename: `hitDice.map(hd => hd.className === oldName ? { ...hd, className: newName, dieSize: getHitDie(newName) } : hd)`
+- Remove: `hitDice.filter(hd => hd.className !== removedName)`
+- Level reduce: clamp `hitDice.current` to `Math.min(hd.current, newLevel)`
+- `getHitDie(name)` in `v2/src/domain/classes.ts` — returns canonical die size (8 default)
+
+#### Database schema versions
+
+| Version | DB | Change |
+|---------|-----|--------|
+| v1 | `dnd-character-sheet` | v1 legacy shape (frozen) |
+| v2 | `dnd-character-sheet-v2` | initial v2-native `Character` shape |
+| v3 | `dnd-character-sheet-v2` | adds `className` to hitDice entries |
+| v4 | `dnd-character-sheet-v2` | proficiencies as arrays + languages top-level + features `id`/source/type/uses |
+
+Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idempotent.
+
+---
+
+## Decisions that must remain
+
+| Decision | Introduced | Rationale |
+|----------|-----------|-----------|
+| Initiative always derived from DEX modifier | C.1.c.2 follow-up | RAW D&D 5e; feats like Alert not yet modeled |
+| HP max not auto-recalculated when CON changes | C.1.c.2 Q1=A | User maintains manual control over HP max |
+| Current HP capped at max base (not max + temp) | C.1.c.6 | D&D 5e RAW: temp HP is a separate barrier, not added capacity |
+| Header HP % ignores temp HP | C.1.c.5 | Shows real HP %, not inflated capacity |
+| Class always has non-empty name | C.1.c.4 follow-up | Prevents hitDice entries with empty className ("ghost" dice) |
+| HitDice linked to class by name, not index | C.1.c.4 | Rename during incremental typing must stay in sync |
+| Race/class/background as free-text + datalist | C.1.c.1 Q5=C | Supports homebrew; no forced canonical lock-in |
+| 9 fixed canonical alignments + custom value support | C.1.c.1 | Most chars use canonical; edge case (custom) shown as disabled option |
+| Background change does NOT auto-apply skill proficiencies | C.1.c.3 Q2=B | User has full manual control over skill proficiencies |
+| `patchCharacter` is an anti-pattern | C.1.b retrospective | Dual-write to two stores caused silent persistence bugs; use `updateCharacter` only |
+| `exactOptionalPropertyTypes` requires conditional spread for partials | C.1.c.2 build fix | Prefer over adding `\| undefined` to field types |
+
+---
+
+## Open questions (for future phases)
+
+- **OQ-5 — Stable IDs for classes/hitDice.** Currently classes are identified by name.
+  Edge case: two classes with the same name (rare homebrew). Refactor candidate when
+  complexity justifies — needs UUID-based linking instead of name-based.
+
+- **OQ-6 — Header HP % clarity.** Discrepancy between header (current/max) and bar
+  (shows temp HP overlay). Decided: header stays current/max only; no change planned.
+
+- **OQ — HP +/- buttons for combat tracking.** Deferred to future UX polish pass.
+
+- **OQ — Tooltip "HP not auto-recalculated with CON".** Deferred.
+
+- **OQ — Spell save DC editor.** Will surface in C.1.e (Spells); needs spellcasting
+  ability selector to be modeled first.
+
+- **OQ — Initiative override field.** For builds with Alert feat or manual override.
+  Not modeled yet; current policy is DEX-always-derived. Requires a separate bonus
+  field (not a replacement for the derived value).
+
+- **OQ — Localization of canonical race/class/background names.** Currently free-text;
+  could be mapped to i18n keys but with significant complexity (custom values, reverse
+  lookup across languages). Deferred indefinitely.
+
+- **OQ — Character creation flow.** "Meus Personagens" screen still requires migrating
+  from v1 or editing existing characters. Requires defaults definition and creation UI
+  (blank-sheet flow).
