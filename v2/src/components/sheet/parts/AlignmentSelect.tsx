@@ -46,6 +46,7 @@ export function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
       onChange={handleChange}
       aria-label={t('aria.alignment_input')}
       data-testid="alignment-select"
+      className="alignment-select"
       style={SELECT_STYLE}
     >
       <option value="">{t('identity.alignment_unselected')}</option>

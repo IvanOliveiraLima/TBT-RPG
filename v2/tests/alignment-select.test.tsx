@@ -63,4 +63,12 @@ describe('AlignmentSelect', () => {
     fireEvent.change(screen.getByTestId('alignment-select'), { target: { value: '' } })
     expect(onChange).toHaveBeenCalledWith('')
   })
+
+  it('applies alignment-select CSS class for dark theme option list', () => {
+    const { container } = renderWithI18n(
+      <AlignmentSelect value="Neutral Good" onChange={vi.fn()} />, 'pt'
+    )
+    const sel = container.querySelector('[data-testid="alignment-select"]') as HTMLSelectElement
+    expect(sel.classList.contains('alignment-select')).toBe(true)
+  })
 })
