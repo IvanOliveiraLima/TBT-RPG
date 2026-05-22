@@ -3,7 +3,6 @@ import { useActiveCharacter } from '@/store/character'
 import { useCharactersStore } from '@/store/characters'
 import { useTranslation } from '@/i18n'
 import { HeroCard } from '../parts/HeroCard'
-import { IdentityBlock } from '../parts/IdentityBlock'
 import { HpBlock } from '../parts/HpBlock'
 import { CombatStrip } from '../parts/CombatStrip'
 import { AttrGrid } from '../parts/AttrGrid'
@@ -37,12 +36,6 @@ export function StatusTab() {
       <div className="lg:hidden flex flex-col gap-3">
         <HeroCard character={character} onUpdate={onUpdate} compact />
 
-        {/* Identity editing */}
-        <div style={CARD}>
-          <Label>{t('identity.section_title')}</Label>
-          <IdentityBlock character={character} onUpdate={onUpdate} />
-        </div>
-
         <HpBlock character={character} onUpdate={onUpdate} />
         <CombatStrip character={character} cols={3} />
 
@@ -67,36 +60,27 @@ export function StatusTab() {
           <SkillsBlock character={character} onUpdate={onUpdate} />
         </div>
 
-        {/* Features & Traits (editable) */}
+        {/* Features & Traits */}
         <div style={CARD}>
           <Label>{t('features.label')}</Label>
           <FeaturesList character={character} onUpdate={onUpdate} />
         </div>
 
-        {/* Languages (editable) */}
+        {/* Languages */}
         <LanguagesBlock character={character} onUpdate={onUpdate} />
 
-        {/* Proficiencies (editable) */}
+        {/* Proficiencies */}
         <ProficienciesBlock character={character} onUpdate={onUpdate} />
       </div>
 
-      {/* ── DESKTOP (hidden below lg) ── */}
+      {/* ── DESKTOP (hidden below lg) — B2 layout ── */}
       <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
 
-        {/* Row 0: HeroCard + Identity side by side */}
-        <div className="grid grid-cols-3" style={{ gap: 14 }}>
-          <div style={{ gridColumn: 'span 2' }}>
-            <HeroCard character={character} onUpdate={onUpdate} />
-          </div>
-          <div style={CARD}>
-            <Label>{t('identity.section_title')}</Label>
-            <IdentityBlock character={character} onUpdate={onUpdate} />
-          </div>
-        </div>
+        {/* Row 0: HeroCard full-width */}
+        <HeroCard character={character} onUpdate={onUpdate} />
 
-        {/* Rows 1–2: 3-col grid (HpBlock + Combate, AttrGrid) */}
+        {/* Row 1: HpBlock (1col) + CombatStrip (2cols) */}
         <div className="grid grid-cols-3" style={{ gap: 14 }}>
-          {/* Row 1: HpBlock (1 col) + Combate card (2 cols) */}
           <div>
             <HpBlock character={character} onUpdate={onUpdate} />
           </div>
@@ -106,37 +90,38 @@ export function StatusTab() {
               <CombatStrip character={character} cols={6} />
             </div>
           </div>
-
-          {/* Row 2: AttrGrid full width */}
-          <div style={{ gridColumn: 'span 3' }}>
-            <div style={CARD}>
-              <Label>{t('attributes.section_title')}</Label>
-              <AttrGrid character={character} cols={6} onUpdate={onUpdate} />
-            </div>
-          </div>
         </div>
 
-        {/* Row 3: 2-col — Skills left | Saves + Features right */}
+        {/* Row 2: AttrGrid full-width */}
+        <div style={CARD}>
+          <Label>{t('attributes.section_title')}</Label>
+          <AttrGrid character={character} cols={6} onUpdate={onUpdate} />
+        </div>
+
+        {/* Row 3: Skills | Saves */}
         <div className="grid grid-cols-2" style={{ gap: 14 }}>
           <div style={{ ...CARD, maxHeight: 420, overflowY: 'auto' }}>
             <Label>{t('skills.label')}</Label>
             <SkillsBlock character={character} onUpdate={onUpdate} />
           </div>
-          <div className="flex flex-col" style={{ gap: 14 }}>
-            <div style={CARD}>
-              <Label>{t('saves.section_title')}</Label>
-              <SavingThrows character={character} onUpdate={onUpdate} />
-            </div>
-            <div style={CARD}>
-              <Label>{t('features.title')}</Label>
-              <FeaturesList character={character} onUpdate={onUpdate} />
-            </div>
+          <div style={CARD}>
+            <Label>{t('saves.section_title')}</Label>
+            <SavingThrows character={character} onUpdate={onUpdate} />
           </div>
         </div>
 
-        {/* Row 4: Languages + Proficiencies — full width */}
-        <LanguagesBlock character={character} onUpdate={onUpdate} />
-        <ProficienciesBlock character={character} onUpdate={onUpdate} />
+        {/* Row 4: FeaturesList full-width */}
+        <div style={CARD}>
+          <Label>{t('features.title')}</Label>
+          <FeaturesList character={character} onUpdate={onUpdate} />
+        </div>
+
+        {/* Row 5: Languages | Proficiencies */}
+        <div className="grid grid-cols-2" style={{ gap: 14 }}>
+          <LanguagesBlock character={character} onUpdate={onUpdate} />
+          <ProficienciesBlock character={character} onUpdate={onUpdate} />
+        </div>
+
       </div>
     </>
   )

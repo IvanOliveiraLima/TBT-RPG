@@ -311,3 +311,40 @@ describe('StatusTab cascade — ability score editing', () => {
     expect(profStats[0]!.textContent).toContain('+3')
   })
 })
+
+// ── B2 layout: IdentityBlock removed, identity fields now in HeroCard ─────────
+
+describe('StatusTab — B2 layout', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  afterEach(() => {
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  function setup() {
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
+    renderWithI18n(<StatusTab />, 'en')
+  }
+
+  it('does not render identity-block (removed in B2)', () => {
+    setup()
+    expect(document.querySelector('[data-testid="identity-block"]')).toBeNull()
+  })
+
+  it('renders identity fields directly in HeroCard (race input present)', () => {
+    setup()
+    expect(screen.getAllByTestId('hero-race-input').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders ClassEditor inside HeroCard (no separate identity card)', () => {
+    setup()
+    expect(screen.getAllByTestId('class-editor').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('inspiration checkbox is in HeroCard, not a separate block', () => {
+    setup()
+    expect(screen.getAllByTestId('hero-inspiration-checkbox').length).toBeGreaterThanOrEqual(1)
+  })
+})
