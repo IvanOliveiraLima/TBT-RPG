@@ -2,7 +2,7 @@
  * IndexedDB wrapper for v2 — v2-native persistence.
  *
  * Strategy (Phase C.1.0 pivot):
- *   v2 DB  (dnd-character-sheet-v2, version 4) — read + write, stores Character directly
+ *   v2 DB  (dnd-character-sheet-v2, version 5) — read + write, stores Character directly
  *   v1 DB  (dnd-character-sheet, version 3)    — read-only, accessed only during migration
  *
  * Characters are stored as domain Character objects (v2-native schema).
@@ -15,19 +15,22 @@
  *   v2 → v3: backfill className on hitDice entries (C.1.c.4)
  *   v3 → v4: migrate proficiencies strings→arrays; lift languages to top-level;
  *             backfill id/source on features missing them (C.1.c.5)
+ *   v4 → v5: expand Attack shape — rename baseStat→ability, bonus(string)→attackBonus(number),
+ *             add kind/range/properties/notes, drop rollType/proficient (C.1.d)
  */
 
 import { openDB } from 'idb'
 import type { Character } from '@/domain/character'
-import { migrateProfString } from './adapter'
+import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
 
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 4
+const V2_DB_VER  = 5
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
+
 
 function openV2() {
   return openDB(V2_DB_NAME, V2_DB_VER, {
@@ -110,6 +113,35 @@ function openV2() {
           }
 
           if (updated) await cursor.update(char)
+          cursor = await cursor.continue()
+        }
+      }
+      if (oldVersion < 5) {
+        // Expand Attack shape: rename baseStat→ability, bonus(string)→attackBonus(number),
+        // add kind/range/properties/notes, drop rollType/proficient.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          if (Array.isArray(char.attacks) && char.attacks.length > 0) {
+            char.attacks = (char.attacks as Array<Record<string, unknown>>).map((a) => {
+              const bonusStr = String(a.bonus ?? '')
+              const baseStat = String(a.baseStat ?? '')
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { baseStat: _bs, rollType: _rt, proficient: _p, bonus: _b, ...rest } = a
+              return {
+                ...rest,
+                id:           a.id ?? crypto.randomUUID(),
+                kind:         inferAttackKind(bonusStr, baseStat),
+                ability:      baseStat,
+                attackBonus:  parseBonusString(bonusStr),
+                range:        a.range ?? '',
+                properties:   a.properties ?? '',
+                notes:        a.notes ?? '',
+              }
+            })
+            await cursor.update(char)
+          }
           cursor = await cursor.continue()
         }
       }
