@@ -91,7 +91,6 @@ export interface Character {
   background: string
   alignment: string
   classes: ClassEntry[]
-  totalLevel: number     // sum of all class levels
   experience: number
 
   // Demographics (v2-native; blank for characters migrated from v1 which has no such fields)
@@ -104,7 +103,7 @@ export interface Character {
 
   // Core stats
   abilities: Abilities
-  proficiencyBonus: number   // derived from totalLevel
+  proficiencyBonus: number   // derived from sum of class levels
 
   // Status
   hp: {
@@ -112,7 +111,7 @@ export interface Character {
     max: number
     temp: number
   }
-  hitDice: { current: number; max: number; dieSize: number }[]
+  hitDice: { className: string; current: number; max: number; dieSize: number }[]
   deathSaves: { successes: number; failures: number }
 
   // Combat
@@ -127,13 +126,16 @@ export interface Character {
   savingThrows: SavingThrowState[]
   skills: SkillState[]
 
-  // Proficiencies (free text)
+  // Proficiencies (structured arrays — v2-native; migrated from v1 free-text strings)
   proficiencies: {
-    weaponsAndArmor: string  // weapons + armor combined (v1 stores combined or separate)
-    tools: string
-    languages: string
-    other: string
+    weapons: string[]
+    armor: string[]
+    tools: string[]
+    other: string[]
   }
+
+  // Languages (top-level array — moved from proficiencies.languages in v2 schema v4)
+  languages: string[]
 
   // Combat items
   attacks: Attack[]

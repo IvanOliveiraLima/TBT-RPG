@@ -6,7 +6,7 @@
  *
  * v1 fields intentionally discarded:
  * - page1.character_info.player_name — not part of the character's own domain model
- * - page1.top_bar.proficiency — recalculated from totalLevel via proficiencyBonus()
+ * - page1.top_bar.proficiency — recalculated from sum of class levels via proficiencyBonus()
  * - page1.top_bar.passive_perception — recalculated via passivePerception()
  * - page1.top_bar.ac — recalculated as 10+DEX when blank/zero (v1 often empty)
  * - page1.top_bar.initiative — recalculated as DEX mod when blank (v1 often empty)
@@ -165,6 +165,7 @@ function adaptFeatures(raw: V1Character): Feature[] {
     .map((name, idx) => ({
       id:          `feat-${idx}`,
       name,
+      source:      '',
       description: '',
       type:        'passive' as const,
     }))
@@ -214,15 +215,29 @@ function adaptClasses(raw: V1Character): ClassEntry[] {
   return [{ name, level: parseIntSafe(bi?.level), hitDie: getHitDie(name) }]
 }
 
+/**
+ * Reads an ability score from a raw v1 value.
+ * Defaults to 10 (the PHB neutral baseline, modifier +0) for any value that
+ * is missing, empty, zero, or otherwise invalid. Scores below 1 are treated
+ * as unset — a character with STR 0 cannot exist in D&D 5e.
+ * Caps at 30 and floors to integer.
+ */
+function readAbilityScore(val: string | number | boolean | null | undefined): number {
+  const n = parseIntSafe(val)
+  if (n < 1) return 10
+  if (n > 30) return 30
+  return n
+}
+
 function adaptAbilities(raw: V1Character): Abilities {
   const a = raw.page1?.attributes
   return {
-    str: parseIntSafe(a?.str),
-    dex: parseIntSafe(a?.dex),
-    con: parseIntSafe(a?.con),
-    int: parseIntSafe(a?.int),
-    wis: parseIntSafe(a?.wis),
-    cha: parseIntSafe(a?.cha),
+    str: readAbilityScore(a?.str),
+    dex: readAbilityScore(a?.dex),
+    con: readAbilityScore(a?.con),
+    int: readAbilityScore(a?.int),
+    wis: readAbilityScore(a?.wis),
+    cha: readAbilityScore(a?.cha),
   }
 }
 
@@ -469,23 +484,51 @@ function adaptCurrency(raw: V1Character) {
   }
 }
 
-function joinNonEmpty(a: string | undefined, b: string | undefined, sep: string): string {
-  const aTrim = (a ?? '').trim()
-  const bTrim = (b ?? '').trim()
-  if (aTrim && bTrim) return `${aTrim}${sep}${bTrim}`
-  return aTrim || bTrim
+/**
+ * Converts a free-text proficiency/language string to a structured array.
+ * Splits on common separators (comma, semicolon, newline) and trims.
+ * Empty/non-string input returns empty array.
+ *
+ * Exported for use in DB migration and tests.
+ */
+export function migrateProfString(raw: unknown): string[] {
+  if (!raw || typeof raw !== 'string') return []
+  return raw
+    .split(/[,;\n]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0)
 }
 
-function adaptProficiencies(raw: V1Character): Character['proficiencies'] {
+function adaptProficienciesAndLanguages(
+  raw: V1Character,
+): { proficiencies: Character['proficiencies']; languages: string[] } {
   const p = raw.page1?.proficiencies
-  if (!p) return { weaponsAndArmor: '', tools: '', languages: '', other: '' }
-  // Legacy schema has weapon_armor combined; standard schema has weapon_profs + armor_profs separate
-  const weaponsAndArmor = p.weapon_armor ?? joinNonEmpty(p.weapon_profs, p.armor_profs, ', ')
+  if (!p) return {
+    proficiencies: { weapons: [], armor: [], tools: [], other: [] },
+    languages: [],
+  }
+
+  let weapons: string[]
+  let armor: string[]
+  if (p.weapon_armor) {
+    // Legacy schema: weapon_armor combines weapons + armor in one field.
+    // Goes entirely into weapons[] — user can re-sort into armor[] manually.
+    weapons = migrateProfString(p.weapon_armor)
+    armor   = []
+  } else {
+    // Standard schema: weapon_profs and armor_profs are kept separate.
+    weapons = migrateProfString(p.weapon_profs)
+    armor   = migrateProfString(p.armor_profs)
+  }
+
   return {
-    weaponsAndArmor: str(weaponsAndArmor),
-    tools:           str(p.tool_profs ?? p.tools),
-    languages:       str(p.language_profs ?? p.languages),
-    other:           str(p.other_profs ?? p.other),
+    proficiencies: {
+      weapons,
+      armor,
+      tools: migrateProfString(p.tool_profs ?? p.tools),
+      other: migrateProfString(p.other_profs ?? p.other),
+    },
+    languages: migrateProfString(p.language_profs ?? p.languages),
   }
 }
 
@@ -504,7 +547,7 @@ function adaptProficiencies(raw: V1Character): Character['proficiencies'] {
 function adaptHitDice(
   raw: V1Character,
   classes: ClassEntry[],
-): { current: number; max: number; dieSize: number }[] {
+): { className: string; current: number; max: number; dieSize: number }[] {
   if (classes.length === 0) return []
 
   if (classes.length === 1) {
@@ -512,11 +555,11 @@ function adaptHitDice(
     const maxFromClass = cls.level
     const currentRaw = parseIntSafe(raw.page1?.status?.hit_dice?.current_hd)
     const current = currentRaw > 0 ? currentRaw : maxFromClass
-    return [{ current, max: maxFromClass, dieSize: cls.hitDie }]
+    return [{ className: cls.name, current, max: maxFromClass, dieSize: cls.hitDie }]
   }
 
   // Multiclass: one entry per class; current = max since v1 has no per-class tracking
-  return classes.map((cls) => ({ current: cls.level, max: cls.level, dieSize: cls.hitDie }))
+  return classes.map((cls) => ({ className: cls.name, current: cls.level, max: cls.level, dieSize: cls.hitDie }))
 }
 
 function adaptDeathSaves(raw: V1Character): { successes: number; failures: number } {
@@ -592,7 +635,6 @@ export function adaptCharacter(raw: V1Character): Character {
     background: str(ci?.background),
     alignment:  str(ci?.alignment),
     classes,
-    totalLevel: totalLvl,
     experience: parseIntSafe(ci?.exp),
 
     // Demographics — v1 does not store these fields; they start blank for migrated chars.
@@ -620,7 +662,7 @@ export function adaptCharacter(raw: V1Character): Character {
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
     skills,
 
-    proficiencies: adaptProficiencies(raw),
+    ...adaptProficienciesAndLanguages(raw),
 
     attacks: adaptAttacks(raw),
     ...(spells !== undefined ? { spells } : {}),

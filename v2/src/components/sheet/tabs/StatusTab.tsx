@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useActiveCharacter } from '@/store/character'
+import { useCharactersStore } from '@/store/characters'
 import { useTranslation } from '@/i18n'
 import { HeroCard } from '../parts/HeroCard'
 import { HpBlock } from '../parts/HpBlock'
@@ -9,7 +10,9 @@ import { SavingThrows } from '../parts/SavingThrows'
 import { SkillsBlock } from '../parts/SkillsBlock'
 import { FeaturesList } from '../parts/FeaturesList'
 import { ProficienciesBlock } from '../parts/ProficienciesBlock'
+import { LanguagesBlock } from '../parts/LanguagesBlock'
 import { Label } from '../ui/Label'
+import type { Character } from '@/domain/character'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -21,14 +24,19 @@ const CARD: React.CSSProperties = {
 export function StatusTab() {
   const { t } = useTranslation()
   const character = useActiveCharacter()
+  const updateCharacter = useCharactersStore(s => s.updateCharacter)
   if (!character) return null
+
+  const onUpdate = (partial: Partial<Character>) =>
+    void updateCharacter(character.id, partial)
 
   return (
     <>
       {/* ── MOBILE STACK (hidden on lg+) ── */}
       <div className="lg:hidden flex flex-col gap-3">
-        <HeroCard character={character} compact />
-        <HpBlock character={character} />
+        <HeroCard character={character} onUpdate={onUpdate} compact />
+
+        <HpBlock character={character} onUpdate={onUpdate} />
         <CombatStrip character={character} cols={3} />
 
         {/* Atributos */}
@@ -37,39 +45,44 @@ export function StatusTab() {
             <span style={{ color: '#D4A017', fontSize: 12 }}>⬢</span>
             <Label style={{ marginBottom: 0 }}>{t('attributes.section_title')}</Label>
           </div>
-          <AttrGrid character={character} cols={3} compact />
+          <AttrGrid character={character} cols={3} compact onUpdate={onUpdate} />
         </div>
 
-        {/* Saving Throws — before Skills (numeric → numeric → descriptive) */}
+        {/* Saving Throws */}
         <div style={CARD}>
           <Label>{t('saves.section_title')}</Label>
-          <SavingThrows character={character} />
+          <SavingThrows character={character} onUpdate={onUpdate} />
         </div>
 
         {/* Skills */}
         <div style={CARD}>
           <Label>{t('skills.label')}</Label>
-          <SkillsBlock character={character} />
+          <SkillsBlock character={character} onUpdate={onUpdate} />
         </div>
 
         {/* Features & Traits */}
         <div style={CARD}>
           <Label>{t('features.label')}</Label>
-          <FeaturesList character={character} />
+          <FeaturesList character={character} onUpdate={onUpdate} />
         </div>
 
-        {/* Proficiências */}
-        <ProficienciesBlock character={character} />
+        {/* Languages */}
+        <LanguagesBlock character={character} onUpdate={onUpdate} />
+
+        {/* Proficiencies */}
+        <ProficienciesBlock character={character} onUpdate={onUpdate} />
       </div>
 
-      {/* ── DESKTOP (hidden below lg) ── */}
+      {/* ── DESKTOP (hidden below lg) — B2 layout ── */}
       <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
 
-        {/* Rows 1–2: 3-col grid (HpBlock + Combate, AttrGrid) */}
+        {/* Row 0: HeroCard full-width */}
+        <HeroCard character={character} onUpdate={onUpdate} />
+
+        {/* Row 1: HpBlock (1col) + CombatStrip (2cols) */}
         <div className="grid grid-cols-3" style={{ gap: 14 }}>
-          {/* Row 1: HpBlock (1 col) + Combate card (2 cols) */}
           <div>
-            <HpBlock character={character} />
+            <HpBlock character={character} onUpdate={onUpdate} />
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <div style={{ ...CARD, height: '100%' }}>
@@ -77,36 +90,38 @@ export function StatusTab() {
               <CombatStrip character={character} cols={6} />
             </div>
           </div>
-
-          {/* Row 2: AttrGrid full width */}
-          <div style={{ gridColumn: 'span 3' }}>
-            <div style={CARD}>
-              <Label>{t('attributes.section_title')}</Label>
-              <AttrGrid character={character} cols={6} />
-            </div>
-          </div>
         </div>
 
-        {/* Row 3: 2-col — Skills left | Saves + Features right */}
+        {/* Row 2: AttrGrid full-width */}
+        <div style={CARD}>
+          <Label>{t('attributes.section_title')}</Label>
+          <AttrGrid character={character} cols={6} onUpdate={onUpdate} />
+        </div>
+
+        {/* Row 3: Skills | Saves */}
         <div className="grid grid-cols-2" style={{ gap: 14 }}>
           <div style={{ ...CARD, maxHeight: 420, overflowY: 'auto' }}>
             <Label>{t('skills.label')}</Label>
-            <SkillsBlock character={character} />
+            <SkillsBlock character={character} onUpdate={onUpdate} />
           </div>
-          <div className="flex flex-col" style={{ gap: 14 }}>
-            <div style={CARD}>
-              <Label>{t('saves.section_title')}</Label>
-              <SavingThrows character={character} />
-            </div>
-            <div style={CARD}>
-              <Label>{t('features.title')}</Label>
-              <FeaturesList character={character} />
-            </div>
+          <div style={CARD}>
+            <Label>{t('saves.section_title')}</Label>
+            <SavingThrows character={character} onUpdate={onUpdate} />
           </div>
         </div>
 
-        {/* Row 4: Proficiências — full width */}
-        <ProficienciesBlock character={character} />
+        {/* Row 4: FeaturesList full-width */}
+        <div style={CARD}>
+          <Label>{t('features.title')}</Label>
+          <FeaturesList character={character} onUpdate={onUpdate} />
+        </div>
+
+        {/* Row 5: Languages | Proficiencies */}
+        <div className="grid grid-cols-2" style={{ gap: 14 }}>
+          <LanguagesBlock character={character} onUpdate={onUpdate} />
+          <ProficienciesBlock character={character} onUpdate={onUpdate} />
+        </div>
+
       </div>
     </>
   )

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { adaptCharacter } from '@/data/adapter'
+import { deriveTotalLevel } from '@/domain/derived'
 import type { V1Character } from '@/data/schema-v1'
 
 import fullCharFixture    from './fixtures/full-character.json'
@@ -26,14 +27,14 @@ describe('adaptCharacter — empty input', () => {
     expect(result.name).toBe('Unnamed')
   })
 
-  it('returns default numeric zeros for abilities', () => {
+  it('defaults abilities to 10 (PHB neutral) when v1 fields are missing', () => {
     const result = adaptCharacter(emptyChar())
-    expect(result.abilities).toEqual({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 })
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
   })
 
-  it('returns totalLevel 0 for empty classes', () => {
+  it('returns deriveTotalLevel 0 for empty classes', () => {
     const result = adaptCharacter(emptyChar())
-    expect(result.totalLevel).toBe(0)
+    expect(deriveTotalLevel(result)).toBe(0)
   })
 
   it('returns proficiencyBonus 2 even at level 0', () => {
@@ -118,7 +119,7 @@ describe('adaptCharacter — HP edge cases', () => {
 })
 
 describe('adaptCharacter — classes and level', () => {
-  it('derives totalLevel from classes array', () => {
+  it('classes are correctly mapped for multiclass (Fighter 5 / Rogue 3)', () => {
     const raw: V1Character = {
       page1: {
         basic_info: {
@@ -127,7 +128,7 @@ describe('adaptCharacter — classes and level', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.totalLevel).toBe(8)
+    expect(deriveTotalLevel(result)).toBe(8)
   })
 
   it('proficiencyBonus is correct for level 8 (+3)', () => {
@@ -150,7 +151,7 @@ describe('adaptCharacter — classes and level', () => {
     expect(result.classes).toHaveLength(1)
     expect(result.classes[0]?.name).toBe('Wizard')
     expect(result.classes[0]?.level).toBe(7)
-    expect(result.totalLevel).toBe(7)
+    expect(deriveTotalLevel(result)).toBe(7)
   })
 
   it('converts class level from string to number', () => {
@@ -303,6 +304,64 @@ describe('adaptCharacter — spells', () => {
     // Kael: CHA 18 (+4 mod), level 5 (profBonus 3) → bonus = 3 + 4 = 7
     // v1 spell_info.att stores "+6" (stale) — must be ignored
     expect(result.spells?.attackBonus).toBe(7)
+  })
+})
+
+describe('adaptCharacter — ability score normalization', () => {
+  function charWithAbilities(
+    attrs: Record<string, string | number | null | undefined>
+  ): V1Character {
+    return { page1: { attributes: attrs as V1Character['page1']['attributes'] } }
+  }
+
+  it('normalizes empty string to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '', dex: '', con: '', int: '', wis: '', cha: '' }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('normalizes null to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: null, dex: null, con: null, int: null, wis: null, cha: null }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('normalizes 0 to 10', () => {
+    const result = adaptCharacter(charWithAbilities({ str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 }))
+    expect(result.abilities).toEqual({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 })
+  })
+
+  it('preserves valid score 8', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '8', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(8)
+  })
+
+  it('preserves score 1 (minimum valid)', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '1', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(1)
+  })
+
+  it('preserves score 30 (maximum valid)', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '30', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(30)
+  })
+
+  it('clamps score above 30 to 30', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '35', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(30)
+  })
+
+  it('floors decimal to integer', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '14.7', dex: 10, con: 10, int: 10, wis: 10, cha: 10 }))
+    expect(result.abilities.str).toBe(14)
+  })
+
+  it('normalizes mixed invalid/valid values per ability independently', () => {
+    const result = adaptCharacter(charWithAbilities({ str: '16', dex: '', con: 0, int: '12', wis: null, cha: '8' }))
+    expect(result.abilities.str).toBe(16)
+    expect(result.abilities.dex).toBe(10)
+    expect(result.abilities.con).toBe(10)
+    expect(result.abilities.int).toBe(12)
+    expect(result.abilities.wis).toBe(10)
+    expect(result.abilities.cha).toBe(8)
   })
 })
 
@@ -634,7 +693,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     expect(result.hitDice).toHaveLength(1)
-    expect(result.hitDice[0]).toEqual({ current: 5, max: 5, dieSize: 8 })
+    expect(result.hitDice[0]).toEqual({ className: 'Druid', current: 5, max: 5, dieSize: 8 })
   })
 
   it('Ranger 4 with blank v1 hit_dice → hitDice[0] = { current:4, max:4, dieSize:10 }', () => {
@@ -642,7 +701,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
       page1: { basic_info: { classes: [{ name: 'Ranger', level: '4' }] } },
     }
     const result = adaptCharacter(raw)
-    expect(result.hitDice[0]).toEqual({ current: 4, max: 4, dieSize: 10 })
+    expect(result.hitDice[0]).toEqual({ className: 'Ranger', current: 4, max: 4, dieSize: 10 })
   })
 
   it('uses current_hd from v1 when it is explicitly set', () => {
@@ -654,7 +713,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     // current comes from v1 (3 dice spent), max and dieSize from class
-    expect(result.hitDice[0]).toEqual({ current: 3, max: 5, dieSize: 10 })
+    expect(result.hitDice[0]).toEqual({ className: 'Fighter', current: 3, max: 5, dieSize: 10 })
   })
 
   it('falls back to max when current_hd is empty string', () => {
@@ -665,7 +724,7 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.hitDice[0]).toEqual({ current: 6, max: 6, dieSize: 8 })
+    expect(result.hitDice[0]).toEqual({ className: 'Cleric', current: 6, max: 6, dieSize: 8 })
   })
 
   it('multiclass Fighter 3 / Rogue 2 → two hit dice entries', () => {
@@ -681,8 +740,8 @@ describe('adaptCharacter — hit dice derivation from classes', () => {
     }
     const result = adaptCharacter(raw)
     expect(result.hitDice).toHaveLength(2)
-    expect(result.hitDice[0]).toEqual({ current: 3, max: 3, dieSize: 10 }) // Fighter d10
-    expect(result.hitDice[1]).toEqual({ current: 2, max: 2, dieSize: 8 })  // Rogue d8
+    expect(result.hitDice[0]).toEqual({ className: 'Fighter', current: 3, max: 3, dieSize: 10 }) // Fighter d10
+    expect(result.hitDice[1]).toEqual({ className: 'Rogue', current: 2, max: 2, dieSize: 8 })  // Rogue d8
   })
 
   it('multiclass uses max for current (no per-class tracking in v1)', () => {
@@ -977,7 +1036,7 @@ describe('adaptCharacter — currency schema variants', () => {
 })
 
 describe('adaptCharacter — proficiency schema variants', () => {
-  it('reads proficiencies from standard schema (weapon_profs + armor_profs combined)', () => {
+  it('reads proficiencies from standard schema (weapon_profs + armor_profs separate)', () => {
     const raw: V1Character = {
       page1: {
         proficiencies: {
@@ -989,12 +1048,13 @@ describe('adaptCharacter — proficiency schema variants', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.proficiencies.weaponsAndArmor).toBe('Simple weapons, shortswords, Light armor')
-    expect(result.proficiencies.tools).toBe('Herbalism kit')
-    expect(result.proficiencies.languages).toBe('Common, Elvish')
+    expect(result.proficiencies.weapons).toEqual(['Simple weapons', 'shortswords'])
+    expect(result.proficiencies.armor).toEqual(['Light armor'])
+    expect(result.proficiencies.tools).toEqual(['Herbalism kit'])
+    expect(result.languages).toEqual(['Common', 'Elvish'])
   })
 
-  it('reads proficiencies from legacy schema (weapon_armor combined)', () => {
+  it('reads proficiencies from legacy schema (weapon_armor combined → weapons[])', () => {
     const raw: V1Character = {
       page1: {
         proficiencies: {
@@ -1005,20 +1065,23 @@ describe('adaptCharacter — proficiency schema variants', () => {
       },
     }
     const result = adaptCharacter(raw)
-    expect(result.proficiencies.weaponsAndArmor).toBe('Light armor, shields, short swords')
-    expect(result.proficiencies.tools).toBe('Herbalism kit')
-    expect(result.proficiencies.languages).toBe('Elvish, Common, Sylvan')
+    expect(result.proficiencies.weapons).toEqual(['Light armor', 'shields', 'short swords'])
+    expect(result.proficiencies.armor).toEqual([])
+    expect(result.proficiencies.tools).toEqual(['Herbalism kit'])
+    expect(result.languages).toEqual(['Elvish', 'Common', 'Sylvan'])
   })
 
   it('handles only weapon_profs without armor_profs', () => {
     const raw: V1Character = {
       page1: { proficiencies: { weapon_profs: 'Simple weapons' } },
     }
-    expect(adaptCharacter(raw).proficiencies.weaponsAndArmor).toBe('Simple weapons')
+    expect(adaptCharacter(raw).proficiencies.weapons).toEqual(['Simple weapons'])
+    expect(adaptCharacter(raw).proficiencies.armor).toEqual([])
   })
 
   it('returns empty proficiencies when page1.proficiencies is absent', () => {
     const result = adaptCharacter({ page1: {} })
-    expect(result.proficiencies).toEqual({ weaponsAndArmor: '', tools: '', languages: '', other: '' })
+    expect(result.proficiencies).toEqual({ weapons: [], armor: [], tools: [], other: [] })
+    expect(result.languages).toEqual([])
   })
 })

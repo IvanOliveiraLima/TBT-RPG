@@ -86,12 +86,19 @@ const en = {
 
   // HP block
   'hp.section_title': 'Hit Points',
-  'hp.heal_button': 'Heal',
-  'hp.damage_button': 'Damage',
+  'hp.current_label': 'Current',
+  'hp.max_label': 'Max',
   'hp.temp_label': '+{n} temp',
+  'hp.temp_input_label': 'Temp',
 
   // Hit Dice
   'hit_dice.section_title': 'Hit Dice',
+  'hit_dice.total_label': 'Total: {current}/{max}',
+
+  // Death saves
+  'deathsaves.section_title': 'Death Saves',
+  'deathsaves.success_label': 'Successes',
+  'deathsaves.failure_label': 'Failures',
 
   // Saving throws section
   'saves.section_title': 'Saving Throws',
@@ -130,6 +137,9 @@ const en = {
 
   // Hero card
   'hero.inspired_badge': 'Inspired',
+  'hero.name_label':     'Name',
+  'hero.level_label':    'Level',
+  'hero.xp_label':       'XP',
 
   // Combat stats strip labels
   'combat.ac': 'AC',
@@ -143,6 +153,43 @@ const en = {
   'features.label': 'Features & Traits',
   'features.title': 'Features',
   'features.empty': 'No features recorded.',
+  'features.section_title':            'Features and Traits',
+  'features.add_button':               '+ Add feature',
+  'features.name_placeholder':         'Feature name',
+  'features.description_placeholder':  'Description, mechanics...',
+  'features.source_placeholder':       'Source (Class, Race...)',
+  'features.empty_state_hint':         'No features registered.',
+  'features.uses_hint':                'uses',
+  'features.type_passive':             'Passive',
+  'features.type_active':              'Active',
+  'features.type_reaction':            'Reaction',
+  'features.source_class':             'Class',
+  'features.source_race':              'Race',
+  'features.source_background':        'Background',
+  'features.source_feat':              'Feat',
+  'features.source_item':              'Item',
+
+  // Languages
+  'languages.section_title':    'Languages',
+  'languages.add_button':       '+ Add language',
+  'languages.placeholder':      'Language name',
+  'languages.empty_state_hint': 'No languages added yet.',
+
+  // Proficiencies (editable lists)
+  'proficiencies.section_title':         'Proficiencies',
+  'proficiencies.weapons_label':         'Weapons',
+  'proficiencies.armor_label':           'Armor',
+  'proficiencies.tools_label':           'Tools',
+  'proficiencies.other_label':           'Other',
+  'proficiencies.add_button':            '+ Add',
+  'proficiencies.weapons_placeholder':   'Weapon proficiency',
+  'proficiencies.armor_placeholder':     'Armor proficiency',
+  'proficiencies.tools_placeholder':     'Tool proficiency',
+  'proficiencies.other_placeholder':     'Other proficiency',
+  'proficiencies.weapons_empty_hint':    'No weapon proficiencies.',
+  'proficiencies.armor_empty_hint':      'No armor proficiencies.',
+  'proficiencies.tools_empty_hint':      'No tool proficiencies.',
+  'proficiencies.other_empty_hint':      'No other proficiencies.',
 
   // Attacks
   'attacks.section_title': 'ATTACKS',
@@ -245,6 +292,19 @@ const en = {
   'image.modal.error.bad_format': 'Unsupported format. Use JPG, PNG, or WebP.',
   'image.modal.drag_hint':        'Drag to reposition',
 
+  // Identity block — IdentityBlock
+  'identity.section_title':           'IDENTITY',
+  'identity.race_label':              'Race',
+  'identity.background_label':        'Background',
+  'identity.alignment_label':         'Alignment',
+  'identity.alignment_unselected':    'Select alignment…',
+  'identity.alignment_custom_label':  'Custom: {value}',
+  'identity.classes_label':           'Classes',
+  'identity.class_name_placeholder':  'Class name',
+  'identity.add_class_button':        '+ Add class',
+  'identity.class_default_name':      'New class',
+  'identity.inspiration_label':       'Inspiration',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
@@ -257,6 +317,44 @@ const en = {
   'aria.edit_image':           'Edit character image',
   'aria.character_name_input': 'Character name',
   'aria.xp_input':             'Experience points',
+  'aria.race_input':           'Character race',
+  'aria.background_input':     'Character background',
+  'aria.alignment_input':      'Character alignment',
+  'aria.class_name_input':     'Class {index} name',
+  'aria.class_level_input':    'Class {index} level',
+  'aria.remove_class':         'Remove class {name}',
+  'aria.inspiration_toggle':   'Toggle inspiration',
+  'aria.ability_score_input':        '{ability} score',
+  'aria.save_proficiency_toggle':    'Toggle {ability} saving throw proficiency',
+  'aria.skill_proficient_toggle':    'Toggle {skill} proficiency',
+  'aria.skill_expertise_toggle':     'Toggle {skill} expertise',
+  'aria.hp_current_input':           'Current HP',
+  'aria.hp_max_input':               'Maximum HP',
+  'aria.hp_temp_input':              'Temporary HP',
+  'aria.deathsave_success_toggle':   'Toggle death save success {n}',
+  'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
+  'aria.hitdice_class_input':        'Hit dice remaining for {className}',
+
+  // Languages & Proficiencies
+  'aria.language_input':       'Language {index}',
+  'aria.remove_language':      'Remove language {name}',
+  'aria.proficiency_input':    'Proficiency {index}',
+  'aria.remove_proficiency':   'Remove proficiency {name}',
+  'aria.weapons_list':   'Weapons proficiencies',
+  'aria.armor_list':     'Armor proficiencies',
+  'aria.tools_list':     'Tools proficiencies',
+  'aria.other_list':     'Other proficiencies',
+
+  // Features
+  'aria.feature_name':        'Feature name',
+  'aria.feature_source':      'Feature source',
+  'aria.feature_type':        'Feature type',
+  'aria.feature_description': 'Feature description',
+  'aria.remove_feature':      'Remove feature {name}',
+  'aria.feature_uses_left':   'Uses remaining',
+  'aria.feature_uses_max':    'Uses maximum',
+  'aria.decrement_value':     'Decrement',
+  'aria.increment_value':     'Increment',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',

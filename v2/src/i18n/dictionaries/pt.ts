@@ -88,12 +88,19 @@ const pt: Record<keyof typeof en, string> = {
 
   // HP block
   'hp.section_title': 'Pontos de Vida',
-  'hp.heal_button': 'Curar',
-  'hp.damage_button': 'Dano',
+  'hp.current_label': 'Atual',
+  'hp.max_label': 'Máx',
   'hp.temp_label': '+{n} temp',
+  'hp.temp_input_label': 'Temp',
 
   // Hit Dice
   'hit_dice.section_title': 'Dados de Vida',
+  'hit_dice.total_label': 'Total: {current}/{max}',
+
+  // Death saves
+  'deathsaves.section_title': 'Testes de Morte',
+  'deathsaves.success_label': 'Sucessos',
+  'deathsaves.failure_label': 'Falhas',
 
   // Saving throws section
   'saves.section_title': 'Testes de Resistência',
@@ -132,6 +139,9 @@ const pt: Record<keyof typeof en, string> = {
 
   // Hero card
   'hero.inspired_badge': 'Inspirado',
+  'hero.name_label':     'Nome',
+  'hero.level_label':    'Nível',
+  'hero.xp_label':       'XP',
 
   // Combat stats strip labels
   'combat.ac': 'CA',
@@ -145,6 +155,43 @@ const pt: Record<keyof typeof en, string> = {
   'features.label': 'Características & Traços',
   'features.title': 'Características',
   'features.empty': 'Nenhuma feature registrada.',
+  'features.section_title':            'Características e Traços',
+  'features.add_button':               '+ Adicionar característica',
+  'features.name_placeholder':         'Nome da característica',
+  'features.description_placeholder':  'Descrição, mecânica...',
+  'features.source_placeholder':       'Fonte (Classe, Raça...)',
+  'features.empty_state_hint':         'Nenhuma característica registrada.',
+  'features.uses_hint':                'usos',
+  'features.type_passive':             'Passiva',
+  'features.type_active':              'Ativa',
+  'features.type_reaction':            'Reação',
+  'features.source_class':             'Classe',
+  'features.source_race':              'Raça',
+  'features.source_background':        'Antecedente',
+  'features.source_feat':              'Talento',
+  'features.source_item':              'Item',
+
+  // Languages
+  'languages.section_title':    'Idiomas',
+  'languages.add_button':       '+ Adicionar idioma',
+  'languages.placeholder':      'Nome do idioma',
+  'languages.empty_state_hint': 'Nenhum idioma adicionado ainda.',
+
+  // Proficiencies (editable lists)
+  'proficiencies.section_title':         'Proficiências',
+  'proficiencies.weapons_label':         'Armas',
+  'proficiencies.armor_label':           'Armaduras',
+  'proficiencies.tools_label':           'Ferramentas',
+  'proficiencies.other_label':           'Outras',
+  'proficiencies.add_button':            '+ Adicionar',
+  'proficiencies.weapons_placeholder':   'Proficiência em arma',
+  'proficiencies.armor_placeholder':     'Proficiência em armadura',
+  'proficiencies.tools_placeholder':     'Proficiência em ferramenta',
+  'proficiencies.other_placeholder':     'Outra proficiência',
+  'proficiencies.weapons_empty_hint':    'Nenhuma proficiência em armas.',
+  'proficiencies.armor_empty_hint':      'Nenhuma proficiência em armaduras.',
+  'proficiencies.tools_empty_hint':      'Nenhuma proficiência em ferramentas.',
+  'proficiencies.other_empty_hint':      'Nenhuma outra proficiência.',
 
   // Attacks
   'attacks.section_title': 'ATAQUES',
@@ -247,6 +294,19 @@ const pt: Record<keyof typeof en, string> = {
   'image.modal.error.bad_format': 'Formato não suportado. Use JPG, PNG ou WebP.',
   'image.modal.drag_hint':        'Arraste para reposicionar',
 
+  // Identity block — IdentityBlock
+  'identity.section_title':           'IDENTIDADE',
+  'identity.race_label':              'Raça',
+  'identity.background_label':        'Antecedente',
+  'identity.alignment_label':         'Alinhamento',
+  'identity.alignment_unselected':    'Selecione um alinhamento…',
+  'identity.alignment_custom_label':  'Customizado: {value}',
+  'identity.classes_label':           'Classes',
+  'identity.class_name_placeholder':  'Nome da classe',
+  'identity.add_class_button':        '+ Adicionar classe',
+  'identity.class_default_name':      'Nova classe',
+  'identity.inspiration_label':       'Inspiração',
+
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
@@ -259,6 +319,46 @@ const pt: Record<keyof typeof en, string> = {
   'aria.edit_image':           'Editar imagem do personagem',
   'aria.character_name_input': 'Nome do personagem',
   'aria.xp_input':             'Pontos de experiência',
+  'aria.race_input':           'Raça do personagem',
+  'aria.background_input':     'Antecedente do personagem',
+  'aria.alignment_input':      'Alinhamento do personagem',
+  'aria.class_name_input':     'Nome da classe {index}',
+  'aria.class_level_input':    'Nível da classe {index}',
+  'aria.remove_class':         'Remover classe {name}',
+  'aria.inspiration_toggle':   'Alternar inspiração',
+  'aria.ability_score_input':        'Pontuação de {ability}',
+  'aria.save_proficiency_toggle':    'Alternar proficiência do teste de {ability}',
+  'aria.skill_proficient_toggle':    'Alternar proficiência em {skill}',
+  'aria.skill_expertise_toggle':     'Alternar especialização em {skill}',
+  'aria.hp_current_input':           'PV atual',
+  'aria.hp_max_input':               'PV máximo',
+  'aria.hp_temp_input':              'PV temporário',
+  'aria.deathsave_success_toggle':   'Alternar sucesso {n} de teste de morte',
+  'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
+  'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
+
+  // Aria — languages
+  'aria.language_input':       'Idioma {index}',
+  'aria.remove_language':      'Remover idioma {name}',
+  'aria.proficiency_input':    'Proficiência {index}',
+  'aria.remove_proficiency':   'Remover proficiência {name}',
+
+  // Aria — proficiency sub-lists
+  'aria.weapons_list':   'Proficiências em armas',
+  'aria.armor_list':     'Proficiências em armaduras',
+  'aria.tools_list':     'Proficiências em ferramentas',
+  'aria.other_list':     'Outras proficiências',
+
+  // Aria — features
+  'aria.feature_name':        'Nome da característica',
+  'aria.feature_source':      'Fonte da característica',
+  'aria.feature_type':        'Tipo de característica',
+  'aria.feature_description': 'Descrição da característica',
+  'aria.feature_uses_left':   'Usos restantes',
+  'aria.feature_uses_max':    'Usos máximos',
+  'aria.remove_feature':      'Remover característica {name}',
+  'aria.decrement_value':     'Diminuir',
+  'aria.increment_value':     'Aumentar',
 
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',

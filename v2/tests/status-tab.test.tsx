@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
 import { useCharacterStore } from '@/store/character'
 import { useCharactersStore } from '@/store/characters'
@@ -27,12 +27,11 @@ const EIRA: Character = {
   background: 'Outlander',
   alignment: 'Neutral Good',
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
   passivePerception: 16, spellSaveDC: 14, inspiration: false,
@@ -52,7 +51,9 @@ const EIRA: Character = {
     skill('Stealth', 'dex', 7, true),
     skill('Survival', 'wis', 6, true),
   ],
-  proficiencies: { weaponsAndArmor: 'Longbow, Shortsword, Light, Medium', tools: '', languages: 'Common, Elvish, Sylvan', other: '' },
+  proficiencies: { weapons: ['Longbow', 'Shortsword', 'Light', 'Medium'], armor: [], tools: [], other: [] }, languages: ['Common', 'Elvish', 'Sylvan'],
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   attacks: [],
   inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 20, cp: 5 },
@@ -64,7 +65,7 @@ const EIRA: Character = {
   ] satisfies Feature[],
   backstory: 'Guardian of the Thornwood Forest',
   personality: { traits: 'Quiet observer', ideals: 'Protecting nature', bonds: 'The forest', flaws: 'Distrusts cities' },
-  notes: '',
+  notes1: '', notes2: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
@@ -83,11 +84,11 @@ describe('StatusTab integration', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders HeroCard when character is in store', () => {
+  it('renders HeroCard with editable name when character is in store', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Eira Thornwood').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Eira Thornwood').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders HpBlock with "Hit Points" in EN', () => {
@@ -169,8 +170,8 @@ describe('StatusTab integration', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Favored Enemy').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText('Extra Attack').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Favored Enemy').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Extra Attack').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows spellSaveDC in CombatStrip when character is caster', () => {
@@ -193,11 +194,11 @@ describe('StatusTab integration', () => {
     expect(pips[1]!.style.background).not.toBe('transparent')
   })
 
-  it('features list shows uses badge for active feature', () => {
+  it('features list shows uses inputs for active feature', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('1/1').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByTestId('feature-uses-row-colossus_slayer').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows correct DEX modifier (+4) for Eira', () => {
@@ -215,17 +216,135 @@ describe('StatusTab integration', () => {
     expect(screen.getAllByTestId('proficiencies-block').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows proficiencies text from character', () => {
+  it('shows weapons items from character in proficiencies block', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Longbow, Shortsword, Light, Medium').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Longbow').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows languages in proficiencies block', () => {
+  it('shows languages items from character in languages block', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
-    expect(screen.getAllByText('Common, Elvish, Sylvan').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByDisplayValue('Common').length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+// ── Cascade tests: ability scores → derived displays ─────────────────────────
+
+describe('StatusTab cascade — ability score editing', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  afterEach(() => {
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  function setup() {
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
+    renderWithI18n(<StatusTab />, 'pt')
+  }
+
+  it('changing STR score updates STR modifier display', () => {
+    setup()
+    // EIRA str=14 → mod +2. Change to 20 → mod +5.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const strMods = screen.getAllByTestId('attr-str-mod')
+    expect(strMods[0]!.textContent).toBe('+5')
+  })
+
+  it('changing STR score updates STR save bonus display', () => {
+    setup()
+    // EIRA str save: proficient=false. str 14 → +2. Change str to 20 → +5.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const strSaveBonuses = screen.getAllByTestId('save-str-bonus')
+    expect(strSaveBonuses[0]!.textContent).toBe('+5')
+  })
+
+  it('changing STR score updates Athletics skill bonus display', () => {
+    setup()
+    // EIRA Athletics: str=14, proficient=true, profBonus=3 → 2+3=5.
+    // After str=20 (mod +5): 5+3=8.
+    const strInputs = screen.getAllByTestId('attr-str-score')
+    fireEvent.change(strInputs[0]!, { target: { value: '20' } })
+    const athleticsBonuses = screen.getAllByTestId('skill-Athletics-bonus')
+    expect(athleticsBonuses[0]!.textContent).toBe('+8')
+  })
+
+  it('changing DEX score updates initiative display', () => {
+    setup()
+    // EIRA dex=18 → init +4. Change to 10 → init +0.
+    const dexInputs = screen.getAllByTestId('attr-dex-score')
+    fireEvent.change(dexInputs[0]!, { target: { value: '10' } })
+    const initStats = screen.getAllByTestId('combat-stat-init')
+    expect(initStats[0]!.textContent).toContain('+0')
+  })
+
+  it('changing WIS score updates passive perception display', () => {
+    setup()
+    // EIRA wis=16, Perception proficient+expertise, profBonus=3 → PP = 10+(3+6) = 19.
+    // Change wis=10 (mod 0) → PP = 10+(0+6) = 16.
+    const wisInputs = screen.getAllByTestId('attr-wis-score')
+    fireEvent.change(wisInputs[0]!, { target: { value: '10' } })
+    const ppStats = screen.getAllByTestId('combat-stat-pp')
+    expect(ppStats[0]!.textContent).toContain('16')
+  })
+
+  it('changing CON score does NOT auto-update HP max (Q1=A)', () => {
+    setup()
+    // EIRA hp.max = 42. Changing CON should NOT change HP max.
+    const conInputs = screen.getAllByTestId('attr-con-score')
+    fireEvent.change(conInputs[0]!, { target: { value: '20' } })
+    // HP max input still shows 42 (not auto-recalculated)
+    const maxInputs = screen.getAllByTestId('hp-max-input')
+    expect((maxInputs[0] as HTMLInputElement).value).toBe('42')
+  })
+
+  it('changing STR score updates proficiency bonus for level 5 character', () => {
+    setup()
+    // EIRA level 5 → profBonus = 3. Changing str doesn't affect profBonus.
+    const profStats = screen.getAllByTestId('combat-stat-prof')
+    expect(profStats[0]!.textContent).toContain('+3')
+  })
+})
+
+// ── B2 layout: IdentityBlock removed, identity fields now in HeroCard ─────────
+
+describe('StatusTab — B2 layout', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  afterEach(() => {
+    useCharacterStore.setState({ activeId: null, loading: false, error: null })
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  function setup() {
+    useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
+    useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
+    renderWithI18n(<StatusTab />, 'en')
+  }
+
+  it('does not render identity-block (removed in B2)', () => {
+    setup()
+    expect(document.querySelector('[data-testid="identity-block"]')).toBeNull()
+  })
+
+  it('renders identity fields directly in HeroCard (race input present)', () => {
+    setup()
+    expect(screen.getAllByTestId('hero-race-input').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders ClassEditor inside HeroCard (no separate identity card)', () => {
+    setup()
+    expect(screen.getAllByTestId('class-editor').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('inspiration checkbox is in HeroCard, not a separate block', () => {
+    setup()
+    expect(screen.getAllByTestId('hero-inspiration-checkbox').length).toBeGreaterThanOrEqual(1)
   })
 })

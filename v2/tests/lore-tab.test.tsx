@@ -19,18 +19,17 @@ const EIRA: Character = {
   background: 'Outlander',
   alignment: 'Neutral Good',
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
   passivePerception: 16, spellSaveDC: 14, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [], inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 20, cp: 5 },
   features: [],
@@ -97,11 +96,12 @@ describe('LoreTab integration', () => {
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
-  it('shows character name in LoreHero name input', () => {
+  it('shows character meta (race, class) in LoreHero', () => {
     activateEira()
     renderWithI18n(<LoreTab />, 'pt')
-    const input = screen.getByTestId('lore-name') as HTMLInputElement
-    expect(input.value).toBe('Eira Thornwood')
+    const meta = screen.getByTestId('lore-meta').textContent ?? ''
+    expect(meta).toContain('Wood Elf')
+    expect(meta).toContain('Ranger 5')
   })
 
   it('shows backstory value in BackstoryBlock textarea', () => {
@@ -138,12 +138,12 @@ describe('LoreTab integration', () => {
     expect(updated?.backstory).toBe('New backstory')
   })
 
-  it('editing name updates characters store optimistically', () => {
+  it('editing backstory in LoreTab updates characters store optimistically', () => {
     activateEira()
     renderWithI18n(<LoreTab />, 'pt')
-    const input = screen.getByTestId('lore-name')
-    fireEvent.change(input, { target: { value: 'Lyra' } })
+    const ta = screen.getByTestId('backstory-textarea')
+    fireEvent.change(ta, { target: { value: 'New adventure begins.' } })
     const updated = useCharactersStore.getState().characters.find(c => c.id === EIRA.id)
-    expect(updated?.name).toBe('Lyra')
+    expect(updated?.backstory).toBe('New adventure begins.')
   })
 })

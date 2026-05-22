@@ -11,18 +11,17 @@ const BASE: Character = {
   background: 'Outlander',
   alignment: 'Neutral Good',
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
-  totalLevel: 5,
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
   proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
-  hitDice: [{ current: 5, max: 5, dieSize: 10 }],
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
   passivePerception: 16, spellSaveDC: 14, inspiration: false,
   savingThrows: [], skills: [],
-  proficiencies: { weaponsAndArmor: '', tools: '', languages: '', other: '' },
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [], inventory: [],
   currency: { pp: 0, gp: 50, ep: 0, sp: 20, cp: 5 },
   features: [],
@@ -46,12 +45,6 @@ describe('LoreHero', () => {
   it('renders lore-hero testid', () => {
     renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
     expect(screen.getByTestId('lore-hero')).toBeDefined()
-  })
-
-  it('shows character name in name input', () => {
-    renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
-    const input = screen.getByTestId('lore-name') as HTMLInputElement
-    expect(input.value).toBe('Eira Thornwood')
   })
 
   it('shows meta line with race, class, level, background, and alignment', () => {
@@ -84,34 +77,10 @@ describe('LoreHero', () => {
     expect(screen.queryByTestId('lore-portrait-initial')).toBeNull()
   })
 
-  it('shows XP in xp input', () => {
-    renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
-    const xpInput = screen.getByTestId('lore-xp-input') as HTMLInputElement
-    expect(xpInput.value).toBe('6500')
-  })
-
   it('shows level in lore-hero', () => {
     renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
     const hero = screen.getByTestId('lore-hero')
     expect(hero.textContent).toContain('5')
-  })
-
-  // ── editing: name ────────────────────────────────────────────────────────
-
-  it('calls onUpdate with new name when name input changes', () => {
-    const onUpdate = vi.fn()
-    renderWithI18n(<LoreHero character={BASE} onUpdate={onUpdate} />, 'pt')
-    const input = screen.getByTestId('lore-name') as HTMLInputElement
-    fireEvent.change(input, { target: { value: 'Lyra Starweave' } })
-    expect(onUpdate).toHaveBeenCalledWith({ name: 'Lyra Starweave' })
-  })
-
-  it('calls onUpdate with numeric experience when XP input changes', () => {
-    const onUpdate = vi.fn()
-    renderWithI18n(<LoreHero character={BASE} onUpdate={onUpdate} />, 'pt')
-    const input = screen.getByTestId('lore-xp-input') as HTMLInputElement
-    fireEvent.change(input, { target: { value: '10000' } })
-    expect(onUpdate).toHaveBeenCalledWith({ experience: 10000 })
   })
 
   // ── editing: image modal ─────────────────────────────────────────────────
@@ -141,13 +110,27 @@ describe('LoreHero', () => {
     expect(screen.getByTestId('lore-level-text').textContent).toContain('Level 5')
   })
 
-  it('character name, race, class, alignment are not translated (free-text)', () => {
+  it('race, class, alignment are not translated (free-text)', () => {
     renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'en')
-    const input = screen.getByTestId('lore-name') as HTMLInputElement
-    expect(input.value).toBe('Eira Thornwood')
     const meta = screen.getByTestId('lore-meta').textContent ?? ''
     expect(meta).toContain('Wood Elf')
     expect(meta).toContain('Ranger 5')
     expect(meta).toContain('Neutral Good')
+  })
+})
+
+// ── LoreHero — no longer edits name or XP (moved to HeroCard) ────────────────
+
+describe('LoreHero — no longer edits name or XP', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('does not render a name input', () => {
+    renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.queryByTestId('lore-name')).toBeNull()
+  })
+
+  it('does not render an XP input', () => {
+    renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.queryByTestId('lore-xp-input')).toBeNull()
   })
 })
