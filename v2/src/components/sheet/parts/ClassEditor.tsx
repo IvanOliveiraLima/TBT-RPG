@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type React from 'react'
 import type { Character, ClassEntry } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -14,15 +15,18 @@ const CLASS_NAME_INPUT: React.CSSProperties = {
   color: '#F4EFE0',
   fontSize: 13,
   outline: 'none',
-  flex: 1,
+  flex: '1 1 0',
+  minWidth: 0,
 }
 
+// Fixed width: 2 digits (1–20) always fit; flex-shrink: 0 prevents squeezing on narrow viewports
 const CLASS_LEVEL_INPUT: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
   border: '1px solid #2A2537',
   borderRadius: 6,
   padding: '4px 6px',
-  width: 52,
+  width: 64,
+  flexShrink: 0,
   textAlign: 'center' as const,
   color: '#F4EFE0',
   fontSize: 13,
@@ -35,6 +39,8 @@ interface ClassEditorProps {
 
 export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
   const { t } = useTranslation()
+  // Holds the index of a newly-added class so we can focus+select its name input after render
+  const newlyAddedIndexRef = useRef<number | null>(null)
 
   function updateClass(index: number, partial: Partial<ClassEntry>) {
     const oldCls = character.classes[index]!
@@ -66,6 +72,7 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
       suffix++
     }
     const newClass: ClassEntry = { name: defaultName, level: 1, hitDie: 8 }
+    newlyAddedIndexRef.current = character.classes.length  // index of the new entry
     onUpdate({
       classes: [...character.classes, newClass],
       hitDice: [
@@ -83,12 +90,31 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
     })
   }
 
+  // After each render, check if a new class was just added and focus+select its name input
+  useEffect(() => {
+    if (newlyAddedIndexRef.current !== null) {
+      const idx = newlyAddedIndexRef.current
+      const input = document.querySelector(
+        `[data-testid="class-name-${idx}"]`
+      ) as HTMLInputElement | null
+      if (input) {
+        input.focus()
+        if (typeof input.select === 'function') {
+          input.select()
+        } else {
+          input.setSelectionRange(0, input.value.length)
+        }
+      }
+      newlyAddedIndexRef.current = null
+    }
+  })
+
   return (
     <div data-testid="class-editor">
       {character.classes.map((cls, i) => (
         <div
           key={i}
-          style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}
+          style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, minWidth: 0 }}
           data-testid={`class-row-${i}`}
         >
           <input
@@ -137,7 +163,7 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
         </div>
       ))}
       <datalist id="canonical-classes">
-        {CANONICAL_CLASSES.map(c => <option key={c} value={c} />)}
+        {[...CANONICAL_CLASSES].sort((a, b) => a.localeCompare(b)).map(c => <option key={c} value={c} />)}
       </datalist>
       <button
         type="button"

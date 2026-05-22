@@ -318,10 +318,10 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
       {onUpdate && (
         <>
           <datalist id="canonical-races">
-            {CANONICAL_RACES.map(r => <option key={r} value={r} />)}
+            {[...CANONICAL_RACES].sort((a, b) => a.localeCompare(b)).map(r => <option key={r} value={r} />)}
           </datalist>
           <datalist id="canonical-backgrounds">
-            {CANONICAL_BACKGROUNDS.map(b => <option key={b} value={b} />)}
+            {[...CANONICAL_BACKGROUNDS].sort((a, b) => a.localeCompare(b)).map(b => <option key={b} value={b} />)}
           </datalist>
         </>
       )}
