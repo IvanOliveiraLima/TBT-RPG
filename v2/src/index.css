@@ -61,8 +61,8 @@ input, textarea, select, button { font-family: inherit; }
   50%       { box-shadow: 0 0 24px rgba(226, 75, 74, 0.7); }
 }
 
-/* ── IdentityBlock select — option list background (Firefox/Chromium) ─── */
-.identity-block-select option {
+/* ── AlignmentSelect — option list background (Firefox/Chromium) ─── */
+.alignment-select option {
   background-color: #1B1725;
   color: #F4EFE0;
 }
