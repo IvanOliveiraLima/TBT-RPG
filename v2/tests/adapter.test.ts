@@ -597,25 +597,39 @@ describe('adaptCharacter — spell adapter defensiveness', () => {
     expect(adaptCharacter(raw).attacks).toEqual([])
   })
 
-  it('detects rollType=attack for normal bonus string "+5"', () => {
+  it('infers kind=melee for STR attack with normal bonus "+5"', () => {
     const raw: V1Character = {
       page1: { attacks_spells: [{ name: 'Sword', toHit: '+5', stat: 'str' }] },
     }
-    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('attack')
+    expect(adaptCharacter(raw).attacks[0]!.kind).toBe('melee')
   })
 
-  it('detects rollType=dc for "DC 14" toHit (spell save)', () => {
+  it('infers kind=spell for "DC 14" toHit (spell save)', () => {
     const raw: V1Character = {
       page1: { attacks_spells: [{ name: 'Vicious Mockery', toHit: 'DC 14', stat: 'cha' }] },
     }
-    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
+    expect(adaptCharacter(raw).attacks[0]!.kind).toBe('spell')
   })
 
-  it('detects rollType=dc for lowercase "dc 12" (case-insensitive)', () => {
+  it('infers kind=spell for lowercase "dc 12" (case-insensitive)', () => {
     const raw: V1Character = {
       page1: { attacks_spells: [{ name: 'Burning Hands', toHit: 'dc 12' }] },
     }
-    expect(adaptCharacter(raw).attacks[0]!.rollType).toBe('dc')
+    expect(adaptCharacter(raw).attacks[0]!.kind).toBe('spell')
+  })
+
+  it('parses attackBonus as number from "+5" string', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Sword', toHit: '+5', stat: 'str' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.attackBonus).toBe(5)
+  })
+
+  it('parses attackBonus as 0 for "DC 14"', () => {
+    const raw: V1Character = {
+      page1: { attacks_spells: [{ name: 'Spell', toHit: 'DC 14', stat: 'cha' }] },
+    }
+    expect(adaptCharacter(raw).attacks[0]!.attackBonus).toBe(0)
   })
 
   it('real v1 spell structure round-trips correctly', () => {
