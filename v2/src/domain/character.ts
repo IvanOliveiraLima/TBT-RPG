@@ -41,15 +41,19 @@ export interface SkillState {
   bonus: number          // derived
 }
 
+export type AttackKind = 'melee' | 'ranged' | 'spell'
+
 export interface Attack {
   id: string
   name: string
-  baseStat: AbilityKey | ''
-  bonus: string          // e.g. "+6" or "DC 14"
-  damage: string         // e.g. "1d8+3"
-  damageType: string
-  rollType: 'attack' | 'dc'
-  proficient: boolean
+  kind: AttackKind        // melee | ranged | spell — drives icon and categorisation
+  ability: AbilityKey | '' // associated ability — display as abbrev (STR, DEX, …)
+  attackBonus: number      // final bonus the user enters (e.g. 5 for "+5")
+  damage: string           // free-text, e.g. "1d8+3"
+  damageType: string       // free-text with datalist, e.g. "Slashing"
+  range: string            // free-text with datalist, e.g. "5 ft"
+  properties: string       // free-text, e.g. "Versatile, Finesse"
+  notes: string            // free-text, special mechanics or effects
 }
 
 export interface SpellSlot {
