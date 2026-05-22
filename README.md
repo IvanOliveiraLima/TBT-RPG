@@ -14,24 +14,49 @@ preview. Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG
 
 ### Status atual
 
-A v2 funciona como **viewer** das fichas v1 — leitura completa de todos os
-dados, com visual modernizado e responsivo. Edição de personagens ainda é
-feita exclusivamente na v1 ([raiz do app](https://ivanoliveiralima.github.io/TBT-RPG/)).
+A v2 está em **preview ativo** — a aba **Status** é totalmente editável.
+Fichas v1 são migradas automaticamente na primeira abertura da v2.
 
 ### O que tem na v2
 
-- 5 abas funcionais: Atributos, Combate, Magias, Inventário, História
+- 5 abas funcionais: Status, Combate, Magias, Inventário, Lore
+- **Aba Status totalmente editável:**
+  - Identidade no HeroCard: nome, raça, antecedente, alinhamento, classes (multiclasse), inspiração, XP
+  - Atributos com cascade derivada (modificador, save, perícia, PP, initiative, AC, spell DC)
+  - Proficiências em saves (toggle por atributo)
+  - Perícias com toggles de proficiência e expertise
+  - HP com barra verde/roxo (temp HP overlay) + botões +/- no current HP
+  - Death saves (pips de sucesso/falha)
+  - Hit dice multiclasse (uma linha por classe)
+  - Features com editor completo (nome, fonte, tipo, usos)
+  - Idiomas e proficiências como listas estruturadas
+- Aba Lore editável (backstory, personalidade, notas)
+- Upload de retrato via modal com zoom + posição
 - Layouts dedicados para mobile e desktop
 - Cálculos derivados consistentes (AC, Initiative, Passive Perception, bonuses)
 - Cloud sync via Supabase (opcional)
 - Interface bilíngue EN/PT com alternância instantânea (sem reload)
-- ~644 testes unitários e de integração
+- ~935 testes unitários e de integração
 - PWA instalável
 
-### O que não tem ainda (Fase C)
+### Limitações conhecidas
 
-- Edição de personagens
-- Geração via IA (Cloudflare Workers)
+- **Criação do zero:** a tela "Meus Personagens" ainda não suporta criar
+  personagem novo a partir do zero — é necessário importar da v1 (a migração
+  automática cobre isso na primeira abertura).
+- **Abas parcialmente read-only:** Combate, Magias e Inventário exibem os
+  dados mas ainda não têm edição inline (próximas sub-fases).
+- **Localização de valores livres:** labels da UI traduzem entre PT e EN,
+  mas valores livres armazenados no personagem (raça, classe, antecedente,
+  alinhamento) permanecem como o usuário digitou — não são traduzidos.
+- **Initiative sem override:** sempre derivada do modificador de DEX. Builds
+  com feats como Alert exigirão um campo de bônus separado (não modelado ainda).
+
+### O que não tem ainda
+
+- Edição inline nas abas Combate, Magias e Inventário
+- Criação de personagem do zero (sem dependência da v1)
+- Geração via IA na v2 (use a v1 por enquanto)
 - Importação/exportação de JSON na v2 (use a v1 por enquanto)
 
 ### Stack v2
