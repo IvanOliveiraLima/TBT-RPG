@@ -122,11 +122,15 @@ describe('ProficienciesBlock (editable)', () => {
 
   // ── Removing items ──────────────────────────────────────────────────────────
 
-  it('calls onUpdate when removing a weapon item', () => {
+  it('calls onUpdate when removing a weapon item (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<ProficienciesBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     const weaponsSection = screen.getByTestId('prof-list-weapons')
     const removeBtns = weaponsSection.querySelectorAll('button[data-action="remove"]')
+    // First click enters confirming state — no action yet
+    fireEvent.click(removeBtns[0]!)
+    expect(onUpdate).not.toHaveBeenCalled()
+    // Second click confirms
     fireEvent.click(removeBtns[0]!)
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
     expect(call.proficiencies!.weapons).toHaveLength(BASE.proficiencies.weapons.length - 1)

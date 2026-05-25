@@ -226,18 +226,24 @@ describe('AttacksList — add-attack button', () => {
 describe('AttacksList — remove attack', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('remove button calls onUpdate with attack filtered out by id', () => {
+  it('remove button calls onUpdate with attack filtered out by id (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<AttacksList character={BASE} onUpdate={onUpdate} />, 'en')
+    // First click enters confirming state — no action yet
+    fireEvent.click(screen.getByTestId('remove-attack-atk_0'))
+    expect(onUpdate).not.toHaveBeenCalled()
+    // Second click confirms
     fireEvent.click(screen.getByTestId('remove-attack-atk_0'))
     const call = onUpdate.mock.calls[0]![0] as { attacks: Attack[] }
     expect(call.attacks).toHaveLength(1)
     expect(call.attacks[0]!.id).toBe('atk_1')
   })
 
-  it('preserves other attacks by id when removing', () => {
+  it('preserves other attacks by id when removing (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<AttacksList character={BASE} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('remove-attack-atk_1'))
+    expect(onUpdate).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('remove-attack-atk_1'))
     const call = onUpdate.mock.calls[0]![0] as { attacks: Attack[] }
     expect(call.attacks).toHaveLength(1)
