@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act } from 'react'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { renderWithI18n } from './helpers/render'
 
