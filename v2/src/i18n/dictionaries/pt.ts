@@ -219,33 +219,66 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Ataque {name}, {bonus_or_dc}, {damage}',
 
-  // SpellHeader cell labels
-  'spells.header.class': 'CLASSE',
-  'spells.header.ability': 'HABILIDADE',
-  'spells.header.save_dc': 'DC DE SALVAGUARDA',
+  // SpellcastingHeader (editable)
+  'spells.header.class':        'CLASSE',
+  'spells.header.ability':      'HABILIDADE',
+  'spells.header.save_dc':      'DC DE SALVAGUARDA',
   'spells.header.attack_bonus': 'BÔNUS DE ATAQUE',
+  'spells.class_label':         'Classe',
+  'spells.class_placeholder':   'Druida, Clérigo...',
+  'spells.ability_label':       'Habilidade',
+  'spells.no_ability':          '— Nenhuma —',
+  'spells.save_dc_label':       'CD de Salvaguarda',
+  'spells.attack_bonus_label':  'Bônus de Ataque',
 
-  // SpellSlots
+  // SpellSlotsBlock (editable)
   'spell_slots.section_title': 'ESPAÇOS DE MAGIA',
-  'spell_slots.level_label': 'NÍVEL {level}',
-  'spell_slots.count_label': '{current}/{max}',
-  'spell_slots.pip_aria': 'Espaço de nível {level} ({current} de {max} disponíveis)',
+  'spell_slots.level_label':   'NÍVEL {level}',
+  'spell_slots.count_label':   '{current}/{max}',
+  'spell_slots.pip_aria':      'Espaço de nível {level} ({current} de {max} disponíveis)',
+  'spells.slots_section_title': 'Espaços de Magia',
+  'spells.no_slots_hint':       'Nenhum espaço de magia configurado.',
+  'spells.add_slot_level':      '+ Adicionar nível',
+  'spells.level':               'Nível {n}',
 
-  // SpellList
-  'spells.section_title': 'MAGIAS',
-  'spells.add_button': 'Adicionar',
-  'spells.count_label': '({count})',
-  'spells.cantrips_section': 'TRUQUES',
-  'spells.level_section': 'NÍVEL {level}',
-  'spells.section_count': '{count}',
-  'spells.empty_state_title': 'Nenhuma magia cadastrada.',
-  'spells.empty_state_hint': 'Adicione truques e magias para gerenciar espaços.',
+  // SpellsList
+  'spells.section_title':       'MAGIAS',
+  'spells.add_button':          'Adicionar',
+  'spells.count_label':         '({count})',
+  'spells.cantrips_section':    'TRUQUES',
+  'spells.level_section':       'NÍVEL {level}',
+  'spells.section_count':       '{count}',
+  'spells.empty_state_title':   'Nenhuma magia cadastrada.',
+  'spells.empty_state_hint':    'Adicione truques e magias para gerenciar espaços.',
+  'spells.cantrips':            'Truques',
+  'spells.cantrip':             'Truque',
+  'spells.unnamed_spell':       '(sem nome)',
+  'spells.prepared_hint':       'Preparada hoje',
+  'spells.add_cantrip':         '+ Adicionar truque',
+  'spells.add_at_level':        '+ Adicionar magia nível {n}',
+  'spells.name_placeholder':    'Nome da magia',
+  'spells.level_label':         'Nível',
+  'spells.school_label':        'Escola',
+  'spells.casting_time_label':  'Tempo de conjuração',
+  'spells.range_label':         'Alcance',
+  'spells.description_label':   'Descrição',
+  'spells.description_placeholder': 'Efeitos, mecânica...',
 
-  // SpellRow
+  // SpellRow (legacy keys kept for compatibility)
   'spells.row.unprepared_aria': 'Não preparada',
-  'spells.row.row_aria': 'Magia {name}',
+  'spells.row.row_aria':        'Magia {name}',
 
-  // SpellsTab non-caster
+  // Spell schools
+  'spells.school_abjuration':   'Abjuração',
+  'spells.school_conjuration':  'Conjuração',
+  'spells.school_divination':   'Adivinhação',
+  'spells.school_enchantment':  'Encantamento',
+  'spells.school_evocation':    'Evocação',
+  'spells.school_illusion':     'Ilusão',
+  'spells.school_necromancy':   'Necromancia',
+  'spells.school_transmutation': 'Transmutação',
+
+  // SpellsTab non-caster (kept for reference)
   'spells.non_caster_title': 'Esta classe não possui conjuração de magias.',
   'spells.non_caster_hint': 'Magias são acessadas por classes como Druid, Bard, Cleric, Wizard, Sorcerer e outras.',
 
@@ -331,7 +364,14 @@ const pt: Record<keyof typeof en, string> = {
   'aria.generate_ai': 'Gerar com IA',
   'aria.item_weight':   'Item: {name}, peso: {weight}',
   'aria.remove_item':   'Remover {name}',
-  'aria.remove_spell':  'Remover magia {name}',
+  'aria.remove_spell':                 'Remover magia {name}',
+  'aria.spellcasting_class_input':     'Classe conjuradora',
+  'aria.spellcasting_ability_select':  'Habilidade conjuradora',
+  'aria.spell_name':                   'Nome da magia',
+  'aria.spell_prepared':               'Magia preparada hoje',
+  'aria.slot_pip':                     'Espaço {n} de nível {level}',
+  'aria.slot_max_input':               'Máx espaços do nível {level}',
+  'aria.add_slot_level':               'Adicionar nível de espaço',
   'aria.remove_attack':      'Remover ataque {name}',
   'aria.attack_name':        'Nome do ataque',
   'aria.attack_bonus_input': 'Bônus de ataque',

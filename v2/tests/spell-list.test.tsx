@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { screen } from '@testing-library/react'
-import type { Character } from '@/domain/character'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen, fireEvent } from '@testing-library/react'
+import type { Character, Spell } from '@/domain/character'
 import { SpellList } from '@/components/sheet/parts/SpellList'
 import { renderWithI18n } from './helpers/render'
 
-// Kael Brightweave — Bard 5, full spell list (unsorted, to verify sort)
 const KAEL: Character = {
   id: 'kael_01',
   name: 'Kael Brightweave',
@@ -18,179 +17,175 @@ const KAEL: Character = {
   hp: { current: 35, max: 35, temp: 0 },
   hitDice: [{ className: 'Bard', current: 5, max: 5, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
-  ac: 14,
-  initiative: 2,
-  speed: 30,
+  ac: 14, initiative: 2, speed: 30,
   passivePerception: 13,
   spellSaveDC: 15,
   inspiration: false,
-  savingThrows: [],
-  skills: [],
+  savingThrows: [], skills: [],
   proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
-  // spells intentionally unsorted to verify alphabetical rendering
-  spells: {
-    ability: 'cha',
-    attackBonus: 7,
-    saveDC: 15,
-    slots: [
-      { level: 1, current: 4, max: 4 },
-      { level: 2, current: 3, max: 3 },
-      { level: 3, current: 2, max: 2 },
-    ],
-    known: [
-      // Cantrips (level 0) — inserted in non-alphabetical order
-      { level: 0, name: 'Vicious Mockery' },
-      { level: 0, name: 'Minor Illusion' },
-      { level: 0, name: 'Prestidigitation' },
-      // Level 1 — non-alphabetical
-      { level: 1, name: 'Thunderwave', prepared: true },
-      { level: 1, name: 'Faerie Fire', prepared: false },
-      { level: 1, name: 'Healing Word', prepared: true },
-      // Level 2
-      { level: 2, name: 'Shatter', prepared: true },
-      { level: 2, name: 'Invisibility', prepared: false },
-      // Level 3
-      { level: 3, name: 'Hypnotic Pattern', prepared: true },
-    ],
+  spells: [
+    { id: 's1', name: 'Vicious Mockery', level: 0, school: 'enchantment', castingTime: '1 action', range: '60 ft', description: '', prepared: false },
+    { id: 's2', name: 'Minor Illusion', level: 0, school: 'illusion', castingTime: '1 action', range: '30 ft', description: '', prepared: false },
+    { id: 's3', name: 'Healing Word', level: 1, school: 'evocation', castingTime: '1 bonus action', range: '60 ft', description: '', prepared: true },
+    { id: 's4', name: 'Faerie Fire', level: 1, school: 'evocation', castingTime: '1 action', range: '60 ft', description: '', prepared: false },
+  ],
+  spellSlots: {
+    '1': { current: 4, max: 4 },
+    '2': { current: 3, max: 3 },
+    '3': { current: 2, max: 2 },
   },
+  spellcastingAbility: 'cha',
+  spellcastingClass: 'Bard',
   inventory: [],
   currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
   notes1: '', notes2: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
   images: {},
   createdAt: 0,
   updatedAt: 0,
+  age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
 }
 
 const EMPTY_SPELLS: Character = {
   ...KAEL,
-  spells: { ...KAEL.spells!, known: [] },
+  spells: [],
+  spellSlots: {},
 }
 
 describe('SpellList', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('renders cantrips section (level 0) in PT', () => {
+  it('renders spell-list testid', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.getByTestId('spell-list')).toBeDefined()
+  })
+
+  it('shows CANTRIPS section (data-testid="spell-section-0") in EN', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.getByTestId('spell-section-0')).toBeDefined()
+    expect(screen.getByText('CANTRIPS')).toBeDefined()
+  })
+
+  it('shows TRUQUES section (data-testid="spell-section-0") in PT', () => {
     renderWithI18n(<SpellList character={KAEL} />, 'pt')
     expect(screen.getByTestId('spell-section-0')).toBeDefined()
     expect(screen.getByText('TRUQUES')).toBeDefined()
   })
 
-  it('renders level 1 section in PT', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    expect(screen.getByTestId('spell-section-1')).toBeDefined()
-    expect(screen.getByText('NÍVEL 1')).toBeDefined()
-  })
-
-  it('renders level 2 and 3 sections in PT', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    expect(screen.getByText('NÍVEL 2')).toBeDefined()
-    expect(screen.getByText('NÍVEL 3')).toBeDefined()
-  })
-
-  it('renders cantrip names', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+  it('shows spell names as text spans in compact (non-expanded) mode', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
     expect(screen.getByText('Vicious Mockery')).toBeDefined()
     expect(screen.getByText('Minor Illusion')).toBeDefined()
-    expect(screen.getByText('Prestidigitation')).toBeDefined()
-  })
-
-  it('renders leveled spell names', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
     expect(screen.getByText('Healing Word')).toBeDefined()
     expect(screen.getByText('Faerie Fire')).toBeDefined()
-    expect(screen.getByText('Hypnotic Pattern')).toBeDefined()
   })
 
-  it('sorts cantrips alphabetically (Minor Illusion before Vicious Mockery)', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const section0 = screen.getByTestId('spell-section-0')
-    const rows = [...section0.querySelectorAll('[data-testid^="spell-row-"]')]
-    expect(rows[0]?.textContent).toContain('Minor Illusion')
-    expect(rows[2]?.textContent).toContain('Vicious Mockery')
+  it('shows empty state when spells is empty array', () => {
+    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'en')
+    expect(screen.getByTestId('spell-empty-state')).toBeDefined()
+    expect(screen.getByText('No spells registered.')).toBeDefined()
   })
 
-  it('sorts level 1 spells alphabetically (Faerie Fire before Healing Word before Thunderwave)', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const section1 = screen.getByTestId('spell-section-1')
-    const rows = [...section1.querySelectorAll('[data-testid^="spell-row-"]')]
-    expect(rows[0]?.textContent).toContain('Faerie Fire')
-    expect(rows[1]?.textContent).toContain('Healing Word')
-    expect(rows[2]?.textContent).toContain('Thunderwave')
-  })
-
-  it('spell with prepared: false has data-prepared="false"', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const row = screen.getByTestId('spell-row-faerie-fire')
-    expect(row.getAttribute('data-prepared')).toBe('false')
-  })
-
-  it('spell with prepared: true has data-prepared="true"', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const row = screen.getByTestId('spell-row-healing-word')
-    expect(row.getAttribute('data-prepared')).toBe('true')
-  })
-
-  it('cantrip (no prepared field) has data-prepared="true"', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const row = screen.getByTestId('spell-row-vicious-mockery')
-    expect(row.getAttribute('data-prepared')).toBe('true')
-  })
-
-  it('shows empty state when known list is empty', () => {
+  it('shows empty state in PT', () => {
     renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'pt')
     expect(screen.getByTestId('spell-empty-state')).toBeDefined()
     expect(screen.getByText('Nenhuma magia cadastrada.')).toBeDefined()
   })
 
-  it('empty state shows help text in PT', () => {
-    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'pt')
-    expect(screen.getByText('Adicione truques e magias para gerenciar espaços.')).toBeDefined()
+  it('shows add cantrip button (testid="add-cantrip") in editable mode', () => {
+    renderWithI18n(<SpellList character={KAEL} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('add-cantrip')).toBeDefined()
   })
 
-  it('shows add spell button', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    expect(screen.getByTestId('add-spell-btn')).toBeDefined()
+  it('shows add level-1 spell button when spellSlots["1"].max > 0 (editable mode)', () => {
+    renderWithI18n(<SpellList character={KAEL} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('add-spell-level-1')).toBeDefined()
   })
 
-  it('shows add spell button even when list is empty', () => {
-    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'pt')
-    expect(screen.getByTestId('add-spell-btn')).toBeDefined()
+  it('add-cantrip button not present in read-only mode', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.queryByTestId('add-cantrip')).toBeNull()
   })
 
-  it('shows total spell count in header', () => {
-    // 3 cantrips + 3 level-1 + 2 level-2 + 1 level-3 = 9
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+  it('calling add cantrip button calls onUpdate with new spell appended', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SpellList character={KAEL} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('add-cantrip'))
+    expect(onUpdate).toHaveBeenCalledOnce()
+    const call = onUpdate.mock.calls[0]![0] as { spells: Spell[] }
+    expect(call.spells).toHaveLength(KAEL.spells.length + 1)
+    expect(call.spells[call.spells.length - 1]!.level).toBe(0)
+  })
+
+  it('calling add level-1 spell button calls onUpdate with new level-1 spell appended', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SpellList character={KAEL} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('add-spell-level-1'))
+    expect(onUpdate).toHaveBeenCalledOnce()
+    const call = onUpdate.mock.calls[0]![0] as { spells: Spell[] }
+    expect(call.spells[call.spells.length - 1]!.level).toBe(1)
+  })
+
+  it('remove calls onUpdate without the spell after two-step confirmation', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SpellList character={KAEL} onUpdate={onUpdate} />, 'en')
+    const removeBtn = screen.getByTestId('spell-remove-s1')
+    // First click → confirming state
+    fireEvent.click(removeBtn)
+    expect(onUpdate).not.toHaveBeenCalled()
+    // Second click → confirm and remove
+    fireEvent.click(removeBtn)
+    expect(onUpdate).toHaveBeenCalledOnce()
+    const call = onUpdate.mock.calls[0]![0] as { spells: Spell[] }
+    expect(call.spells.find(s => s.id === 's1')).toBeUndefined()
+  })
+
+  it('school pip is present for each spell (data-testid="spell-school-pip-{id}")', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.getByTestId('spell-school-pip-s1')).toBeDefined()
+    expect(screen.getByTestId('spell-school-pip-s2')).toBeDefined()
+    expect(screen.getByTestId('spell-school-pip-s3')).toBeDefined()
+    expect(screen.getByTestId('spell-school-pip-s4')).toBeDefined()
+  })
+
+  it('prepared checkbox is present for non-cantrips (data-testid="spell-prepared-{id}")', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.getByTestId('spell-prepared-s3')).toBeDefined()
+    expect(screen.getByTestId('spell-prepared-s4')).toBeDefined()
+  })
+
+  it('prepared checkbox is NOT present for cantrips', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    expect(screen.queryByTestId('spell-prepared-s1')).toBeNull()
+    expect(screen.queryByTestId('spell-prepared-s2')).toBeNull()
+  })
+
+  it('count label shows (4) for KAEL fixture (4 total spells)', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
     const list = screen.getByTestId('spell-list')
-    expect(list.textContent).toContain('(9)')
+    expect(list.textContent).toContain('(4)')
   })
 
-  it('shows (0) count when list is empty', () => {
-    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'pt')
+  it('count label shows (0) when spells is empty', () => {
+    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'en')
     const list = screen.getByTestId('spell-list')
     expect(list.textContent).toContain('(0)')
   })
 
-  it('remove button is present for each spell', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    expect(screen.getByTestId('remove-spell-vicious-mockery')).toBeDefined()
-    expect(screen.getByTestId('remove-spell-faerie-fire')).toBeDefined()
-  })
-
-  it('remove button has accessible aria-label in PT', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const btn = screen.getByRole('button', { name: 'Remover magia Healing Word' })
-    expect(btn).toBeDefined()
-  })
-
-  // ── i18n dual-lang tests ──────────────────────────────────────────
+  // ── i18n section header tests ──────────────────────────────────────
 
   it('renders CANTRIPS section title in EN', () => {
     renderWithI18n(<SpellList character={KAEL} />, 'en')
     expect(screen.getByText('CANTRIPS')).toBeDefined()
+  })
+
+  it('renders TRUQUES section title in PT', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+    expect(screen.getByText('TRUQUES')).toBeDefined()
   })
 
   it('renders LEVEL 1 section title in EN', () => {
@@ -198,37 +193,39 @@ describe('SpellList', () => {
     expect(screen.getByText('LEVEL 1')).toBeDefined()
   })
 
-  it('shows empty state in EN', () => {
-    renderWithI18n(<SpellList character={EMPTY_SPELLS} />, 'en')
-    expect(screen.getByText('No spells registered.')).toBeDefined()
-    expect(screen.getByText('Add cantrips and spells to manage slots.')).toBeDefined()
-  })
-
-  it('remove button has accessible aria-label in EN', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'en')
-    const btn = screen.getByRole('button', { name: 'Remove spell Healing Word' })
-    expect(btn).toBeDefined()
-  })
-
-  it('unprepared spells have aria-label "Não preparada" in PT', () => {
+  it('renders NÍVEL 1 section title in PT', () => {
     renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    const indicators = screen.getAllByLabelText('Não preparada')
-    expect(indicators.length).toBeGreaterThan(0)
+    expect(screen.getByText('NÍVEL 1')).toBeDefined()
   })
 
-  it('unprepared spells have aria-label "Not prepared" in EN', () => {
+  it('spell-card testid is present for each spell', () => {
     renderWithI18n(<SpellList character={KAEL} />, 'en')
-    const indicators = screen.getAllByLabelText('Not prepared')
-    expect(indicators.length).toBeGreaterThan(0)
+    expect(screen.getByTestId('spell-card-s1')).toBeDefined()
+    expect(screen.getByTestId('spell-card-s2')).toBeDefined()
+    expect(screen.getByTestId('spell-card-s3')).toBeDefined()
+    expect(screen.getByTestId('spell-card-s4')).toBeDefined()
   })
 
-  it('add button shows localized text in PT', () => {
-    renderWithI18n(<SpellList character={KAEL} />, 'pt')
-    expect(screen.getByText(/\+ Adicionar/)).toBeDefined()
+  it('remove button (spell-remove-{id}) present in editable mode', () => {
+    renderWithI18n(<SpellList character={KAEL} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('spell-remove-s1')).toBeDefined()
+    expect(screen.getByTestId('spell-remove-s4')).toBeDefined()
   })
 
-  it('add button shows localized text in EN', () => {
+  it('remove button not present in read-only mode', () => {
     renderWithI18n(<SpellList character={KAEL} />, 'en')
-    expect(screen.getByText(/\+ Add/)).toBeDefined()
+    expect(screen.queryByTestId('spell-remove-s1')).toBeNull()
+  })
+
+  it('prepared checkbox is checked for prepared spells', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    const checkbox = screen.getByTestId('spell-prepared-s3') as HTMLInputElement
+    expect(checkbox.checked).toBe(true)
+  })
+
+  it('prepared checkbox is unchecked for unprepared spells', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    const checkbox = screen.getByTestId('spell-prepared-s4') as HTMLInputElement
+    expect(checkbox.checked).toBe(false)
   })
 })
