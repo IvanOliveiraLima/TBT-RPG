@@ -385,6 +385,10 @@ const pt: Record<keyof typeof en, string> = {
   'aria.decrement_value':     'Diminuir',
   'aria.increment_value':     'Aumentar',
 
+  // Remove confirmation (ConfirmableRemoveButton)
+  'remove.confirm':           'Confirmar?',
+  'remove.confirm_aria':      'Confirmar exclusão',
+
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
   'phase_c.details_coming_soon': 'Detalhes virão na Fase C',

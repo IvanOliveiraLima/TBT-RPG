@@ -5,6 +5,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
 import { NumberField } from '@/components/primitives/NumberField'
+import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
@@ -133,25 +134,11 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
           {formatAttackBonus(attack.attackBonus)}
         </span>
 
-        <button
-          type="button"
-          onClick={e => { e.stopPropagation(); onRemove() }}
-          aria-label={t('aria.remove_attack', { name: attack.name || t('combat.unnamed_attack') })}
-          data-testid={`remove-attack-${attack.id}`}
-          style={{
-            flexShrink: 0,
-            background: 'transparent',
-            border: 'none',
-            color: T.textMuted,
-            cursor: 'pointer',
-            fontSize: 16,
-            padding: '2px 4px',
-            borderRadius: 4,
-            lineHeight: 1,
-          }}
-        >
-          ×
-        </button>
+        <ConfirmableRemoveButton
+          onConfirm={onRemove}
+          ariaLabel={t('aria.remove_attack', { name: attack.name || t('combat.unnamed_attack') })}
+          testId={`remove-attack-${attack.id}`}
+        />
       </div>
 
       {/* ── Compact: summary line ────────────────────────────────────────── */}
