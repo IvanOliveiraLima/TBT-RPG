@@ -381,6 +381,10 @@ const en = {
   'aria.decrement_value':     'Decrement',
   'aria.increment_value':     'Increment',
 
+  // Remove confirmation (ConfirmableRemoveButton)
+  'remove.confirm':           'Confirm?',
+  'remove.confirm_aria':      'Confirm deletion',
+
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',
   'phase_c.details_coming_soon': 'Details will come in Phase C',
