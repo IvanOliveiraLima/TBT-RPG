@@ -92,17 +92,20 @@ export function ConfirmableRemoveButton({
   const isSm = size === 'sm'
 
   const baseStyle: React.CSSProperties = {
-    backgroundColor: 'transparent',
-    border: '1px solid transparent',
+    backgroundColor: confirming ? 'rgba(244, 67, 54, 0.15)' : 'transparent',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: confirming ? 'rgba(244, 67, 54, 0.6)' : 'transparent',
     borderRadius: 4,
-    color: '#7A7788',
+    color: confirming ? 'rgba(244, 67, 54, 1)' : '#7A7788',
+    fontWeight: confirming ? 600 : 400,
     cursor: disabled ? 'not-allowed' : 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
     lineHeight: 1,
     opacity: disabled ? 0.4 : 1,
-    transition: 'background 150ms, border-color 150ms, color 150ms',
+    transition: 'background-color 150ms, border-color 150ms, color 150ms',
     fontFamily: "'Inter', system-ui, sans-serif",
     flexShrink: 0,
     whiteSpace: 'nowrap',
@@ -112,13 +115,6 @@ export function ConfirmableRemoveButton({
     fontSize: isSm ? 13 : 14,
     padding: confirming ? (isSm ? '0 6px' : '0 8px') : '0 2px',
   }
-
-  const confirmingStyle: React.CSSProperties = confirming ? {
-    backgroundColor: 'rgba(244, 67, 54, 0.15)',
-    borderColor: 'rgba(244, 67, 54, 0.6)',
-    color: 'rgba(244, 67, 54, 1)',
-    fontWeight: 600,
-  } : {}
 
   return (
     <button
@@ -131,7 +127,7 @@ export function ConfirmableRemoveButton({
       data-confirming={confirming ? 'true' : undefined}
       data-testid={testId}
       className={className}
-      style={{ ...baseStyle, ...confirmingStyle }}
+      style={baseStyle}
     >
       {confirming ? t('remove.confirm') : '×'}
     </button>
