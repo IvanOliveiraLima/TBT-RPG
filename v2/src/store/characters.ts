@@ -13,6 +13,11 @@ interface CharactersState {
   error:      string | null
   fetchCharacters: () => Promise<void>
   /**
+   * Persist a new character to IndexedDB immediately and add it to the store.
+   * Used by character creation flows (manual and AI-generated).
+   */
+  addCharacter: (character: Character) => Promise<void>
+  /**
    * Apply a partial update to a character in the store.
    * Optimistically updates local state immediately, then debounces
    * the IndexedDB write by 800ms. Coalesces rapid updates.
@@ -29,6 +34,11 @@ export const useCharactersStore = create<CharactersState>((set, get) => ({
   characters: [],
   loading:    false,
   error:      null,
+
+  addCharacter: async (character) => {
+    await saveCharacter(character)
+    set(state => ({ characters: [...state.characters, character] }))
+  },
 
   fetchCharacters: async () => {
     set({ loading: true, error: null })

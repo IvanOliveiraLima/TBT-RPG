@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCharactersStore } from '@/store/characters'
 import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { createEmptyCharacter } from '@/domain/factories'
 import { useTranslation, pluralKey } from '@/i18n'
+import { AIGenerationModal } from '@/components/AIGenerationModal'
 
 /* ── V1 production URL ────────────────────────────────────────────────── */
 const V1_URL = 'https://ivanoliveiralima.github.io/TBT-RPG/'
@@ -266,12 +268,25 @@ function AuthStrip() {
 
 /* ── Main page ─────────────────────────────────────────────────────────── */
 export default function CharSelect() {
-  const { characters, loading, fetchCharacters } = useCharactersStore()
+  const { characters, loading, fetchCharacters, addCharacter } = useCharactersStore()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [aiModalOpen, setAiModalOpen] = useState(false)
 
   useEffect(() => {
     void fetchCharacters()
   }, [fetchCharacters])
+
+  async function handleCreateFromScratch() {
+    const newChar = createEmptyCharacter()
+    await addCharacter(newChar)
+    navigate(`/character/${newChar.id}`)
+  }
+
+  async function handleCharacterGenerated(char: Character) {
+    await addCharacter(char)
+    navigate(`/character/${char.id}`)
+  }
 
   return (
     <div style={{
@@ -428,22 +443,48 @@ export default function CharSelect() {
             <CharCard key={ch.id} ch={ch} selected={i === 0} />
           ))}
 
-          {/* Create new — stub */}
-          <button
-            onClick={() => alert(t('charselect.create_unavailable', { url: V1_URL }))}
-            style={{
-              padding: '16px', borderRadius: 14,
-              background: 'transparent',
-              border: `2px dashed ${T.borderDefault}`,
-              color: T.textTertiary,
-              fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', marginTop: 4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 18, color: T.gold }}>＋</span>
-            {t('charselect.create')}
-          </button>
+          {/* Create buttons — side by side on desktop, stacked on narrow screens */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => void handleCreateFromScratch()}
+              data-testid="create-from-scratch"
+              aria-label={t('aria.create_from_scratch')}
+              style={{
+                flex: '1 1 140px',
+                padding: '14px 12px', borderRadius: 14,
+                background: 'transparent',
+                border: `2px dashed ${T.borderDefault}`,
+                color: T.textTertiary,
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 150ms',
+              }}
+            >
+              <span style={{ fontSize: 18, color: T.gold }}>＋</span>
+              {t('charselect.create_from_scratch')}
+            </button>
+
+            <button
+              onClick={() => setAiModalOpen(true)}
+              data-testid="create-with-ai"
+              aria-label={t('aria.create_with_ai')}
+              style={{
+                flex: '1 1 140px',
+                padding: '14px 12px', borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(212,160,23,0.08), rgba(91,63,168,0.08))',
+                border: `1px solid rgba(212,160,23,0.35)`,
+                color: T.textSecondary,
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 150ms',
+              }}
+            >
+              <span style={{ color: T.gold }}>✦</span>
+              {t('charselect.create_with_ai')}
+            </button>
+          </div>
         </div>
 
         {/* Secondary actions */}
@@ -491,6 +532,13 @@ export default function CharSelect() {
         {/* Auth */}
         <AuthStrip />
       </div>
+
+      {aiModalOpen && (
+        <AIGenerationModal
+          onClose={() => setAiModalOpen(false)}
+          onCharacterGenerated={char => void handleCharacterGenerated(char)}
+        />
+      )}
     </div>
   )
 }

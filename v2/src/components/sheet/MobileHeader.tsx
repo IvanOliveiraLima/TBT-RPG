@@ -63,20 +63,6 @@ export function MobileHeader({ character, onMenu }: MobileHeaderProps) {
         </div>
       </div>
 
-      <button
-        aria-label={t('aria.generate_ai')}
-        style={{
-          width: 34, height: 34, borderRadius: 8,
-          background: 'transparent',
-          border: `1px solid ${T.borderSubtle}`,
-          color: T.gold,
-          cursor: 'pointer',
-          fontSize: 14, padding: 0, flexShrink: 0,
-        }}
-        onClick={() => alert(t('phase_c.ai_unavailable'))}
-      >
-        ✦
-      </button>
     </div>
   )
 }
