@@ -15,3 +15,8 @@ export type { DamageType } from './damage-types'
 
 export { CANONICAL_RANGES } from './attack-ranges'
 export type { AttackRange } from './attack-ranges'
+
+export { SPELL_SCHOOLS, SCHOOL_COLORS } from './spell-schools'
+
+export { CANONICAL_CASTING_TIMES } from './casting-times'
+export type { CastingTime } from './casting-times'

@@ -60,11 +60,13 @@ import type {
   SavingThrowState,
   SkillState,
   Attack,
-  SpellSlot,
-  SpellKnown,
+  Spell,
   InventoryItem,
   Feature,
 } from '@/domain/character'
+
+// Internal v1 known shape — not exported from domain
+interface LegacySpellKnown { level: number; name: string; prepared?: boolean }
 import {
   abilityModifier,
   proficiencyBonus,
@@ -72,7 +74,6 @@ import {
   skillBonus,
   passivePerception,
   spellSaveDC,
-  spellAttackBonus,
 } from '@/domain/calculations'
 import { getHitDie } from '@/domain/classes'
 import { isCharacterCaster, getSpellcastingAbility } from '@/domain/casters'
@@ -402,18 +403,18 @@ function adaptAttacks(raw: V1Character): Attack[] {
  * There is NO "used" tracking in v1 — current always equals max at load time.
  * Slots with empty or "0" total are excluded.
  */
-function adaptSpellSlots(raw: V1Character): SpellSlot[] {
+function adaptSpellSlots(raw: V1Character): Record<string, { current: number; max: number }> {
   const spells = raw.page3?.spells
-  if (!spells) return []
+  if (!spells) return {}
 
-  const slots: SpellSlot[] = []
+  const slots: Record<string, { current: number; max: number }> = {}
   for (let level = 1; level <= 9; level++) {
     const key = `level_${level}` as keyof typeof spells
     const block = spells[key] as V1SpellLevelBlock | undefined
     if (!block || typeof block !== 'object' || Array.isArray(block)) continue
 
     const max = parseIntSafe(block.total)
-    if (max > 0) slots.push({ level, current: max, max })
+    if (max > 0) slots[String(level)] = { current: max, max }
   }
   return slots
 }
@@ -428,11 +429,11 @@ function adaptSpellSlots(raw: V1Character): SpellSlot[] {
  * toArray() guards against non-array .spells fields in malformed records.
  * Empty spell_name entries are filtered out.
  */
-function adaptSpellKnown(raw: V1Character): SpellKnown[] {
+function adaptSpellKnown(raw: V1Character): LegacySpellKnown[] {
   const spells = raw.page3?.spells
   if (!spells || typeof spells !== 'object' || Array.isArray(spells)) return []
 
-  const known: SpellKnown[] = []
+  const known: LegacySpellKnown[] = []
 
   // Cantrips — nested under .spells (not a flat array)
   const cantripBlock = spells.cantrips
@@ -617,32 +618,31 @@ export function adaptCharacter(raw: V1Character): Character {
     profBonus,
   )
 
-  const spellSlots = adaptSpellSlots(raw)
-  const spellKnown = adaptSpellKnown(raw)
+  const legacySlots = adaptSpellSlots(raw)
+  const legacyKnown = adaptSpellKnown(raw)
 
-  // Caster detection: derive from class list. Characters whose class is in the
-  // caster list always get a spells object — even if they never filled the spell
-  // page in v1 (e.g. a Druid who hasn't entered spells yet).
+  // Caster detection: derive from class list. Casters get a non-empty spellcastingAbility.
   const isCaster = isCharacterCaster(classes)
 
   // Spell ability: prefer page1.saves_skills.spell_casting (select element,
-  // stores "cha"/"int"/etc.). Falls back to class-based default when blank
-  // (common for casters who skipped that field in v1).
+  // stores "cha"/"int"/etc.). Falls back to class-based default when blank.
   const spellAbilityRaw = str(raw.page1?.saves_skills?.spell_casting)
   const primaryClassName = classes[0]?.name ?? ''
-  const spellAbility = spellAbilityRaw
-    ? mapSpellAbility(spellAbilityRaw)
-    : getSpellcastingAbility(primaryClassName)
+  const spellAbility: AbilityKey | '' = isCaster
+    ? (spellAbilityRaw ? mapSpellAbility(spellAbilityRaw) : getSpellcastingAbility(primaryClassName))
+    : ''
 
-  const spells = isCaster
-    ? {
-        ability:     spellAbility,
-        attackBonus: spellAttackBonus(abilities[spellAbility], profBonus),
-        saveDC:      spellSaveDC(abilities[spellAbility], profBonus),
-        slots:       spellSlots,
-        known:       spellKnown,
-      }
-    : undefined
+  // Convert legacy known[] → Spell[]
+  const adaptedSpells: Spell[] = legacyKnown.map((s) => ({
+    id:          crypto.randomUUID(),
+    name:        s.name,
+    level:       s.level,
+    school:      'abjuration' as const,
+    castingTime: '',
+    range:       '',
+    description: '',
+    prepared:    s.prepared ?? false,
+  }))
 
   const now = Date.now()
 
@@ -675,7 +675,7 @@ export function adaptCharacter(raw: V1Character): Character {
     initiative:       adaptInitiative(raw, abilities),
     speed:            parseIntSafe(tb?.speed),
     passivePerception: passPerc,
-    spellSaveDC:      isCaster ? spellSaveDC(abilities[spellAbility], profBonus) : 0,
+    spellSaveDC:      spellAbility ? spellSaveDC(abilities[spellAbility], profBonus) : 0,
     inspiration:      parseBoolean(tb?.insperation),
 
     savingThrows: adaptSavingThrows(raw, abilities, profBonus),
@@ -684,7 +684,11 @@ export function adaptCharacter(raw: V1Character): Character {
     ...adaptProficienciesAndLanguages(raw),
 
     attacks: adaptAttacks(raw),
-    ...(spells !== undefined ? { spells } : {}),
+
+    spells:              adaptedSpells,
+    spellSlots:          legacySlots,
+    spellcastingAbility: spellAbility,
+    spellcastingClass:   isCaster ? primaryClassName : '',
 
     inventory: adaptInventory(raw),
     currency:  adaptCurrency(raw),

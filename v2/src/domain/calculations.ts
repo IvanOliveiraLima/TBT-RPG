@@ -5,6 +5,8 @@
  * Ported and extended from v1 js/modules/calculations.js.
  */
 
+import type { Abilities, AbilityKey } from './character'
+
 /**
  * Returns the D&D 5e ability modifier for a raw ability score.
  * Formula: floor((score - 10) / 2)
@@ -85,6 +87,24 @@ export function spellSaveDC(abilityScore: number, profBonus: number): number {
  */
 export function spellAttackBonus(abilityScore: number, profBonus: number): number {
   return profBonus + abilityModifier(abilityScore)
+}
+
+/**
+ * Derives spell save DC from a Character.
+ * Returns null when spellcastingAbility is '' (no spellcasting).
+ */
+export function deriveSpellSaveDC(abilities: Abilities, spellcastingAbility: AbilityKey | '', profBonus: number): number | null {
+  if (!spellcastingAbility) return null
+  return spellSaveDC(abilities[spellcastingAbility], profBonus)
+}
+
+/**
+ * Derives spell attack bonus from a Character.
+ * Returns null when spellcastingAbility is '' (no spellcasting).
+ */
+export function deriveSpellAttackBonus(abilities: Abilities, spellcastingAbility: AbilityKey | '', profBonus: number): number | null {
+  if (!spellcastingAbility) return null
+  return spellAttackBonus(abilities[spellcastingAbility], profBonus)
 }
 
 /**

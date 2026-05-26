@@ -217,33 +217,66 @@ const en = {
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Attack {name}, {bonus_or_dc}, {damage}',
 
-  // SpellHeader cell labels
-  'spells.header.class': 'CLASS',
-  'spells.header.ability': 'ABILITY',
-  'spells.header.save_dc': 'SAVE DC',
+  // SpellcastingHeader (editable)
+  'spells.header.class':        'CLASS',
+  'spells.header.ability':      'ABILITY',
+  'spells.header.save_dc':      'SAVE DC',
   'spells.header.attack_bonus': 'ATTACK BONUS',
+  'spells.class_label':         'Class',
+  'spells.class_placeholder':   'Druid, Cleric...',
+  'spells.ability_label':       'Ability',
+  'spells.no_ability':          '— None —',
+  'spells.save_dc_label':       'Save DC',
+  'spells.attack_bonus_label':  'Attack Bonus',
 
-  // SpellSlots
+  // SpellSlotsBlock (editable)
   'spell_slots.section_title': 'SPELL SLOTS',
-  'spell_slots.level_label': 'LEVEL {level}',
-  'spell_slots.count_label': '{current}/{max}',
-  'spell_slots.pip_aria': 'Level {level} slot ({current} of {max} available)',
+  'spell_slots.level_label':   'LEVEL {level}',
+  'spell_slots.count_label':   '{current}/{max}',
+  'spell_slots.pip_aria':      'Level {level} slot ({current} of {max} available)',
+  'spells.slots_section_title': 'Spell Slots',
+  'spells.no_slots_hint':       'No spell slots configured.',
+  'spells.add_slot_level':      '+ Add level',
+  'spells.level':               'Level {n}',
 
-  // SpellList
-  'spells.section_title': 'SPELLS',
-  'spells.add_button': 'Add',
-  'spells.count_label': '({count})',
-  'spells.cantrips_section': 'CANTRIPS',
-  'spells.level_section': 'LEVEL {level}',
-  'spells.section_count': '{count}',
-  'spells.empty_state_title': 'No spells registered.',
-  'spells.empty_state_hint': 'Add cantrips and spells to manage slots.',
+  // SpellsList
+  'spells.section_title':       'SPELLS',
+  'spells.add_button':          'Add',
+  'spells.count_label':         '({count})',
+  'spells.cantrips_section':    'CANTRIPS',
+  'spells.level_section':       'LEVEL {level}',
+  'spells.section_count':       '{count}',
+  'spells.empty_state_title':   'No spells registered.',
+  'spells.empty_state_hint':    'Add cantrips and spells to manage slots.',
+  'spells.cantrips':            'Cantrips',
+  'spells.cantrip':             'Cantrip',
+  'spells.unnamed_spell':       '(unnamed)',
+  'spells.prepared_hint':       'Prepared today',
+  'spells.add_cantrip':         '+ Add cantrip',
+  'spells.add_at_level':        '+ Add level {n} spell',
+  'spells.name_placeholder':    'Spell name',
+  'spells.level_label':         'Level',
+  'spells.school_label':        'School',
+  'spells.casting_time_label':  'Casting time',
+  'spells.range_label':         'Range',
+  'spells.description_label':   'Description',
+  'spells.description_placeholder': 'Effects, mechanics...',
 
-  // SpellRow
+  // SpellRow (legacy keys kept for compatibility)
   'spells.row.unprepared_aria': 'Not prepared',
-  'spells.row.row_aria': 'Spell {name}',
+  'spells.row.row_aria':        'Spell {name}',
 
-  // SpellsTab non-caster
+  // Spell schools
+  'spells.school_abjuration':   'Abjuration',
+  'spells.school_conjuration':  'Conjuration',
+  'spells.school_divination':   'Divination',
+  'spells.school_enchantment':  'Enchantment',
+  'spells.school_evocation':    'Evocation',
+  'spells.school_illusion':     'Illusion',
+  'spells.school_necromancy':   'Necromancy',
+  'spells.school_transmutation': 'Transmutation',
+
+  // SpellsTab non-caster (kept for reference, no longer shown)
   'spells.non_caster_title': 'This class does not cast spells.',
   'spells.non_caster_hint': 'Spells are accessed by classes like Druid, Bard, Cleric, Wizard, Sorcerer and others.',
 
@@ -329,7 +362,14 @@ const en = {
   'aria.generate_ai': 'Generate with AI',
   'aria.item_weight':   'Item: {name}, weight: {weight}',
   'aria.remove_item':   'Remove {name}',
-  'aria.remove_spell':  'Remove spell {name}',
+  'aria.remove_spell':                 'Remove spell {name}',
+  'aria.spellcasting_class_input':     'Spellcasting class',
+  'aria.spellcasting_ability_select':  'Spellcasting ability',
+  'aria.spell_name':                   'Spell name',
+  'aria.spell_prepared':               'Spell prepared today',
+  'aria.slot_pip':                     'Slot {n} of level {level}',
+  'aria.slot_max_input':               'Max slots for level {level}',
+  'aria.add_slot_level':               'Add new slot level',
   'aria.remove_attack':      'Remove attack {name}',
   'aria.attack_name':        'Attack name',
   'aria.attack_bonus_input': 'Attack bonus',

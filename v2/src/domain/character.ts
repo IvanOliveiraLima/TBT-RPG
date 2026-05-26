@@ -56,16 +56,25 @@ export interface Attack {
   notes: string            // free-text, special mechanics or effects
 }
 
-export interface SpellSlot {
-  level: number          // 1–9
-  current: number
-  max: number
-}
+export type SpellSchool =
+  | 'abjuration'
+  | 'conjuration'
+  | 'divination'
+  | 'enchantment'
+  | 'evocation'
+  | 'illusion'
+  | 'necromancy'
+  | 'transmutation'
 
-export interface SpellKnown {
-  level: number          // 0 for cantrips
+export interface Spell {
+  id: string
   name: string
-  prepared?: boolean
+  level: number           // 0 (cantrip) to 9
+  school: SpellSchool
+  castingTime: string     // "1 action", "1 bonus action", etc. — free-text with datalist
+  range: string           // "60 ft", "Touch", "Self" — free-text with datalist
+  description: string     // free-text, textarea
+  prepared: boolean       // marked for use today (ignored for cantrips)
 }
 
 export interface InventoryItem {
@@ -123,7 +132,7 @@ export interface Character {
   initiative: number         // stored as is from v1; ideally dex mod + misc
   speed: number
   passivePerception: number  // derived: 10 + perception skill bonus
-  spellSaveDC: number        // 0 if not a caster (stored from top_bar)
+  spellSaveDC: number        // derived: 8 + profBonus + spellcasting ability modifier (0 if no ability)
   inspiration: boolean       // v1 stores as string in top_bar.insperation (typo preserved in raw)
 
   // Saving throws & skills
@@ -144,14 +153,11 @@ export interface Character {
   // Combat items
   attacks: Attack[]
 
-  // Spellcasting — undefined if the character has no spells or slots
-  spells?: {
-    ability: AbilityKey
-    attackBonus: number
-    saveDC: number
-    slots: SpellSlot[]
-    known: SpellKnown[]
-  }
+  // Spellcasting (v6+)
+  spells: Spell[]
+  spellSlots: Record<string, { current: number; max: number }>  // key = '1'–'9'
+  spellcastingAbility: AbilityKey | ''  // '' = no spellcasting
+  spellcastingClass: string             // free-text, e.g. "Druid", "Wizard"
 
   // Inventory
   inventory: InventoryItem[]

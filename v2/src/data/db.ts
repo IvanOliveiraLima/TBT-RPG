@@ -17,6 +17,8 @@
  *             backfill id/source on features missing them (C.1.c.5)
  *   v4 → v5: expand Attack shape — rename baseStat→ability, bonus(string)→attackBonus(number),
  *             add kind/range/properties/notes, drop rollType/proficient (C.1.d)
+ *   v5 → v6: expand Spell shape — migrate spells?{ability,saveDC,attackBonus,slots,known}
+ *             to flat spells:Spell[], spellSlots:Record, spellcastingAbility, spellcastingClass (C.1.e)
  */
 
 import { openDB } from 'idb'
@@ -26,7 +28,7 @@ import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 5
+const V2_DB_VER  = 6
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
@@ -145,6 +147,78 @@ function openV2() {
           cursor = await cursor.continue()
         }
       }
+      if (oldVersion < 6) {
+        // Expand Spell shape: migrate old spells? sub-object to flat arrays + new fields.
+        // Old shape: char.spells?: { ability, attackBonus, saveDC, slots: [{level,current,max}], known: [{level,name,prepared?}] }
+        // New shape: char.spells: Spell[], char.spellSlots: Record<string,{current,max}>,
+        //            char.spellcastingAbility: AbilityKey|'', char.spellcastingClass: string
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+
+          // Extract old spells sub-object (may be undefined for non-casters)
+          const oldSpells = char.spells as Record<string, unknown> | undefined
+
+          // spellcastingAbility
+          if (typeof char.spellcastingAbility !== 'string') {
+            char.spellcastingAbility = (oldSpells?.ability as string) ?? ''
+          }
+
+          // spellcastingClass
+          if (typeof char.spellcastingClass !== 'string') {
+            const classes = char.classes as Array<{ name: string }> | undefined
+            char.spellcastingClass = classes?.[0]?.name ?? ''
+          }
+
+          // spellSlots: Record<'1'–'9', {current, max}>
+          if (!char.spellSlots || typeof char.spellSlots !== 'object' || Array.isArray(char.spellSlots)) {
+            const newSlots: Record<string, { current: number; max: number }> = {}
+            const oldSlotArr = oldSpells?.slots as Array<{ level: number; current: number; max: number }> | undefined
+            if (Array.isArray(oldSlotArr)) {
+              for (const s of oldSlotArr) {
+                const key = String(s.level)
+                newSlots[key] = { current: s.current ?? 0, max: s.max ?? 0 }
+              }
+            }
+            char.spellSlots = newSlots
+          }
+
+          // spells: Spell[]
+          // If already an array (idempotent run), leave it.
+          // If old shape is an object with .known, convert.
+          if (!Array.isArray(char.spells)) {
+            const known = oldSpells?.known as Array<{ level: number; name: string; prepared?: boolean }> | undefined
+            char.spells = Array.isArray(known)
+              ? known.map((s) => ({
+                  id:          crypto.randomUUID(),
+                  name:        s.name ?? '',
+                  level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+                  school:      'abjuration' as const,
+                  castingTime: '',
+                  range:       '',
+                  description: '',
+                  prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+                }))
+              : []
+          } else {
+            // Already an array — backfill any missing fields (idempotent)
+            char.spells = (char.spells as Array<Record<string, unknown>>).map((s) => ({
+              id:          s.id ?? crypto.randomUUID(),
+              name:        s.name ?? '',
+              level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+              school:      s.school ?? 'abjuration',
+              castingTime: s.castingTime ?? '',
+              range:       s.range ?? '',
+              description: s.description ?? '',
+              prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+            }))
+          }
+
+          await cursor.update(char)
+          cursor = await cursor.continue()
+        }
+      }
     },
   })
 }
@@ -172,6 +246,97 @@ function normalizeHitDice(char: Character): Character {
   return { ...char, hitDice: cleaned }
 }
 
+/**
+ * Runtime spell normalization — analogous to normalizeHitDice.
+ *
+ * Handles characters whose `spells` field is still in the legacy object shape
+ * { ability, attackBonus, saveDC, slots, known } because the v5→v6 DB upgrade
+ * block was skipped (the DB was already version 6 from an earlier incomplete
+ * migration run before C.1.e was finalized).
+ *
+ * Also backfills spellSlots / spellcastingAbility / spellcastingClass when any
+ * of them is missing (characters saved before those fields existed).
+ *
+ * Self-heals on every read; the next saveCharacter() will persist the
+ * normalized shape, permanently fixing the stored record.
+ */
+function normalizeSpells(char: Character): Character {
+  const raw = char as unknown as Record<string, unknown>
+
+  // Fast path: all four spell fields are already in the correct shape.
+  if (
+    Array.isArray(raw.spells) &&
+    typeof raw.spellcastingAbility === 'string' &&
+    typeof raw.spellcastingClass   === 'string' &&
+    raw.spellSlots != null &&
+    typeof raw.spellSlots === 'object' &&
+    !Array.isArray(raw.spellSlots)
+  ) {
+    return char
+  }
+
+  // Legacy object (or missing): extract old sub-object if spells is not an array.
+  const oldSpells: Record<string, unknown> | undefined = Array.isArray(raw.spells)
+    ? undefined
+    : (raw.spells as Record<string, unknown> | undefined)
+
+  // ── spells ───────────────────────────────────────────────────────────────
+  let spells: Character['spells']
+  if (Array.isArray(raw.spells)) {
+    spells = raw.spells as Character['spells']
+  } else {
+    const known = oldSpells?.known as Array<{ level: number; name: string; prepared?: boolean }> | undefined
+    spells = Array.isArray(known)
+      ? known.map((s) => ({
+          id:          crypto.randomUUID(),
+          name:        s.name ?? '',
+          level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+          school:      'abjuration' as const,
+          castingTime: '',
+          range:       '',
+          description: '',
+          prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+        }))
+      : []
+  }
+
+  // ── spellSlots ───────────────────────────────────────────────────────────
+  let spellSlots: Character['spellSlots']
+  if (
+    raw.spellSlots != null &&
+    typeof raw.spellSlots === 'object' &&
+    !Array.isArray(raw.spellSlots)
+  ) {
+    spellSlots = raw.spellSlots as Character['spellSlots']
+  } else {
+    const newSlots: Record<string, { current: number; max: number }> = {}
+    const oldSlotArr = oldSpells?.slots as Array<{ level: number; current: number; max: number }> | undefined
+    if (Array.isArray(oldSlotArr)) {
+      for (const s of oldSlotArr) {
+        newSlots[String(s.level)] = { current: s.current ?? 0, max: s.max ?? 0 }
+      }
+    }
+    spellSlots = newSlots
+  }
+
+  // ── spellcastingAbility ──────────────────────────────────────────────────
+  const ABILITY_KEYS = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha'])
+  const rawAbilityStr = typeof raw.spellcastingAbility === 'string'
+    ? raw.spellcastingAbility
+    : (typeof oldSpells?.ability === 'string' ? oldSpells.ability : '')
+  const spellcastingAbility = (
+    ABILITY_KEYS.has(rawAbilityStr) ? rawAbilityStr : ''
+  ) as Character['spellcastingAbility']
+
+  // ── spellcastingClass ────────────────────────────────────────────────────
+  const firstClassName = Array.isArray(char.classes) ? char.classes[0]?.name : undefined
+  const spellcastingClass: string = typeof raw.spellcastingClass === 'string'
+    ? raw.spellcastingClass
+    : (firstClassName ?? '')
+
+  return { ...char, spells, spellSlots, spellcastingAbility, spellcastingClass }
+}
+
 /* ── Public API ───────────────────────────────────────────────────────── */
 
 /**
@@ -182,7 +347,7 @@ export async function listCharacters(): Promise<Character[]> {
   const db = await openV2()
   try {
     const all = await db.getAll(V2_STORE) as Character[]
-    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice)
+    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice).map(normalizeSpells)
   } finally {
     db.close()
   }
@@ -196,7 +361,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
   const db = await openV2()
   try {
     const result = await db.get(V2_STORE, id) as Character | undefined
-    return result != null ? normalizeHitDice(result) : null
+    return result != null ? normalizeSpells(normalizeHitDice(result)) : null
   } finally {
     db.close()
   }
