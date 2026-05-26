@@ -19,6 +19,7 @@ import {
   calculateWeightCapacity,
   getWeightLoadLevel,
   groupItemsByCategory,
+  isEquippableCategory,
 } from '@/domain/derived'
 import { formatWeight } from '@/utils/format'
 import { useTranslation } from '@/i18n'
@@ -306,17 +307,25 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
           padding:    '8px 10px',
         }}
       >
-        {/* Equipped checkbox */}
-        <input
-          type="checkbox"
-          checked={item.equipped}
-          onChange={e => onUpdate({ equipped: e.target.checked })}
-          aria-label={t('aria.item_equipped' as TranslationKey, { name: item.name || '#' })}
-          data-testid={`item-equipped-${item.id}`}
-          title={t('inventory.equipped_hint')}
-          disabled={readOnly}
-          style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
-        />
+        {/* Equipped checkbox — only for weapon/armor; placeholder preserves alignment */}
+        {isEquippableCategory(item.category) ? (
+          <input
+            type="checkbox"
+            checked={item.equipped}
+            onChange={e => onUpdate({ equipped: e.target.checked })}
+            aria-label={t('aria.item_equipped' as TranslationKey, { name: item.name || '#' })}
+            data-testid={`item-equipped-${item.id}`}
+            title={t('inventory.equipped_hint')}
+            disabled={readOnly}
+            style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            data-testid={`item-equipped-placeholder-${item.id}`}
+            style={{ width: 13, flexShrink: 0 }}
+          />
+        )}
 
         {/* Name */}
         {expanded && !readOnly ? (

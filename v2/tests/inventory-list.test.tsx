@@ -212,10 +212,9 @@ describe('InventoryList', () => {
     expect(checkbox.checked).toBe(true)
   })
 
-  it("equipped checkbox for Explorer's Pack is unchecked", () => {
+  it("Explorer's Pack (misc) has no equipped checkbox", () => {
     renderWithI18n(<InventoryList character={KANAAN} />, 'pt')
-    const checkbox = screen.getByTestId('item-equipped-inv_1') as HTMLInputElement
-    expect(checkbox.checked).toBe(false)
+    expect(screen.queryByTestId('item-equipped-inv_1')).toBeNull()
   })
 
   // ── remove buttons ────────────────────────────────────────────────────────

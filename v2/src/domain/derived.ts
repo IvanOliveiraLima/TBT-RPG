@@ -87,3 +87,11 @@ export function groupItemsByCategory(items: InventoryItem[]): Record<ItemCategor
   return groups
 }
 
+/**
+ * Returns true if items in this category can be equipped.
+ * Only weapons and armor are equippable per D&D 5e conventions.
+ */
+export function isEquippableCategory(category: ItemCategory): boolean {
+  return category === 'weapon' || category === 'armor'
+}
+

@@ -18,6 +18,7 @@ import {
   calculateWeightCapacity,
   getWeightLoadLevel,
   groupItemsByCategory,
+  isEquippableCategory,
 } from '@/domain/derived'
 import { isValidCategory, ITEM_CATEGORIES } from '@/data/canonical/item-categories'
 import { CurrencyBlock } from '@/components/sheet/parts/CurrencyBlock'
@@ -361,9 +362,15 @@ describe('InventoryList — ItemCard compact row', () => {
     expect(cb.checked).toBe(true)
   })
 
-  it('equipped checkbox unchecked for non-equipped item', () => {
+  it('equipped checkbox unchecked for non-equipped armor item', () => {
     renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
-    const cb = screen.getByTestId('item-equipped-c1') as HTMLInputElement
+    // a1 = Shield (armor), equipped: true — use a weapon with equipped:false
+    const charWithUnequippedWeapon: Character = {
+      ...BASE_CHAR,
+      inventory: [makeItem({ id: 'wu', category: 'weapon', equipped: false })],
+    }
+    renderWithI18n(<InventoryList character={charWithUnequippedWeapon} />, 'pt')
+    const cb = screen.getByTestId('item-equipped-wu') as HTMLInputElement
     expect(cb.checked).toBe(false)
   })
 
@@ -424,14 +431,18 @@ describe('InventoryList — add item interaction', () => {
 describe('InventoryList — equipped toggle interaction', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('calls onUpdate with equipped toggled to true', () => {
+  it('calls onUpdate with equipped toggled to true for weapon item', () => {
+    const charWithUnequippedWeapon: Character = {
+      ...BASE_CHAR,
+      inventory: [makeItem({ id: 'wu', category: 'weapon', equipped: false })],
+    }
     const onUpdate = vi.fn()
-    renderWithI18n(<InventoryList character={BASE_CHAR} onUpdate={onUpdate} />, 'pt')
-    const cb = screen.getByTestId('item-equipped-c1') as HTMLInputElement
+    renderWithI18n(<InventoryList character={charWithUnequippedWeapon} onUpdate={onUpdate} />, 'pt')
+    const cb = screen.getByTestId('item-equipped-wu') as HTMLInputElement
     fireEvent.click(cb)
     expect(onUpdate).toHaveBeenCalledOnce()
     const updatedInventory = (onUpdate.mock.calls[0]![0] as { inventory: InventoryItem[] }).inventory
-    const item = updatedInventory.find(i => i.id === 'c1')!
+    const item = updatedInventory.find(i => i.id === 'wu')!
     expect(item.equipped).toBe(true)
   })
 })
@@ -469,6 +480,96 @@ describe('InventoryList — category labels i18n', () => {
     renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
     const section = screen.getByTestId('inventory-category-misc')
     expect(section.textContent).toBeDefined()
+  })
+})
+
+// ── isEquippableCategory ──────────────────────────────────────────────────────
+
+describe('isEquippableCategory', () => {
+  it('returns true for weapon', () => {
+    expect(isEquippableCategory('weapon')).toBe(true)
+  })
+
+  it('returns true for armor', () => {
+    expect(isEquippableCategory('armor')).toBe(true)
+  })
+
+  it('returns false for consumable', () => {
+    expect(isEquippableCategory('consumable')).toBe(false)
+  })
+
+  it('returns false for tool', () => {
+    expect(isEquippableCategory('tool')).toBe(false)
+  })
+
+  it('returns false for misc', () => {
+    expect(isEquippableCategory('misc')).toBe(false)
+  })
+})
+
+// ── InventoryList — equipped checkbox visibility by category ──────────────────
+
+describe('InventoryList — equipped checkbox visibility by category', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('shows equipped checkbox for weapon items', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.getByTestId('item-equipped-w1')).toBeDefined()
+  })
+
+  it('shows equipped checkbox for armor items', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.getByTestId('item-equipped-a1')).toBeDefined()
+  })
+
+  it('hides equipped checkbox for consumable items', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.queryByTestId('item-equipped-c1')).toBeNull()
+  })
+
+  it('hides equipped checkbox for tool items', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.queryByTestId('item-equipped-t1')).toBeNull()
+  })
+
+  it('hides equipped checkbox for misc items', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.queryByTestId('item-equipped-m1')).toBeNull()
+  })
+
+  it('shows placeholder element for non-equippable items to preserve alignment', () => {
+    renderWithI18n(<InventoryList character={BASE_CHAR} />, 'pt')
+    expect(screen.getByTestId('item-equipped-placeholder-c1')).toBeDefined()
+    expect(screen.getByTestId('item-equipped-placeholder-t1')).toBeDefined()
+    expect(screen.getByTestId('item-equipped-placeholder-m1')).toBeDefined()
+  })
+
+  it('preserves equipped=true value in domain when category is non-equippable', () => {
+    // Item starts as weapon with equipped=true, then "saved" as consumable
+    // The UI hides the checkbox but the value stays in domain
+    const charWithEquippedConsumable: Character = {
+      ...BASE_CHAR,
+      inventory: [
+        makeItem({ id: 'x1', category: 'consumable', equipped: true }),
+      ],
+    }
+    renderWithI18n(<InventoryList character={charWithEquippedConsumable} />, 'pt')
+    // No checkbox rendered
+    expect(screen.queryByTestId('item-equipped-x1')).toBeNull()
+    // But placeholder is there
+    expect(screen.getByTestId('item-equipped-placeholder-x1')).toBeDefined()
+  })
+
+  it('reveals equipped checkbox and value when category is weapon', () => {
+    const charWithWeapon: Character = {
+      ...BASE_CHAR,
+      inventory: [
+        makeItem({ id: 'x2', category: 'weapon', equipped: true }),
+      ],
+    }
+    renderWithI18n(<InventoryList character={charWithWeapon} />, 'pt')
+    const cb = screen.getByTestId('item-equipped-x2') as HTMLInputElement
+    expect(cb.checked).toBe(true)
   })
 })
 
