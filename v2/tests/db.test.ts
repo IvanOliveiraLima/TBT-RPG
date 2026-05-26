@@ -48,12 +48,16 @@ function makeChar(overrides: Partial<Character> = {}): Character {
     savingThrows: [], skills: [],
     proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
     attacks: [], inventory: [],
-    currency:    { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+    currency:    { pp: 0, gp: 0, sp: 0, cp: 0 },
     features:    [],
     backstory:   '',
     personality: { traits: '', ideals: '', bonds: '', flaws: '' },
     notes1: '', notes2: '',
     mountPet: '', mountPet2: '', alliesOrganizations: '',
+    spells: [],
+    spellSlots: {},
+    spellcastingAbility: '',
+    spellcastingClass: '',
     images:      {},
     createdAt:   1700000000000,
     updatedAt:   1700000000000,
@@ -203,6 +207,182 @@ describe('v2-native db (Character persisted directly)', () => {
 
     it('getCharacter returns null for missing id (unaffected by normalization)', async () => {
       expect(await getCharacter('missing')).toBeNull()
+    })
+  })
+
+  // ── spells normalization ─────────────────────────────────────────────────
+
+  describe('spells normalization on read', () => {
+    it('listCharacters converts legacy spells object (known array) to Spell[]', async () => {
+      const legacy = {
+        ...makeChar({ id: 'legacy_spells_01' }),
+        spells: {
+          ability: 'cha',
+          attackBonus: 7,
+          saveDC: 15,
+          slots: [
+            { level: 1, current: 4, max: 4 },
+            { level: 2, current: 3, max: 3 },
+          ],
+          known: [
+            { level: 1, name: 'Healing Word', prepared: true },
+            { level: 0, name: 'Vicious Mockery' },
+          ],
+        },
+        spellSlots:          undefined,
+        spellcastingAbility: undefined,
+        spellcastingClass:   undefined,
+      }
+      store.set('legacy_spells_01', legacy)
+      const result = await listCharacters()
+      const char = result.find(c => c.id === 'legacy_spells_01')!
+      expect(Array.isArray(char.spells)).toBe(true)
+      expect(char.spells).toHaveLength(2)
+      const healingWord = char.spells.find(s => s.name === 'Healing Word')!
+      expect(healingWord.prepared).toBe(true)
+      expect(healingWord.level).toBe(1)
+      expect(char.spellcastingAbility).toBe('cha')
+      expect(char.spellSlots['1']?.max).toBe(4)
+      expect(char.spellSlots['1']?.current).toBe(4)
+      expect(char.spellSlots['2']?.max).toBe(3)
+    })
+
+    it('getCharacter converts legacy spells object to Spell[]', async () => {
+      const legacy = {
+        ...makeChar({ id: 'legacy_spells_02' }),
+        spells: {
+          ability: 'int',
+          slots: [{ level: 3, current: 2, max: 2 }],
+          known: [{ level: 0, name: 'Mage Hand' }, { level: 3, name: 'Fireball', prepared: true }],
+        },
+        spellSlots:          undefined,
+        spellcastingAbility: undefined,
+        spellcastingClass:   undefined,
+      }
+      store.set('legacy_spells_02', legacy)
+      const result = await getCharacter('legacy_spells_02')
+      expect(result).not.toBeNull()
+      expect(Array.isArray(result!.spells)).toBe(true)
+      expect(result!.spells).toHaveLength(2)
+      expect(result!.spells.find(s => s.name === 'Fireball')!.prepared).toBe(true)
+      expect(result!.spellcastingAbility).toBe('int')
+      expect(result!.spellSlots['3']?.max).toBe(2)
+      expect(result!.spellSlots['4']).toBeUndefined()
+    })
+
+    it('leaves spells unchanged when already a Spell[]', async () => {
+      const char = makeChar({
+        id: 'modern_spells_01',
+        spells: [
+          { id: 'sp1', name: 'Fireball', level: 3, school: 'evocation', castingTime: '1 action', range: '150 ft', description: '', prepared: true },
+        ],
+        spellSlots:          { '3': { current: 2, max: 2 } },
+        spellcastingAbility: 'int',
+        spellcastingClass:   'Wizard',
+      })
+      store.set('modern_spells_01', char)
+      const result = await listCharacters()
+      const found = result.find(c => c.id === 'modern_spells_01')!
+      expect(found.spells).toHaveLength(1)
+      expect(found.spells[0]!.name).toBe('Fireball')
+      expect(found.spellcastingAbility).toBe('int')
+      expect(found.spellSlots['3']?.max).toBe(2)
+    })
+
+    it('backfills all spell fields with defaults when entirely missing (non-caster)', async () => {
+      const partial = { ...makeChar({ id: 'partial_spells_01' }) } as Record<string, unknown>
+      delete partial['spells']
+      delete partial['spellSlots']
+      delete partial['spellcastingAbility']
+      delete partial['spellcastingClass']
+      store.set('partial_spells_01', partial)
+      const result = await getCharacter('partial_spells_01')
+      expect(result).not.toBeNull()
+      expect(Array.isArray(result!.spells)).toBe(true)
+      expect(result!.spells).toHaveLength(0)
+      expect(result!.spellSlots).toEqual({})
+      expect(result!.spellcastingAbility).toBe('')
+      expect(typeof result!.spellcastingClass).toBe('string')
+    })
+
+    it('non-caster legacy character (spells: null) gets empty array', async () => {
+      const legacy = {
+        ...makeChar({ id: 'legacy_noncaster_01' }),
+        spells: null,
+        spellSlots: undefined,
+        spellcastingAbility: undefined,
+        spellcastingClass: undefined,
+      }
+      store.set('legacy_noncaster_01', legacy)
+      const result = await getCharacter('legacy_noncaster_01')
+      expect(result).not.toBeNull()
+      expect(Array.isArray(result!.spells)).toBe(true)
+      expect(result!.spells).toHaveLength(0)
+      expect(result!.spellcastingAbility).toBe('')
+    })
+  })
+
+  // ── inventory normalization on read ──────────────────────────────────────
+
+  describe('inventory normalization on read', () => {
+    it('listCharacters backfills category/description/equipped on items missing them', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          // old shape: no category/description/equipped
+          { id: 'inv_0', name: 'Shortsword', quantity: 1, weight: 2 } as never,
+        ],
+      }))
+      const result = await listCharacters()
+      const item = result[0]!.inventory[0]!
+      expect(item.category).toBe('misc')
+      expect(item.description).toBe('')
+      expect(item.equipped).toBe(false)
+    })
+
+    it('getCharacter backfills inventory fields missing from old shape', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          { id: 'inv_0', name: 'Shield', quantity: 1, weight: 6 } as never,
+        ],
+      }))
+      const result = await getCharacter('char_001')
+      const item = result!.inventory[0]!
+      expect(item.category).toBe('misc')
+      expect(item.equipped).toBe(false)
+    })
+
+    it('leaves inventory unchanged when items already have full shape', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          { id: 'inv_0', name: 'Sword', quantity: 1, weight: 3, category: 'weapon', description: 'Sharp', equipped: true },
+        ],
+      }))
+      const result = await listCharacters()
+      const item = result[0]!.inventory[0]!
+      expect(item.category).toBe('weapon')
+      expect(item.description).toBe('Sharp')
+      expect(item.equipped).toBe(true)
+    })
+
+    it('converts EP to SP (1:5) and removes ep field on read', async () => {
+      store.set('char_001', makeChar({
+        currency: { pp: 0, gp: 0, ep: 4, sp: 10, cp: 0 } as never,
+      }))
+      const result = await listCharacters()
+      const cur = result[0]!.currency
+      // ep gone, sp += 4*5 = 20
+      expect('ep' in cur).toBe(false)
+      expect(cur.sp).toBe(30)
+    })
+
+    it('non-caster with no inventory gets empty array and zero currency', async () => {
+      const raw = makeChar()
+      delete (raw as Record<string, unknown>).inventory
+      delete (raw as Record<string, unknown>).currency
+      store.set('char_001', raw)
+      const result = await listCharacters()
+      expect(result[0]!.inventory).toEqual([])
+      expect(result[0]!.currency).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 })
     })
   })
 })

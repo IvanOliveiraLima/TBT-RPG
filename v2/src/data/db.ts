@@ -2,7 +2,7 @@
  * IndexedDB wrapper for v2 — v2-native persistence.
  *
  * Strategy (Phase C.1.0 pivot):
- *   v2 DB  (dnd-character-sheet-v2, version 4) — read + write, stores Character directly
+ *   v2 DB  (dnd-character-sheet-v2, version 6) — read + write, stores Character directly
  *   v1 DB  (dnd-character-sheet, version 3)    — read-only, accessed only during migration
  *
  * Characters are stored as domain Character objects (v2-native schema).
@@ -15,19 +15,27 @@
  *   v2 → v3: backfill className on hitDice entries (C.1.c.4)
  *   v3 → v4: migrate proficiencies strings→arrays; lift languages to top-level;
  *             backfill id/source on features missing them (C.1.c.5)
+ *   v4 → v5: expand Attack shape — rename baseStat→ability, bonus(string)→attackBonus(number),
+ *             add kind/range/properties/notes, drop rollType/proficient (C.1.d)
+ *   v5 → v6: expand Spell shape — migrate spells?{ability,saveDC,attackBonus,slots,known}
+ *             to flat spells:Spell[], spellSlots:Record, spellcastingAbility, spellcastingClass (C.1.e)
+ *   v6 → v7: expand InventoryItem shape — add category/description/equipped;
+ *             remove EP from Currency (convert 1 EP → 5 SP) (C.1.f)
  */
 
 import { openDB } from 'idb'
 import type { Character } from '@/domain/character'
-import { migrateProfString } from './adapter'
+import { isValidCategory } from './canonical/item-categories'
+import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
 
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 4
+const V2_DB_VER  = 7
 const V2_STORE   = 'characters'
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
+
 
 function openV2() {
   return openDB(V2_DB_NAME, V2_DB_VER, {
@@ -113,6 +121,155 @@ function openV2() {
           cursor = await cursor.continue()
         }
       }
+      if (oldVersion < 5) {
+        // Expand Attack shape: rename baseStat→ability, bonus(string)→attackBonus(number),
+        // add kind/range/properties/notes, drop rollType/proficient.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          if (Array.isArray(char.attacks) && char.attacks.length > 0) {
+            char.attacks = (char.attacks as Array<Record<string, unknown>>).map((a) => {
+              const bonusStr = String(a.bonus ?? '')
+              const baseStat = String(a.baseStat ?? '')
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { baseStat: _bs, rollType: _rt, proficient: _p, bonus: _b, ...rest } = a
+              return {
+                ...rest,
+                id:           a.id ?? crypto.randomUUID(),
+                kind:         inferAttackKind(bonusStr, baseStat),
+                ability:      baseStat,
+                attackBonus:  parseBonusString(bonusStr),
+                range:        a.range ?? '',
+                properties:   a.properties ?? '',
+                notes:        a.notes ?? '',
+              }
+            })
+            await cursor.update(char)
+          }
+          cursor = await cursor.continue()
+        }
+      }
+      if (oldVersion < 6) {
+        // Expand Spell shape: migrate old spells? sub-object to flat arrays + new fields.
+        // Old shape: char.spells?: { ability, attackBonus, saveDC, slots: [{level,current,max}], known: [{level,name,prepared?}] }
+        // New shape: char.spells: Spell[], char.spellSlots: Record<string,{current,max}>,
+        //            char.spellcastingAbility: AbilityKey|'', char.spellcastingClass: string
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+
+          // Extract old spells sub-object (may be undefined for non-casters)
+          const oldSpells = char.spells as Record<string, unknown> | undefined
+
+          // spellcastingAbility
+          if (typeof char.spellcastingAbility !== 'string') {
+            char.spellcastingAbility = (oldSpells?.ability as string) ?? ''
+          }
+
+          // spellcastingClass
+          if (typeof char.spellcastingClass !== 'string') {
+            const classes = char.classes as Array<{ name: string }> | undefined
+            char.spellcastingClass = classes?.[0]?.name ?? ''
+          }
+
+          // spellSlots: Record<'1'–'9', {current, max}>
+          if (!char.spellSlots || typeof char.spellSlots !== 'object' || Array.isArray(char.spellSlots)) {
+            const newSlots: Record<string, { current: number; max: number }> = {}
+            const oldSlotArr = oldSpells?.slots as Array<{ level: number; current: number; max: number }> | undefined
+            if (Array.isArray(oldSlotArr)) {
+              for (const s of oldSlotArr) {
+                const key = String(s.level)
+                newSlots[key] = { current: s.current ?? 0, max: s.max ?? 0 }
+              }
+            }
+            char.spellSlots = newSlots
+          }
+
+          // spells: Spell[]
+          // If already an array (idempotent run), leave it.
+          // If old shape is an object with .known, convert.
+          if (!Array.isArray(char.spells)) {
+            const known = oldSpells?.known as Array<{ level: number; name: string; prepared?: boolean }> | undefined
+            char.spells = Array.isArray(known)
+              ? known.map((s) => ({
+                  id:          crypto.randomUUID(),
+                  name:        s.name ?? '',
+                  level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+                  school:      'abjuration' as const,
+                  castingTime: '',
+                  range:       '',
+                  description: '',
+                  prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+                }))
+              : []
+          } else {
+            // Already an array — backfill any missing fields (idempotent)
+            char.spells = (char.spells as Array<Record<string, unknown>>).map((s) => ({
+              id:          s.id ?? crypto.randomUUID(),
+              name:        s.name ?? '',
+              level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+              school:      s.school ?? 'abjuration',
+              castingTime: s.castingTime ?? '',
+              range:       s.range ?? '',
+              description: s.description ?? '',
+              prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+            }))
+          }
+
+          await cursor.update(char)
+          cursor = await cursor.continue()
+        }
+      }
+      if (oldVersion < 7) {
+        // Expand InventoryItem shape: add category/description/equipped; backfill id.
+        // Remove EP from Currency: convert 1 EP → 5 SP (D&D 5e standard exchange rate).
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Record<string, unknown>
+          let updated = false
+
+          // Inventory items migration
+          if (Array.isArray(char.inventory)) {
+            char.inventory = (char.inventory as Array<Record<string, unknown>>).map((item, idx) => ({
+              id:          typeof item.id === 'string' ? item.id : `inv_${idx}`,
+              name:        typeof item.name === 'string' ? item.name : '',
+              quantity:    typeof item.quantity === 'number' ? Math.max(0, item.quantity) : 1,
+              weight:      typeof item.weight === 'number' ? Math.max(0, item.weight) : 0,
+              category:    isValidCategory(item.category) ? item.category : 'misc',
+              description: typeof item.description === 'string' ? item.description
+                         : typeof item.notes === 'string' ? item.notes
+                         : '',
+              equipped:    typeof item.equipped === 'boolean' ? item.equipped : false,
+            }))
+            updated = true
+          } else {
+            char.inventory = []
+            updated = true
+          }
+
+          // Currency migration: remove EP, convert to SP
+          const cur = char.currency as Record<string, unknown> | undefined
+          if (cur && typeof cur === 'object') {
+            const epValue = typeof cur.ep === 'number' ? cur.ep : 0
+            char.currency = {
+              pp: typeof cur.pp === 'number' ? cur.pp : 0,
+              gp: typeof cur.gp === 'number' ? cur.gp : 0,
+              sp: (typeof cur.sp === 'number' ? cur.sp : 0) + (epValue * 5),
+              cp: typeof cur.cp === 'number' ? cur.cp : 0,
+            }
+            updated = true
+          } else {
+            char.currency = { pp: 0, gp: 0, sp: 0, cp: 0 }
+            updated = true
+          }
+
+          if (updated) await cursor.update(char)
+          cursor = await cursor.continue()
+        }
+      }
     },
   })
 }
@@ -140,6 +297,167 @@ function normalizeHitDice(char: Character): Character {
   return { ...char, hitDice: cleaned }
 }
 
+/**
+ * Runtime spell normalization — analogous to normalizeHitDice.
+ *
+ * Handles characters whose `spells` field is still in the legacy object shape
+ * { ability, attackBonus, saveDC, slots, known } because the v5→v6 DB upgrade
+ * block was skipped (the DB was already version 6 from an earlier incomplete
+ * migration run before C.1.e was finalized).
+ *
+ * Also backfills spellSlots / spellcastingAbility / spellcastingClass when any
+ * of them is missing (characters saved before those fields existed).
+ *
+ * Self-heals on every read; the next saveCharacter() will persist the
+ * normalized shape, permanently fixing the stored record.
+ */
+function normalizeSpells(char: Character): Character {
+  const raw = char as unknown as Record<string, unknown>
+
+  // Fast path: all four spell fields are already in the correct shape.
+  if (
+    Array.isArray(raw.spells) &&
+    typeof raw.spellcastingAbility === 'string' &&
+    typeof raw.spellcastingClass   === 'string' &&
+    raw.spellSlots != null &&
+    typeof raw.spellSlots === 'object' &&
+    !Array.isArray(raw.spellSlots)
+  ) {
+    return char
+  }
+
+  // Legacy object (or missing): extract old sub-object if spells is not an array.
+  const oldSpells: Record<string, unknown> | undefined = Array.isArray(raw.spells)
+    ? undefined
+    : (raw.spells as Record<string, unknown> | undefined)
+
+  // ── spells ───────────────────────────────────────────────────────────────
+  let spells: Character['spells']
+  if (Array.isArray(raw.spells)) {
+    spells = raw.spells as Character['spells']
+  } else {
+    const known = oldSpells?.known as Array<{ level: number; name: string; prepared?: boolean }> | undefined
+    spells = Array.isArray(known)
+      ? known.map((s) => ({
+          id:          crypto.randomUUID(),
+          name:        s.name ?? '',
+          level:       typeof s.level === 'number' ? Math.max(0, Math.min(9, s.level)) : 0,
+          school:      'abjuration' as const,
+          castingTime: '',
+          range:       '',
+          description: '',
+          prepared:    typeof s.prepared === 'boolean' ? s.prepared : false,
+        }))
+      : []
+  }
+
+  // ── spellSlots ───────────────────────────────────────────────────────────
+  let spellSlots: Character['spellSlots']
+  if (
+    raw.spellSlots != null &&
+    typeof raw.spellSlots === 'object' &&
+    !Array.isArray(raw.spellSlots)
+  ) {
+    spellSlots = raw.spellSlots as Character['spellSlots']
+  } else {
+    const newSlots: Record<string, { current: number; max: number }> = {}
+    const oldSlotArr = oldSpells?.slots as Array<{ level: number; current: number; max: number }> | undefined
+    if (Array.isArray(oldSlotArr)) {
+      for (const s of oldSlotArr) {
+        newSlots[String(s.level)] = { current: s.current ?? 0, max: s.max ?? 0 }
+      }
+    }
+    spellSlots = newSlots
+  }
+
+  // ── spellcastingAbility ──────────────────────────────────────────────────
+  const ABILITY_KEYS = new Set(['str', 'dex', 'con', 'int', 'wis', 'cha'])
+  const rawAbilityStr = typeof raw.spellcastingAbility === 'string'
+    ? raw.spellcastingAbility
+    : (typeof oldSpells?.ability === 'string' ? oldSpells.ability : '')
+  const spellcastingAbility = (
+    ABILITY_KEYS.has(rawAbilityStr) ? rawAbilityStr : ''
+  ) as Character['spellcastingAbility']
+
+  // ── spellcastingClass ────────────────────────────────────────────────────
+  const firstClassName = Array.isArray(char.classes) ? char.classes[0]?.name : undefined
+  const spellcastingClass: string = typeof raw.spellcastingClass === 'string'
+    ? raw.spellcastingClass
+    : (firstClassName ?? '')
+
+  return { ...char, spells, spellSlots, spellcastingAbility, spellcastingClass }
+}
+
+/**
+ * Runtime inventory normalization — analogous to normalizeHitDice.
+ *
+ * Handles characters whose inventory items are missing fields introduced in
+ * C.1.f (category, description, equipped) because the v6→v7 DB upgrade block
+ * was skipped (DB already at v7 from an earlier incomplete dev run).
+ * Also backfills Currency when ep is still present (converts → SP).
+ *
+ * Self-heals on every read; the next saveCharacter() persists the normalized shape.
+ */
+function normalizeInventory(char: Character): Character {
+  const raw = char as unknown as Record<string, unknown>
+
+  // Check inventory items
+  const inv = raw.inventory
+  let inventoryClean = true
+  if (Array.isArray(inv)) {
+    for (const item of inv as Array<Record<string, unknown>>) {
+      if (
+        typeof item.category !== 'string' ||
+        typeof item.description !== 'string' ||
+        typeof item.equipped !== 'boolean'
+      ) {
+        inventoryClean = false
+        break
+      }
+    }
+  } else {
+    inventoryClean = false
+  }
+
+  // Check currency — fast path if ep absent
+  const cur = raw.currency as Record<string, unknown> | undefined
+  const currencyClean = cur != null && typeof cur === 'object' && !('ep' in cur)
+
+  if (inventoryClean && currencyClean) return char
+
+  let inventory: Character['inventory']
+  if (!Array.isArray(inv)) {
+    inventory = []
+  } else {
+    inventory = (inv as Array<Record<string, unknown>>).map((item, idx) => ({
+      id:          typeof item.id === 'string' ? item.id : `inv_${idx}`,
+      name:        typeof item.name === 'string' ? item.name : '',
+      quantity:    typeof item.quantity === 'number' ? Math.max(0, item.quantity) : 1,
+      weight:      typeof item.weight === 'number' ? Math.max(0, item.weight) : 0,
+      category:    isValidCategory(item.category) ? item.category : 'misc',
+      description: typeof item.description === 'string' ? item.description
+                 : typeof item.notes === 'string' ? item.notes
+                 : '',
+      equipped:    typeof item.equipped === 'boolean' ? item.equipped : false,
+    }))
+  }
+
+  let currency: Character['currency']
+  if (cur != null && typeof cur === 'object') {
+    const epValue = typeof cur.ep === 'number' ? cur.ep : 0
+    currency = {
+      pp: typeof cur.pp === 'number' ? cur.pp : 0,
+      gp: typeof cur.gp === 'number' ? cur.gp : 0,
+      sp: (typeof cur.sp === 'number' ? cur.sp : 0) + (epValue * 5),
+      cp: typeof cur.cp === 'number' ? cur.cp : 0,
+    }
+  } else {
+    currency = { pp: 0, gp: 0, sp: 0, cp: 0 }
+  }
+
+  return { ...char, inventory, currency }
+}
+
 /* ── Public API ───────────────────────────────────────────────────────── */
 
 /**
@@ -150,7 +468,7 @@ export async function listCharacters(): Promise<Character[]> {
   const db = await openV2()
   try {
     const all = await db.getAll(V2_STORE) as Character[]
-    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice)
+    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice).map(normalizeSpells).map(normalizeInventory)
   } finally {
     db.close()
   }
@@ -164,7 +482,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
   const db = await openV2()
   try {
     const result = await db.get(V2_STORE, id) as Character | undefined
-    return result != null ? normalizeHitDice(result) : null
+    return result != null ? normalizeInventory(normalizeSpells(normalizeHitDice(result))) : null
   } finally {
     db.close()
   }

@@ -109,7 +109,8 @@ Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with a
 | File | Role |
 |------|------|
 | `v2/src/domain/character.ts` | Domain model for v2-native `Character` — canonical shape all UI components consume |
-| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 4) |
+| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 7) |
+| `v2/src/data/canonical/item-categories.ts` | `ITEM_CATEGORIES` array + `isValidCategory()` guard |
 | `v2/src/data/migration.ts` | One-time v1→v2 migration via `migrateV1Characters()` |
 | `v2/src/lib/supabase.ts` | Supabase client singleton (same project as v1) |
 | `v2/src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
@@ -445,10 +446,10 @@ component without dual-lang tests is incomplete.
 
 After a clean `npm install` (no flags), `npm test` should report:
 
-| Metric | Baseline (end of C.1.c.7) |
-|--------|--------------------------|
-| Test files | 46 |
-| Tests | 935 |
+| Metric | Baseline (end of C.1.f) |
+|--------|------------------------|
+| Test files | 49 |
+| Tests | 1121 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -487,6 +488,49 @@ All blocks in the Status tab are now editable in the v2. Sub-phases delivered:
 | #100 | C.1.c.7 | Layout overhaul: IdentityBlock removed, identity migrated to HeroCard, B2 grid |
 
 **C.1.c.7 detail:** Extracted `AlignmentSelect` and `ClassEditor` as standalone subcomponents. `IdentityBlock.tsx` deleted. StatusTab reorganized to B2 grid (HeroCard full-width, Features full-width, Skills+Saves side-by-side). Follow-up polish: alphabetical datalists, AlignmentSelect dark theme fix, ClassEditor level input fixed-width (64px), auto-focus on new class, seamless inline editing on AlignmentSelect.
+
+---
+
+### Phase C.1.d — Combat tab editable (COMPLETED — PR #101–#104)
+
+Attacks editable with expand/collapse cards. DB schema bumped to v5.
+
+- `AttackCard` expand/collapse pattern: compact row for scanning; expanded form for full edit
+- `AttackKind` union (`melee | ranged | spell`) with visual icon per type
+- Datalists for canonical damage types and ranges
+- `ConfirmableRemoveButton` primitive introduced (later applied across 5 components)
+- `.alignment-select` dark theme class applied to all `<select>` in AttackCard
+
+---
+
+### Phase C.1.e — Spells tab editable (COMPLETED — PR #105)
+
+Editable spells with slots, prepared toggle, and color-coded schools. DB schema bumped to v6.
+
+- `SpellHeader`: spellcasting ability selector (int/wis/cha), derived DC + attack bonus, syncs `spellSaveDC`
+- `SpellSlots`: fill-from-left pip toggle, per-level max editor, SlotLevelAdder select
+- `SpellList + SpellCard`: grouped by level, prepared toggle (non-cantrips), school color pip, expand/collapse
+- `SPELL_SCHOOLS` canonical array + `SCHOOL_COLORS` record
+- `CANONICAL_CASTING_TIMES` datalist
+- Runtime hotfix: `normalizeSpells()` defends against legacy `spells` sub-object shape on every read
+- ~84 new i18n keys (EN + PT) covering section labels, school names, slot actions, SpellCard fields
+
+---
+
+### Phase C.1.f — Inventory tab editable (COMPLETED — PR #106)
+
+Editable inventory with category grouping, weight bar, and EP removal. DB schema bumped to v7.
+
+- `InventoryList`: grouped by all 5 categories (always visible), `ItemCard` expand/collapse, color-coded
+  weight bar, per-category add buttons, `ConfirmableRemoveButton`
+- `CurrencyBlock`: 4-coin grid (PP/GP/SP/CP — EP removed), editable with `NumberField` per coin
+- `isEquippableCategory(category)` in `derived.ts` — only `weapon | armor` return true
+- Equipped checkbox restricted to weapon/armor; placeholder span preserves alignment for other categories
+- `normalizeInventory()` runtime normalization added alongside `normalizeSpells`
+- EP→SP conversion (1:5) in both DB migration and `normalizeInventory`
+- `calculateTotalWeight`, `calculateWeightCapacity`, `getWeightLoadLevel`, `groupItemsByCategory` in `derived.ts`
+- `WeightLoadLevel` thresholds: >50% moderate, >75% heavy, >100% overburdened (STR × 15 capacity)
+- 84 new tests across 4 files + new `inventory-edit.test.tsx` (72 tests)
 
 ---
 
@@ -581,8 +625,117 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 | v2 | `dnd-character-sheet-v2` | initial v2-native `Character` shape |
 | v3 | `dnd-character-sheet-v2` | adds `className` to hitDice entries |
 | v4 | `dnd-character-sheet-v2` | proficiencies as arrays + languages top-level + features `id`/source/type/uses |
+| v5 | `dnd-character-sheet-v2` | attacks expanded with kind/range/properties/notes (C.1.d) |
+| v6 | `dnd-character-sheet-v2` | spells expanded with school/castingTime/range/prepared; spellcasting ability/class top-level (C.1.e) |
+| v7 | `dnd-character-sheet-v2` | inventory items with category/equipped; EP removed from currency (C.1.f) |
 
 Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idempotent.
+
+---
+
+## Patterns established during C.1.d / C.1.e / C.1.f
+
+#### Compact card + expand/collapse per item
+
+Used in `AttackCard`, `SpellCard`, `ItemCard`. Pattern:
+
+- Compact mode: read-optimized for scanning in play
+- Expanded mode: full edit form with all fields
+- Click on card body expands; clicks on inputs/buttons/checkboxes do not propagate
+- Focus blur outside the card collapses
+- One card expanded at a time per list (natural via blur)
+
+```tsx
+const [expanded, setExpanded] = useState(false)
+
+function handleCardClick(e: React.MouseEvent) {
+  if ((e.target as HTMLElement).closest('input, button, textarea, select, [role="checkbox"]')) return
+  setExpanded(prev => !prev)
+}
+
+function handleBlur(e: React.FocusEvent) {
+  if (!cardRef.current?.contains(e.relatedTarget as Node)) setExpanded(false)
+}
+```
+
+#### UUIDs for list items
+
+All list-managed items (attacks, spells, inventory items, features) use
+`crypto.randomUUID()` for stable identification. Index-based identification
+is an anti-pattern (caused "ghost" hitDice bug in C.1.c.4).
+
+Exception: languages and proficiencies items use index since they're plain
+strings. A refactor to UUID is on the table (OQ).
+
+#### Color-coded visual indicators
+
+Multiple uses across phases:
+
+- Spell schools (C.1.e): 8 colors in `SCHOOL_COLORS` map
+- Weight load levels (C.1.f): 4 colors via `getWeightLoadLevel`
+- HP bar (C.1.c.4): green + purple temp HP overlay
+- Pip filled/empty (death saves, skill expertise, slot tracking)
+
+Pattern: centralize in a map/helper, apply via `style={{ backgroundColor }}`.
+
+#### ConfirmableRemoveButton for destructive actions
+
+`v2/src/components/primitives/ConfirmableRemoveButton.tsx` — inline two-step
+confirmation (click × → "Confirmar?" → click confirms). Click outside cancels.
+Auto-reset after 5s timeout. Applied to: `AttacksList`, `FeaturesList`,
+`ClassEditor`, `EditableStringList`, `SpellList`, `InventoryList`.
+
+#### Schema migration cursor pattern
+
+Each DB version bump uses cursor iteration through all characters with
+defensive defaults:
+
+```ts
+if (oldVersion < N) {
+  const tx = db.transaction(STORE_NAME, 'readwrite')
+  const store = tx.objectStore(STORE_NAME)
+  let cursor = await store.openCursor()
+
+  while (cursor) {
+    const char = cursor.value
+    // Normalize: detect old shape, apply new defaults, never lose data
+    await cursor.update(char)
+    cursor = await cursor.continue()
+  }
+}
+```
+
+Each migration must be **idempotent** — running twice must not corrupt data.
+Tests explicitly cover idempotency for each migration.
+
+#### Runtime normalization as defense-in-depth
+
+After the C.1.e hotfix (`character.spells is not iterable`), runtime normalizer
+functions were added as a second line of defense:
+
+- `normalizeHitDice()` — runs on every read
+- `normalizeSpells()` — runs on every read
+- `normalizeInventory()` — runs on every read
+
+These have a fast-path (returns immediately if all fields are already valid).
+Justified: migrations can miss in-progress dev builds; runtime guard prevents
+crashes from malformed data reaching components.
+
+#### Latent values preserved when UI controls hidden
+
+When a UI control is hidden conditionally (e.g. equipped checkbox only for
+weapon/armor), the underlying domain field is NOT mutated. Value persists
+latent and reappears when the condition changes.
+
+Example: item with `equipped: true` keeps the value when category changes
+to consumable (UI hides checkbox). Changing back to weapon reveals the
+checkbox already marked.
+
+#### Decimal value preservation in currency migrations
+
+When removing a currency type (C.1.f removed EP), the value is preserved via
+conversion: 1 EP = 5 SP. No data loss; user sees the expected total in the
+remaining denominations.
 
 ---
 
@@ -601,6 +754,22 @@ Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idem
 | Background change does NOT auto-apply skill proficiencies | C.1.c.3 Q2=B | User has full manual control over skill proficiencies |
 | `patchCharacter` is an anti-pattern | C.1.b retrospective | Dual-write to two stores caused silent persistence bugs; use `updateCharacter` only |
 | `exactOptionalPropertyTypes` requires conditional spread for partials | C.1.c.2 build fix | Prefer over adding `\| undefined` to field types |
+| Attack bonus user-entered (no auto-calc) | C.1.d Q4=A | Simple and transparent; no hidden math |
+| Damage as string ("1d8+3") | C.1.d Q3 | Flexible; no dice roller required |
+| Attack kind inferred from ability in legacy migration | C.1.d | Heuristic acceptable; user adjusts manually |
+| Spellcasting ability single per character | C.1.e Q4=A | Multiclass spellcaster with differing abilities is a minority case |
+| Cantrips do not show "prepared" checkbox | C.1.e Q8=A | Cantrips are always available per D&D 5e |
+| Schools color-coded via SCHOOL_COLORS map | C.1.e Q9 | Visual aid for scanning in combat |
+| Add spell button per level group | C.1.e Q10=B | Explicit level placement |
+| No filter/search for spells | C.1.e Q6 | Add only if it becomes a user request |
+| Item weight per unit (not total) | C.1.f Q2.1=A | D&D RAW; UI displays calculated total |
+| EP removed; old EP → SP × 5 in migration | C.1.f Q3 | Electrum is rarely used in practice |
+| Item categories: weapon/armor/consumable/tool/misc | C.1.f Q5 | Covers 95%+ of items |
+| Items default to "misc" on migration | C.1.f | Heuristic categorization is too brittle; user reclassifies |
+| Equipped checkbox only for weapon/armor | C.1.f polish | Conceptually accurate per D&D 5e |
+| Equipped value preserved when category changes | C.1.f polish | No data mutation in UI-only changes |
+| Weight bar caps at 100% visually with red overburdened state | C.1.f Q8 | Visual feedback without bar distortion |
+| All `<select>` elements use `.alignment-select` class | C.1.e polish | Enables dark-theme option lists across the app |
 
 ---
 
@@ -631,3 +800,29 @@ Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idem
 - **OQ — Character creation flow.** "Meus Personagens" screen still requires migrating
   from v1 or editing existing characters. Requires defaults definition and creation UI
   (blank-sheet flow).
+
+New from C.1.d / C.1.e / C.1.f:
+
+- **OQ — FeaturesList `<select>` without dark theme class.** Regression identified during
+  C.1.e polish — the `alignment-select` class is missing from FeaturesList selects.
+  Polish horizontal candidate; not blocking.
+- **OQ — Rename `.alignment-select` to `.dark-select`** for genericity. The class is now
+  used in 7+ places and the name is misleading. Refactor cost increases with each usage.
+- **OQ — Heuristic categorization of inventory items on migration.** All imported items
+  default to "misc". Could infer from name ("Quarterstaff" → weapon) but is brittle.
+  Deferred.
+- **OQ — Subcategory `focus` for inventory items.** Druidic Focus, Holy Symbol, Component
+  Pouch currently become `tool` or `misc` without equipped capability. Decision deferred.
+- **OQ — Encumbered / Heavily Encumbered rules.** Today only visual weight bar color
+  feedback. D&D RAW movement penalties not implemented.
+- **OQ — Multiple equipped items max rule.** Currently any number of items can be marked
+  equipped — user manages manually (main hand + off hand, etc.).
+- **OQ — Item value field (`value`, `valueUnit`).** Would enable shopkeeper interactions.
+  Not implemented.
+- **OQ — Item attunement (max 3 attuned).** D&D 5e magic items rule. Not implemented.
+- **OQ — Integration tests for migration pipeline.** C.1.e hotfix revealed a gap: tests
+  rendered components against fixtures with new shape, but never exercised the migration
+  pipeline with real-world legacy data. Consider integration tests that boot characters
+  "from IndexedDB" to force the migration path.
+- **OQ — Spellcasting per-class abilities.** Druid + Wizard with WIS + INT simultaneously.
+  Currently single ability per character.

@@ -31,15 +31,19 @@ const KANAAN: Character = {
   proficiencies: { weapons: ['Simple weapons', 'shortswords'], armor: [], tools: ['Herbalism kit'], other: [] }, languages: ['Common', 'Elvish'],
   attacks: [],
   inventory: [
-    { id: 'inv_0', name: 'Shortsword',      quantity: 1, weight: 2   },
-    { id: 'inv_1', name: "Explorer's Pack", quantity: 1, weight: 59  },
-    { id: 'inv_2', name: '10 darts',        quantity: 1, weight: 2.5 },
-    { id: 'inv_3', name: 'Herbalism kit',   quantity: 1, weight: 3   },
+    { id: 'inv_0', name: 'Shortsword',      quantity: 1, weight: 2,    category: 'weapon' as const,  description: '', equipped: true  },
+    { id: 'inv_1', name: "Explorer's Pack", quantity: 1, weight: 59,   category: 'misc' as const,    description: '', equipped: false },
+    { id: 'inv_2', name: '10 darts',        quantity: 1, weight: 2.5,  category: 'weapon' as const,  description: '', equipped: false },
+    { id: 'inv_3', name: 'Herbalism kit',   quantity: 1, weight: 3,    category: 'tool' as const,    description: '', equipped: false },
   ],
-  currency: { pp: 0, gp: 15, ep: 0, sp: 5, cp: 0 },
+  currency: { pp: 0, gp: 15, sp: 5, cp: 0 },
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
+  spells: [],
+  spellSlots: {},
+  spellcastingAbility: '',
+  spellcastingClass: '',
   images: {},
   createdAt: 0,
   updatedAt: 0,
@@ -83,7 +87,7 @@ describe('InventoryTab integration', () => {
     useCharactersStore.setState({ characters: [KANAAN], loading: false, error: null })
     useCharacterStore.setState({ activeId: KANAAN.id, loading: false, error: null })
     renderWithI18n(<InventoryTab />, 'pt')
-    const gpCells = screen.getAllByTestId('currency-gp')
-    expect(gpCells[0]?.textContent).toContain('15')
+    const gpInputs = screen.getAllByTestId('currency-input-gp')
+    expect((gpInputs[0] as HTMLInputElement).value).toBe('15')
   })
 })

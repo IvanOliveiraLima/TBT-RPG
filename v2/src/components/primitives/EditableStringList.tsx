@@ -7,6 +7,7 @@
  */
 
 import { useTranslation } from '@/i18n'
+import { ConfirmableRemoveButton } from './ConfirmableRemoveButton'
 
 const T = {
   bg:           '#15121C',
@@ -108,25 +109,11 @@ export function EditableStringList({
             onFocus={e => { e.currentTarget.style.borderColor = T.borderFocus }}
             onBlur={e => { e.currentTarget.style.borderColor = T.border }}
           />
-          <button
-            type="button"
-            data-action="remove"
-            onClick={() => remove(i)}
-            aria-label={t(removeAriaKey as Parameters<typeof t>[0], { name: item || `#${i + 1}` })}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: T.removeColor,
-              fontSize: 16,
-              lineHeight: 1,
-              padding: '0 2px',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            ×
-          </button>
+          <ConfirmableRemoveButton
+            onConfirm={() => remove(i)}
+            ariaLabel={t(removeAriaKey as Parameters<typeof t>[0], { name: item || `#${i + 1}` })}
+            size="sm"
+          />
         </div>
       ))}
 

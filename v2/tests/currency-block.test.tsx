@@ -23,10 +23,14 @@ const BASE: Character = {
   proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
   inventory: [],
-  currency: { pp: 1, gp: 25, ep: 0, sp: 10, cp: 5 },
+  currency: { pp: 1, gp: 25, sp: 10, cp: 5 },
   features: [],
   backstory: '',
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
+  spells: [],
+  spellSlots: {},
+  spellcastingAbility: '',
+  spellcastingClass: '',
   images: {},
   createdAt: 0,
   updatedAt: 0,
@@ -34,7 +38,7 @@ const BASE: Character = {
 
 const EMPTY_CURRENCY: Character = {
   ...BASE,
-  currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+  currency: { pp: 0, gp: 0, sp: 0, cp: 0 },
 }
 
 describe('CurrencyBlock', () => {
@@ -45,13 +49,13 @@ describe('CurrencyBlock', () => {
     expect(screen.getByTestId('currency-block')).toBeDefined()
   })
 
-  it('renders all 5 denomination cells', () => {
+  it('renders all 4 denomination cells (PP/GP/SP/CP, no EP)', () => {
     renderWithI18n(<CurrencyBlock character={BASE} />, 'pt')
     expect(screen.getByTestId('currency-pp')).toBeDefined()
     expect(screen.getByTestId('currency-gp')).toBeDefined()
-    expect(screen.getByTestId('currency-ep')).toBeDefined()
     expect(screen.getByTestId('currency-sp')).toBeDefined()
     expect(screen.getByTestId('currency-cp')).toBeDefined()
+    expect(screen.queryByTestId('currency-ep')).toBeNull()
   })
 
   it('shows correct GP value', () => {

@@ -14,29 +14,36 @@ preview. Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG
 
 ### Status atual
 
-A v2 está em **preview ativo** — a aba **Status** é totalmente editável.
+A v2 está em **preview ativo** com edição completa em todas as abas.
 Fichas v1 são migradas automaticamente na primeira abertura da v2.
 
-### O que tem na v2
+### Funcionalidades implementadas
 
-- 5 abas funcionais: Status, Combate, Magias, Inventário, Lore
-- **Aba Status totalmente editável:**
-  - Identidade no HeroCard: nome, raça, antecedente, alinhamento, classes (multiclasse), inspiração, XP
-  - Atributos com cascade derivada (modificador, save, perícia, PP, initiative, AC, spell DC)
-  - Proficiências em saves (toggle por atributo)
-  - Perícias com toggles de proficiência e expertise
-  - HP com barra verde/roxo (temp HP overlay) + botões +/- no current HP
-  - Death saves (pips de sucesso/falha)
-  - Hit dice multiclasse (uma linha por classe)
-  - Features com editor completo (nome, fonte, tipo, usos)
-  - Idiomas e proficiências como listas estruturadas
-- Aba Lore editável (backstory, personalidade, notas)
+**Edição completa de personagens em todas as abas:**
+
+- **Status** — identidade no HeroCard (nome, raça, antecedente, alinhamento,
+  classes multiclasse, inspiração, XP), atributos com cascata derivada,
+  proficiências em saves, perícias com proficient + expertise, HP com barra
+  verde/roxo (temp HP overlay) e botões +/-, death saves, hit dice multiclasse,
+  características com editor completo, idiomas e proficiências como listas
+  estruturadas
+- **Combate** — ataques editáveis com expand/collapse por card, ícones por tipo
+  (melee/ranged/spell), datalists canônicos para damage types e ranges
+- **Magias** — spellcasting ability + DC derivado, slots por nível com pips
+  clicáveis (fill-from-left), lista agrupada por nível com prepared toggle,
+  cores por escola de magia, expand/collapse por card
+- **Inventário** — itens agrupados por categoria (armas, armaduras, consumíveis,
+  ferramentas, diversos), checkbox de equipped restrito a weapons/armors, barra
+  de peso colorida por load level (D&D 5e RAW: STR × 15), currency PP/GP/SP/CP
+- **Lore** — backstory, personalidade (traits/ideals/bonds/flaws), notas
+
+**Outras funcionalidades:**
+
 - Upload de retrato via modal com zoom + posição
-- Layouts dedicados para mobile e desktop
-- Cálculos derivados consistentes (AC, Initiative, Passive Perception, bonuses)
-- Cloud sync via Supabase (opcional)
+- Geração com IA (backstory, items, magias) via Cloudflare Worker
 - Interface bilíngue EN/PT com alternância instantânea (sem reload)
-- ~935 testes unitários e de integração
+- Cloud sync via Supabase (opcional)
+- ~1121 testes unitários e de integração
 - PWA instalável
 
 ### Limitações conhecidas
@@ -44,20 +51,25 @@ Fichas v1 são migradas automaticamente na primeira abertura da v2.
 - **Criação do zero:** a tela "Meus Personagens" ainda não suporta criar
   personagem novo a partir do zero — é necessário importar da v1 (a migração
   automática cobre isso na primeira abertura).
-- **Abas parcialmente read-only:** Combate, Magias e Inventário exibem os
-  dados mas ainda não têm edição inline (próximas sub-fases).
 - **Localização de valores livres:** labels da UI traduzem entre PT e EN,
   mas valores livres armazenados no personagem (raça, classe, antecedente,
   alinhamento) permanecem como o usuário digitou — não são traduzidos.
 - **Initiative sem override:** sempre derivada do modificador de DEX. Builds
   com feats como Alert exigirão um campo de bônus separado (não modelado ainda).
+- **Spellcasting ability única por personagem:** multiclasse com abilities
+  diferentes (ex: Druid + Wizard) requer anotação manual no campo description.
+- **Items importados sem categoria:** itens migrados da v1 recebem category
+  "misc" por padrão — o usuário reclassifica manualmente.
+- **Encumbrance rules opcionais não implementadas:** apenas indicação visual
+  pela barra de peso; penalidades de movimento não modeladas.
 
-### O que não tem ainda
+### Roadmap
 
-- Edição inline nas abas Combate, Magias e Inventário
-- Criação de personagem do zero (sem dependência da v1)
-- Geração via IA na v2 (use a v1 por enquanto)
-- Importação/exportação de JSON na v2 (use a v1 por enquanto)
+- **C.1.x — Meus Personagens:** criar personagem do zero (atualmente só
+  edição de existentes ou importação do v1)
+- Internacionalização de canonical names (raça, classe, antecedente — hoje
+  free-text não traduzido)
+- Polish horizontal: renomear `.alignment-select` → `.dark-select` (genérico)
 
 ### Stack v2
 

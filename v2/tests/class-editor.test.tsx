@@ -29,6 +29,10 @@ const BASE: Character = {
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
   notes1: '', notes2: '',
   mountPet: '', mountPet2: '', alliesOrganizations: '',
+  spells: [],
+  spellSlots: {},
+  spellcastingAbility: '',
+  spellcastingClass: '',
   images: {},
   createdAt: 1700000000000,
   updatedAt: 1700000000000,
@@ -140,6 +144,9 @@ describe('ClassEditor', () => {
       ],
     }
     renderWithI18n(<ClassEditor character={multiclass} onUpdate={onUpdate} />, 'pt')
+    // Two-step confirm: first click enters confirming, second confirms
+    fireEvent.click(screen.getByTestId('remove-class-1'))
+    expect(onUpdate).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('remove-class-1'))
     expect(onUpdate).toHaveBeenCalledWith({
       classes: [{ name: 'Fighter', level: 3, hitDie: 10 }],
@@ -161,6 +168,9 @@ describe('ClassEditor', () => {
       ],
     }
     renderWithI18n(<ClassEditor character={multiclass} onUpdate={onUpdate} />, 'pt')
+    // Two-step confirm
+    fireEvent.click(screen.getByTestId('remove-class-0'))
+    expect(onUpdate).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('remove-class-0'))
     const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[]; hitDice: { className: string }[] }
     expect(call.classes).toHaveLength(1)

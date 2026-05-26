@@ -4,6 +4,7 @@ import type { Character, ClassEntry } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { CANONICAL_CLASSES } from '@/data/canonical/classes'
 import { NumberField } from '@/components/primitives/NumberField'
+import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { getHitDie } from '@/domain/classes'
 
 const CLASS_NAME_INPUT: React.CSSProperties = {
@@ -137,29 +138,13 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
             style={CLASS_LEVEL_INPUT}
             data-testid={`class-level-${i}`}
           />
-          <button
-            type="button"
-            onClick={() => removeClass(i)}
+          <ConfirmableRemoveButton
+            onConfirm={() => removeClass(i)}
             disabled={character.classes.length === 1}
-            aria-label={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
-            style={{
-              background: 'transparent',
-              border: '1px solid #3A3450',
-              borderRadius: 4,
-              color: character.classes.length === 1 ? '#3A3450' : '#7A7788',
-              cursor: character.classes.length === 1 ? 'not-allowed' : 'pointer',
-              width: 24,
-              height: 24,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 14,
-              flexShrink: 0,
-            }}
-            data-testid={`remove-class-${i}`}
-          >
-            ×
-          </button>
+            ariaLabel={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
+            testId={`remove-class-${i}`}
+            size="sm"
+          />
         </div>
       ))}
       <datalist id="canonical-classes">

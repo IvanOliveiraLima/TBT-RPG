@@ -48,6 +48,10 @@ const BASE: Character = {
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
   notes1: '', notes2: '',
   mountPet: '', mountPet2: '', alliesOrganizations: '',
+  spells: [],
+  spellSlots: {},
+  spellcastingAbility: '',
+  spellcastingClass: '',
   images: {},
   createdAt: 0,
   updatedAt: 0,
@@ -161,17 +165,22 @@ describe('FeaturesList', () => {
 
   // ── Removing ─────────────────────────────────────────────────────────────────
 
-  it('remove: calls onUpdate without the removed feature', () => {
+  it('remove: calls onUpdate without the removed feature (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    // First click enters confirming state — no action yet
+    fireEvent.click(screen.getByTestId('feature-remove-f1'))
+    expect(onUpdate).not.toHaveBeenCalled()
+    // Second click confirms
     fireEvent.click(screen.getByTestId('feature-remove-f1'))
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
     expect(call.features!.find(f => f.id === 'f1')).toBeUndefined()
   })
 
-  it('remove: other features are preserved', () => {
+  it('remove: other features are preserved (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-remove-f1'))
     fireEvent.click(screen.getByTestId('feature-remove-f1'))
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
     expect(call.features!.find(f => f.id === 'f2')).toBeDefined()

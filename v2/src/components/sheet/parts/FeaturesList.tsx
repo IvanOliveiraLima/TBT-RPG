@@ -1,5 +1,6 @@
 import type { Character, Feature } from '@/domain/character'
 import { useTranslation } from '@/i18n'
+import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 
 const T = {
   bg:          '#1A1625',
@@ -117,24 +118,11 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           <option value="reaction">{t('features.type_reaction')}</option>
         </select>
 
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label={t('aria.remove_feature', { name: feature.name || `#${feature.id}` })}
-          data-testid={`feature-remove-${feature.id}`}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: T.removeColor,
-            fontSize: 16,
-            lineHeight: 1,
-            padding: '0 2px',
-            flexShrink: 0,
-          }}
-        >
-          ×
-        </button>
+        <ConfirmableRemoveButton
+          onConfirm={onRemove}
+          ariaLabel={t('aria.remove_feature', { name: feature.name || `#${feature.id}` })}
+          testId={`feature-remove-${feature.id}`}
+        />
       </div>
 
       {/* Row 2: description */}

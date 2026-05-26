@@ -41,35 +41,57 @@ export interface SkillState {
   bonus: number          // derived
 }
 
+export type AttackKind = 'melee' | 'ranged' | 'spell'
+
 export interface Attack {
   id: string
   name: string
-  baseStat: AbilityKey | ''
-  bonus: string          // e.g. "+6" or "DC 14"
-  damage: string         // e.g. "1d8+3"
-  damageType: string
-  rollType: 'attack' | 'dc'
-  proficient: boolean
+  kind: AttackKind        // melee | ranged | spell — drives icon and categorisation
+  ability: AbilityKey | '' // associated ability — display as abbrev (STR, DEX, …)
+  attackBonus: number      // final bonus the user enters (e.g. 5 for "+5")
+  damage: string           // free-text, e.g. "1d8+3"
+  damageType: string       // free-text with datalist, e.g. "Slashing"
+  range: string            // free-text with datalist, e.g. "5 ft"
+  properties: string       // free-text, e.g. "Versatile, Finesse"
+  notes: string            // free-text, special mechanics or effects
 }
 
-export interface SpellSlot {
-  level: number          // 1–9
-  current: number
-  max: number
-}
+export type SpellSchool =
+  | 'abjuration'
+  | 'conjuration'
+  | 'divination'
+  | 'enchantment'
+  | 'evocation'
+  | 'illusion'
+  | 'necromancy'
+  | 'transmutation'
 
-export interface SpellKnown {
-  level: number          // 0 for cantrips
+export interface Spell {
+  id: string
   name: string
-  prepared?: boolean
+  level: number           // 0 (cantrip) to 9
+  school: SpellSchool
+  castingTime: string     // "1 action", "1 bonus action", etc. — free-text with datalist
+  range: string           // "60 ft", "Touch", "Self" — free-text with datalist
+  description: string     // free-text, textarea
+  prepared: boolean       // marked for use today (ignored for cantrips)
 }
+
+export type ItemCategory =
+  | 'weapon'
+  | 'armor'
+  | 'consumable'
+  | 'tool'
+  | 'misc'
 
 export interface InventoryItem {
   id: string
   name: string
   quantity: number
-  weight: number
-  notes?: string
+  weight: number           // per unit; total = quantity × weight
+  category: ItemCategory
+  description: string
+  equipped: boolean
 }
 
 export interface Feature {
@@ -119,7 +141,7 @@ export interface Character {
   initiative: number         // stored as is from v1; ideally dex mod + misc
   speed: number
   passivePerception: number  // derived: 10 + perception skill bonus
-  spellSaveDC: number        // 0 if not a caster (stored from top_bar)
+  spellSaveDC: number        // derived: 8 + profBonus + spellcasting ability modifier (0 if no ability)
   inspiration: boolean       // v1 stores as string in top_bar.insperation (typo preserved in raw)
 
   // Saving throws & skills
@@ -140,18 +162,15 @@ export interface Character {
   // Combat items
   attacks: Attack[]
 
-  // Spellcasting — undefined if the character has no spells or slots
-  spells?: {
-    ability: AbilityKey
-    attackBonus: number
-    saveDC: number
-    slots: SpellSlot[]
-    known: SpellKnown[]
-  }
+  // Spellcasting (v6+)
+  spells: Spell[]
+  spellSlots: Record<string, { current: number; max: number }>  // key = '1'–'9'
+  spellcastingAbility: AbilityKey | ''  // '' = no spellcasting
+  spellcastingClass: string             // free-text, e.g. "Druid", "Wizard"
 
   // Inventory
   inventory: InventoryItem[]
-  currency: { pp: number; gp: number; ep: number; sp: number; cp: number }
+  currency: { pp: number; gp: number; sp: number; cp: number }
 
   // Features & lore
   features: Feature[]
