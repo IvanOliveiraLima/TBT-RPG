@@ -182,4 +182,10 @@ describe('SpellSlots', () => {
     renderWithI18n(<SpellSlots character={BASE} />, 'en')
     expect(screen.queryByTestId('add-slot-level')).toBeNull()
   })
+
+  it('add-slot-level select has alignment-select class in editable mode', () => {
+    renderWithI18n(<SpellSlots character={BASE} onUpdate={vi.fn()} />, 'en')
+    const select = screen.getByTestId('add-slot-level')
+    expect((select as HTMLElement).classList.contains('alignment-select')).toBe(true)
+  })
 })

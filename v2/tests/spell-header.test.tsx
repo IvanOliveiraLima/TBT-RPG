@@ -159,4 +159,10 @@ describe('SpellHeader', () => {
     renderWithI18n(<SpellHeader character={wizard} />, 'en')
     expect(screen.getByText('INT')).toBeDefined()
   })
+
+  it('ability select has alignment-select class in editable mode', () => {
+    renderWithI18n(<SpellHeader character={KAEL} onUpdate={vi.fn()} />, 'en')
+    const select = screen.getByRole('combobox', { name: /spellcasting ability/i })
+    expect((select as HTMLElement).classList.contains('alignment-select')).toBe(true)
+  })
 })
