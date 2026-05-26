@@ -52,14 +52,26 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
   const { t } = useTranslation()
   const readOnly = !onUpdate
 
+  // Defense-in-depth: guard against legacy object shape that slipped past normalizeSpells.
+  const spells: Spell[] = useMemo(() => {
+    if (!Array.isArray(character.spells)) {
+      console.warn('[SpellList] character.spells is not an array — legacy shape detected', {
+        id:   character.id,
+        type: typeof character.spells,
+      })
+      return []
+    }
+    return character.spells
+  }, [character.spells, character.id])
+
   const spellsByLevel = useMemo(() => {
     const grouped: Record<number, Spell[]> = {}
     for (let i = 0; i <= 9; i++) grouped[i] = []
-    for (const spell of character.spells) {
+    for (const spell of spells) {
       grouped[spell.level]?.push(spell)
     }
     return grouped
-  }, [character.spells])
+  }, [spells])
 
   // Levels to render: 0 always; 1–9 if has spells or has slot max > 0
   const visibleLevels: number[] = useMemo(() => {
@@ -83,20 +95,20 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
       description: '',
       prepared:    false,
     }
-    onUpdate?.({ spells: [...character.spells, newSpell] })
+    onUpdate?.({ spells: [...spells, newSpell] })
   }
 
   function updateSpell(id: string, partial: Partial<Spell>) {
     onUpdate?.({
-      spells: character.spells.map(s => s.id === id ? { ...s, ...partial } : s),
+      spells: spells.map(s => s.id === id ? { ...s, ...partial } : s),
     })
   }
 
   function removeSpell(id: string) {
-    onUpdate?.({ spells: character.spells.filter(s => s.id !== id) })
+    onUpdate?.({ spells: spells.filter(s => s.id !== id) })
   }
 
-  const total = character.spells.length
+  const total = spells.length
 
   return (
     <div data-testid="spell-list">
