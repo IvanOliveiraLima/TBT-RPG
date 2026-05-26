@@ -113,6 +113,7 @@ export function SpellSlots({ character, onUpdate }: SpellSlotsProps) {
               onChange={e => { if (e.target.value) addLevel(e.target.value) }}
               aria-label={t('aria.add_slot_level')}
               data-testid="add-slot-level"
+              className="alignment-select"
               style={{
                 background:   T.elevated,
                 border:       `1px solid ${T.borderSubtle}`,

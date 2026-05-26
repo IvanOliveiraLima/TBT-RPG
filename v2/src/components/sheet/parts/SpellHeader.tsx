@@ -113,7 +113,7 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
                   cursor: 'pointer',
                   appearance: 'none',
                 }}
-                className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors outline-none"
+                className="alignment-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors outline-none"
               >
                 <option value="">{t('spells.no_ability')}</option>
                 <option value="int">{t('ability.int' as TranslationKey)}</option>
