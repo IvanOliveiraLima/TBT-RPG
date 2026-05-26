@@ -76,7 +76,7 @@ describe('adaptCharacter — empty input', () => {
 
   it('returns zero currency', () => {
     const result = adaptCharacter(emptyChar())
-    expect(result.currency).toEqual({ pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 })
+    expect(result.currency).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 })
   })
 
   it('returns features as empty array', () => {
@@ -395,7 +395,7 @@ describe('adaptCharacter — full fixture', () => {
 
   it('currency is parsed from strings to numbers', () => {
     const result = adaptCharacter(fullChar)
-    expect(result.currency).toEqual({ cp: 0, sp: 5, ep: 0, gp: 15, pp: 0 })
+    expect(result.currency).toEqual({ cp: 0, sp: 5, gp: 15, pp: 0 })
   })
 
   it('personality fields are populated', () => {
@@ -1018,14 +1018,14 @@ describe('adaptCharacter — currency schema variants', () => {
     const raw: V1Character = {
       page2: { equipment: { currency: { cp: '5', sp: '10', gp: '25' } } },
     }
-    expect(adaptCharacter(raw).currency).toEqual({ pp: 0, gp: 25, ep: 0, sp: 10, cp: 5 })
+    expect(adaptCharacter(raw).currency).toEqual({ pp: 0, gp: 25, sp: 10, cp: 5 })
   })
 
   it('reads currency from long-form schema (copper/gold)', () => {
     const raw: V1Character = {
       page2: { equipment: { currency: { copper: '5', gold: '25' } } },
     }
-    expect(adaptCharacter(raw).currency).toEqual({ pp: 0, gp: 25, ep: 0, sp: 0, cp: 5 })
+    expect(adaptCharacter(raw).currency).toEqual({ pp: 0, gp: 25, sp: 0, cp: 5 })
   })
 
   it('prefers abbreviated schema over long-form when both present', () => {
@@ -1033,6 +1033,15 @@ describe('adaptCharacter — currency schema variants', () => {
       page2: { equipment: { currency: { cp: '5', copper: '999' } } },
     }
     expect(adaptCharacter(raw).currency.cp).toBe(5)
+  })
+
+  it('converts EP to SP at 1:5 and removes ep from result', () => {
+    const raw: V1Character = {
+      page2: { equipment: { currency: { ep: '4', sp: '10' } } },
+    }
+    const result = adaptCharacter(raw).currency
+    expect('ep' in result).toBe(false)
+    expect(result.sp).toBe(30) // 10 + 4*5
   })
 })
 

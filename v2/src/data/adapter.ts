@@ -480,10 +480,13 @@ function adaptInventory(raw: V1Character): InventoryItem[] {
       const name = str(item.name)
       if (name) {
         items.push({
-          id:       itemId('inv', i++),
+          id:          itemId('inv', i++),
           name,
-          quantity: 1,
-          weight:   parseFloatSafe(item.weight),
+          quantity:    1,
+          weight:      parseFloatSafe(item.weight),
+          category:    'misc',
+          description: '',
+          equipped:    false,
         })
       }
     }
@@ -491,15 +494,16 @@ function adaptInventory(raw: V1Character): InventoryItem[] {
   return items
 }
 
-function adaptCurrency(raw: V1Character) {
+function adaptCurrency(raw: V1Character): Character['currency'] {
   const c = raw.page2?.equipment?.currency
-  if (!c) return { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 }
-  // Prefer abbreviated schema (cp/sp/ep/gp/pp); fall back to long-form (copper/silver/…)
+  if (!c) return { pp: 0, gp: 0, sp: 0, cp: 0 }
+  // Prefer abbreviated schema (cp/sp/gp/pp); fall back to long-form.
+  // EP (electrum) is removed — convert 1 EP → 5 SP (D&D 5e exchange rate).
+  const epValue = parseIntSafe(c.ep ?? c.electrum)
   return {
     pp: parseIntSafe(c.pp ?? c.platinum),
     gp: parseIntSafe(c.gp ?? c.gold),
-    ep: parseIntSafe(c.ep ?? c.electrum),
-    sp: parseIntSafe(c.sp ?? c.silver),
+    sp: parseIntSafe(c.sp ?? c.silver) + epValue * 5,
     cp: parseIntSafe(c.cp ?? c.copper),
   }
 }

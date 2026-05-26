@@ -20,3 +20,5 @@ export { SPELL_SCHOOLS, SCHOOL_COLORS } from './spell-schools'
 
 export { CANONICAL_CASTING_TIMES } from './casting-times'
 export type { CastingTime } from './casting-times'
+
+export { ITEM_CATEGORIES, isValidCategory } from './item-categories'

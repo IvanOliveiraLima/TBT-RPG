@@ -77,12 +77,21 @@ export interface Spell {
   prepared: boolean       // marked for use today (ignored for cantrips)
 }
 
+export type ItemCategory =
+  | 'weapon'
+  | 'armor'
+  | 'consumable'
+  | 'tool'
+  | 'misc'
+
 export interface InventoryItem {
   id: string
   name: string
   quantity: number
-  weight: number
-  notes?: string
+  weight: number           // per unit; total = quantity × weight
+  category: ItemCategory
+  description: string
+  equipped: boolean
 }
 
 export interface Feature {
@@ -161,7 +170,7 @@ export interface Character {
 
   // Inventory
   inventory: InventoryItem[]
-  currency: { pp: number; gp: number; ep: number; sp: number; cp: number }
+  currency: { pp: number; gp: number; sp: number; cp: number }
 
   // Features & lore
   features: Feature[]

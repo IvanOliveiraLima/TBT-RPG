@@ -48,7 +48,7 @@ function makeChar(overrides: Partial<Character> = {}): Character {
     savingThrows: [], skills: [],
     proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
     attacks: [], inventory: [],
-    currency:    { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+    currency:    { pp: 0, gp: 0, sp: 0, cp: 0 },
     features:    [],
     backstory:   '',
     personality: { traits: '', ideals: '', bonds: '', flaws: '' },
@@ -319,6 +319,70 @@ describe('v2-native db (Character persisted directly)', () => {
       expect(Array.isArray(result!.spells)).toBe(true)
       expect(result!.spells).toHaveLength(0)
       expect(result!.spellcastingAbility).toBe('')
+    })
+  })
+
+  // ── inventory normalization on read ──────────────────────────────────────
+
+  describe('inventory normalization on read', () => {
+    it('listCharacters backfills category/description/equipped on items missing them', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          // old shape: no category/description/equipped
+          { id: 'inv_0', name: 'Shortsword', quantity: 1, weight: 2 } as never,
+        ],
+      }))
+      const result = await listCharacters()
+      const item = result[0]!.inventory[0]!
+      expect(item.category).toBe('misc')
+      expect(item.description).toBe('')
+      expect(item.equipped).toBe(false)
+    })
+
+    it('getCharacter backfills inventory fields missing from old shape', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          { id: 'inv_0', name: 'Shield', quantity: 1, weight: 6 } as never,
+        ],
+      }))
+      const result = await getCharacter('char_001')
+      const item = result!.inventory[0]!
+      expect(item.category).toBe('misc')
+      expect(item.equipped).toBe(false)
+    })
+
+    it('leaves inventory unchanged when items already have full shape', async () => {
+      store.set('char_001', makeChar({
+        inventory: [
+          { id: 'inv_0', name: 'Sword', quantity: 1, weight: 3, category: 'weapon', description: 'Sharp', equipped: true },
+        ],
+      }))
+      const result = await listCharacters()
+      const item = result[0]!.inventory[0]!
+      expect(item.category).toBe('weapon')
+      expect(item.description).toBe('Sharp')
+      expect(item.equipped).toBe(true)
+    })
+
+    it('converts EP to SP (1:5) and removes ep field on read', async () => {
+      store.set('char_001', makeChar({
+        currency: { pp: 0, gp: 0, ep: 4, sp: 10, cp: 0 } as never,
+      }))
+      const result = await listCharacters()
+      const cur = result[0]!.currency
+      // ep gone, sp += 4*5 = 20
+      expect('ep' in cur).toBe(false)
+      expect(cur.sp).toBe(30)
+    })
+
+    it('non-caster with no inventory gets empty array and zero currency', async () => {
+      const raw = makeChar()
+      delete (raw as Record<string, unknown>).inventory
+      delete (raw as Record<string, unknown>).currency
+      store.set('char_001', raw)
+      const result = await listCharacters()
+      expect(result[0]!.inventory).toEqual([])
+      expect(result[0]!.currency).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 })
     })
   })
 })

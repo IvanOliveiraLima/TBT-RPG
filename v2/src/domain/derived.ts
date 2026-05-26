@@ -1,4 +1,4 @@
-import type { Character, Attack } from './character'
+import type { Character, Attack, InventoryItem, ItemCategory } from './character'
 
 /**
  * Sum of all class levels. Derived from `classes` — never stored.
@@ -41,5 +41,57 @@ export function formatAttackSummary(attack: Attack, abilityAbbrev: string): stri
   }
   if (attack.range) parts.push(attack.range)
   return parts.join(' · ')
+}
+
+// ── Inventory helpers ──────────────────────────────────────────────────────
+
+/**
+ * Total weight carried = sum of (item.weight × item.quantity) for all items.
+ * Always derived; never stored.
+ */
+export function calculateTotalWeight(items: InventoryItem[]): number {
+  return items.reduce((sum, item) => sum + item.weight * item.quantity, 0)
+}
+
+/**
+ * Maximum carrying capacity = STR × 15 (D&D 5e RAW).
+ * Always derived from the STR ability score.
+ */
+export function calculateWeightCapacity(strength: number): number {
+  return strength * 15
+}
+
+/** Visual weight load level — used by WeightBar to pick a color. */
+export type WeightLoadLevel = 'light' | 'moderate' | 'heavy' | 'overburdened'
+
+export function getWeightLoadLevel(current: number, max: number): WeightLoadLevel {
+  if (max === 0) return 'light'
+  const ratio = current / max
+  if (ratio > 1)    return 'overburdened'
+  if (ratio > 0.75) return 'heavy'
+  if (ratio > 0.5)  return 'moderate'
+  return 'light'
+}
+
+/**
+ * Group items by category. Returns a record with all 5 categories present,
+ * each containing only the items belonging to it.
+ */
+export function groupItemsByCategory(items: InventoryItem[]): Record<ItemCategory, InventoryItem[]> {
+  const groups: Record<ItemCategory, InventoryItem[]> = {
+    weapon: [], armor: [], consumable: [], tool: [], misc: [],
+  }
+  for (const item of items) {
+    groups[item.category]?.push(item)
+  }
+  return groups
+}
+
+/**
+ * Returns true if items in this category can be equipped.
+ * Only weapons and armor are equippable per D&D 5e conventions.
+ */
+export function isEquippableCategory(category: ItemCategory): boolean {
+  return category === 'weapon' || category === 'armor'
 }
 
