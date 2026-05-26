@@ -63,6 +63,10 @@ const BASE: Character = {
   personality: { traits: '', ideals: '', bonds: '', flaws: '' },
   notes1: '', notes2: '',
   mountPet: '', mountPet2: '', alliesOrganizations: '',
+  spells: [],
+  spellSlots: {},
+  spellcastingAbility: '',
+  spellcastingClass: '',
   images: {}, createdAt: 0, updatedAt: 0,
 }
 
