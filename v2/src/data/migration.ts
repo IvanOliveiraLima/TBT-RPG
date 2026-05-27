@@ -1,4 +1,16 @@
 /**
+ * @deprecated v1 migration is no longer invoked at runtime.
+ * v2 is fully independent from v1 DB as of the cut-v1-dependency refactor.
+ *
+ * migrateV1Characters() is kept here as a reference and potential utility
+ * for a future "Import from v1 DB" feature if needed. Tests remain to
+ * validate shape conversions.
+ *
+ * If this module starts being imported by boot code again, it re-introduces
+ * the ghost-character bug: characters deleted from v2 would be reimported
+ * from v1 on next reload (migration skips only existing IDs, not deleted IDs).
+ *
+ * ── Original purpose ─────────────────────────────────────────────────────────
  * One-time migration: v1 IndexedDB → v2 IndexedDB.
  *
  * Reads all characters from the v1 DB (dnd-character-sheet), adapts each one
