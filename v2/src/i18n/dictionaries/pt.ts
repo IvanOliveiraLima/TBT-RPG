@@ -490,6 +490,27 @@ const pt: Record<keyof typeof en, string> = {
   'aria.create_with_ai':        'Criar novo personagem com IA',
   'aria.create_from_scratch':   'Criar novo personagem do zero',
   'aria.close_modal':           'Fechar modal',
+
+  // Character card menu
+  'characters.options_for': 'Opções para {name}',
+  'characters.delete':      'Excluir',
+  'characters.unnamed':     '(sem nome)',
+
+  // Confirm delete modal
+  'delete_modal.title':    'Excluir personagem?',
+  'delete_modal.warning':  'Tem certeza que deseja excluir "{name}"?',
+  'delete_modal.note':     'Esta ação não pode ser desfeita. O personagem será removido permanentemente deste dispositivo.',
+  'delete_modal.confirm':  'Excluir',
+  'delete_modal.deleting': 'Excluindo…',
+
+  // Delete errors
+  'delete_modal.error_local_delete_failed': 'Não foi possível excluir o personagem. Tente novamente.',
+  'delete_modal.error_unknown':             'Ocorreu um erro inesperado. Tente novamente.',
+
+  // Aria — delete flow
+  'aria.character_options': 'Opções do personagem',
+  'aria.confirm_delete':    'Confirmar exclusão',
+  'aria.cancel_delete':     'Cancelar exclusão',
 };
 
 export default pt;

@@ -486,6 +486,27 @@ const en = {
   'aria.create_with_ai':        'Create new character with AI',
   'aria.create_from_scratch':   'Create new character from scratch',
   'aria.close_modal':           'Close modal',
+
+  // Character card menu
+  'characters.options_for': 'Options for {name}',
+  'characters.delete':      'Delete',
+  'characters.unnamed':     '(unnamed)',
+
+  // Confirm delete modal
+  'delete_modal.title':    'Delete character?',
+  'delete_modal.warning':  'Are you sure you want to delete "{name}"?',
+  'delete_modal.note':     'This action cannot be undone. The character will be permanently removed from this device.',
+  'delete_modal.confirm':  'Delete',
+  'delete_modal.deleting': 'Deleting…',
+
+  // Delete errors
+  'delete_modal.error_local_delete_failed': 'Could not delete the character. Please try again.',
+  'delete_modal.error_unknown':             'An unexpected error occurred. Please try again.',
+
+  // Aria — delete flow
+  'aria.character_options': 'Character options',
+  'aria.confirm_delete':    'Confirm deletion',
+  'aria.cancel_delete':     'Cancel deletion',
 } as const;
 
 export default en;
