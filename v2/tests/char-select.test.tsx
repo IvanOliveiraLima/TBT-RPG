@@ -11,20 +11,25 @@ vi.mock('react-router-dom', async () => {
 })
 
 // ── mock store ────────────────────────────────────────────────────────────────
-const mockAddCharacter    = vi.fn().mockResolvedValue(undefined)
-const mockFetchCharacters = vi.fn().mockResolvedValue(undefined)
+const mockAddCharacter      = vi.fn().mockResolvedValue(undefined)
+const mockFetchCharacters   = vi.fn().mockResolvedValue(undefined)
+const mockDeleteCharacter   = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@/store/characters', () => ({
   useCharactersStore: () => ({
-    characters:       [],
-    loading:          false,
-    error:            null,
-    fetchCharacters:  mockFetchCharacters,
-    addCharacter:     mockAddCharacter,
-    updateCharacter:  vi.fn(),
+    characters:        mockCharacters,
+    loading:           false,
+    error:             null,
+    fetchCharacters:   mockFetchCharacters,
+    addCharacter:      mockAddCharacter,
+    deleteCharacter:   mockDeleteCharacter,
+    updateCharacter:   vi.fn(),
     flushPendingSaves: vi.fn(),
   }),
 }))
+
+// Characters list — tests that need characters can override this
+let mockCharacters: unknown[] = []
 
 vi.mock('@/store/auth', () => ({
   useAuthStore: () => ({ user: null, loading: false, signOut: vi.fn() }),
@@ -77,6 +82,8 @@ describe('CharSelect — create buttons', () => {
   beforeEach(() => {
     mockNavigate.mockClear()
     mockAddCharacter.mockClear()
+    mockDeleteCharacter.mockClear()
+    mockCharacters = []
     localStorage.clear()
   })
 
@@ -151,5 +158,73 @@ describe('CharSelect — sidebar AI button removed', () => {
     // The stub alert button should be gone — both PT and EN labels
     expect(screen.queryByText('Gerar com IA')).toBeNull()
     expect(screen.queryByText('Generate with AI')).toBeNull()
+  })
+})
+
+// ── Delete flow integration ───────────────────────────────────────────────────
+
+const STUB_CHAR = {
+  id: 'char_001', name: 'Eira', race: 'Wood Elf',
+  classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
+  hp: { current: 38, max: 38, temp: 0 },
+  images: {},
+}
+
+describe('CharSelect — delete flow integration', () => {
+  beforeEach(() => {
+    mockDeleteCharacter.mockClear()
+    mockCharacters = [STUB_CHAR]
+  })
+
+  it('renders the kebab menu trigger on each character card', () => {
+    render('pt')
+    expect(screen.getByTestId('character-card-menu-trigger')).toBeDefined()
+  })
+
+  it('opens confirm modal when Delete is clicked in the menu', async () => {
+    render('pt')
+    // Open menu
+    fireEvent.click(screen.getByTestId('character-card-menu-trigger'))
+    // Click delete option
+    fireEvent.click(screen.getByTestId('character-card-menu-delete'))
+    expect(screen.getByTestId('confirm-delete-modal')).toBeDefined()
+  })
+
+  it('does NOT open the confirm modal until delete is clicked', () => {
+    render('pt')
+    expect(screen.queryByTestId('confirm-delete-modal')).toBeNull()
+  })
+
+  it('calls deleteCharacter store action after confirming', async () => {
+    render('pt')
+    fireEvent.click(screen.getByTestId('character-card-menu-trigger'))
+    fireEvent.click(screen.getByTestId('character-card-menu-delete'))
+    fireEvent.click(screen.getByTestId('delete-modal-confirm'))
+    await waitFor(() => expect(mockDeleteCharacter).toHaveBeenCalledWith('char_001'))
+  })
+
+  it('modal closes after successful delete', async () => {
+    render('pt')
+    fireEvent.click(screen.getByTestId('character-card-menu-trigger'))
+    fireEvent.click(screen.getByTestId('character-card-menu-delete'))
+    fireEvent.click(screen.getByTestId('delete-modal-confirm'))
+    await waitFor(() => expect(screen.queryByTestId('confirm-delete-modal')).toBeNull())
+  })
+
+  it('modal closes when Cancel is clicked', () => {
+    render('pt')
+    fireEvent.click(screen.getByTestId('character-card-menu-trigger'))
+    fireEvent.click(screen.getByTestId('character-card-menu-delete'))
+    fireEvent.click(screen.getByTestId('delete-modal-cancel'))
+    expect(screen.queryByTestId('confirm-delete-modal')).toBeNull()
+  })
+
+  it('shows character name in confirm modal warning', () => {
+    render('pt')
+    fireEvent.click(screen.getByTestId('character-card-menu-trigger'))
+    fireEvent.click(screen.getByTestId('character-card-menu-delete'))
+    // The warning paragraph contains the name — /Eira/ matches both card and modal text,
+    // so check for the full warning pattern instead
+    expect(screen.getByText(/excluir "Eira"/i)).toBeDefined()
   })
 })
