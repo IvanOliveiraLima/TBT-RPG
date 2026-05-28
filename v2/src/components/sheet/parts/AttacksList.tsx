@@ -171,7 +171,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 onChange={e => onUpdate({ kind: e.target.value as Attack['kind'] })}
                 aria-label={t('aria.kind_select')}
                 data-testid={`attack-kind-select-${attack.id}`}
-                className="alignment-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: '1px solid transparent',
@@ -206,7 +206,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 onChange={e => onUpdate({ ability: e.target.value as AbilityKey | '' })}
                 aria-label={t('aria.ability_select')}
                 data-testid={`attack-ability-select-${attack.id}`}
-                className="alignment-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: '1px solid transparent',

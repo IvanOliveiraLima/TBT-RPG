@@ -7,50 +7,60 @@ Uma ficha de personagem moderna, offline e com persistência automática para Du
 - **v1 (atual):** [https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
 - **v2 (preview):** [https://ivanoliveiralima.github.io/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/)
 
-## v2 (preview)
+## v2 status (preview)
 
-A v2 é uma reescrita completa em React + TypeScript + Vite, atualmente em
-preview. Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/).
+A v2 é uma reescrita completa em React 19 + TypeScript + Vite, com
+derived-model architecture e UX moderna. **v2 é totalmente independente
+do v1 DB** — atualmente em preview ativo, próxima de substituir v1 como
+versão default.
 
-### Status atual
-
-A v2 está em **preview ativo** com edição completa em todas as abas.
-Fichas v1 são migradas automaticamente na primeira abertura da v2.
+Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/).
 
 ### Funcionalidades implementadas
 
-**Edição completa de personagens em todas as abas:**
+**Criação e edição de personagens:**
 
-- **Status** — identidade no HeroCard (nome, raça, antecedente, alinhamento,
-  classes multiclasse, inspiração, XP), atributos com cascata derivada,
-  proficiências em saves, perícias com proficient + expertise, HP com barra
-  verde/roxo (temp HP overlay) e botões +/-, death saves, hit dice multiclasse,
-  características com editor completo, idiomas e proficiências como listas
-  estruturadas
-- **Combate** — ataques editáveis com expand/collapse por card, ícones por tipo
-  (melee/ranged/spell), datalists canônicos para damage types e ranges
-- **Magias** — spellcasting ability + DC derivado, slots por nível com pips
-  clicáveis (fill-from-left), lista agrupada por nível com prepared toggle,
-  cores por escola de magia, expand/collapse por card
-- **Inventário** — itens agrupados por categoria (armas, armaduras, consumíveis,
-  ferramentas, diversos), checkbox de equipped restrito a weapons/armors, barra
-  de peso colorida por load level (D&D 5e RAW: STR × 15), currency PP/GP/SP/CP
-- **Lore** — backstory, personalidade (traits/ideals/bonds/flaws), notas
+- **Criar do zero** — personagem com defaults sensatos navegando direto pra
+  Status
+- **Criar com IA** — geração via Cloudflare Worker (Llama 3 8B): backstory,
+  classe, nível, atributos, perícias. Modal com descrição + toggle PT/EN +
+  estados de loading/erro traduzidos
+- **Editar personagem existente** — todas as 6 abas totalmente editáveis
+- **Excluir personagem** — kebab menu + modal de confirmação. Cascade local +
+  Supabase row + Storage bucket cleanup
+- **Importar/Exportar JSON** — backup e restore manual
+
+**Status totalmente editável:**
+
+- Identidade no HeroCard (nome, raça, antecedente, alinhamento, classes
+  multiclass, inspiração, XP)
+- Atributos com cascata derivada (modifier, save, skill, PP, initiative,
+  AC, spell DC)
+- Saves com toggles de proficiência
+- Perícias com proficient + expertise
+- HP com bar dual (current + temp overlay) e botões +/-
+- Death saves, hit dice multiclass
+- Características com editor completo (name, source, type, uses)
+- Idiomas e proficiências como listas estruturadas
+
+**Combate, Magias, Inventário, Lore:** todos editáveis com patterns
+estabelecidos (expand/collapse cards, datalists canônicos, UUIDs estáveis,
+ConfirmableRemoveButton).
 
 **Outras funcionalidades:**
 
 - Upload de retrato via modal com zoom + posição
-- Geração com IA (backstory, items, magias) via Cloudflare Worker
 - Interface bilíngue EN/PT com alternância instantânea (sem reload)
-- Cloud sync via Supabase (opcional)
-- ~1121 testes unitários e de integração
+- Auth status badge no header (Conectado/Entrar)
+- Auth Supabase (login/registro/logout)
+- ~1265 testes unitários e de integração
 - PWA instalável
 
 ### Limitações conhecidas
 
-- **Criação do zero:** a tela "Meus Personagens" ainda não suporta criar
-  personagem novo a partir do zero — é necessário importar da v1 (a migração
-  automática cobre isso na primeira abertura).
+- **Sync multi-device não implementado.** Personagem criado em um device não
+  aparece em outro automaticamente. Para multi-device hoje, use Importar/
+  Exportar JSON manualmente.
 - **Localização de valores livres:** labels da UI traduzem entre PT e EN,
   mas valores livres armazenados no personagem (raça, classe, antecedente,
   alinhamento) permanecem como o usuário digitou — não são traduzidos.
@@ -58,18 +68,23 @@ Fichas v1 são migradas automaticamente na primeira abertura da v2.
   com feats como Alert exigirão um campo de bônus separado (não modelado ainda).
 - **Spellcasting ability única por personagem:** multiclasse com abilities
   diferentes (ex: Druid + Wizard) requer anotação manual no campo description.
-- **Items importados sem categoria:** itens migrados da v1 recebem category
-  "misc" por padrão — o usuário reclassifica manualmente.
+- **Items importados ganham category "misc":** itens migrados da v1 recebem
+  category "misc" por padrão — o usuário reclassifica manualmente.
 - **Encumbrance rules opcionais não implementadas:** apenas indicação visual
   pela barra de peso; penalidades de movimento não modeladas.
+- **Lock é stub:** botão presente mas modo read-only real virá em sub-fase futura.
+- **Worker AI não gera items nem spells** — campos ficam vazios para o user
+  preencher manualmente.
 
 ### Roadmap
 
-- **C.1.x — Meus Personagens:** criar personagem do zero (atualmente só
-  edição de existentes ou importação do v1)
-- Internacionalização de canonical names (raça, classe, antecedente — hoje
+- **Sync Supabase + tombstones:** upload local→cloud, download cloud→local,
+  multi-device propagation
+- **Lock funcional:** modo read-only vs editable pra evitar edição acidental
+- **Auth status interativo:** click no badge abre menu (sair, conta)
+- **Internacionalização de canonical names** (raça, classe, antecedente — hoje
   free-text não traduzido)
-- Polish horizontal: renomear `.alignment-select` → `.dark-select` (genérico)
+- **Ampliação do worker de IA** (items + spells na geração)
 
 ### Stack v2
 

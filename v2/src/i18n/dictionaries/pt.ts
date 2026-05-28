@@ -21,9 +21,6 @@ const pt: Record<keyof typeof en, string> = {
   'nav.spells': 'Magias',
   'nav.inventory': 'Inventário',
   'nav.lore': 'História',
-  'nav.generate_with_ai': 'Gerar com IA',
-  'nav.ai_subtitle': 'Backstory, items, magias',
-
   // Sidebar version badge
   'sidebar.version_badge': 'v2 · beta',
 
@@ -34,13 +31,14 @@ const pt: Record<keyof typeof en, string> = {
   'tab.inventory': 'Inv',
   'tab.lore': 'Histórico',
 
-  // Mobile drawer items
-  'drawer.export_json': 'Exportar JSON',
-  'drawer.import_json': 'Importar JSON',
-  'drawer.new_sheet': 'Nova ficha',
+  // Drawer / Sidebar chrome actions
+  'drawer.export_json': 'Exportar',
+  'drawer.import_json': 'Importar',
   'drawer.lock': 'Bloquear',
 
   // Auth
+  'auth.connected':     'Conectado',
+  'auth.signin_prompt': 'Entrar',
   'auth.sign_in': 'Entrar',
   'auth.sign_out': 'Sair',
   'auth.create_account': 'Criar conta',
@@ -49,12 +47,6 @@ const pt: Record<keyof typeof en, string> = {
   'auth.signing_in': 'Entrando…',
   'auth.sign_in_title': 'Entrar na conta',
   'auth.sign_in_failed': 'Falha no login',
-  'auth.sync_prompt': 'Entrar para sincronizar',
-
-  // Topbar actions
-  'topbar.export': 'Exportar',
-  'topbar.unlock': 'Destravar',
-  'topbar.synced': 'Sincronizado',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
@@ -70,8 +62,6 @@ const pt: Record<keyof typeof en, string> = {
   'charselect.saved_count_other': '{n} salvos',
   'charselect.empty': 'Nenhum personagem encontrado.',
   'charselect.empty_hint': 'Crie um na v1 e ele aparecerá aqui.',
-  'charselect.create': 'Criar novo personagem',
-  'charselect.create_unavailable': 'Criação de personagens ainda não implementada na v2.\nUse a v1: {url}',
   'charselect.import': '⬇ Importar JSON',
   'charselect.import_unavailable': 'Importar JSON — não implementado na v2 ainda.',
   'charselect.export': '⬆ Exportar',
@@ -382,7 +372,6 @@ const pt: Record<keyof typeof en, string> = {
   // Aria labels (accessibility)
   'aria.portrait': 'Retrato de {name}',
   'aria.open_menu': 'Abrir menu',
-  'aria.generate_ai': 'Gerar com IA',
   'aria.item_weight':   'Item: {name}, peso: {weight}',
   'aria.remove_item':        'Remover {name}',
   'aria.item_name':          'Nome do item',
@@ -460,9 +449,63 @@ const pt: Record<keyof typeof en, string> = {
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
   'phase_c.details_coming_soon': 'Detalhes virão na Fase C',
-  'phase_c.ai_unavailable': 'Gerar com IA — não implementado nesta fase.',
   'phase_c.export_unavailable': 'Exportar — não implementado nesta fase.',
   'phase_c.lock_unavailable': 'Destravar / Travar — não implementado nesta fase.',
+
+  // Common
+  'common.cancel': 'Cancelar',
+
+  // My Characters — create buttons
+  'charselect.create_from_scratch': 'Criar do zero',
+  'charselect.create_with_ai':      'Criar com IA',
+
+  // AI Generation Modal
+  'ai_modal.title':                  'Gerar personagem com IA',
+  'ai_modal.description_label':      'Descrição do personagem',
+  'ai_modal.description_placeholder': 'Um druida elfo da floresta que cresceu em uma floresta ancestral, assombrado por um segredo sombrio…',
+  'ai_modal.description_hint':       'Seja específico sobre raça, classe, personalidade e antecedente.',
+  'ai_modal.language_label':         'Idioma da geração',
+  'ai_modal.generate_button':        'Gerar',
+  'ai_modal.generating_button':      'Gerando…',
+  'ai_modal.generating':             'Gerando seu personagem…',
+  'ai_modal.generating_hint':        'Isso pode levar de 10 a 30 segundos.',
+
+  // AI errors
+  'ai_modal.error_description_too_short': 'A descrição deve ter pelo menos 10 caracteres.',
+  'ai_modal.error_rate_limit':            'Muitas requisições. Aguarde um momento e tente novamente.',
+  'ai_modal.error_invalid_request':       'A requisição foi rejeitada. Tente reformular sua descrição.',
+  'ai_modal.error_server_error':          'Erro do servidor. Tente novamente em alguns instantes.',
+  'ai_modal.error_invalid_response':      'A geração foi incompleta. Tente novamente.',
+  'ai_modal.error_timeout':               'A geração demorou muito. Tente uma descrição mais curta.',
+  'ai_modal.error_network_error':         'Erro de rede. Verifique sua conexão e tente novamente.',
+  'ai_modal.error_unknown':               'Ocorreu um erro inesperado. Tente novamente.',
+
+  // Aria
+  'aria.ai_description_input':  'Descrição do personagem para geração por IA',
+  'aria.create_with_ai':        'Criar novo personagem com IA',
+  'aria.create_from_scratch':   'Criar novo personagem do zero',
+  'aria.close_modal':           'Fechar modal',
+
+  // Character card menu
+  'characters.options_for': 'Opções para {name}',
+  'characters.delete':      'Excluir',
+  'characters.unnamed':     '(sem nome)',
+
+  // Confirm delete modal
+  'delete_modal.title':    'Excluir personagem?',
+  'delete_modal.warning':  'Tem certeza que deseja excluir "{name}"?',
+  'delete_modal.note':     'Esta ação não pode ser desfeita. O personagem será removido permanentemente deste dispositivo.',
+  'delete_modal.confirm':  'Excluir',
+  'delete_modal.deleting': 'Excluindo…',
+
+  // Delete errors
+  'delete_modal.error_local_delete_failed': 'Não foi possível excluir o personagem. Tente novamente.',
+  'delete_modal.error_unknown':             'Ocorreu um erro inesperado. Tente novamente.',
+
+  // Aria — delete flow
+  'aria.character_options': 'Opções do personagem',
+  'aria.confirm_delete':    'Confirmar exclusão',
+  'aria.cancel_delete':     'Cancelar exclusão',
 };
 
 export default pt;

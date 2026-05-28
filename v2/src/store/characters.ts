@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { listCharacters, saveCharacter } from '@/data/db'
+import { deleteCharacterService } from '@/services/delete-character'
 import type { Character } from '@/domain/character'
 
 const SAVE_DEBOUNCE_MS = 800
@@ -12,6 +13,17 @@ interface CharactersState {
   loading:    boolean
   error:      string | null
   fetchCharacters: () => Promise<void>
+  /**
+   * Persist a new character to IndexedDB immediately and add it to the store.
+   * Used by character creation flows (manual and AI-generated).
+   */
+  addCharacter: (character: Character) => Promise<void>
+  /**
+   * Delete a character by id — removes from IndexedDB and local array.
+   * Best-effort Supabase + Storage delete if user is logged in.
+   * Throws DeleteCharacterError if the local delete fails.
+   */
+  deleteCharacter: (id: string) => Promise<void>
   /**
    * Apply a partial update to a character in the store.
    * Optimistically updates local state immediately, then debounces
@@ -29,6 +41,16 @@ export const useCharactersStore = create<CharactersState>((set, get) => ({
   characters: [],
   loading:    false,
   error:      null,
+
+  addCharacter: async (character) => {
+    await saveCharacter(character)
+    set(state => ({ characters: [...state.characters, character] }))
+  },
+
+  deleteCharacter: async (id) => {
+    await deleteCharacterService(id)
+    set(state => ({ characters: state.characters.filter(c => c.id !== id) }))
+  },
 
   fetchCharacters: async () => {
     set({ loading: true, error: null })

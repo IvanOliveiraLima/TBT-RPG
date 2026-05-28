@@ -1,4 +1,14 @@
 /**
+ * @deprecated v1 adapter is no longer invoked at runtime.
+ * v2 is fully independent from v1 DB as of the cut-v1-dependency refactor.
+ *
+ * Kept as reference and potential utility for a future "Import from v1 DB"
+ * feature if needed. Tests remain to validate shape conversions.
+ *
+ * If this module's functions start being called at app boot again, it
+ * re-introduces the ghost-character bug (see migration.ts for details).
+ *
+ * ── Original purpose ─────────────────────────────────────────────────────────
  * Adapter: V1Character (raw IndexedDB schema) → Character (domain model).
  *
  * This is the single place in v2 that knows about the v1 page1/page2/page3...

@@ -450,7 +450,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
                 onChange={e => onUpdate({ category: e.target.value as ItemCategory })}
                 aria-label={t('aria.item_category' as TranslationKey)}
                 data-testid={`item-category-${item.id}`}
-                className="alignment-select"
+                className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:     `1px solid ${T.borderSubtle}`,

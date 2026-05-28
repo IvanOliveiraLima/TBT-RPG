@@ -1,10 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCharactersStore } from '@/store/characters'
 import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { createEmptyCharacter } from '@/domain/factories'
 import { useTranslation, pluralKey } from '@/i18n'
+import { AIGenerationModal } from '@/components/AIGenerationModal'
+import { CharacterCardMenu } from '@/components/CharacterCardMenu'
+import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 
 /* ── V1 production URL ────────────────────────────────────────────────── */
 const V1_URL = 'https://ivanoliveiralima.github.io/TBT-RPG/'
@@ -89,8 +93,15 @@ function HpBar({ current, max }: { current: number; max: number }) {
 }
 
 /* ── Character card ────────────────────────────────────────────────────── */
-function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
+interface CharCardProps {
+  ch: Character
+  selected: boolean
+  onRequestDelete: (id: string, name: string) => void
+}
+
+function CharCard({ ch, selected, onRequestDelete }: CharCardProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const portrait = ch.images.character ?? null
 
   function handleClick() {
@@ -98,95 +109,107 @@ function CharCard({ ch, selected }: { ch: Character; selected: boolean }) {
   }
 
   return (
-    <button
-      onClick={handleClick}
-      style={{
-        padding: 12, borderRadius: 14,
-        background: selected
-          ? `linear-gradient(135deg, rgba(212,160,23,0.08), ${T.surface} 55%)`
-          : T.surface,
-        border: `1px solid ${selected ? 'rgba(212,160,23,0.4)' : T.borderSubtle}`,
-        display: 'flex', gap: 12, alignItems: 'center',
-        cursor: 'pointer', textAlign: 'left',
-        transition: 'all 200ms',
-        width: '100%',
-        boxShadow: selected ? `0 4px 14px rgba(0,0,0,0.35), 0 0 0 0.5px ${T.gold}22` : 'none',
-      }}
-    >
-      {/* Portrait */}
-      <div style={{
-        width: 56, height: 56, borderRadius: 12, flexShrink: 0,
-        background: portrait
-          ? `url(${portrait}) center/cover`
-          : `
-            radial-gradient(circle at 40% 35%, #8B6FC5 0%, transparent 55%),
-            radial-gradient(circle at 60% 65%, ${T.ruby} 0%, transparent 55%),
-            linear-gradient(135deg, #2A1F3D, #1A0F2A)
-          `,
-        border: `1.5px solid ${selected ? T.gold : T.borderDefault}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: T.serif, fontSize: 22, fontWeight: 600,
-        color: selected ? T.gold : T.textSecondary,
-        boxShadow: selected ? `0 0 14px ${T.gold}30` : 'none',
-        position: 'relative',
-      }}>
-        {!portrait && (ch.name || 'X')[0]}
-
-        {/* Level badge */}
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={handleClick}
+        data-testid={`char-card-${ch.id}`}
+        style={{
+          padding: 12, borderRadius: 14,
+          background: selected
+            ? `linear-gradient(135deg, rgba(212,160,23,0.08), ${T.surface} 55%)`
+            : T.surface,
+          border: `1px solid ${selected ? 'rgba(212,160,23,0.4)' : T.borderSubtle}`,
+          display: 'flex', gap: 12, alignItems: 'center',
+          cursor: 'pointer', textAlign: 'left',
+          transition: 'all 200ms',
+          width: '100%',
+          boxShadow: selected ? `0 4px 14px rgba(0,0,0,0.35), 0 0 0 0.5px ${T.gold}22` : 'none',
+        }}
+      >
+        {/* Portrait */}
         <div style={{
-          position: 'absolute', bottom: -5, right: -5,
-          background: T.ruby,
-          color: T.textPrimary,
-          fontFamily: T.serif, fontWeight: 700,
-          width: 20, height: 20, borderRadius: '50%',
-          border: `2px solid ${T.bg}`,
+          width: 56, height: 56, borderRadius: 12, flexShrink: 0,
+          background: portrait
+            ? `url(${portrait}) center/cover`
+            : `
+              radial-gradient(circle at 40% 35%, #8B6FC5 0%, transparent 55%),
+              radial-gradient(circle at 60% 65%, ${T.ruby} 0%, transparent 55%),
+              linear-gradient(135deg, #2A1F3D, #1A0F2A)
+            `,
+          border: `1.5px solid ${selected ? T.gold : T.borderDefault}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10,
+          fontFamily: T.serif, fontSize: 22, fontWeight: 600,
+          color: selected ? T.gold : T.textSecondary,
+          boxShadow: selected ? `0 0 14px ${T.gold}30` : 'none',
+          position: 'relative',
         }}>
-          {deriveTotalLevel(ch) || '?'}
-        </div>
-      </div>
+          {!portrait && (ch.name || 'X')[0]}
 
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontFamily: T.serif, fontSize: 15, fontWeight: 600,
-          color: T.textPrimary, lineHeight: 1.15,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {ch.name}
+          {/* Level badge */}
+          <div style={{
+            position: 'absolute', bottom: -5, right: -5,
+            background: T.ruby,
+            color: T.textPrimary,
+            fontFamily: T.serif, fontWeight: 700,
+            width: 20, height: 20, borderRadius: '50%',
+            border: `2px solid ${T.bg}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10,
+          }}>
+            {deriveTotalLevel(ch) || '?'}
+          </div>
         </div>
-        <div style={{
-          fontSize: 11, color: T.textTertiary, marginTop: 3,
-          display: 'flex', gap: 5, alignItems: 'center',
-        }}>
-          <span>{ch.race || '—'}</span>
-          <span style={{ color: T.borderDefault }}>·</span>
-          <span style={{ color: T.textSecondary }}>
-            {formatClassesShort(ch) || '—'}
-          </span>
-        </div>
-        <HpBar current={ch.hp.current} max={ch.hp.max} />
-      </div>
 
-      {/* HP display */}
-      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-        <div style={{
-          fontSize: 9, color: T.textMuted,
-          textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 600,
-        }}>
-          HP
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontFamily: T.serif, fontSize: 15, fontWeight: 600,
+            color: T.textPrimary, lineHeight: 1.15,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            // leave room for the kebab menu in the top-right corner
+            paddingRight: 28,
+          }}>
+            {ch.name}
+          </div>
+          <div style={{
+            fontSize: 11, color: T.textTertiary, marginTop: 3,
+            display: 'flex', gap: 5, alignItems: 'center',
+          }}>
+            <span>{ch.race || '—'}</span>
+            <span style={{ color: T.borderDefault }}>·</span>
+            <span style={{ color: T.textSecondary }}>
+              {formatClassesShort(ch) || '—'}
+            </span>
+          </div>
+          <HpBar current={ch.hp.current} max={ch.hp.max} />
         </div>
-        <div style={{
-          fontFamily: T.serif, fontWeight: 600,
-          color: T.textPrimary, fontSize: 14,
-          fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, marginTop: 2,
-        }}>
-          {ch.hp.current}
-          <span style={{ color: T.textMuted, fontSize: 11 }}>/{ch.hp.max}</span>
+
+        {/* HP display */}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{
+            fontSize: 9, color: T.textMuted,
+            textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 600,
+          }}>
+            HP
+          </div>
+          <div style={{
+            fontFamily: T.serif, fontWeight: 600,
+            color: T.textPrimary, fontSize: 14,
+            fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, marginTop: 2,
+          }}>
+            {ch.hp.current}
+            <span style={{ color: T.textMuted, fontSize: 11 }}>/{ch.hp.max}</span>
+          </div>
         </div>
-      </div>
-    </button>
+      </button>
+
+      {/* Kebab menu — overlaid in top-right corner, outside the card button */}
+      <CharacterCardMenu
+        characterId={ch.id}
+        characterName={ch.name || t('characters.unnamed')}
+        onDelete={onRequestDelete}
+      />
+    </div>
   )
 }
 
@@ -266,12 +289,36 @@ function AuthStrip() {
 
 /* ── Main page ─────────────────────────────────────────────────────────── */
 export default function CharSelect() {
-  const { characters, loading, fetchCharacters } = useCharactersStore()
+  const { characters, loading, fetchCharacters, addCharacter, deleteCharacter } = useCharactersStore()
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [aiModalOpen, setAiModalOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     void fetchCharacters()
   }, [fetchCharacters])
+
+  async function handleCreateFromScratch() {
+    const newChar = createEmptyCharacter()
+    await addCharacter(newChar)
+    navigate(`/character/${newChar.id}`)
+  }
+
+  async function handleCharacterGenerated(char: Character) {
+    await addCharacter(char)
+    navigate(`/character/${char.id}`)
+  }
+
+  function handleRequestDelete(id: string, name: string) {
+    setPendingDelete({ id, name })
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDelete) return
+    await deleteCharacter(pendingDelete.id)
+    setPendingDelete(null)
+  }
 
   return (
     <div style={{
@@ -425,25 +472,51 @@ export default function CharSelect() {
           )}
 
           {!loading && characters.map((ch, i) => (
-            <CharCard key={ch.id} ch={ch} selected={i === 0} />
+            <CharCard key={ch.id} ch={ch} selected={i === 0} onRequestDelete={handleRequestDelete} />
           ))}
 
-          {/* Create new — stub */}
-          <button
-            onClick={() => alert(t('charselect.create_unavailable', { url: V1_URL }))}
-            style={{
-              padding: '16px', borderRadius: 14,
-              background: 'transparent',
-              border: `2px dashed ${T.borderDefault}`,
-              color: T.textTertiary,
-              fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', marginTop: 4,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 18, color: T.gold }}>＋</span>
-            {t('charselect.create')}
-          </button>
+          {/* Create buttons — side by side on desktop, stacked on narrow screens */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => void handleCreateFromScratch()}
+              data-testid="create-from-scratch"
+              aria-label={t('aria.create_from_scratch')}
+              style={{
+                flex: '1 1 140px',
+                padding: '14px 12px', borderRadius: 14,
+                background: 'transparent',
+                border: `2px dashed ${T.borderDefault}`,
+                color: T.textTertiary,
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 150ms',
+              }}
+            >
+              <span style={{ fontSize: 18, color: T.gold }}>＋</span>
+              {t('charselect.create_from_scratch')}
+            </button>
+
+            <button
+              onClick={() => setAiModalOpen(true)}
+              data-testid="create-with-ai"
+              aria-label={t('aria.create_with_ai')}
+              style={{
+                flex: '1 1 140px',
+                padding: '14px 12px', borderRadius: 14,
+                background: 'linear-gradient(135deg, rgba(212,160,23,0.08), rgba(91,63,168,0.08))',
+                border: `1px solid rgba(212,160,23,0.35)`,
+                color: T.textSecondary,
+                fontSize: 13, fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'all 150ms',
+              }}
+            >
+              <span style={{ color: T.gold }}>✦</span>
+              {t('charselect.create_with_ai')}
+            </button>
+          </div>
         </div>
 
         {/* Secondary actions */}
@@ -491,6 +564,21 @@ export default function CharSelect() {
         {/* Auth */}
         <AuthStrip />
       </div>
+
+      {aiModalOpen && (
+        <AIGenerationModal
+          onClose={() => setAiModalOpen(false)}
+          onCharacterGenerated={char => void handleCharacterGenerated(char)}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDeleteModal
+          characterName={pendingDelete.name}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   )
 }

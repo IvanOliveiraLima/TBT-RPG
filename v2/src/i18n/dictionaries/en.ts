@@ -19,9 +19,6 @@ const en = {
   'nav.spells': 'Spells',
   'nav.inventory': 'Inventory',
   'nav.lore': 'Lore',
-  'nav.generate_with_ai': 'Generate with AI',
-  'nav.ai_subtitle': 'Backstory, items, spells',
-
   // Sidebar version badge
   'sidebar.version_badge': 'v2 · beta',
 
@@ -32,13 +29,14 @@ const en = {
   'tab.inventory': 'Inv',
   'tab.lore': 'Lore',
 
-  // Mobile drawer items
-  'drawer.export_json': 'Export JSON',
-  'drawer.import_json': 'Import JSON',
-  'drawer.new_sheet': 'New sheet',
+  // Drawer / Sidebar chrome actions
+  'drawer.export_json': 'Export',
+  'drawer.import_json': 'Import',
   'drawer.lock': 'Lock',
 
   // Auth
+  'auth.connected':     'Connected',
+  'auth.signin_prompt': 'Sign in',
   'auth.sign_in': 'Sign in',
   'auth.sign_out': 'Sign out',
   'auth.create_account': 'Create account',
@@ -47,12 +45,6 @@ const en = {
   'auth.signing_in': 'Signing in…',
   'auth.sign_in_title': 'Sign in',
   'auth.sign_in_failed': 'Sign in failed',
-  'auth.sync_prompt': 'Sign in to sync',
-
-  // Topbar actions
-  'topbar.export': 'Export',
-  'topbar.unlock': 'Unlock',
-  'topbar.synced': 'Synced',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',
@@ -68,8 +60,6 @@ const en = {
   'charselect.saved_count_other': '{n} saved',
   'charselect.empty': 'No characters found.',
   'charselect.empty_hint': 'Create one in v1 and it will appear here.',
-  'charselect.create': 'Create new character',
-  'charselect.create_unavailable': 'Character creation is not yet available in v2.\nUse v1: {url}',
   'charselect.import': '⬇ Import JSON',
   'charselect.import_unavailable': 'Import JSON — not yet available in v2.',
   'charselect.export': '⬆ Export',
@@ -380,7 +370,6 @@ const en = {
   // Aria labels (accessibility)
   'aria.portrait': 'Portrait of {name}',
   'aria.open_menu': 'Open menu',
-  'aria.generate_ai': 'Generate with AI',
   'aria.item_weight':        'Item: {name}, weight: {weight}',
   'aria.remove_item':        'Remove {name}',
   'aria.item_name':          'Item name',
@@ -456,9 +445,63 @@ const en = {
   // Phase C placeholder alerts
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',
   'phase_c.details_coming_soon': 'Details will come in Phase C',
-  'phase_c.ai_unavailable': 'Generate with AI — not implemented in this phase.',
   'phase_c.export_unavailable': 'Export — not implemented in this phase.',
   'phase_c.lock_unavailable': 'Unlock / Lock — not implemented in this phase.',
+
+  // Common
+  'common.cancel': 'Cancel',
+
+  // My Characters — create buttons
+  'charselect.create_from_scratch': 'Create from scratch',
+  'charselect.create_with_ai':      'Create with AI',
+
+  // AI Generation Modal
+  'ai_modal.title':                  'Generate character with AI',
+  'ai_modal.description_label':      'Character description',
+  'ai_modal.description_placeholder': 'A wood elf druid who grew up in an ancient forest, haunted by a dark secret…',
+  'ai_modal.description_hint':       'Be specific about race, class, personality, and background.',
+  'ai_modal.language_label':         'Generation language',
+  'ai_modal.generate_button':        'Generate',
+  'ai_modal.generating_button':      'Generating…',
+  'ai_modal.generating':             'Generating your character…',
+  'ai_modal.generating_hint':        'This may take 10–30 seconds.',
+
+  // AI errors
+  'ai_modal.error_description_too_short': 'Description must be at least 10 characters.',
+  'ai_modal.error_rate_limit':            'Too many requests. Please wait a moment and try again.',
+  'ai_modal.error_invalid_request':       'The request was rejected. Try rephrasing your description.',
+  'ai_modal.error_server_error':          'Server error. Please try again in a moment.',
+  'ai_modal.error_invalid_response':      'The generation was incomplete. Please try again.',
+  'ai_modal.error_timeout':               'Generation took too long. Try a shorter description.',
+  'ai_modal.error_network_error':         'Network error. Check your connection and try again.',
+  'ai_modal.error_unknown':               'An unexpected error occurred. Please try again.',
+
+  // Aria
+  'aria.ai_description_input':  'Character description for AI generation',
+  'aria.create_with_ai':        'Create new character with AI',
+  'aria.create_from_scratch':   'Create new character from scratch',
+  'aria.close_modal':           'Close modal',
+
+  // Character card menu
+  'characters.options_for': 'Options for {name}',
+  'characters.delete':      'Delete',
+  'characters.unnamed':     '(unnamed)',
+
+  // Confirm delete modal
+  'delete_modal.title':    'Delete character?',
+  'delete_modal.warning':  'Are you sure you want to delete "{name}"?',
+  'delete_modal.note':     'This action cannot be undone. The character will be permanently removed from this device.',
+  'delete_modal.confirm':  'Delete',
+  'delete_modal.deleting': 'Deleting…',
+
+  // Delete errors
+  'delete_modal.error_local_delete_failed': 'Could not delete the character. Please try again.',
+  'delete_modal.error_unknown':             'An unexpected error occurred. Please try again.',
+
+  // Aria — delete flow
+  'aria.character_options': 'Character options',
+  'aria.confirm_delete':    'Confirm deletion',
+  'aria.cancel_delete':     'Cancel deletion',
 } as const;
 
 export default en;

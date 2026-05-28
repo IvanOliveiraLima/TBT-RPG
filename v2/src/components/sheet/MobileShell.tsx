@@ -5,6 +5,8 @@ import type { TabKey } from './types'
 import { MobileHeader } from './MobileHeader'
 import { BottomTabBar } from './BottomTabBar'
 import { useTranslation } from '@/i18n'
+import { StatusBadge } from '@/components/primitives/StatusBadge'
+import { useAuthStatus } from '@/hooks/useAuthStatus'
 
 const T = {
   surface:      '#15121C',
@@ -29,6 +31,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
   const { t, lang, setLang } = useTranslation()
+  const authStatus = useAuthStatus()
 
   return (
     <div style={{
@@ -72,10 +75,21 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
             }}
           >
             <div style={{
-              fontFamily: T.serif, fontSize: 16, fontWeight: 600,
-              color: T.textPrimary, marginBottom: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 14,
             }}>
-              TBT-RPG
+              <div style={{
+                fontFamily: T.serif, fontSize: 16, fontWeight: 600,
+                color: T.textPrimary,
+              }}>
+                TBT-RPG
+              </div>
+              {authStatus === 'authenticated' && (
+                <StatusBadge variant="success">{t('auth.connected')}</StatusBadge>
+              )}
+              {authStatus === 'unauthenticated' && (
+                <StatusBadge variant="neutral">{t('auth.signin_prompt')}</StatusBadge>
+              )}
             </div>
 
             {/* Back to char select */}
@@ -103,13 +117,11 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
             {([
               ['drawer.export_json', 'phase_c.export_unavailable'],
               ['drawer.import_json', 'phase_c.editing_coming_soon'],
-              ['drawer.new_sheet',   'phase_c.editing_coming_soon'],
               ['drawer.lock',        'phase_c.lock_unavailable'],
-              ['auth.sync_prompt',   null],
             ] as const).map(([labelKey, alertKey]) => (
               <button
                 key={labelKey}
-                onClick={() => { if (alertKey) alert(t(alertKey)); setDrawerOpen(false) }}
+                onClick={() => { alert(t(alertKey)); setDrawerOpen(false) }}
                 style={{
                   background: 'transparent',
                   border: 'none',

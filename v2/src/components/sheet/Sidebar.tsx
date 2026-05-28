@@ -174,25 +174,6 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
 
       <div style={{ flex: 1 }} />
 
-      {/* AI button */}
-      <div
-        onClick={() => alert(t('phase_c.ai_unavailable'))}
-        style={{
-          padding: '10px 12px',
-          background: 'linear-gradient(135deg, rgba(212,160,23,0.12), rgba(91,63,168,0.08))',
-          border: '1px solid rgba(212,160,23,0.3)',
-          borderRadius: 10,
-          cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}
-      >
-        <span style={{ color: T.gold }}>✦</span>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary }}>{t('nav.generate_with_ai')}</div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>{t('nav.ai_subtitle')}</div>
-        </div>
-      </div>
-
       {/* Language toggle */}
       <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
         {(['pt', 'en'] as const).map(l => {
