@@ -174,38 +174,6 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
 
       <div style={{ flex: 1 }} />
 
-      {/* Chrome actions */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', gap: 2,
-        paddingBottom: 8,
-        borderBottom: `1px solid ${T.borderSubtle}`,
-        marginBottom: 8,
-      }}>
-        {([
-          ['drawer.export_json', 'phase_c.export_unavailable'],
-          ['drawer.import_json', 'phase_c.editing_coming_soon'],
-          ['drawer.lock',        'phase_c.lock_unavailable'],
-        ] as const).map(([labelKey, alertKey]) => (
-          <button
-            key={labelKey}
-            type="button"
-            onClick={() => alert(t(alertKey))}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: T.textMuted,
-              padding: '6px 10px',
-              borderRadius: 6,
-              fontSize: 12, fontWeight: 500,
-              textAlign: 'left', cursor: 'pointer',
-              fontFamily: T.sans,
-            }}
-          >
-            {t(labelKey)}
-          </button>
-        ))}
-      </div>
-
       {/* Language toggle */}
       <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
         {(['pt', 'en'] as const).map(l => {
