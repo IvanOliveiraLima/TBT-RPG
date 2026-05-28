@@ -450,8 +450,8 @@ After a clean `npm install` (no flags), `npm test` should report:
 
 | Metric | Baseline (after PRs #111–#113 merged) |
 |--------|---------------------------------------|
-| Test files | ~60 |
-| Tests | ~1265 |
+| Test files | 58 |
+| Tests | 1265 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
