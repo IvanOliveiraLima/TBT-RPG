@@ -281,9 +281,8 @@ If `design-reference/` is absent in a new session, ask the user to provide the f
 ### v2 IndexedDB strategy (Phase C.1.0 — v2-native)
 
 The v2 uses its own database (`dnd-character-sheet-v2`, version 2) and stores
-domain `Character` objects directly (v2-native schema). The v1 database
-(`dnd-character-sheet`, version 3) is read **once** during boot migration and
-is never written to from v2.
+domain `Character` objects directly (v2-native schema). **Since the cut-v1-dependency
+sub-phase, v2 no longer reads the v1 database at boot or runtime.**
 
 #### Contract table
 
@@ -291,21 +290,24 @@ is never written to from v2.
 |-------------|-------|-------|
 | v1 reads    | yes   | no    |
 | v1 writes   | yes   | no    |
-| v2 reads    | migration only | yes |
+| v2 reads    | never (was: migration only) | yes |
 | v2 writes   | never | yes   |
 
-#### Migration (`v2/src/data/migration.ts`)
+#### Migration (`v2/src/data/migration.ts`) — @deprecated
 
-`migrateV1Characters()` runs once per boot:
-1. Reads all characters from v1 DB (read-only; no upgrade callback — v2 never touches v1 schema)
+`migrateV1Characters()` is kept as a `@deprecated` utility for a potential future
+"Import from v1 DB" feature. It is **no longer called from `main.tsx` at boot**.
+
+If you find code invoking `migrateV1Characters()` at app startup, you've re-introduced
+the ghost-character bug — refer to the cut-v1-dependency commit history.
+
+The migration function:
+1. Reads all characters from v1 DB (read-only)
 2. For each v1 character whose id is not already in v2 DB:
    - Runs `adaptCharacter()` to produce a domain `Character`
    - Persists to v2 DB via `saveCharacter()`
-3. Idempotent — subsequent boots skip already-migrated characters
-4. Graceful when v1 DB does not exist (fresh install): returns `{ migrated: 0, skipped: 0 }`
-
-After migration, v2 reads and writes only its own DB. The v1 DB stays
-untouched as a historical snapshot.
+3. Idempotent — subsequent runs skip already-migrated characters
+4. Graceful when v1 DB does not exist: returns `{ migrated: 0, skipped: 0 }`
 
 #### v1 status
 
@@ -446,10 +448,10 @@ component without dual-lang tests is incomplete.
 
 After a clean `npm install` (no flags), `npm test` should report:
 
-| Metric | Baseline (end of C.1.f) |
-|--------|------------------------|
-| Test files | 49 |
-| Tests | 1121 |
+| Metric | Baseline (after PRs #111–#113 merged) |
+|--------|---------------------------------------|
+| Test files | ~60 |
+| Tests | ~1265 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -531,6 +533,74 @@ Editable inventory with category grouping, weight bar, and EP removal. DB schema
 - `calculateTotalWeight`, `calculateWeightCapacity`, `getWeightLoadLevel`, `groupItemsByCategory` in `derived.ts`
 - `WeightLoadLevel` thresholds: >50% moderate, >75% heavy, >100% overburdened (STR × 15 capacity)
 - 84 new tests across 4 files + new `inventory-edit.test.tsx` (72 tests)
+
+---
+
+### Phase C.1.x — My Characters: creation flows (COMPLETED — PR #109)
+
+Character selection screen with create-from-scratch and AI-assisted creation.
+
+- **Create from scratch:** `createEmptyCharacter()` factory in `v2/src/domain/factories.ts` produces a
+  fully valid `Character` with sensible defaults (one class "Nova classe", all abilities 10, empty arrays).
+  Navigates to Status tab on creation.
+- **AI-assisted creation:** modal with text description + EN/PT toggle; calls Cloudflare Worker
+  (Llama 3 8B); merges response into empty base via defensive merge (missing fields stay default).
+  Error codes translated via i18n pattern.
+- **Kebab menu** (`CharacterCardMenu`) per character card for future per-row actions (delete first).
+- `v2/src/services/ai-generate.ts` service layer encapsulates worker fetch + error classification.
+- Worker returns `sleight_hand`; domain uses `sleight_of_hand` — mapped in merge function (workaround).
+
+---
+
+### Delete characters sub-phase (COMPLETED — PR #110)
+
+Cascading delete with partial-failure tolerance.
+
+- Kebab menu → confirmation modal → `deleteCharacter()` in `v2/src/services/delete-character.ts`
+- 4 steps: (1) local IndexedDB (blocking), (2) tombstone (deferred), (3) Supabase row (best-effort),
+  (4) Storage bucket cleanup (best-effort)
+- Result reports `localOk`, `cloudOk`, `storageOk` separately. UI confirms success when local OK.
+- Storage cleanup explicit because Supabase does not auto-GC uploaded files (50MB account limit).
+
+---
+
+### Cut v1 dependency sub-phase (COMPLETED — PR #111)
+
+v2 fully independent from v1 IndexedDB at runtime.
+
+- `migrateV1Characters()` removed from `main.tsx` boot sequence.
+- Ghost-character bug resolved: v1 chars were re-appearing in v2 on each reload via the migration.
+- `adapter.ts` and `migration.ts` marked `@deprecated` but kept as reference for potential future
+  "Import from v1 DB" feature.
+
+---
+
+### Polish horizontal + hotfix (COMPLETED — PR #112)
+
+Visual and naming consistency pass across the full UI.
+
+- Renamed `.alignment-select` → `.dark-select` (generic name; class used in 7+ components)
+- `FeaturesList`: added `.dark-select` to `type` and `source` selects (regression from C.1.d)
+- Desktop header buttons and mobile drawer consolidated (chrome consistency)
+- Sync badge removed (was placeholder; sync not yet implemented)
+- Hotfix: removed duplicated import button that appeared after PR #112 rebase
+
+---
+
+### Auth status badge sub-phase (COMPLETED — PR #113)
+
+Visual-only badge showing login state in header (desktop) and drawer (mobile).
+
+- `StatusBadge` primitive at `v2/src/components/primitives/StatusBadge.tsx` — `success | neutral`
+  variants, colored dot indicator, `aria-hidden` decoration, `data-testid`
+- `useAuthStatus` hook at `v2/src/hooks/useAuthStatus.ts` — derives `'authenticated' |
+  'unauthenticated' | 'loading'` from `useAuthStore` via Zustand selectors; no duplicate listener
+- Badge renders `null` during `loading` state (avoids flash on initial auth check)
+- 2 new i18n keys: `auth.connected` (Connected/Conectado), `auth.signin_prompt` (Sign in/Entrar)
+- Desktop: badge left of Import/Export/Lock buttons; Mobile: badge right of TBT-RPG title in drawer
+- CSS classes: `.status-badge`, `.status-badge-success`, `.status-badge-neutral`, `.status-badge-dot`
+  in `v2/src/index.css` (hardcoded colors — no CSS variables in codebase)
+- 23 new tests across `status-badge.test.tsx` (12) and `auth-badge.test.tsx` (11)
 
 ---
 
@@ -721,6 +791,16 @@ These have a fast-path (returns immediately if all fields are already valid).
 Justified: migrations can miss in-progress dev builds; runtime guard prevents
 crashes from malformed data reaching components.
 
+#### V2 independent from v1 DB at runtime
+
+Since the cut-v1-dependency sub-phase, **v2 never reads v1 IndexedDB at boot or
+runtime**. The adapter functions in `v2/src/data/adapter.ts` are kept as
+`@deprecated` reference for a potential future "Import from v1 DB" feature, but
+are not invoked. `migrateV1Characters()` is removed from `main.tsx`.
+
+If you find code importing the adapter to trigger v1 reads, you've re-introduced
+the ghost-character bug.
+
 #### Latent values preserved when UI controls hidden
 
 When a UI control is hidden conditionally (e.g. equipped checkbox only for
@@ -736,6 +816,147 @@ checkbox already marked.
 When removing a currency type (C.1.f removed EP), the value is preserved via
 conversion: 1 EP = 5 SP. No data loss; user sees the expected total in the
 remaining denominations.
+
+---
+
+---
+
+## Patterns established during C.1.x and beyond
+
+#### Factory function for empty entities
+
+`createEmptyCharacter()` in `v2/src/domain/factories.ts` produces a fully
+valid `Character` with sensible defaults. Used by both manual creation
+("Criar do zero") and AI-assisted creation (as base before merging AI response).
+
+Preserves invariants:
+- Classes always have non-empty name ("Nova classe" default)
+- HitDice synced with classes
+- Spell slots initialized for all 9 levels (max 0)
+- Standard array abilities (all 10)
+- Empty arrays for spells, items, attacks, features
+- Currency at zero
+
+#### Service layer for external integrations
+
+External operations (AI generation, cascading delete) live in
+`v2/src/services/` as pure async functions with typed error classes:
+
+```ts
+export class XError extends Error {
+  constructor(public code: string) { super(code) }
+}
+
+export async function operationX(input): Promise<Result> {
+  try {
+    // ... operation
+    return result
+  } catch (err) {
+    throw new XError(parseToCode(err))
+  }
+}
+```
+
+Components catch the typed error and i18n-translate the code.
+
+#### Structured error codes + i18n translation
+
+External operations return error codes; frontend translates. Pattern:
+
+```ts
+// Service throws with code
+throw new AIGenerationError('rate_limit')
+
+// Component catches and translates
+catch (err) {
+  setErrorCode(parseErrorCode(err))
+  // UI: t(`ai_modal.error_${errorCode}`)
+}
+```
+
+Codes in use: `description_too_short`, `rate_limit`, `invalid_request`,
+`server_error`, `invalid_response`, `timeout`, `network_error`, `unknown`,
+`local_delete_failed`, `cloud_delete_failed`, `storage_delete_failed`.
+
+#### Defensive merge with empty base (AI generation)
+
+AI response may have partial fields. Merge into empty base produced by factory;
+let the user complete missing fields manually:
+
+```ts
+const base = createEmptyCharacter(ai.name ?? '')
+if (ai.race) base.race = ai.race
+if (ai.class && ai.level) {
+  base.classes = [{ name: ai.class, level: ai.level, hitDie: inferHitDie(ai.class) }]
+}
+// ...
+return base
+```
+
+Worker can omit fields without breaking the result.
+
+#### Cascading delete with partial-failure tolerance
+
+`deleteCharacter()` (`v2/src/services/delete-character.ts`) has 4 steps:
+1. Local IndexedDB delete (REQUIRED — throws if fails)
+2. Tombstone (deferred to sync sub-phase — not yet implemented)
+3. Supabase row delete (best-effort)
+4. Storage bucket delete (best-effort)
+
+Steps 3–4 are non-blocking. Result reports `localOk`, `cloudOk`, `storageOk`
+separately. UI confirms success when local OK, even if cloud has partial
+failures — sync will retry in future.
+
+Storage cleanup must be explicit: Supabase does not auto-GC uploaded files
+(50MB account limit).
+
+#### Kebab menu for per-row actions
+
+For per-item destructive actions (delete, future: duplicate), use a kebab
+dropdown (`CharacterCardMenu`):
+
+```tsx
+<CharacterCardMenu
+  characterId={char.id}
+  characterName={char.name}
+  onDelete={handleRequestDelete}
+/>
+```
+
+Pattern: button (⋮) → dropdown with menu items → action via callback.
+`stopPropagation` prevents card navigation. Outside click closes.
+`role="menu"` + `aria-haspopup` for a11y.
+
+#### Visual status badge primitive
+
+`<StatusBadge>` for binary visual states (auth: connected/disconnected;
+future: sync status, etc.):
+
+```tsx
+<StatusBadge variant="success">Conectado</StatusBadge>
+<StatusBadge variant="neutral">Entrar</StatusBadge>
+```
+
+Visual only (no click), with colored dot indicator. Variants define complete
+appearance. CSS classes in `v2/src/index.css` (hardcoded colors — no CSS
+variables in codebase).
+
+#### Derived hook from store (no duplicate listeners)
+
+When deriving a partial view of state already in a Zustand store, prefer a
+thin hook with selectors over re-creating listeners:
+
+```ts
+export function useAuthStatus(): AuthStatus {
+  const loading = useAuthStore(s => s.loading)
+  const user = useAuthStore(s => s.user)
+  if (loading) return 'loading'
+  return user ? 'authenticated' : 'unauthenticated'
+}
+```
+
+Avoids `onAuthStateChange` listener duplication that could cause memory leaks
+or inconsistent updates.
 
 ---
 
@@ -769,7 +990,18 @@ remaining denominations.
 | Equipped checkbox only for weapon/armor | C.1.f polish | Conceptually accurate per D&D 5e |
 | Equipped value preserved when category changes | C.1.f polish | No data mutation in UI-only changes |
 | Weight bar caps at 100% visually with red overburdened state | C.1.f Q8 | Visual feedback without bar distortion |
-| All `<select>` elements use `.alignment-select` class | C.1.e polish | Enables dark-theme option lists across the app |
+| All `<select>` elements use `.dark-select` class | Polish horizontal | Renamed from `.alignment-select`; generic naming for dark-theme option lists |
+| Character creation has 2 flows: from scratch + AI | C.1.x | Same endpoint (Status tab); AI is "fill initially", not modify |
+| AI never modifies existing characters | C.1.x | Simpler logic, no merge conflicts |
+| AI merge is "dumb": copy what came, default what didn't | C.1.x | Worker can evolve fields without breaking existing merge |
+| Empty character starts with one class "Nova classe" | C.1.x | Preserves invariant: classes never empty |
+| Delete is local-blocking, cloud-best-effort | Delete sub-phase | Local feedback immediate; cloud retries in future sync |
+| Storage cleanup explicit on delete | Delete sub-phase | Supabase does not auto-GC files; 50MB account limit |
+| `adapter.ts` / `migration.ts` are @deprecated for runtime | Cut v1 sub-phase | Prevents ghost-character bug from re-introduction |
+| Auth badge is visual-only (no click action yet) | Auth badge sub-phase | Click action deferred to future iteration |
+| Auth badge text "Conectado"/"Entrar" (not "Sincronizado") | Auth badge sub-phase | Doesn't promise sync that doesn't exist yet |
+| Auth badge renders null during loading (no flash) | Auth badge sub-phase | `useAuthStore` initial state has `loading: true`; prevents FOUC |
+| Lock button is stub until functional sub-phase | Polish horizontal | Labels consistent; behavior placeholder |
 
 ---
 
@@ -803,11 +1035,9 @@ remaining denominations.
 
 New from C.1.d / C.1.e / C.1.f:
 
-- **OQ — FeaturesList `<select>` without dark theme class.** Regression identified during
-  C.1.e polish — the `alignment-select` class is missing from FeaturesList selects.
-  Polish horizontal candidate; not blocking.
-- **OQ — Rename `.alignment-select` to `.dark-select`** for genericity. The class is now
-  used in 7+ places and the name is misleading. Refactor cost increases with each usage.
+- ~~**OQ — FeaturesList `<select>` without dark theme class.**~~ *Resolved in polish
+  horizontal — `.dark-select` applied to FeaturesList selects.*
+- ~~**OQ — Rename `.alignment-select` to `.dark-select`.**~~ *Resolved in polish horizontal.*
 - **OQ — Heuristic categorization of inventory items on migration.** All imported items
   default to "misc". Could infer from name ("Quarterstaff" → weapon) but is brittle.
   Deferred.
@@ -826,3 +1056,21 @@ New from C.1.d / C.1.e / C.1.f:
   "from IndexedDB" to force the migration path.
 - **OQ — Spellcasting per-class abilities.** Druid + Wizard with WIS + INT simultaneously.
   Currently single ability per character.
+
+New from C.1.x, delete, cut-v1, polish, auth-badge:
+
+- **OQ — Sync Supabase: upload + download + tombstones.** Critical next sub-phase. v2
+  currently is local-only with auth but no data propagation between devices.
+- **OQ — Lock functional (read-only mode).** Today only stub label; functionality
+  (editing disabled, fields read-only) deferred to lock sub-phase.
+- **OQ — Auth status interactive.** Click on badge could open a menu (logout, account
+  info). Deferred per Q4.1 (visual-only decision).
+- **OQ — Worker AI expansion (items + spells).** Worker template currently doesn't
+  include these fields. Fields stay empty on AI creation for user to fill manually.
+- **OQ — Worker AI `sleight_hand` normalization.** Worker returns `sleight_hand` but
+  domain uses `sleight_of_hand`. Mapped in merge function as workaround; worker-side
+  fix would be cleaner.
+- **OQ — Multi-tab edition coordination.** Character can be edited in 2 browser tabs
+  simultaneously; no locking. Best-effort via debounced saves.
+- **OQ — Tombstone cleanup TTL.** When sync lands, tombstones accumulate. Decision:
+  no TTL (memories permanent) — revisit if storage becomes an issue.
