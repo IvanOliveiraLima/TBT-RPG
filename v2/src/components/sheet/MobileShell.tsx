@@ -103,13 +103,11 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
             {([
               ['drawer.export_json', 'phase_c.export_unavailable'],
               ['drawer.import_json', 'phase_c.editing_coming_soon'],
-              ['drawer.new_sheet',   'phase_c.editing_coming_soon'],
               ['drawer.lock',        'phase_c.lock_unavailable'],
-              ['auth.sync_prompt',   null],
             ] as const).map(([labelKey, alertKey]) => (
               <button
                 key={labelKey}
-                onClick={() => { if (alertKey) alert(t(alertKey)); setDrawerOpen(false) }}
+                onClick={() => { alert(t(alertKey)); setDrawerOpen(false) }}
                 style={{
                   background: 'transparent',
                   border: 'none',
