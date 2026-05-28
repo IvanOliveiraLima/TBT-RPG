@@ -46,11 +46,6 @@ const pt: Record<keyof typeof en, string> = {
   'auth.sign_in_title': 'Entrar na conta',
   'auth.sign_in_failed': 'Falha no login',
 
-  // Topbar actions
-  'topbar.export': 'Exportar',
-  'topbar.unlock': 'Destravar',
-  'topbar.synced': 'Sincronizado',
-
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
   'charselect.hero_line2': 'facilitada.',

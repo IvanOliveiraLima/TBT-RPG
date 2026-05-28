@@ -44,11 +44,6 @@ const en = {
   'auth.sign_in_title': 'Sign in',
   'auth.sign_in_failed': 'Sign in failed',
 
-  // Topbar actions
-  'topbar.export': 'Export',
-  'topbar.unlock': 'Unlock',
-  'topbar.synced': 'Synced',
-
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',
   'charselect.hero_line2': 'effortlessly.',

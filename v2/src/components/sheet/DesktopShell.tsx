@@ -13,28 +13,9 @@ const T = {
   textSecondary:'#C8C4D6',
   ruby:         '#8B1A2E',
   rubyHover:    '#A32D42',
-  success:      '#5DCAA5',
   serif:        "'Cinzel', Georgia, serif",
   sans:         "'Inter', system-ui, sans-serif",
 } as const
-
-/* ── Tag pill (matches primitives.jsx) ──────────────────────────────── */
-function Tag({ children, color = 'success' }: { children: ReactNode; color?: 'success' }) {
-  const colors = {
-    success: { bg: 'rgba(93,202,165,0.12)', fg: '#8FE0C4', br: 'rgba(93,202,165,0.3)' },
-  }
-  const c = colors[color]
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 4,
-      background: c.bg, color: c.fg,
-      border: `1px solid ${c.br}`, borderRadius: 999,
-      padding: '4px 8px', fontSize: 11, fontWeight: 600, letterSpacing: 0.3,
-    }}>
-      {children}
-    </span>
-  )
-}
 
 interface DesktopShellProps {
   character: Character
@@ -89,19 +70,23 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
 
           <div style={{ flex: 1 }} />
 
-          <Tag color="success">● {t('topbar.synced')}</Tag>
-
-          <button
-            onClick={() => alert(t('phase_c.export_unavailable'))}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${T.borderDefault}`,
-              color: T.textSecondary, borderRadius: 8,
-              padding: '6px 12px', fontSize: 12, cursor: 'pointer',
-            }}
-          >
-            {t('topbar.export')}
-          </button>
+          {([
+            ['drawer.import_json', 'phase_c.editing_coming_soon'],
+            ['drawer.export_json', 'phase_c.export_unavailable'],
+          ] as const).map(([labelKey, alertKey]) => (
+            <button
+              key={labelKey}
+              onClick={() => alert(t(alertKey))}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderDefault}`,
+                color: T.textSecondary, borderRadius: 8,
+                padding: '6px 12px', fontSize: 12, cursor: 'pointer',
+              }}
+            >
+              {t(labelKey)}
+            </button>
+          ))}
 
           <button
             onClick={() => alert(t('phase_c.lock_unavailable'))}
@@ -112,7 +97,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
               padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            🔒 {t('topbar.unlock')}
+            🔒 {t('drawer.lock')}
           </button>
         </div>
 
