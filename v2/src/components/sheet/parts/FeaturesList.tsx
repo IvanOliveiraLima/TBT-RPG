@@ -105,6 +105,7 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           }}
           aria-label={t('aria.feature_type')}
           data-testid={`feature-type-${feature.id}`}
+          className="dark-select"
           style={{
             ...INPUT_STYLE,
             flexShrink: 0,

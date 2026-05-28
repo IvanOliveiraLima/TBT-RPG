@@ -31,10 +31,9 @@ const pt: Record<keyof typeof en, string> = {
   'tab.inventory': 'Inv',
   'tab.lore': 'Histórico',
 
-  // Mobile drawer items
-  'drawer.export_json': 'Exportar JSON',
-  'drawer.import_json': 'Importar JSON',
-  'drawer.new_sheet': 'Nova ficha',
+  // Drawer / Sidebar chrome actions
+  'drawer.export_json': 'Exportar',
+  'drawer.import_json': 'Importar',
   'drawer.lock': 'Bloquear',
 
   // Auth
@@ -46,12 +45,6 @@ const pt: Record<keyof typeof en, string> = {
   'auth.signing_in': 'Entrando…',
   'auth.sign_in_title': 'Entrar na conta',
   'auth.sign_in_failed': 'Falha no login',
-  'auth.sync_prompt': 'Entrar para sincronizar',
-
-  // Topbar actions
-  'topbar.export': 'Exportar',
-  'topbar.unlock': 'Destravar',
-  'topbar.synced': 'Sincronizado',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',

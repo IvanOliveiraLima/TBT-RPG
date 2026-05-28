@@ -29,10 +29,9 @@ const en = {
   'tab.inventory': 'Inv',
   'tab.lore': 'Lore',
 
-  // Mobile drawer items
-  'drawer.export_json': 'Export JSON',
-  'drawer.import_json': 'Import JSON',
-  'drawer.new_sheet': 'New sheet',
+  // Drawer / Sidebar chrome actions
+  'drawer.export_json': 'Export',
+  'drawer.import_json': 'Import',
   'drawer.lock': 'Lock',
 
   // Auth
@@ -44,12 +43,6 @@ const en = {
   'auth.signing_in': 'Signing in…',
   'auth.sign_in_title': 'Sign in',
   'auth.sign_in_failed': 'Sign in failed',
-  'auth.sync_prompt': 'Sign in to sync',
-
-  // Topbar actions
-  'topbar.export': 'Export',
-  'topbar.unlock': 'Unlock',
-  'topbar.synced': 'Synced',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',
