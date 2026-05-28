@@ -66,3 +66,42 @@ input, textarea, select, button { font-family: inherit; }
   background-color: #1B1725;
   color: #F4EFE0;
 }
+
+/* ── StatusBadge ─────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.status-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-badge-success {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: rgba(76, 175, 80, 1);
+}
+
+.status-badge-success .status-badge-dot {
+  background-color: rgba(76, 175, 80, 1);
+}
+
+.status-badge-neutral {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #7A7788;
+}
+
+.status-badge-neutral .status-badge-dot {
+  background-color: #7A7788;
+}

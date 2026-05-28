@@ -4,6 +4,8 @@ import { formatClassesShort } from '@/domain/derived'
 import type { TabKey } from './types'
 import { Sidebar } from './Sidebar'
 import { useTranslation } from '@/i18n'
+import { StatusBadge } from '@/components/primitives/StatusBadge'
+import { useAuthStatus } from '@/hooks/useAuthStatus'
 
 const T = {
   borderSubtle: '#2A2537',
@@ -26,6 +28,7 @@ interface DesktopShellProps {
 
 export function DesktopShell({ character, activeTab, onTabChange, children }: DesktopShellProps) {
   const { t } = useTranslation()
+  const authStatus = useAuthStatus()
   return (
     <div style={{
       display: 'flex',
@@ -69,6 +72,13 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
           </div>
 
           <div style={{ flex: 1 }} />
+
+          {authStatus === 'authenticated' && (
+            <StatusBadge variant="success">{t('auth.connected')}</StatusBadge>
+          )}
+          {authStatus === 'unauthenticated' && (
+            <StatusBadge variant="neutral">{t('auth.signin_prompt')}</StatusBadge>
+          )}
 
           {([
             ['drawer.import_json', 'phase_c.editing_coming_soon'],

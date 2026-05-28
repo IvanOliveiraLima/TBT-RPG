@@ -37,6 +37,8 @@ const pt: Record<keyof typeof en, string> = {
   'drawer.lock': 'Bloquear',
 
   // Auth
+  'auth.connected':     'Conectado',
+  'auth.signin_prompt': 'Entrar',
   'auth.sign_in': 'Entrar',
   'auth.sign_out': 'Sair',
   'auth.create_account': 'Criar conta',
