@@ -236,4 +236,12 @@ describe('FeaturesList', () => {
     expect(updated.usesMax).toBe(5)
     expect(updated.usesLeft).toBe(2)
   })
+
+  // ── dark theme ────────────────────────────────────────────────────────────────
+
+  it('feature type select has dark-select class', () => {
+    renderWithI18n(<FeaturesList character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const typeSelect = screen.getByTestId('feature-type-f1')
+    expect((typeSelect as HTMLElement).classList.contains('dark-select')).toBe(true)
+  })
 })

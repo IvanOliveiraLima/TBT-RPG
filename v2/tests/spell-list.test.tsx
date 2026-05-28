@@ -229,18 +229,18 @@ describe('SpellList', () => {
     expect(checkbox.checked).toBe(false)
   })
 
-  it('level select has alignment-select class when SpellCard is expanded', () => {
+  it('level select has dark-select class when SpellCard is expanded', () => {
     renderWithI18n(<SpellList character={KAEL} onUpdate={vi.fn()} />, 'en')
     // Click the spell name span to expand s1 card
     fireEvent.click(screen.getByText('Vicious Mockery'))
     const levelSelect = screen.getByTestId('spell-level-s1')
-    expect((levelSelect as HTMLElement).classList.contains('alignment-select')).toBe(true)
+    expect((levelSelect as HTMLElement).classList.contains('dark-select')).toBe(true)
   })
 
-  it('school select has alignment-select class when SpellCard is expanded', () => {
+  it('school select has dark-select class when SpellCard is expanded', () => {
     renderWithI18n(<SpellList character={KAEL} onUpdate={vi.fn()} />, 'en')
     fireEvent.click(screen.getByText('Vicious Mockery'))
     const schoolSelect = screen.getByTestId('spell-school-s1')
-    expect((schoolSelect as HTMLElement).classList.contains('alignment-select')).toBe(true)
+    expect((schoolSelect as HTMLElement).classList.contains('dark-select')).toBe(true)
   })
 })
