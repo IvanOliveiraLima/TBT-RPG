@@ -35,6 +35,8 @@ const en = {
   'drawer.lock': 'Lock',
 
   // Auth
+  'auth.connected':     'Connected',
+  'auth.signin_prompt': 'Sign in',
   'auth.sign_in': 'Sign in',
   'auth.sign_out': 'Sign out',
   'auth.create_account': 'Create account',
