@@ -393,7 +393,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
                 value={spell.level}
                 onChange={e => onUpdate({ level: parseInt(e.target.value, 10) })}
                 data-testid={`spell-level-${spell.id}`}
-                className="alignment-select"
+                className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:        `1px solid ${T.borderSubtle}`,
@@ -415,7 +415,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
                 value={spell.school}
                 onChange={e => onUpdate({ school: e.target.value as SpellSchool })}
                 data-testid={`spell-school-${spell.id}`}
-                className="alignment-select"
+                className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:        `1px solid ${T.borderSubtle}`,

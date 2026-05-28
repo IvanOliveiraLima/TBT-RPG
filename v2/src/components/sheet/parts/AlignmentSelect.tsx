@@ -46,7 +46,7 @@ export function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
       onChange={handleChange}
       aria-label={t('aria.alignment_input')}
       data-testid="alignment-select"
-      className="alignment-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+      className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
       style={SELECT_STYLE}
     >
       <option value="">{t('identity.alignment_unselected')}</option>
