@@ -21,6 +21,14 @@
  *             to flat spells:Spell[], spellSlots:Record, spellcastingAbility, spellcastingClass (C.1.e)
  *   v6 → v7: expand InventoryItem shape — add category/description/equipped;
  *             remove EP from Currency (convert 1 EP → 5 SP) (C.1.f)
+ *   v7 → v8: HOTFIX — see v9 entry below (v8 was deployed with a bug)
+ *   v8 → v9: defensive creation of deleted_characters store (tombstones for sync).
+ *             v8 shipped with createObjectStore called AFTER async cursor awaits
+ *             inside the upgrade callback, causing the versionchange transaction
+ *             to auto-commit before the store was created. v9 moves ALL
+ *             createObjectStore calls to the synchronous header of the callback,
+ *             before any await, and the < 9 guard also heals existing broken v8
+ *             installs that reached v8 without the deleted_characters store.
  */
 
 import { openDB } from 'idb'
@@ -31,7 +39,7 @@ import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME      = 'dnd-character-sheet-v2'
-const V2_DB_VER       = 8
+const V2_DB_VER       = 9
 const V2_STORE        = 'characters'
 const TOMBSTONE_STORE = 'deleted_characters'
 
@@ -50,6 +58,16 @@ export interface DeletedCharacterTombstone {
 function openV2() {
   return openDB(V2_DB_NAME, V2_DB_VER, {
     async upgrade(db, oldVersion, _newVersion, transaction) {
+      // ── PHASE 1: schema declarations (MUST be synchronous, before any await) ──
+      //
+      // IndexedDB auto-commits the versionchange transaction when there are no
+      // pending requests and control returns to the event loop. Any `await` on
+      // an IDB request (e.g. cursor.openCursor()) gives up control, which can
+      // close the transaction before createObjectStore is reached.
+      //
+      // Rule: ALL createObjectStore / deleteObjectStore calls go here, in the
+      // synchronous top section, before any `await` in PHASE 2.
+
       if (oldVersion < 1) {
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
       }
@@ -62,6 +80,18 @@ function openV2() {
         }
         db.createObjectStore(V2_STORE, { keyPath: 'id' })
       }
+      if (oldVersion < 9) {
+        // Tombstone store for the sync layer (upload sub-fase 2.1).
+        // The guard < 9 (not < 8) also heals installs that reached v8 without
+        // this store due to the async-before-createObjectStore bug in the
+        // original v8 deployment.
+        if (!db.objectStoreNames.contains(TOMBSTONE_STORE)) {
+          db.createObjectStore(TOMBSTONE_STORE, { keyPath: 'id' })
+        }
+      }
+
+      // ── PHASE 2: data migrations (cursor-based, may use await) ───────────────
+
       if (oldVersion < 3) {
         // Add className to each hitDice entry, deriving it from classes[i].name.
         // Characters stored in v2 DB have hitDice without className (C.1.c.4 shape change).
@@ -280,13 +310,7 @@ function openV2() {
           cursor = await cursor.continue()
         }
       }
-      if (oldVersion < 8) {
-        // Add the tombstone store for propagating deletes to Supabase.
-        // Idempotent: only creates the store if not already present.
-        if (!db.objectStoreNames.contains(TOMBSTONE_STORE)) {
-          db.createObjectStore(TOMBSTONE_STORE, { keyPath: 'id' })
-        }
-      }
+      // (v8 tombstone store creation moved to PHASE 1 above — see schema v9 comment)
     },
   })
 }

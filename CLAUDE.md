@@ -698,8 +698,12 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 | v5 | `dnd-character-sheet-v2` | attacks expanded with kind/range/properties/notes (C.1.d) |
 | v6 | `dnd-character-sheet-v2` | spells expanded with school/castingTime/range/prepared; spellcasting ability/class top-level (C.1.e) |
 | v7 | `dnd-character-sheet-v2` | inventory items with category/equipped; EP removed from currency (C.1.f) |
+| v8 | `dnd-character-sheet-v2` | BUGGY — `deleted_characters` store was placed after async cursor ops; versionchange tx auto-committed before createObjectStore ran for some install paths |
+| v9 | `dnd-character-sheet-v2` | `deleted_characters` store (tombstones for sync sub-fase 2.1); createObjectStore moved to synchronous Phase 1 of upgrade callback before any `await`; also heals broken v8 installs via defensive `< 9` guard |
 
 Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idempotent.
+
+**Critical invariant:** ALL `createObjectStore` / `deleteObjectStore` calls must live in the synchronous "Phase 1" header of the `upgrade` callback, before any `await`. Data migrations (cursor-based) go in "Phase 2" after all stores are declared. See db.ts comments.
 
 ---
 

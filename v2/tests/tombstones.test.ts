@@ -84,6 +84,11 @@ function resetMockImplementations() {
   })
 }
 
+function makeTransactionMock() {
+  const mockObjectStore = { openCursor: vi.fn().mockResolvedValue(null) }
+  return { objectStore: vi.fn().mockReturnValue(mockObjectStore) }
+}
+
 function seedTombstone(overrides: Partial<DeletedCharacterTombstone> = {}): DeletedCharacterTombstone {
   const t: DeletedCharacterTombstone = {
     id: 'char_001', deletedAt: 1700000000000, userId: 'user_001', synced: false,
@@ -93,10 +98,33 @@ function seedTombstone(overrides: Partial<DeletedCharacterTombstone> = {}): Dele
   return t
 }
 
-// ── Schema migration ──────────────────────────────────────────────────────────
+// ── Schema migration (v9 — Phase 1 synchronous createObjectStore) ─────────────
+//
+// The upgrade callback is split into two phases:
+//   Phase 1 (sync): all createObjectStore / deleteObjectStore calls
+//   Phase 2 (async): cursor-based data migrations
+// This prevents the versionchange transaction from auto-committing before
+// createObjectStore runs when earlier data-migration phases use await.
 
-describe('Schema migration v7 → v8 (deleted_characters store)', () => {
-  it('createObjectStore is called with deleted_characters keyPath when store is missing', async () => {
+describe('Schema migration → v9 (deleted_characters store)', () => {
+  it('creates deleted_characters store from fresh install (oldVersion = 0)', async () => {
+    const { openDB } = await import('idb')
+    const upgradeMock = vi.fn()
+    vi.mocked(openDB).mockImplementationOnce((_name, _version, opts) => {
+      const fakeDb = {
+        objectStoreNames: makeObjectStoreNames([]),
+        createObjectStore: upgradeMock,
+        deleteObjectStore: vi.fn(),
+      }
+      const txMock = makeTransactionMock()
+      opts?.upgrade?.(fakeDb as never, 0, 9, txMock as never, {} as never)
+      return Promise.resolve(mockDB)
+    })
+    await createTombstone('char_x', 'user_x')
+    expect(upgradeMock).toHaveBeenCalledWith('deleted_characters', { keyPath: 'id' })
+  })
+
+  it('creates deleted_characters store when upgrading from v7', async () => {
     const { openDB } = await import('idb')
     const upgradeMock = vi.fn()
     vi.mocked(openDB).mockImplementationOnce((_name, _version, opts) => {
@@ -104,9 +132,26 @@ describe('Schema migration v7 → v8 (deleted_characters store)', () => {
         objectStoreNames: makeObjectStoreNames(['characters']),
         createObjectStore: upgradeMock,
         deleteObjectStore: vi.fn(),
-        transaction: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 7, 8, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
+      return Promise.resolve(mockDB)
+    })
+    await createTombstone('char_x', 'user_x')
+    expect(upgradeMock).toHaveBeenCalledWith('deleted_characters', { keyPath: 'id' })
+  })
+
+  it('heals broken v8 install (v8 without deleted_characters → v9)', async () => {
+    // v8 was deployed with createObjectStore AFTER awaits, so some installs
+    // reached v8 without the deleted_characters store. v9 defensive fix.
+    const { openDB } = await import('idb')
+    const upgradeMock = vi.fn()
+    vi.mocked(openDB).mockImplementationOnce((_name, _version, opts) => {
+      const fakeDb = {
+        objectStoreNames: makeObjectStoreNames(['characters']),  // broken: missing tombstone store
+        createObjectStore: upgradeMock,
+        deleteObjectStore: vi.fn(),
+      }
+      opts?.upgrade?.(fakeDb as never, 8, 9, {} as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
@@ -121,16 +166,15 @@ describe('Schema migration v7 → v8 (deleted_characters store)', () => {
         objectStoreNames: makeObjectStoreNames(['characters', 'deleted_characters']),
         createObjectStore: upgradeMock,
         deleteObjectStore: vi.fn(),
-        transaction: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 7, 8, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
-    expect(upgradeMock).not.toHaveBeenCalled()
+    expect(upgradeMock).not.toHaveBeenCalledWith('deleted_characters', expect.anything())
   })
 
-  it('characters store is preserved across v8 migration', async () => {
+  it('characters store is preserved across v9 migration', async () => {
     const { openDB } = await import('idb')
     const deleteStoreMock = vi.fn()
     vi.mocked(openDB).mockImplementationOnce((_name, _version, opts) => {
@@ -138,9 +182,8 @@ describe('Schema migration v7 → v8 (deleted_characters store)', () => {
         objectStoreNames: makeObjectStoreNames(['characters', 'deleted_characters']),
         createObjectStore: vi.fn(),
         deleteObjectStore: deleteStoreMock,
-        transaction: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 7, 8, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
