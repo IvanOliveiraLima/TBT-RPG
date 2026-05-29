@@ -36,6 +36,9 @@ const en = {
 
   // Auth
   'auth.connected':     'Connected',
+  'auth.syncing':       'Syncing…',
+  'auth.offline':       'Offline',
+  'auth.sync_error':    'Sync error',
   'auth.signin_prompt': 'Sign in',
   'auth.sign_in': 'Sign in',
   'auth.sign_out': 'Sign out',
