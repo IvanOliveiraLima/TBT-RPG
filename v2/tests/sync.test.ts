@@ -2,29 +2,37 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Character } from '@/domain/character'
 import type { DeletedCharacterTombstone } from '@/data/db'
 
-// ── Mock @/data/db (tombstone operations) ─────────────────────────────────────
+// ── Mock @/data/db ────────────────────────────────────────────────────────────
 
 const mockGetPendingTombstones = vi.fn<[], Promise<DeletedCharacterTombstone[]>>()
 const mockRemoveTombstone      = vi.fn<[string], Promise<void>>()
+const mockListCharacters       = vi.fn<[], Promise<Character[]>>()
+const mockImportCharacter      = vi.fn<[Character], Promise<void>>()
 
 vi.mock('@/data/db', () => ({
   getPendingTombstones: (...a: unknown[]) => mockGetPendingTombstones(...(a as [])),
   removeTombstone:      (...a: unknown[]) => mockRemoveTombstone(...(a as [string])),
-  // Other DB exports used by characters store — not relevant here
-  listCharacters:   vi.fn(),
-  saveCharacter:    vi.fn(),
-  deleteCharacter:  vi.fn(),
-  createTombstone:  vi.fn(),
+  listCharacters:       (...a: unknown[]) => mockListCharacters(...(a as [])),
+  importCharacter:      (...a: unknown[]) => mockImportCharacter(...(a as [Character])),
+  // Other DB exports not exercised in these tests
+  getCharacter:        vi.fn().mockResolvedValue(null),
+  saveCharacter:       vi.fn(),
+  deleteCharacter:     vi.fn(),
+  createTombstone:     vi.fn(),
   markTombstoneSynced: vi.fn(),
 }))
 
 // ── Mock @/store/characters ───────────────────────────────────────────────────
 
 const mockCharacters: Character[] = []
+const mockFetchCharacters = vi.fn<[], Promise<void>>()
 
 vi.mock('@/store/characters', () => ({
   useCharactersStore: {
-    getState: () => ({ characters: mockCharacters }),
+    getState: () => ({
+      characters: mockCharacters,
+      fetchCharacters: mockFetchCharacters,
+    }),
   },
 }))
 
@@ -48,13 +56,23 @@ const mockUpsert = vi.fn()
 const mockDeleteQuery = vi.fn()
 const mockStorageUpload = vi.fn()
 
+// maybeSingle for LWW upload check — default: null (no cloud row, proceed with upload)
+const mockMaybySingle = vi.fn().mockResolvedValue({ data: null })
+
 const mockFrom = vi.fn().mockImplementation(() => ({
+  select: () => ({
+    eq: () => ({
+      maybeSingle: mockMaybySingle,
+      returns: vi.fn().mockResolvedValue({ data: [], error: null }),
+    }),
+  }),
   upsert: mockUpsert,
   delete: () => ({ eq: mockDeleteQuery }),
 }))
 
 const mockStorageFrom = vi.fn().mockImplementation(() => ({
   upload: mockStorageUpload,
+  list:   vi.fn().mockResolvedValue({ data: [], error: null }),
 }))
 
 const mockClient = {
@@ -170,13 +188,15 @@ describe('syncAll — offline', () => {
 describe('syncAll — happy path (logged in, online)', () => {
   beforeEach(() => {
     setupLoggedIn()
+    vi.clearAllMocks()
     mockGetPendingTombstones.mockResolvedValue([])
     mockRemoveTombstone.mockResolvedValue(undefined)
     mockUpsert.mockResolvedValue({ error: null })
     mockDeleteImages.mockResolvedValue(undefined)
-    vi.clearAllMocks()
-    mockGetPendingTombstones.mockResolvedValue([])
-    mockUpsert.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
@@ -230,6 +250,10 @@ describe('syncAll — tombstone processing', () => {
     mockDeleteImages.mockResolvedValue(undefined)
     mockRemoveTombstone.mockResolvedValue(undefined)
     mockDeleteQuery.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
@@ -276,6 +300,10 @@ describe('syncAll — status listeners', () => {
     mockCharacters.length = 0
     mockGetPendingTombstones.mockResolvedValue([])
     mockUpsert.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
@@ -306,6 +334,10 @@ describe('scheduleEditSync', () => {
     mockCharacters.length = 0
     mockGetPendingTombstones.mockResolvedValue([])
     mockUpsert.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
@@ -355,6 +387,10 @@ describe('startPeriodicSync / stopPeriodicSync', () => {
     mockCharacters.length = 0
     mockGetPendingTombstones.mockResolvedValue([])
     mockUpsert.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
