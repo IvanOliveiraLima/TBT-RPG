@@ -20,6 +20,13 @@ function setAuthState(state: { loading: boolean; user: User | null }) {
   )
 }
 
+// ── mock @/services/sync (so useAuthStatus doesn't pull in real sync state) ───
+
+vi.mock('@/services/sync', () => ({
+  getSyncStatus:      () => 'idle' as const,
+  onSyncStatusChange: () => () => undefined,  // returns no-op unsubscribe
+}))
+
 // ── StatusBadge component ─────────────────────────────────────────────────────
 
 describe('StatusBadge', () => {
@@ -90,9 +97,9 @@ describe('useAuthStatus', () => {
     expect(result.current).toBe('unauthenticated')
   })
 
-  it('returns "authenticated" when loading is false and user exists', () => {
+  it('returns "authenticated_idle" when loading is false and user exists (sync idle)', () => {
     setAuthState({ loading: false, user: { id: 'u1', email: 'a@b.com' } as User })
     const { result } = renderHook(() => useAuthStatus())
-    expect(result.current).toBe('authenticated')
+    expect(result.current).toBe('authenticated_idle')
   })
 })

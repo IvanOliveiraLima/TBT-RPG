@@ -38,6 +38,9 @@ const pt: Record<keyof typeof en, string> = {
 
   // Auth
   'auth.connected':     'Conectado',
+  'auth.syncing':       'Sincronizando…',
+  'auth.offline':       'Offline',
+  'auth.sync_error':    'Erro de sincronização',
   'auth.signin_prompt': 'Entrar',
   'auth.sign_in': 'Entrar',
   'auth.sign_out': 'Sair',

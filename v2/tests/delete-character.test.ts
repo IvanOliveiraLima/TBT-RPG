@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mock @/data/db ────────────────────────────────────────────────────────────
-const mockDeleteFromDB = vi.fn().mockResolvedValue(undefined)
+const mockDeleteFromDB   = vi.fn().mockResolvedValue(undefined)
+const mockCreateTombstone = vi.fn().mockResolvedValue(undefined)
+const mockRemoveTombstone = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@/data/db', () => ({
-  listCharacters:  vi.fn(),
-  getCharacter:    vi.fn(),
-  saveCharacter:   vi.fn(),
-  deleteCharacter: (...args: unknown[]) => mockDeleteFromDB(...args),
+  listCharacters:      vi.fn(),
+  getCharacter:        vi.fn(),
+  saveCharacter:       vi.fn(),
+  deleteCharacter:     (...args: unknown[]) => mockDeleteFromDB(...args),
+  createTombstone:     (...args: unknown[]) => mockCreateTombstone(...args),
+  removeTombstone:     (...args: unknown[]) => mockRemoveTombstone(...args),
+  getPendingTombstones: vi.fn().mockResolvedValue([]),
+  markTombstoneSynced:  vi.fn().mockResolvedValue(undefined),
 }))
 
 // ── Mock @/lib/supabase ───────────────────────────────────────────────────────
@@ -193,6 +199,64 @@ describe('deleteCharacterService — partial cloud failure', () => {
     expect(result.storageOk).toBe(false)
     expect(result.errors).toContain('storage_delete_failed')
     // must not throw
+  })
+})
+
+// ── deleteCharacterService — tombstone behavior ───────────────────────────────
+
+describe('deleteCharacterService — tombstone behavior', () => {
+  const mockDeleteEq = vi.fn().mockResolvedValue({ error: null })
+  const mockDeleteFn = vi.fn().mockReturnValue({ eq: mockDeleteEq })
+  const mockListFn   = vi.fn().mockResolvedValue({ data: [], error: null })
+  const mockRemoveFn = vi.fn().mockResolvedValue({ error: null })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDeleteFromDB.mockResolvedValue(undefined)
+    mockCreateTombstone.mockResolvedValue(undefined)
+    mockRemoveTombstone.mockResolvedValue(undefined)
+  })
+
+  it('creates tombstone when user is logged in', async () => {
+    setupSupabase('user_001')
+    mockFrom.mockReturnValue({ delete: mockDeleteFn })
+    mockStorageFrom.mockReturnValue({ list: mockListFn, remove: mockRemoveFn })
+    await deleteCharacterService('char_001')
+    expect(mockCreateTombstone).toHaveBeenCalledWith('char_001', 'user_001')
+  })
+
+  it('does not create tombstone when not logged in', async () => {
+    resetSupabase()
+    await deleteCharacterService('char_001')
+    expect(mockCreateTombstone).not.toHaveBeenCalled()
+  })
+
+  it('removes tombstone when cloud + storage both succeed', async () => {
+    setupSupabase('user_001')
+    mockFrom.mockReturnValue({ delete: mockDeleteFn })
+    mockStorageFrom.mockReturnValue({ list: mockListFn, remove: mockRemoveFn })
+    await deleteCharacterService('char_001')
+    expect(mockRemoveTombstone).toHaveBeenCalledWith('char_001')
+  })
+
+  it('keeps tombstone pending when cloud delete fails', async () => {
+    setupSupabase('user_001')
+    const badEq = vi.fn().mockResolvedValue({ error: new Error('cloud fail') })
+    mockFrom.mockReturnValue({ delete: vi.fn().mockReturnValue({ eq: badEq }) })
+    mockStorageFrom.mockReturnValue({ list: mockListFn, remove: mockRemoveFn })
+    await deleteCharacterService('char_001')
+    expect(mockRemoveTombstone).not.toHaveBeenCalled()
+  })
+
+  it('keeps tombstone pending when storage delete fails', async () => {
+    setupSupabase('user_001')
+    mockFrom.mockReturnValue({ delete: mockDeleteFn })
+    mockStorageFrom.mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: [{ name: 'p.jpg' }], error: null }),
+      remove: vi.fn().mockResolvedValue({ error: new Error('storage fail') }),
+    })
+    await deleteCharacterService('char_001')
+    expect(mockRemoveTombstone).not.toHaveBeenCalled()
   })
 })
 
