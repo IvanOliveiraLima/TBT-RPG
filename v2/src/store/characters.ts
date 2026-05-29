@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { listCharacters, saveCharacter } from '@/data/db'
 import { deleteCharacterService } from '@/services/delete-character'
+import { scheduleEditSync } from '@/services/sync'
 import type { Character } from '@/domain/character'
 
 const SAVE_DEBOUNCE_MS = 800
@@ -45,6 +46,7 @@ export const useCharactersStore = create<CharactersState>((set, get) => ({
   addCharacter: async (character) => {
     await saveCharacter(character)
     set(state => ({ characters: [...state.characters, character] }))
+    scheduleEditSync()
   },
 
   deleteCharacter: async (id) => {
@@ -89,6 +91,8 @@ export const useCharactersStore = create<CharactersState>((set, get) => ({
       }
     }, SAVE_DEBOUNCE_MS)
     saveTimers.set(id, timer)
+
+    scheduleEditSync()
   },
 
   flushPendingSaves: async () => {
