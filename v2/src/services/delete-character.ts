@@ -4,16 +4,15 @@
  * Always deletes from local IndexedDB first. If that fails, throws
  * DeleteCharacterError('local_delete_failed') — nothing else runs.
  *
- * If the Supabase client is configured and the user is logged in, also
- * attempts to delete the row from the characters table and any uploaded
- * images from the character-images bucket. These operations are
- * best-effort: failures are collected in `result.errors` but do NOT
- * abort the flow. The character is gone locally regardless.
- *
- * v2 has no tombstone/sync layer yet — cloud delete is fire-and-forget.
+ * When the user is logged in:
+ *  1. Creates a tombstone (ensures eventual cloud propagation even if offline)
+ *  2. Attempts immediate cloud delete (best-effort)
+ *  3. Attempts immediate Storage cleanup (best-effort)
+ *  If both cloud + storage succeed, removes the tombstone (sync already done).
+ *  If either fails, tombstone stays pending — sync service retries on next cycle.
  */
 
-import { deleteCharacter as deleteFromDB } from '@/data/db'
+import { deleteCharacter as deleteFromDB, createTombstone, removeTombstone } from '@/data/db'
 import { supabase, getSession } from '@/lib/supabase'
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -69,7 +68,10 @@ export async function deleteCharacterService(characterId: string): Promise<Delet
 
   const userId = session.user.id
 
-  // 2a. Delete row from characters table
+  // 2a. Tombstone — guarantees eventual cloud propagation (even if offline)
+  await createTombstone(characterId, userId)
+
+  // 2b. Delete row from characters table (best-effort; tombstone retries if fails)
   try {
     const { error } = await supabase
       .from('characters')
@@ -79,16 +81,21 @@ export async function deleteCharacterService(characterId: string): Promise<Delet
     result.cloudOk = true
   } catch {
     result.errors.push('cloud_delete_failed')
-    // non-fatal — continue to storage
+    // non-fatal — tombstone will retry on next sync cycle
   }
 
-  // 2b. Delete uploaded images from the character-images bucket
+  // 2c. Delete uploaded images from the character-images bucket (best-effort)
   try {
     await deleteCharacterImages(userId, characterId)
     result.storageOk = true
   } catch {
     result.errors.push('storage_delete_failed')
-    // non-fatal
+    // non-fatal — tombstone handles cleanup
+  }
+
+  // If both cloud operations succeeded, remove the tombstone (sync done immediately)
+  if (result.cloudOk && result.storageOk) {
+    await removeTombstone(characterId)
   }
 
   return result
@@ -96,7 +103,8 @@ export async function deleteCharacterService(characterId: string): Promise<Delet
 
 // ── Storage helper ────────────────────────────────────────────────────────
 
-async function deleteCharacterImages(userId: string, characterId: string): Promise<void> {
+/** Exported for use by the sync service when processing tombstones. */
+export async function deleteCharacterImages(userId: string, characterId: string): Promise<void> {
   if (!supabase) return
 
   const prefix = `${userId}/${characterId}`
