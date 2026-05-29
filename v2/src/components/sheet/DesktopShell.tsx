@@ -73,8 +73,17 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
 
           <div style={{ flex: 1 }} />
 
-          {authStatus === 'authenticated' && (
+          {authStatus === 'authenticated_idle' && (
             <StatusBadge variant="success">{t('auth.connected')}</StatusBadge>
+          )}
+          {authStatus === 'authenticated_syncing' && (
+            <StatusBadge variant="success">{t('auth.syncing')}</StatusBadge>
+          )}
+          {authStatus === 'authenticated_offline' && (
+            <StatusBadge variant="neutral">{t('auth.offline')}</StatusBadge>
+          )}
+          {authStatus === 'authenticated_error' && (
+            <StatusBadge variant="neutral">{t('auth.sync_error')}</StatusBadge>
           )}
           {authStatus === 'unauthenticated' && (
             <StatusBadge variant="neutral">{t('auth.signin_prompt')}</StatusBadge>
