@@ -30,9 +30,19 @@ import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
 
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
-const V2_DB_NAME = 'dnd-character-sheet-v2'
-const V2_DB_VER  = 7
-const V2_STORE   = 'characters'
+const V2_DB_NAME      = 'dnd-character-sheet-v2'
+const V2_DB_VER       = 8
+const V2_STORE        = 'characters'
+const TOMBSTONE_STORE = 'deleted_characters'
+
+// ── Tombstone shape ────────────────────────────────────────────────────────
+
+export interface DeletedCharacterTombstone {
+  id:        string   // character id
+  deletedAt: number   // Date.now()
+  userId:    string   // who deleted (validated in sync)
+  synced:    boolean  // false = pending propagation, true = propagated
+}
 
 /* ── DB opener ────────────────────────────────────────────────────────── */
 
@@ -268,6 +278,13 @@ function openV2() {
 
           if (updated) await cursor.update(char)
           cursor = await cursor.continue()
+        }
+      }
+      if (oldVersion < 8) {
+        // Add the tombstone store for propagating deletes to Supabase.
+        // Idempotent: only creates the store if not already present.
+        if (!db.objectStoreNames.contains(TOMBSTONE_STORE)) {
+          db.createObjectStore(TOMBSTONE_STORE, { keyPath: 'id' })
         }
       }
     },
@@ -511,6 +528,68 @@ export async function deleteCharacter(id: string): Promise<void> {
   const db = await openV2()
   try {
     await db.delete(V2_STORE, id)
+  } finally {
+    db.close()
+  }
+}
+
+/* ── Tombstone operations ─────────────────────────────────────────────── */
+
+/**
+ * Record a soft-delete tombstone so the sync layer can propagate the
+ * deletion to Supabase. Only called when the user is logged in — offline
+ * deletions do not generate tombstones (no user to attribute them to).
+ */
+export async function createTombstone(characterId: string, userId: string): Promise<void> {
+  const db = await openV2()
+  try {
+    await db.put(TOMBSTONE_STORE, {
+      id:        characterId,
+      deletedAt: Date.now(),
+      userId,
+      synced:    false,
+    } satisfies DeletedCharacterTombstone)
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Returns all tombstones that have not yet been propagated to Supabase.
+ */
+export async function getPendingTombstones(): Promise<DeletedCharacterTombstone[]> {
+  const db = await openV2()
+  try {
+    const all = await db.getAll(TOMBSTONE_STORE) as DeletedCharacterTombstone[]
+    return all.filter(t => !t.synced)
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Mark a tombstone as successfully propagated. Keeps the record for TTL
+ * purposes; a future cleanup pass can remove old synced tombstones.
+ */
+export async function markTombstoneSynced(id: string): Promise<void> {
+  const db = await openV2()
+  try {
+    const tombstone = await db.get(TOMBSTONE_STORE, id) as DeletedCharacterTombstone | undefined
+    if (tombstone) {
+      await db.put(TOMBSTONE_STORE, { ...tombstone, synced: true })
+    }
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * Remove a tombstone entirely (used after confirmed cloud propagation).
+ */
+export async function removeTombstone(id: string): Promise<void> {
+  const db = await openV2()
+  try {
+    await db.delete(TOMBSTONE_STORE, id)
   } finally {
     db.close()
   }
