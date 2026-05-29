@@ -97,15 +97,15 @@ describe('DesktopShell — auth badge', () => {
     expect(screen.getByText('Sign in')).toBeDefined()
   })
 
-  it('shows PT "Conectado" badge when authenticated', () => {
-    mockStatus.mockReturnValue('authenticated')
+  it('shows PT "Conectado" badge when authenticated_idle', () => {
+    mockStatus.mockReturnValue('authenticated_idle')
     renderDesktop('pt')
     expect(screen.getByTestId('status-badge-success')).toBeDefined()
     expect(screen.getByText('Conectado')).toBeDefined()
   })
 
-  it('shows EN "Connected" badge when authenticated', () => {
-    mockStatus.mockReturnValue('authenticated')
+  it('shows EN "Connected" badge when authenticated_idle', () => {
+    mockStatus.mockReturnValue('authenticated_idle')
     renderDesktop('en')
     expect(screen.getByTestId('status-badge-success')).toBeDefined()
     expect(screen.getByText('Connected')).toBeDefined()
@@ -116,6 +116,41 @@ describe('DesktopShell — auth badge', () => {
     renderDesktop('pt')
     expect(screen.queryByTestId('status-badge-success')).toBeNull()
     expect(screen.queryByTestId('status-badge-neutral')).toBeNull()
+  })
+
+  it('shows PT "Sincronizando…" badge when authenticated_syncing', () => {
+    mockStatus.mockReturnValue('authenticated_syncing')
+    renderDesktop('pt')
+    expect(screen.getByTestId('status-badge-success')).toBeDefined()
+    expect(screen.getByText('Sincronizando…')).toBeDefined()
+  })
+
+  it('shows EN "Syncing…" badge when authenticated_syncing', () => {
+    mockStatus.mockReturnValue('authenticated_syncing')
+    renderDesktop('en')
+    expect(screen.getByTestId('status-badge-success')).toBeDefined()
+    expect(screen.getByText('Syncing…')).toBeDefined()
+  })
+
+  it('shows PT "Offline" badge when authenticated_offline', () => {
+    mockStatus.mockReturnValue('authenticated_offline')
+    renderDesktop('pt')
+    expect(screen.getByTestId('status-badge-neutral')).toBeDefined()
+    expect(screen.getByText('Offline')).toBeDefined()
+  })
+
+  it('shows PT "Erro de sincronização" badge when authenticated_error', () => {
+    mockStatus.mockReturnValue('authenticated_error')
+    renderDesktop('pt')
+    expect(screen.getByTestId('status-badge-neutral')).toBeDefined()
+    expect(screen.getByText('Erro de sincronização')).toBeDefined()
+  })
+
+  it('shows EN "Sync error" badge when authenticated_error', () => {
+    mockStatus.mockReturnValue('authenticated_error')
+    renderDesktop('en')
+    expect(screen.getByTestId('status-badge-neutral')).toBeDefined()
+    expect(screen.getByText('Sync error')).toBeDefined()
   })
 
   it('badge appears before the Import button in DOM order', () => {
@@ -145,8 +180,8 @@ describe('MobileShell — auth badge', () => {
     expect(screen.getByText('Entrar')).toBeDefined()
   })
 
-  it('drawer header shows PT "Conectado" badge when authenticated', () => {
-    mockStatus.mockReturnValue('authenticated')
+  it('drawer header shows PT "Conectado" badge when authenticated_idle', () => {
+    mockStatus.mockReturnValue('authenticated_idle')
     renderMobile('pt')
     fireEvent.click(screen.getByRole('button', { name: /abrir menu|open menu/i }))
     expect(screen.getByTestId('status-badge-success')).toBeDefined()
@@ -161,6 +196,22 @@ describe('MobileShell — auth badge', () => {
     expect(screen.queryByTestId('status-badge-neutral')).toBeNull()
   })
 
+  it('drawer shows PT "Sincronizando…" badge when authenticated_syncing', () => {
+    mockStatus.mockReturnValue('authenticated_syncing')
+    renderMobile('pt')
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu|open menu/i }))
+    expect(screen.getByTestId('status-badge-success')).toBeDefined()
+    expect(screen.getByText('Sincronizando…')).toBeDefined()
+  })
+
+  it('drawer shows "Offline" badge when authenticated_offline', () => {
+    mockStatus.mockReturnValue('authenticated_offline')
+    renderMobile('pt')
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu|open menu/i }))
+    expect(screen.getByTestId('status-badge-neutral')).toBeDefined()
+    expect(screen.getByText('Offline')).toBeDefined()
+  })
+
   it('badge label matches desktop for same language/state (PT unauthenticated)', () => {
     mockStatus.mockReturnValue('unauthenticated')
     renderMobile('pt')
@@ -168,8 +219,8 @@ describe('MobileShell — auth badge', () => {
     expect(screen.getByText('Entrar')).toBeDefined()
   })
 
-  it('badge label matches desktop for same language/state (EN authenticated)', () => {
-    mockStatus.mockReturnValue('authenticated')
+  it('badge label matches desktop for same language/state (EN authenticated_idle)', () => {
+    mockStatus.mockReturnValue('authenticated_idle')
     renderMobile('en')
     fireEvent.click(screen.getByRole('button', { name: /abrir menu|open menu/i }))
     expect(screen.getByText('Connected')).toBeDefined()
