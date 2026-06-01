@@ -2,36 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Monorepo structure
+## Structure
 
-This repo uses a **lightweight monorepo** with two independent projects:
-- Root (`./`) — **v1**, vanilla JS + W3.CSS, the current production version
-- `v2/` — **v2 rewrite**, React + TypeScript + Tailwind CSS, in active development
+React 19 + TypeScript + Vite application at the repository root.
+v1 (vanilla JS) was removed in the `refactor/promote-v2-to-root` refactor; tag `v1-final`
+preserves it for historical reference.
 
-v1 is live at `ivanoliveiralima.github.io/TBT-RPG/`, v2 preview at `.../TBT-RPG/v2/`.
+Live at `ivanoliveiralima.github.io/TBT-RPG/`.
 
 ## Commands
 
-### v1 (root)
 ```bash
 npm run dev        # Start Vite dev server at http://localhost:5173
-npm run build      # Production build → dist/
+npm run build      # tsc -b && vite build → dist/
 npm run preview    # Preview production build locally
-npm run lint       # ESLint on js/ folder
+npm run lint       # ESLint
 npm run test       # Run Vitest (single run)
 npm run test:watch # Run tests in watch mode
 ```
 
-### v2 (cd v2/)
-```bash
-npm run dev        # http://localhost:5173
-npm run build      # dist/
-npm run lint       # ESLint
-npm run test       # Vitest single run
-npm run test:watch
-```
-
-CI runs lint + test + build for **both** v1 and v2 on PRs to `main-dev` and `master`.
+CI runs lint + test + build on PRs to `main-dev` and `master`.
 
 To redeploy the Cloudflare Worker (manual step — not in CI):
 
@@ -43,91 +33,31 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 
 ## Architecture
 
-**Vanilla JS SPA** — no framework. Pure DOM manipulation, ES6 modules, Vite for bundling, IndexedDB (via `idb` library) for persistence, PWA-capable. Phases completed: responsive UI, IndexedDB + PWA, multi-character support, AI character generation via Cloudflare Workers (Fase 4), cloud sync via Supabase (auth + PostgreSQL + Storage) (Fase 5). Post-Phase 5 additions: D6 dice icon, bilingual UI (EN/PT) via DOM text walker, AI generation language toggle (EN/PT), and AI security hardening (rate limiting, prompt injection protection, JSON validation).
-
-### Module responsibilities
-
-| File | Role |
-|------|------|
-| `js/main.js` | Boot sequence: run migrations, check session, route to sheet or character select |
-| `js/app.js` | Page navigation, sidebar toggle, expandable sections |
-| `js/save.js` | Read DOM → JSON, schema validation, auto-save debounce (800ms) |
-| `js/load.js` | JSON → populate DOM form fields |
-| `js/changes.js` | Input event handlers, reactive D&D calculations (ability scores → modifiers → skills/saves) |
-| `js/add-attack.js` | Add/remove attack and spell rows |
-| `js/modules/storage.js` | IndexedDB CRUD abstraction — only module that touches IndexedDB |
-| `js/modules/calculations.js` | Pure D&D math (ability modifiers, currency conversion) |
-| `js/modules/character-select.js` | Character select screen: create, open, duplicate, delete, import/export |
-| `js/modules/utils.js` | Pure helpers: parsers, validators, D&D lookup tables |
-| `js/modules/ai-generate.js` | Fetch wrapper for the Cloudflare Worker AI endpoint |
-| `js/modules/ai-modal.js` | AI generation modal: open/close/submit, apply generated data to DOM |
-| `js/modules/i18n.js` | Dicionário PT-BR aplicado via DOM text walker — sem atributos `data-i18n` |
-| `js/modules/supabase.js` | Inicialização do cliente Supabase — null se variáveis não configuradas |
-| `js/modules/auth.js` | Autenticação: sign in/up/out, restauração de sessão, listeners de estado |
-| `js/modules/auth-modal.js` | Modal de login/cadastro, handlers de formulário |
-| `js/modules/sync.js` | Sync bidirecional IndexedDB ↔ Supabase, tombstones, debounce de 15s |
-| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3 8B), handles CORS |
-
-### Data flow
-
-```
-IndexedDB → loadCharacter(id) → applyLoadedSheet() → DOM
-DOM ← changes.js event handlers ← user input
-DOM → readFormValues() [save.js] → debounced saveCharacter() → IndexedDB
-```
-
-### Boot sequence (`main.js`)
-
-1. Migrate legacy localStorage (`dnd_sheet_v1`) → IndexedDB
-2. Migrate legacy `'active'` record → `char_${timestamp}_${random}` ID
-3. Check `sessionStorage.activeCharacterId`
-4. If found: load character, show `#sheet-wrapper`; if not: show `#character-select-screen`
-
-### Key patterns
-
-- **State:** No global store — UI state lives in DOM form fields. Active character ID in `sessionStorage`. All persistent data in IndexedDB (schema version 2).
-- **Lock mode:** `LOCKED` flag in `changes.js` disables auto-recalculation so users can manually override computed fields.
-- **Multi-class:** `basic_info.classes` is an array of `{name, level}`; `calculateTotalClassLevel()` sums them. Legacy single-class strings are migrated on load.
-- **Images:** Stored as data URLs inside the character JSON, max 2MB, capped at 600px (character) / 300px (symbol).
-- **Background skill proficiencies:** `BACKGROUND_FIXED_SKILLS_MAP` and `BACKGROUND_FLEXIBLE_SET` in `changes.js` auto-apply proficiency checkboxes when background changes, and undo them on background change.
-- **Inline `onclick`:** Many HTML elements use `onclick="..."` calling functions exposed on `window` in `main.js`. This is intentional — don't refactor to `addEventListener` in bulk.
-- **Sync offline-first:** IndexedDB é sempre a fonte primária. Supabase é camada opcional. App funciona sem credenciais configuradas.
-- **Bilingual UI:** `i18n.js` walks the DOM replacing English text with PT-BR from a dictionary. No `data-i18n` attributes — it scans text nodes directly and is called explicitly at boot and after dynamic content renders.  Language preference persists in `localStorage`.
-- **AI language toggle:** The generation modal includes an EN/PT radio toggle that passes `lang` to the Worker. When `lang === 'pt'`, the Worker uses `SYSTEM_PROMPT_PT` to instruct Llama 3 to produce free-text fields (personality, ideals, bonds, flaws, backstory) in Brazilian Portuguese.
-- **Worker security hardening:** Rate limiting per IP, prompt injection protection on the user input, structural validation of the returned JSON via `validateCharacterJSON`, and user-friendly error messages. `max_tokens` kept at 1024 — occasional truncation is handled gracefully by the validator.
-- **Tombstones:** exclusões enquanto logado criam registro em `deleted_characters` no IndexedDB. O sync propaga o delete para o Supabase e limpa o tombstone. Exclusões offline não geram tombstone.
-- **Variáveis de ambiente:** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` via `.env.local` (não commitado). Secrets configurados no GitHub Actions para CI e deploy.
-
-### Testing
-
-Tests live in `/tests/`. The `idb` library is mocked via `vi.mock('idb')` with an in-memory `Map`. Tests cover pure calculations (`calculations.test.js`), storage CRUD + migrations (`storage.test.js`), and utility functions (`utils.test.js`).
-
-## v2 Architecture
-
 **React 19 + TypeScript 6 + Tailwind CSS 3 + Vite 8**
 
 | File | Role |
 |------|------|
-| `v2/src/domain/character.ts` | Domain model for v2-native `Character` — canonical shape all UI components consume |
-| `v2/src/data/db.ts` | IndexedDB wrapper: v2-native, stores `Character` directly (version 7) |
-| `v2/src/data/canonical/item-categories.ts` | `ITEM_CATEGORIES` array + `isValidCategory()` guard |
-| `v2/src/data/migration.ts` | One-time v1→v2 migration via `migrateV1Characters()` |
-| `v2/src/lib/supabase.ts` | Supabase client singleton (same project as v1) |
-| `v2/src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
-| `v2/src/store/characters.ts` | Zustand characters store — single source of truth for all character data; `updateCharacter(id, partial)` does optimistic in-memory update + 800ms debounced IndexedDB persist |
-| `v2/src/store/character.ts` | Zustand UI store — holds only `activeId` (the id of the character open in the sheet) and loading/error state; exports `useActiveCharacter()` derived hook |
-| `v2/src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
-| `v2/src/pages/Login.tsx` | Login page (email + password via Supabase) |
-| `v2/src/routes.tsx` | React Router v6 config (/, /login, * → /) |
-| `v2/tests/db.test.ts` | Basic test for IndexedDB wrapper |
-| `v2/src/i18n/index.ts` | Re-exports: `I18nProvider`, `useTranslation`, `pluralKey`, types |
-| `v2/src/i18n/i18n.tsx` | `I18nProvider` — holds lang state, `setLang`, `t()` function |
-| `v2/src/i18n/dictionaries/en.ts` | English dictionary — source of truth for all keys |
-| `v2/src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
-| `v2/src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
-| `v2/tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
+| `src/domain/character.ts` | Domain model — canonical `Character` shape all UI components consume |
+| `src/data/db.ts` | IndexedDB wrapper: `dnd-character-sheet-v2` v9, stores `Character` directly |
+| `src/data/canonical/item-categories.ts` | `ITEM_CATEGORIES` array + `isValidCategory()` guard |
+| `src/lib/supabase.ts` | Supabase client singleton |
+| `src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
+| `src/store/characters.ts` | Zustand characters store — single source of truth for all character data; `updateCharacter(id, partial)` does optimistic in-memory update + 800ms debounced IndexedDB persist |
+| `src/store/character.ts` | Zustand UI store — holds only `activeId` (the id of the character open in the sheet) and loading/error state; exports `useActiveCharacter()` derived hook |
+| `src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
+| `src/pages/Login.tsx` | Login page (email + password via Supabase) |
+| `src/routes.tsx` | React Router v6 config (/, /login, * → /) |
+| `src/services/sync.ts` | Sync service — upload + download with LWW, tombstone propagation, debounce, periodic |
+| `tests/db.test.ts` | Basic test for IndexedDB wrapper |
+| `src/i18n/index.ts` | Re-exports: `I18nProvider`, `useTranslation`, `pluralKey`, types |
+| `src/i18n/i18n.tsx` | `I18nProvider` — holds lang state, `setLang`, `t()` function |
+| `src/i18n/dictionaries/en.ts` | English dictionary — source of truth for all keys |
+| `src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
+| `src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
+| `tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3 8B), handles CORS |
 
-### v2 store architecture
+### store architecture
 
 The v2 uses two Zustand stores with clearly separated responsibilities and a
 derived hook that composes them at read time. There is no duplication of
@@ -191,7 +121,7 @@ wrong source — find and fix that reader instead.
 that `updateCharacter` can locate the character via
 `characters.find(c => c.id === id)` on every subsequent edit.
 
-### v2 derived-model philosophy
+### derived-model philosophy
 
 The v1 codebase treated character sheets as "live calculators" — values like AC,
 Initiative, Passive Perception, ability modifiers, skill bonuses, and save
@@ -268,7 +198,7 @@ fix the adapter.
   Mitigation: when value is meaningfully non-default, the adapter respects it.
 - **Con:** More compute on every render (negligible for sheet of one character).
 
-### v2 design reference
+### design reference
 
 The visual source of truth is in `design-reference/tbt-rpg/project/` (in `.gitignore` — not committed). Key files:
 - `components/tokens.css` — design tokens (colours, fonts, radii)
@@ -278,66 +208,17 @@ The visual source of truth is in `design-reference/tbt-rpg/project/` (in `.gitig
 
 If `design-reference/` is absent in a new session, ask the user to provide the files.
 
-### v2 IndexedDB strategy (Phase C.1.0 — v2-native)
+### IndexedDB strategy
 
-The v2 uses its own database (`dnd-character-sheet-v2`, version 2) and stores
-domain `Character` objects directly (v2-native schema). **Since the cut-v1-dependency
-sub-phase, v2 no longer reads the v1 database at boot or runtime.**
-
-#### Contract table
-
-|             | v1 DB | v2 DB |
-|-------------|-------|-------|
-| v1 reads    | yes   | no    |
-| v1 writes   | yes   | no    |
-| v2 reads    | never (was: migration only) | yes |
-| v2 writes   | never | yes   |
-
-#### Migration (`v2/src/data/migration.ts`) — @deprecated
-
-`migrateV1Characters()` is kept as a `@deprecated` utility for a potential future
-"Import from v1 DB" feature. It is **no longer called from `main.tsx` at boot**.
-
-If you find code invoking `migrateV1Characters()` at app startup, you've re-introduced
-the ghost-character bug — refer to the cut-v1-dependency commit history.
-
-The migration function:
-1. Reads all characters from v1 DB (read-only)
-2. For each v1 character whose id is not already in v2 DB:
-   - Runs `adaptCharacter()` to produce a domain `Character`
-   - Persists to v2 DB via `saveCharacter()`
-3. Idempotent — subsequent runs skip already-migrated characters
-4. Graceful when v1 DB does not exist: returns `{ migrated: 0, skipped: 0 }`
-
-#### v1 status
-
-The v1 app at `/TBT-RPG/` is **frozen**. It continues to function with the
-v1 DB exclusively, unaware of v2's existence. New edits made in v2 do not
-propagate back to v1. v1 will eventually be replaced by v2.
-
-#### Schema upgrade (v1 → v2)
-
-v2 DB version was bumped from 1 to 2 because stored records changed shape
-from `V1Character` (C.1.a era) to `Character` (v2-native). The upgrade
-handler deletes and recreates the object store so migration can repopulate
-from v1 DB with correctly adapted records. This only affects dev environments
-that had C.1.a phase data.
-
-#### v2 adapter role
-
-`adapter.ts` is now exclusively a **migration utility**. It runs once per
-character during `migrateV1Characters()` and is not part of the runtime read
-path. Once migrated, the v2 reads and writes domain `Character` directly.
-
-If new fields are added to `Character` after initial migration, a backfill
-migration step may be needed — plan for that explicitly.
+The app uses `dnd-character-sheet-v2` (version 9) and stores `Character` objects
+directly (v2-native schema). The app never reads the v1 DB (`dnd-character-sheet`)
+at boot or runtime. `adapter.ts` and `migration.ts` have been deleted as part of
+the v2 promotion refactor (tag `v1-final` preserves v1 history).
 
 #### Demographics fields
 
 `Character` has `age`, `height`, `weight`, `eyeColor`, `skinColor`,
-`hairColor` as v2-native fields. The v1 schema has no equivalents — migrated
-characters start with these fields as empty strings. v2 edit flow (Phase C.1.b+)
-will allow users to fill them in.
+`hairColor` as v2-native fields (blank by default for older characters).
 
 ### Local validation before push
 
@@ -355,7 +236,7 @@ or `noUncheckedIndexedAccess`. Errors from those flags only surface in
 `npm run build`. Skipping the build before push is the most common cause of
 CI failures on branches that have passing tests locally.
 
-### v2 development phase pattern
+### development phase pattern
 
 Each v2 feature follows a three-step cycle:
 
@@ -365,14 +246,14 @@ Each v2 feature follows a three-step cycle:
 
 This order matters: components built on a broken adapter produce invisible data loss.
 
-### v2 key patterns
+### key patterns
 
 - **No class names on CharSelect** — uses inline styles matching the prototype exactly (the T object)
 - **Tailwind** is available for other components but CharSelect/Login use inline styles for pixel-perfect fidelity
 - **exactOptionalPropertyTypes + noUncheckedIndexedAccess** enabled — be careful with optional chaining
 - `vite-plugin-pwa` installed with `--legacy-peer-deps` (Vite 8 not yet in peer dep range of v1.2.0)
 
-### v2 internationalization (i18n)
+### internationalization (i18n)
 
 The v2 ships with a **custom Context-based i18n system** — no react-i18next,
 no external library. Built incrementally across Fase C.4 (sub-phases C.4.0
@@ -439,7 +320,7 @@ visual highlight (gold border + elevated background).
 #### Testing pattern
 
 Components are rendered via `renderWithI18n(ui, 'pt' | 'en')` from
-`v2/tests/helpers/render.tsx` — pre-sets localStorage and wraps with
+`tests/helpers/render.tsx` — pre-sets localStorage and wraps with
 `<I18nProvider>`. Most components have **dual-lang test coverage** — same
 assertions duplicated for PT and EN expected text. Adding a new translated
 component without dual-lang tests is incomplete.
@@ -448,10 +329,10 @@ component without dual-lang tests is incomplete.
 
 After a clean `npm install` (no flags), `npm test` should report:
 
-| Metric | Baseline (after PRs #111–#113 merged) |
-|--------|---------------------------------------|
+| Metric | Baseline (after promote-v2-to-root refactor) |
+|--------|----------------------------------------------|
 | Test files | 58 |
-| Tests | 1265 |
+| Tests | 1200 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -467,7 +348,7 @@ All testing-related packages are declared explicitly in `devDependencies`
 any flags should produce a complete environment. No `--legacy-peer-deps`
 required.
 
-### v2 known layout issues (to fix when touching mobile layout)
+### known layout issues (to fix when touching mobile layout)
 
 - **Mobile drawer — PT/EN toggle pushed too far down**: `MobileShell.tsx` uses `marginTop: 'auto'` on the toggle wrapper, which pushes it to the bottom of the drawer via the flex-spacer. On short screens the toggle may be hidden or hard to reach. Consider either moving the toggle closer to the nav menu items or constraining the drawer height so it doesn't rely on `auto` margin.
 
@@ -604,6 +485,39 @@ Visual-only badge showing login state in header (desktop) and drawer (mobile).
 
 ---
 
+### Sync sub-fase 2.1 — Upload + tombstones (COMPLETED — PR #116)
+
+- `sync.ts`: upload local chars to Supabase with LWW guard, tombstone propagation
+- Debounced reactive sync (15s after last edit), periodic background sync (30s)
+- `deleted_characters` table + `deleted_characters` IndexedDB store for tombstones
+- DB schema v9: `deleted_characters` store, createObjectStore in Phase 1 (before awaits)
+- Defensive v8 heal guard: broken installs that missed the store creation are fixed on v9 upgrade
+
+### Sync sub-fase 2.2 — Download + multi-device (COMPLETED — PR #117)
+
+- `downloadCharacters()`: fetches cloud chars + tombstones, LWW conflict resolution, propagates cloud tombstones → deletes local chars
+- Pre-fetch cloud tombstone IDs before upload loop: prevents re-upload of chars deleted on another device
+- `downloadCharacterImages()`: eager image download for chars new to device (idempotent)
+- `importCharacter()`: preserves cloud timestamp exactly (no `Date.now()` stamp → no ping-pong re-upload)
+- 9 new tests covering upload-phase guard and multi-device delete propagation
+
+### v2 promotion to root — v1 removal (COMPLETED — PR #118)
+
+Structural reorganisation: v2 becomes the root application; v1 is removed from the repository.
+
+- Tag `v1-final` preserves v1 history before removal
+- `v2/` contents moved to root via `git mv` (preserves file history)
+- v1 files removed: `css/`, `js/`, `public/`, `index.html`, `vite.config.js`, `eslint.config.js`, `scripts/`, v1 `tests/`, v1 `package.json`
+- `adapter.ts`, `migration.ts`, `schema-v1.ts` deleted (were `@deprecated`); `attack-helpers.test.ts` and `adapter.test.ts` and `migration.test.ts` removed
+- Migration helpers (`migrateProfString`, `inferAttackKind`, `parseBonusString`) inlined as private functions in `db.ts` (still needed for v3/v4 schema upgrade callbacks)
+- `vite.config.ts` base: `/TBT-RPG/v2/` → `/TBT-RPG/`
+- Router basename: `/TBT-RPG/v2` → `/TBT-RPG`
+- Deploy workflow: single root build (no v1/v2 parallel steps)
+- CharSelect: badge "v2 · Preview" removed; empty state → "Nenhum personagem ainda. Vamos começar?"; v1 footer link removed
+- Test count: 1363 → 1200 (removed adapter.test.ts: 1097 lines, migration.test.ts: 148 lines, attack-helpers.test.ts: 167 lines)
+
+---
+
 ## Patterns established during C.1.c
 
 These patterns are in use across the Status tab and will repeat in C.1.d+.
@@ -698,8 +612,12 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 | v5 | `dnd-character-sheet-v2` | attacks expanded with kind/range/properties/notes (C.1.d) |
 | v6 | `dnd-character-sheet-v2` | spells expanded with school/castingTime/range/prepared; spellcasting ability/class top-level (C.1.e) |
 | v7 | `dnd-character-sheet-v2` | inventory items with category/equipped; EP removed from currency (C.1.f) |
+| v8 | `dnd-character-sheet-v2` | BUGGY — `deleted_characters` store was placed after async cursor ops; versionchange tx auto-committed before createObjectStore ran for some install paths |
+| v9 | `dnd-character-sheet-v2` | `deleted_characters` store (tombstones for sync sub-fase 2.1); createObjectStore moved to synchronous Phase 1 of upgrade callback before any `await`; also heals broken v8 installs via defensive `< 9` guard |
 
 Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idempotent.
+
+**Critical invariant:** ALL `createObjectStore` / `deleteObjectStore` calls must live in the synchronous "Phase 1" header of the `upgrade` callback, before any `await`. Data migrations (cursor-based) go in "Phase 2" after all stores are declared. See db.ts comments.
 
 ---
 
@@ -997,7 +915,8 @@ or inconsistent updates.
 | Empty character starts with one class "Nova classe" | C.1.x | Preserves invariant: classes never empty |
 | Delete is local-blocking, cloud-best-effort | Delete sub-phase | Local feedback immediate; cloud retries in future sync |
 | Storage cleanup explicit on delete | Delete sub-phase | Supabase does not auto-GC files; 50MB account limit |
-| `adapter.ts` / `migration.ts` are @deprecated for runtime | Cut v1 sub-phase | Prevents ghost-character bug from re-introduction |
+| `adapter.ts`, `migration.ts`, `schema-v1.ts` are deleted | v2 promotion refactor | v1 completely removed; tag v1-final preserves history |
+| App root is `/TBT-RPG/` (not `/TBT-RPG/v2/`) | v2 promotion refactor | v2 is the application; v1 path is gone |
 | Auth badge is visual-only (no click action yet) | Auth badge sub-phase | Click action deferred to future iteration |
 | Auth badge text "Conectado"/"Entrar" (not "Sincronizado") | Auth badge sub-phase | Doesn't promise sync that doesn't exist yet |
 | Auth badge renders null during loading (no flash) | Auth badge sub-phase | `useAuthStore` initial state has `loading: true`; prevents FOUC |
@@ -1059,8 +978,7 @@ New from C.1.d / C.1.e / C.1.f:
 
 New from C.1.x, delete, cut-v1, polish, auth-badge:
 
-- **OQ — Sync Supabase: upload + download + tombstones.** Critical next sub-phase. v2
-  currently is local-only with auth but no data propagation between devices.
+- ~~**OQ — Sync Supabase: upload + download + tombstones.**~~ *Implemented in sub-fase 2.1 (PR #116) and 2.2 (PR #117). Sub-fase 2.3 (realtime, retry backoff, UI polish) remains.*
 - **OQ — Lock functional (read-only mode).** Today only stub label; functionality
   (editing disabled, fields read-only) deferred to lock sub-phase.
 - **OQ — Auth status interactive.** Click on badge could open a menu (logout, account
