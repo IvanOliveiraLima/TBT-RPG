@@ -58,7 +58,7 @@ function parseBonusString(toHit: string | undefined | null): number {
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
 const V2_DB_NAME      = 'dnd-character-sheet-v2'
-const V2_DB_VER       = 9
+const V2_DB_VER       = 10
 const V2_STORE        = 'characters'
 const TOMBSTONE_STORE = 'deleted_characters'
 
@@ -110,6 +110,19 @@ function openV2() {
       }
 
       // ── PHASE 2: data migrations (cursor-based, may use await) ───────────────
+
+      if (oldVersion < 10) {
+        // v10: add `locked` field (default false) to all characters.
+        const store = transaction.objectStore(V2_STORE)
+        let cursor = await store.openCursor()
+        while (cursor) {
+          const char = cursor.value as Character
+          if (typeof char.locked !== 'boolean') {
+            await cursor.update({ ...char, locked: false })
+          }
+          cursor = await cursor.continue()
+        }
+      }
 
       if (oldVersion < 3) {
         // Add className to each hitDice entry, deriving it from classes[i].name.
@@ -518,6 +531,19 @@ function normalizeInventory(char: Character): Character {
   return { ...char, inventory, currency }
 }
 
+/**
+ * Runtime lock normalization — adds `locked: false` if the field is missing.
+ *
+ * Handles characters created before v10 that may not have the `locked` field.
+ * Self-heals on every read; the next saveCharacter() persists the normalized shape.
+ */
+function normalizeLocked(char: Character): Character {
+  if (typeof char.locked !== 'boolean') {
+    return { ...char, locked: false }
+  }
+  return char
+}
+
 /* ── Public API ───────────────────────────────────────────────────────── */
 
 /**
@@ -528,7 +554,7 @@ export async function listCharacters(): Promise<Character[]> {
   const db = await openV2()
   try {
     const all = await db.getAll(V2_STORE) as Character[]
-    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice).map(normalizeSpells).map(normalizeInventory)
+    return all.sort((a, b) => b.updatedAt - a.updatedAt).map(normalizeHitDice).map(normalizeSpells).map(normalizeInventory).map(normalizeLocked)
   } finally {
     db.close()
   }
@@ -542,7 +568,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
   const db = await openV2()
   try {
     const result = await db.get(V2_STORE, id) as Character | undefined
-    return result != null ? normalizeInventory(normalizeSpells(normalizeHitDice(result))) : null
+    return result != null ? normalizeLocked(normalizeInventory(normalizeSpells(normalizeHitDice(result)))) : null
   } finally {
     db.close()
   }
