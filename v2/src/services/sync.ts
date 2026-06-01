@@ -317,6 +317,25 @@ async function downloadCharacters(userId: string): Promise<void> {
   }
 }
 
+/* ── Pre-fetch cloud tombstone IDs (upload guard) ────────────────────── */
+
+async function fetchCloudTombstoneIds(userId: string): Promise<Set<string>> {
+  if (!supabase) return new Set()
+
+  const { data, error } = await supabase
+    .from('deleted_characters')
+    .select('id')
+    .eq('user_id', userId)
+    .returns<{ id: string }[]>()
+
+  if (error) {
+    console.warn('[sync] Failed to pre-fetch cloud tombstones', error)
+    return new Set()
+  }
+
+  return new Set((data ?? []).map(r => r.id))
+}
+
 /* ── syncAll ─────────────────────────────────────────────────────────── */
 
 export async function syncAll(): Promise<void> {
@@ -338,17 +357,34 @@ export async function syncAll(): Promise<void> {
     // 1. Propagate pending tombstones (local deletes → cloud)
     await processTombstones(userId)
 
-    // 2. Upload local characters (LWW: skip if cloud is newer)
+    // 2. Pre-fetch cloud tombstone IDs — prevents re-uploading chars deleted on another device
+    const cloudTombstoneIds = await fetchCloudTombstoneIds(userId)
+
+    // 3. Upload local characters — skip tombstoned chars; LWW for the rest
+    let uploadPhaseDeletedLocally = false
     const characters = useCharactersStore.getState().characters
     for (const char of characters) {
+      if (cloudTombstoneIds.has(char.id)) {
+        // Deleted on another device — remove locally and do not re-upload
+        try {
+          await deleteCharacter(char.id)
+          uploadPhaseDeletedLocally = true
+        } catch (err) {
+          console.warn('[sync] Failed to delete locally for tombstoned char', char.id, err)
+        }
+        continue
+      }
       try {
         await uploadCharacter(char, userId)
       } catch (err) {
         console.warn('[sync] Failed to upload character', char.id, err)
       }
     }
+    if (uploadPhaseDeletedLocally) {
+      await useCharactersStore.getState().fetchCharacters()
+    }
 
-    // 3. Download cloud → local: new chars, LWW overwrites, cloud tombstone propagation
+    // 4. Download cloud → local: new chars, LWW overwrites, cloud tombstone propagation
     await downloadCharacters(userId)
 
     setSyncStatus('idle')
