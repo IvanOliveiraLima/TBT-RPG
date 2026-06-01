@@ -22,41 +22,20 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      # ── Build v1 ──────────────────────────────────────────────────────
-      - name: Install v1 dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Build v1
+      - name: Build
         run: npm run build
         env:
           VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Show v1 dist/index.html
-        run: cat dist/index.html
-
-      # ── Build v2 ──────────────────────────────────────────────────────
-      - name: Install v2 dependencies
-        working-directory: v2
-        run: npm ci --legacy-peer-deps
-
-      - name: Build v2
-        working-directory: v2
-        run: npm run build
-        env:
-          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-
-      # ── Merge into unified dist/ ──────────────────────────────────────
-      - name: Copy v2 dist into dist/v2/
-        run: cp -r v2/dist dist/v2
-
-      # ── Deploy ────────────────────────────────────────────────────────
       - uses: actions/configure-pages@v4
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/
+          path: ./dist
 
       - uses: actions/deploy-pages@v4
         id: deployment
