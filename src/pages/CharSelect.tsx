@@ -10,9 +10,6 @@ import { AIGenerationModal } from '@/components/AIGenerationModal'
 import { CharacterCardMenu } from '@/components/CharacterCardMenu'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 
-/* ── V1 production URL ────────────────────────────────────────────────── */
-const V1_URL = 'https://ivanoliveiralima.github.io/TBT-RPG/'
-
 /* ── Token constants (avoid Tailwind for inline styles — matches prototype) */
 const T = {
   bg:            '#0F0D14',
@@ -385,21 +382,6 @@ export default function CharSelect() {
           {t('charselect.feature_hint')}
         </div>
 
-        {/* v2 badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          marginTop: 14,
-          background: 'rgba(91,63,168,0.18)',
-          border: '1px solid rgba(91,63,168,0.4)',
-          borderRadius: 20,
-          padding: '4px 10px',
-          fontSize: 10, fontWeight: 600,
-          color: '#9B8ED4',
-          letterSpacing: 1, textTransform: 'uppercase',
-        }}>
-          {t('charselect.preview_badge')}
-        </div>
-
         {/* Ornament */}
         <div style={{
           position: 'absolute', top: 10, right: -40,
@@ -464,10 +446,7 @@ export default function CharSelect() {
               border: `1px dashed ${T.borderSubtle}`,
               borderRadius: 14,
             }}>
-              {t('charselect.empty')}<br />
-              <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
-                <a href={V1_URL} style={{ color: T.gold }}>{t('charselect.empty_hint')}</a>
-              </span>
+              {t('charselect.empty')}
             </div>
           )}
 
@@ -548,17 +527,6 @@ export default function CharSelect() {
           >
             {t('charselect.export')}
           </button>
-        </div>
-
-        {/* v1 link */}
-        <div style={{
-          marginTop: 14, textAlign: 'center',
-          fontSize: 11, color: T.textMuted,
-        }}>
-          {t('charselect.v1_prefix')}{' '}
-          <a href={V1_URL} style={{ color: T.gold, textDecoration: 'none' }}>
-            {t('charselect.v1_link')}
-          </a>
         </div>
 
         {/* Auth */}
