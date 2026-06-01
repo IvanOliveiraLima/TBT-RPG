@@ -10,6 +10,17 @@ preserves it for historical reference.
 
 Live at `ivanoliveiralima.github.io/TBT-RPG/`.
 
+### Repository layout (post-promotion)
+
+- `src/` — application source
+- `tests/` — test files (Vitest)
+- `public/` — static assets
+- `worker/` — Cloudflare Worker for AI generation
+- `.github/workflows/` — CI/CD (ci.yml + deploy.yml)
+- `README.md`, `CLAUDE.md`, `LICENSE`
+
+No `v2/` subdirectory. Pre-promotion state preserved at git tag `v1-final`.
+
 ## Commands
 
 ```bash
@@ -133,12 +144,12 @@ The v2 adopts the opposite approach: **derived-model**.
 
 #### Single source of truth
 
-The adapter (`v2/src/data/adapter.ts`) is the boundary. It reads the v1 raw
-schema (which may contain stale or empty derived fields) and produces a domain
-`Character` (`v2/src/domain/character.ts`) with **all derived values calculated
-from base state**, regardless of what the v1 saved.
+The domain model (`src/domain/character.ts`) defines the contract. All values —
+including derived ones — are fully calculated from base state and persisted.
+The architecture ensures **all derived values are calculated from base state**
+on every save, regardless of any stale stored values from older schema versions.
 
-Examples of fields always derived in v2 (ignoring v1 stored values):
+Examples of fields always derived (ignoring any stale stored values):
 
 - `ac` — computed as `10 + abilityModifier(dex)` when v1 field is empty/zero
 - `initiative` — computed as `abilityModifier(dex)` when v1 field is empty
@@ -148,10 +159,10 @@ Examples of fields always derived in v2 (ignoring v1 stored values):
 - `savingThrow.bonus` — always `savingThrowBonus(ability, proficient, profBonus)`
 
 When the user customizes a derived field with a non-default value (e.g., enters
-AC 17 because of magical armor), the adapter respects it. The rule is:
+AC 17 because of magical armor), the stored value is respected. The rule is:
 
-- **If v1 value is empty/zero/default**: calculate from state.
-- **If v1 value is a meaningful override**: use it.
+- **If stored value is empty/zero/default**: calculate from base state.
+- **If stored value is a meaningful override**: use it.
 
 #### Per-field override policy (C.1.c.2+)
 
@@ -184,9 +195,9 @@ base state, or is it user-entered data?
 - **User-entered** (read from v1 directly): character name, race, class
   selection, attack damage dice, inventory items, backstory text.
 
-Components in `v2/src/components/sheet/` should never recalculate derived
+Components in `src/components/sheet/` should never recalculate derived
 values themselves. The domain is the contract: if `character.ac` is wrong,
-fix the adapter.
+fix the domain model or the DB schema upgrade callback.
 
 #### Trade-offs
 
@@ -421,14 +432,14 @@ Editable inventory with category grouping, weight bar, and EP removal. DB schema
 
 Character selection screen with create-from-scratch and AI-assisted creation.
 
-- **Create from scratch:** `createEmptyCharacter()` factory in `v2/src/domain/factories.ts` produces a
+- **Create from scratch:** `createEmptyCharacter()` factory in `src/domain/factories.ts` produces a
   fully valid `Character` with sensible defaults (one class "Nova classe", all abilities 10, empty arrays).
   Navigates to Status tab on creation.
 - **AI-assisted creation:** modal with text description + EN/PT toggle; calls Cloudflare Worker
   (Llama 3 8B); merges response into empty base via defensive merge (missing fields stay default).
   Error codes translated via i18n pattern.
 - **Kebab menu** (`CharacterCardMenu`) per character card for future per-row actions (delete first).
-- `v2/src/services/ai-generate.ts` service layer encapsulates worker fetch + error classification.
+- `src/services/ai-generate.ts` service layer encapsulates worker fetch + error classification.
 - Worker returns `sleight_hand`; domain uses `sleight_of_hand` — mapped in merge function (workaround).
 
 ---
@@ -437,7 +448,7 @@ Character selection screen with create-from-scratch and AI-assisted creation.
 
 Cascading delete with partial-failure tolerance.
 
-- Kebab menu → confirmation modal → `deleteCharacter()` in `v2/src/services/delete-character.ts`
+- Kebab menu → confirmation modal → `deleteCharacter()` in `src/services/delete-character.ts`
 - 4 steps: (1) local IndexedDB (blocking), (2) tombstone (deferred), (3) Supabase row (best-effort),
   (4) Storage bucket cleanup (best-effort)
 - Result reports `localOk`, `cloudOk`, `storageOk` separately. UI confirms success when local OK.
@@ -472,15 +483,15 @@ Visual and naming consistency pass across the full UI.
 
 Visual-only badge showing login state in header (desktop) and drawer (mobile).
 
-- `StatusBadge` primitive at `v2/src/components/primitives/StatusBadge.tsx` — `success | neutral`
+- `StatusBadge` primitive at `src/components/primitives/StatusBadge.tsx` — `success | neutral`
   variants, colored dot indicator, `aria-hidden` decoration, `data-testid`
-- `useAuthStatus` hook at `v2/src/hooks/useAuthStatus.ts` — derives `'authenticated' |
+- `useAuthStatus` hook at `src/hooks/useAuthStatus.ts` — derives `'authenticated' |
   'unauthenticated' | 'loading'` from `useAuthStore` via Zustand selectors; no duplicate listener
 - Badge renders `null` during `loading` state (avoids flash on initial auth check)
 - 2 new i18n keys: `auth.connected` (Connected/Conectado), `auth.signin_prompt` (Sign in/Entrar)
 - Desktop: badge left of Import/Export/Lock buttons; Mobile: badge right of TBT-RPG title in drawer
 - CSS classes: `.status-badge`, `.status-badge-success`, `.status-badge-neutral`, `.status-badge-dot`
-  in `v2/src/index.css` (hardcoded colors — no CSS variables in codebase)
+  in `src/index.css` (hardcoded colors — no CSS variables in codebase)
 - 23 new tests across `status-badge.test.tsx` (12) and `auth-badge.test.tsx` (11)
 
 ---
@@ -528,7 +539,7 @@ Number inputs use a local string state to allow intermediate empty state during 
 without contaminating the domain model with invalid values. The domain only updates with
 valid parsed numbers; derived displays always read from the domain (last valid state).
 
-`NumberField` in `v2/src/components/primitives/NumberField.tsx` implements this. See
+`NumberField` in `src/components/primitives/NumberField.tsx` implements this. See
 `AttrGrid.tsx` for the canonical in-component application, and `HpBlock`, `HitDicePool`,
 `ClassEditor` (level), and `LoreHero` (XP) for additional usages.
 
@@ -599,7 +610,7 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 - Rename: `hitDice.map(hd => hd.className === oldName ? { ...hd, className: newName, dieSize: getHitDie(newName) } : hd)`
 - Remove: `hitDice.filter(hd => hd.className !== removedName)`
 - Level reduce: clamp `hitDice.current` to `Math.min(hd.current, newLevel)`
-- `getHitDie(name)` in `v2/src/domain/classes.ts` — returns canonical die size (8 default)
+- `getHitDie(name)` in `src/domain/classes.ts` — returns canonical die size (8 default)
 
 #### Database schema versions
 
@@ -615,7 +626,7 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 | v8 | `dnd-character-sheet-v2` | BUGGY — `deleted_characters` store was placed after async cursor ops; versionchange tx auto-committed before createObjectStore ran for some install paths |
 | v9 | `dnd-character-sheet-v2` | `deleted_characters` store (tombstones for sync sub-fase 2.1); createObjectStore moved to synchronous Phase 1 of upgrade callback before any `await`; also heals broken v8 installs via defensive `< 9` guard |
 
-Each schema bump is a cursor-based upgrade callback in `v2/src/data/db.ts`, idempotent.
+Each schema bump is a cursor-based upgrade callback in `src/data/db.ts`, idempotent.
 
 **Critical invariant:** ALL `createObjectStore` / `deleteObjectStore` calls must live in the synchronous "Phase 1" header of the `upgrade` callback, before any `await`. Data migrations (cursor-based) go in "Phase 2" after all stores are declared. See db.ts comments.
 
@@ -668,7 +679,7 @@ Pattern: centralize in a map/helper, apply via `style={{ backgroundColor }}`.
 
 #### ConfirmableRemoveButton for destructive actions
 
-`v2/src/components/primitives/ConfirmableRemoveButton.tsx` — inline two-step
+`src/components/primitives/ConfirmableRemoveButton.tsx` — inline two-step
 confirmation (click × → "Confirmar?" → click confirms). Click outside cancels.
 Auto-reset after 5s timeout. Applied to: `AttacksList`, `FeaturesList`,
 `ClassEditor`, `EditableStringList`, `SpellList`, `InventoryList`.
@@ -709,14 +720,16 @@ These have a fast-path (returns immediately if all fields are already valid).
 Justified: migrations can miss in-progress dev builds; runtime guard prevents
 crashes from malformed data reaching components.
 
-#### V2 independent from v1 DB at runtime
+#### Independent from v1 DB at runtime
 
-Since the cut-v1-dependency sub-phase, **v2 never reads v1 IndexedDB at boot or
-runtime**. The adapter functions in `v2/src/data/adapter.ts` are kept as
-`@deprecated` reference for a potential future "Import from v1 DB" feature, but
-are not invoked. `migrateV1Characters()` is removed from `main.tsx`.
+**The app never reads v1 IndexedDB at boot or runtime.** `adapter.ts`,
+`migration.ts`, and `schema-v1.ts` have been deleted as part of the v2
+promotion refactor (tag `v1-final` preserves v1 history). Migration helpers
+(`migrateProfString`, `inferAttackKind`, `parseBonusString`) are inlined as
+private functions in `src/data/db.ts` — used only in DB schema upgrade
+callbacks (v3→v4 and v4→v5) and not accessible outside that module.
 
-If you find code importing the adapter to trigger v1 reads, you've re-introduced
+If you find code re-introducing a v1 IndexedDB read, that's re-introducing
 the ghost-character bug.
 
 #### Latent values preserved when UI controls hidden
@@ -743,7 +756,7 @@ remaining denominations.
 
 #### Factory function for empty entities
 
-`createEmptyCharacter()` in `v2/src/domain/factories.ts` produces a fully
+`createEmptyCharacter()` in `src/domain/factories.ts` produces a fully
 valid `Character` with sensible defaults. Used by both manual creation
 ("Criar do zero") and AI-assisted creation (as base before merging AI response).
 
@@ -758,7 +771,7 @@ Preserves invariants:
 #### Service layer for external integrations
 
 External operations (AI generation, cascading delete) live in
-`v2/src/services/` as pure async functions with typed error classes:
+`src/services/` as pure async functions with typed error classes:
 
 ```ts
 export class XError extends Error {
@@ -815,7 +828,7 @@ Worker can omit fields without breaking the result.
 
 #### Cascading delete with partial-failure tolerance
 
-`deleteCharacter()` (`v2/src/services/delete-character.ts`) has 4 steps:
+`deleteCharacter()` (`src/services/delete-character.ts`) has 4 steps:
 1. Local IndexedDB delete (REQUIRED — throws if fails)
 2. Tombstone (deferred to sync sub-phase — not yet implemented)
 3. Supabase row delete (best-effort)
@@ -856,7 +869,7 @@ future: sync status, etc.):
 ```
 
 Visual only (no click), with colored dot indicator. Variants define complete
-appearance. CSS classes in `v2/src/index.css` (hardcoded colors — no CSS
+appearance. CSS classes in `src/index.css` (hardcoded colors — no CSS
 variables in codebase).
 
 #### Derived hook from store (no duplicate listeners)
@@ -875,6 +888,81 @@ export function useAuthStatus(): AuthStatus {
 
 Avoids `onAuthStateChange` listener duplication that could cause memory leaks
 or inconsistent updates.
+
+---
+
+## Patterns established during sync sub-phases
+
+#### Sync service architecture
+
+Service layer at `src/services/sync.ts` with:
+
+- `syncStatus` global (idle/syncing/offline/error) + listener pattern
+- Triggers: `scheduleEditSync` (15s debounce), `startPeriodicSync` (30s
+  interval), online/offline events
+- Single `syncAll()` that orchestrates: tombstones → upload (with LWW guard)
+  → download (with decision matrix)
+
+#### IndexedDB migration: schema changes sync first
+
+`createObjectStore` / `deleteObjectStore` calls MUST happen **before** any
+`await` in the `upgrade` callback. The versionchange transaction auto-commits
+when there are no IDB requests pending and the event loop returns. Pattern:
+
+```ts
+async upgrade(db, oldVersion, _newVersion, transaction) {
+  // ── PHASE 1: sync — schema changes ──
+  if (oldVersion < 1) db.createObjectStore('characters', { keyPath: 'id' });
+  if (oldVersion < 9) {
+    if (!db.objectStoreNames.contains('deleted_characters')) {
+      db.createObjectStore('deleted_characters', { keyPath: 'id' });
+    }
+  }
+
+  // ── PHASE 2: async — cursor migrations ──
+  if (oldVersion < 3) { /* await store.openCursor() ... */ }
+  // ... other data migrations
+}
+```
+
+#### Defensive schema bump for healing
+
+When a migration fails (broken install), the next version bump can include
+a guard that verifies/recreates stores that should have existed:
+
+```ts
+if (oldVersion < 9) {
+  // Creates store that should exist in v8 but migration failed for some installs
+  if (!db.objectStoreNames.contains('deleted_characters')) {
+    db.createObjectStore('deleted_characters', { keyPath: 'id' });
+  }
+}
+```
+
+#### LWW (Last-write-wins) conflict resolution
+
+For simple bidirectional sync (typical single user), LWW by `updatedAt` is
+the pragmatic choice. Newer value wins. Trade-offs: an offline edit that
+coincides with a remote delete is lost. Accepted for current scope.
+
+#### Tombstone server-side propagation
+
+`deleted_characters` table in Supabase mirrors local tombstones. Insert
+BEFORE deleting the row in `characters`. Other devices query this table to
+learn about deliberate deletions. Keeps propagation even if the delete from
+`characters` fails.
+
+#### Eager image download
+
+Images (portraits, symbols) download during sync to ensure offline-ready on
+a new device. Idempotent: skip if the local char already has data. Trade-off:
+larger initial data in exchange for complete offline UX.
+
+#### Pre-fetch optimization for cross-cutting checks
+
+When multiple operations need to query the same dataset (e.g. cloud tombstones
+checked in both upload and download phases), pre-fetch once at the start of the
+cycle to avoid N+1 queries.
 
 ---
 
@@ -921,6 +1009,18 @@ or inconsistent updates.
 | Auth badge text "Conectado"/"Entrar" (not "Sincronizado") | Auth badge sub-phase | Doesn't promise sync that doesn't exist yet |
 | Auth badge renders null during loading (no flash) | Auth badge sub-phase | `useAuthStore` initial state has `loading: true`; prevents FOUC |
 | Lock button is stub until functional sub-phase | Polish horizontal | Labels consistent; behavior placeholder |
+| Sync upload reactive 15s + periodic 30s | Sub-fase 2.1 | Reactive captures active edits; periodic self-heals idle sessions |
+| Tombstones created only when user is logged in | Sub-fase 2.1 | Offline deletes don't propagate (intentional) |
+| Sync silent by default | Sub-fase 2.1 | Intrusive UI is annoying; automatic retry covers transients |
+| Cloud tombstone inserted BEFORE characters row delete | Sub-fase 2.2 | Guarantees propagation even if characters delete fails |
+| LWW conflict resolution by updatedAt | Sub-fase 2.2 | Pragmatic for single user; simultaneous edit trade-off accepted |
+| Eager image download | Sub-fase 2.2 | Offline-ready complete; idempotent avoids re-download |
+| Pre-fetch cloud tombstones at start of syncAll | Sub-fase 2.2 hotfix | Prevents re-upload of char deleted on another device |
+| Ambiguous case (local without cloud or tombstone) keeps local | Sub-fase 2.2 | Conservative; next upload reconciles |
+| v1 removed from repo after promotion | Promotion refactor | Tag v1-final preserves history via git |
+| adapter.ts, migration.ts, schema-v1.ts deleted | Promotion refactor | v1 completely removed; helpers inlined in db.ts as private |
+| v1 IndexedDB in browser not touched | Promotion refactor | No data loss risk; eventually GC'd by browser |
+| Build path /TBT-RPG/ (not /TBT-RPG/v2/) | Promotion refactor | v2 is the default application; old path is gone |
 
 ---
 
@@ -979,6 +1079,11 @@ New from C.1.d / C.1.e / C.1.f:
 New from C.1.x, delete, cut-v1, polish, auth-badge:
 
 - ~~**OQ — Sync Supabase: upload + download + tombstones.**~~ *Implemented in sub-fase 2.1 (PR #116) and 2.2 (PR #117). Sub-fase 2.3 (realtime, retry backoff, UI polish) remains.*
+- ~~**OQ — Promoção real.**~~ *Resolved. v2 is the official application (PR #118). Tag v1-final preserves history.*
+- **OQ — Multi-device delete propagation parcial.** Char deletado em Device A pode
+  voltar em Device B após sync. Hipóteses não validadas (RLS, schema sutil, insert
+  silenciosamente falha em `deleted_characters`). Workaround para single user: deletar
+  manualmente em cada device. Investigar quando virar prioridade. Sintoma reproduzível.
 - **OQ — Lock functional (read-only mode).** Today only stub label; functionality
   (editing disabled, fields read-only) deferred to lock sub-phase.
 - **OQ — Auth status interactive.** Click on badge could open a menu (logout, account
@@ -990,5 +1095,7 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   fix would be cleaner.
 - **OQ — Multi-tab edition coordination.** Character can be edited in 2 browser tabs
   simultaneously; no locking. Best-effort via debounced saves.
-- **OQ — Tombstone cleanup TTL.** When sync lands, tombstones accumulate. Decision:
-  no TTL (memories permanent) — revisit if storage becomes an issue.
+- **OQ — Tombstone cleanup TTL.** Tombstones accumulate indefinitely. Decision:
+  no TTL (permanent) — revisit if storage becomes an issue.
+- **OQ — Versionamento futuro do app.** Atualmente sem versioning visível ao usuário.
+  Considerar `/about` page com versão, links, créditos quando fizer sentido.

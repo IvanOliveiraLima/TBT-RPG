@@ -6,84 +6,72 @@ Uma ficha de personagem moderna, offline e com persistência automática para Du
 
 [https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
 
-## Funcionalidades
+## Sobre
 
-Uma reescrita completa em React 19 + TypeScript + Vite, com
-derived-model architecture e UX moderna. Totalmente independente do
-banco v1 — cada personagem vive no seu próprio IndexedDB v2.
+TBT-RPG é uma mesa virtual para fichas de D&D 5e. Aplicação web client-side
+com sincronização opcional na nuvem, offline-first, bilíngue (PT/EN),
+PWA instalável.
 
-### Funcionalidades implementadas
+### Funcionalidades
 
 **Criação e edição de personagens:**
 
-- **Criar do zero** — personagem com defaults sensatos navegando direto pra
-  Status
-- **Criar com IA** — geração via Cloudflare Worker (Llama 3 8B): backstory,
-  classe, nível, atributos, perícias. Modal com descrição + toggle PT/EN +
-  estados de loading/erro traduzidos
-- **Editar personagem existente** — todas as 6 abas totalmente editáveis
-- **Excluir personagem** — kebab menu + modal de confirmação. Cascade local +
-  Supabase row + Storage bucket cleanup
-- **Importar/Exportar JSON** — backup e restore manual
+- **Criar do zero** — char com defaults sensatos, edição completa em todas as abas
+- **Criar com IA** — geração via Cloudflare Worker (Llama 3 8B) com backstory,
+  classe, nível, atributos. Modal com toggle de idioma e estados de erro traduzidos
+- **Edição completa** — Status, Combate, Magias, Inventário, Lore, todas com
+  expand/collapse, datalists canônicos, UUIDs estáveis
+- **Excluir character** — kebab menu + modal de confirmação. Cascade local +
+  Supabase + Storage cleanup
 
-**Status totalmente editável:**
+**Sincronização (opcional):**
 
-- Identidade no HeroCard (nome, raça, antecedente, alinhamento, classes
-  multiclass, inspiração, XP)
-- Atributos com cascata derivada (modifier, save, skill, PP, initiative,
-  AC, spell DC)
-- Saves com toggles de proficiência
-- Perícias com proficient + expertise
-- HP com bar dual (current + temp overlay) e botões +/-
-- Death saves, hit dice multiclass
-- Características com editor completo (name, source, type, uses)
-- Idiomas e proficiências como listas estruturadas
-
-**Combate, Magias, Inventário, Lore:** todos editáveis com patterns
-estabelecidos (expand/collapse cards, datalists canônicos, UUIDs estáveis,
-ConfirmableRemoveButton).
+- **Login com email/senha** via Supabase Auth
+- **Upload reactive** — edições sobem pra cloud 15s após (debounced)
+- **Upload periodic** — background a cada 30s pra garantir consistência
+- **Download** — chars da cloud baixam pro IndexedDB local no login + periodic
+- **Conflict resolution** — Last-write-wins por `updatedAt`
+- **Imagens** — upload/download eager via Supabase Storage (base64 ↔ blob)
+- **Tombstones** — deleções propagam entre devices (com limitação conhecida)
+- **Auth status badge** — indicador visual de Conectado/Entrar + status de sync
 
 **Outras funcionalidades:**
 
-- Upload de retrato via modal com zoom + posição
-- Interface bilíngue EN/PT com alternância instantânea (sem reload)
-- Auth status badge no header (Conectado/Entrar)
-- Auth Supabase (login/registro/logout)
-- ~1200 testes unitários e de integração
+- Image upload (character portrait via canvas-based modal)
+- Bilíngue PT/EN com toggle persistente
 - PWA instalável
-
-### Limitações conhecidas
-
-- **Sync bidirectional implementado (sub-fase 2.2).** Upload + download com
-  LWW conflict resolution e propagação de tombstones entre devices. Sub-fase
-  2.3 (polish + lock funcional) ainda pendente.
-- **Localização de valores livres:** labels da UI traduzem entre PT e EN,
-  mas valores livres armazenados no personagem (raça, classe, antecedente,
-  alinhamento) permanecem como o usuário digitou — não são traduzidos.
-- **Initiative sem override:** sempre derivada do modificador de DEX. Builds
-  com feats como Alert exigirão um campo de bônus separado (não modelado ainda).
-- **Spellcasting ability única por personagem:** multiclasse com abilities
-  diferentes (ex: Druid + Wizard) requer anotação manual no campo description.
-- **Items importados ganham category "misc":** itens migrados da v1 recebem
-  category "misc" por padrão — o usuário reclassifica manualmente.
-- **Encumbrance rules opcionais não implementadas:** apenas indicação visual
-  pela barra de peso; penalidades de movimento não modeladas.
-- **Lock é stub:** botão presente mas modo read-only real virá em sub-fase futura.
-- **Worker AI não gera items nem spells** — campos ficam vazios para o user
-  preencher manualmente.
+- Importar/Exportar JSON
 
 ### Roadmap
 
-- **Sync sub-fase 2.3 — polish:** realtime updates, retry com backoff, UI de status
-- **Lock funcional:** modo read-only vs editable pra evitar edição acidental
-- **Auth status interativo:** click no badge abre menu (sair, conta)
-- **Internacionalização de canonical names** (raça, classe, antecedente — hoje
-  free-text não traduzido)
-- **Ampliação do worker de IA** (items + spells na geração)
+- **Lock funcional** — modo read-only vs editable pra evitar edição acidental em jogo
+- **Polish sync** — persistent error state, manual refresh button, edge cases
+- **Auth status interativo** — click no badge abre menu (sair, conta)
+- **Worker AI expansion** — incluir items + spells na geração
+
+### Limitações conhecidas
+
+- **Delete multi-device pode falhar em propagar.** Char deletado em Device A
+  pode voltar em Device B após sync. Workaround: deletar manualmente em cada
+  device. Investigação futura quando virar prioridade.
+- **Bloquear é stub.** Botão presente, funcionalidade real (read-only mode) pendente.
+- **Worker AI não gera items nem spells** — campos ficam vazios.
+- **Items importados ganham category "misc"** — user reclassifica manualmente.
+- **Race, classe, antecedente, alinhamento são free-text** com sugestões — não
+  traduzidos automaticamente entre PT/EN.
+- **Initiative deriva sempre de DEX** sem campo de override.
+- **Spellcasting ability única por character** — multiclass spellcasters com
+  abilities diferentes anotam no description.
 
 ### Stack
 
-Vite + React 19 + TypeScript + Tailwind + Zustand + Supabase + IndexedDB.
+- React 19 + TypeScript + Vite
+- Tailwind CSS
+- Zustand (state management)
+- IndexedDB via idb (storage local)
+- Supabase (auth + PostgreSQL + Storage)
+- Cloudflare Workers (AI generation)
+- ESLint + Vitest
 
 ```
 ivanoliveiralima.github.io/TBT-RPG/   → aplicação
@@ -94,45 +82,6 @@ Para desenvolver:
 npm install && npm run dev
 # Acesse http://localhost:5173
 ```
-
-## Sobre
-
-Este projeto tem como objetivo oferecer uma ficha de personagem:
-
-- Simples de usar
-- Totalmente funcional offline
-- Com salvamento automático
-- Com importação/exportação de dados
-- Com suporte a imagens diretamente pelo navegador
-- Suporte a múltiplos personagens com tela de seleção
-- Interface bilíngue (EN/PT) com alternância rápida
-
-A aplicação roda inteiramente no navegador e utiliza:
-
-- React 19 + TypeScript + Vite como framework e bundler
-- `IndexedDB` (via `idb`) para persistência local (sem limite prático de tamanho)
-- PWA instalável (via `vite-plugin-pwa`) — funciona offline após primeira visita
-- Cloudflare Workers AI (Llama 3 8B) como backend da geração por IA — grátis para o usuário, sem chave de API
-- Supabase para sincronização em nuvem e autenticação (opcional)
-- ESLint, Vitest e CI via GitHub Actions
-
-## Funcionalidades Principais
-
-- Autosave automático no navegador
-- Importação e exportação de ficha em JSON
-- Criação rápida de ficha em branco
-- Upload de imagens com ajuste (zoom + posição)
-- Suporte a multiclasse com nível por classe e nível total automático
-- Layout responsivo
-- Versionamento de schema (`schemaVersion`)
-- Compatibilidade com fichas antigas
-- Gerenciamento de múltiplos personagens (criar, abrir, duplicar, excluir)
-- Export/import em lote de todos os personagens
-- Geração automática de personagem com IA (descreva e a IA preenche a ficha)
-- Sincronização automática em nuvem entre dispositivos (opcional, requer conta)
-- Autenticação com email e senha
-- Interface bilíngue com toggle EN/PT no menu lateral
-- Geração com IA com escolha de idioma (inglês ou português)
 
 ## Como Usar
 
@@ -276,7 +225,7 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 ### 11. Idiomas (EN/PT)
 
 - No menu lateral, clique em **EN** ou **PT** para alternar o idioma da interface
-- O toggle aplica um dicionário PT-BR via DOM walker — não é necessário recarregar a página
+- O toggle aplica um dicionário PT-BR — não é necessário recarregar a página
 - A preferência é salva no navegador e restaurada em visitas futuras
 - Textos gerados pela IA podem ser produzidos já em português escolhendo o idioma no modal de geração (seção 9)
 
@@ -300,57 +249,7 @@ Limite: `2MB` por imagem
 ### 13. Lock da ficha
 
 - Menu -> `Options` -> `Lock`
-- Desativa cálculos automáticos
-- Permite edição totalmente manual
-
-## Estrutura do Projeto
-
-```
-/
-├── index.html
-├── vite.config.js
-├── eslint.config.js
-├── CLAUDE.md
-├── public/
-│   ├── favicon.png
-│   └── icons/
-│       ├── icon.svg
-│       ├── icon-192.png
-│       └── icon-512.png
-├── scripts/
-│   └── generate-icons.js       # Gera PNGs a partir do SVG via sharp
-├── css/
-│   ├── w3.css
-│   └── app.css
-├── js/
-│   ├── main.js
-│   ├── app.js
-│   ├── changes.js
-│   ├── save.js
-│   ├── load.js
-│   ├── add-attack.js
-│   ├── extra.js
-│   └── modules/
-│       ├── calculations.js
-│       ├── storage.js
-│       ├── utils.js
-│       ├── character-select.js
-│       ├── ai-generate.js
-│       ├── ai-modal.js
-│       ├── i18n.js              # Sistema de traduções via DOM walker
-│       ├── supabase.js          # Cliente Supabase
-│       ├── auth.js              # Autenticação
-│       ├── auth-modal.js        # Modal de login/cadastro
-│       └── sync.js              # Sincronização IndexedDB ↔ Supabase
-├── worker/
-│   ├── src/
-│   │   └── index.js
-│   └── wrangler.toml
-└── tests/
-    ├── calculations.test.js
-    ├── storage.test.js
-    └── utils.test.js
-```
+- **Funcionalidade em desenvolvimento.** O botão está presente; o modo read-only real será implementado em versão futura.
 
 ## Scripts Disponíveis
 
@@ -367,40 +266,10 @@ Limite: `2MB` por imagem
 
 O projeto conta com:
 
-- **ESLint** — análise estática com regras para JavaScript moderno
-- **Vitest** — testes unitários para funções de cálculo, armazenamento e utilitários
+- **ESLint** — análise estática com regras para TypeScript moderno
+- **Vitest** — ~1200 testes unitários e de integração
 - **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
 - **Segurança no Worker** — rate limiting, proteção contra prompt injection e validação estrutural do JSON retornado pela IA, com mensagens de erro amigáveis ao usuário final
-
-## Estrutura de Dados
-
-As fichas utilizam o campo:
-
-```json
-"schemaVersion": 1
-```
-
-Isso permite compatibilidade com versões antigas e futuras migrações de estrutura.
-
-`basic_info.classes` armazena a lista de classes com níveis individuais, e `basic_info.total_level` mantém o nível total calculado automaticamente.
-
-## Observações Importantes
-
-Alguns campos são intencionalmente manuais:
-
-- Armor Class (AC)
-- Initiative Bonus
-- Proficiency Bonus
-- Hit Points
-- Max Health
-
-Isso acontece porque dependem de regras específicas de classe, itens e builds.
-
-## Créditos
-
-Este projeto é um fork, significativamente expandido, de:
-
-- https://github.com/lckynmbsrn/DnD-5e-Character-Sheet
 
 ## Contribuição
 
