@@ -735,6 +735,147 @@ describe('multi-device simulation', () => {
   })
 })
 
+// ── syncAll — cloud tombstone skips upload ────────────────────────────────────
+
+describe('syncAll — cloud tombstone skips upload', () => {
+  beforeEach(() => {
+    resetAll()
+    setupLoggedIn()
+    mockCharsSelectData = []
+    mockGetPendingTombstones.mockResolvedValue([])
+    mockListCharacters.mockResolvedValue([])
+  })
+
+  it('does not upload char that has a cloud tombstone', async () => {
+    const char = makeChar({ id: 'char_tombstoned' })
+    mockCharacters.splice(0, Infinity, char)
+    mockTombsSelectData = [makeTombRow('char_tombstoned')]
+
+    await syncAll()
+
+    expect(mockCharsUpsert).not.toHaveBeenCalled()
+  })
+
+  it('deletes local char from DB when cloud tombstone exists during upload phase', async () => {
+    const char = makeChar({ id: 'char_tombstoned' })
+    mockCharacters.splice(0, Infinity, char)
+    mockTombsSelectData = [makeTombRow('char_tombstoned')]
+
+    await syncAll()
+
+    expect(mockDeleteCharacterDB).toHaveBeenCalledWith('char_tombstoned')
+  })
+
+  it('still uploads chars that do not have a cloud tombstone', async () => {
+    const charA = makeChar({ id: 'char_a' })
+    const charB = makeChar({ id: 'char_b' })
+    mockCharacters.splice(0, Infinity, charA, charB)
+    mockTombsSelectData = [makeTombRow('char_a')]
+
+    await syncAll()
+
+    // char_a skipped (tombstoned), char_b uploaded
+    expect(mockCharsUpsert).toHaveBeenCalledTimes(1)
+    const uploadedId = (mockCharsUpsert.mock.calls[0]![0] as Record<string, unknown>).id
+    expect(uploadedId).toBe('char_b')
+  })
+
+  it('calls fetchCharacters after deleting a locally-present tombstoned char', async () => {
+    const char = makeChar({ id: 'char_tombstoned' })
+    mockCharacters.splice(0, Infinity, char)
+    mockTombsSelectData = [makeTombRow('char_tombstoned')]
+
+    await syncAll()
+
+    expect(mockFetchCharacters).toHaveBeenCalled()
+  })
+
+  it('does not call fetchCharacters in upload phase when no tombstoned chars exist locally', async () => {
+    const char = makeChar({ id: 'char_normal' })
+    mockCharacters.splice(0, Infinity, char)
+    mockTombsSelectData = []   // no tombstones
+    mockCharsSelectData = []   // nothing to download either
+
+    await syncAll()
+
+    // fetchCharacters is NOT called from the upload phase (only download phase may call it)
+    // Since download also finds nothing, it should not be called at all
+    expect(mockFetchCharacters).not.toHaveBeenCalled()
+  })
+
+  it('pre-fetches tombstones once regardless of number of local chars', async () => {
+    const chars = [
+      makeChar({ id: 'char_a' }), makeChar({ id: 'char_b' }), makeChar({ id: 'char_c' }),
+    ]
+    mockCharacters.splice(0, Infinity, ...chars)
+    mockTombsSelectData = []
+
+    await syncAll()
+
+    // deleted_characters is queried once for fetchCloudTombstoneIds + once for downloadCharacters
+    // (NOT N times for N chars — that would be Option B behaviour)
+    const tombSelectCalls = mockFrom.mock.calls.filter(c => c[0] === 'deleted_characters')
+    expect(tombSelectCalls).toHaveLength(2)
+  })
+})
+
+// ── multi-device delete propagation (upload-phase guard) ─────────────────────
+
+describe('multi-device delete — upload-phase guard', () => {
+  beforeEach(() => {
+    resetAll()
+    setupLoggedIn()
+    mockGetPendingTombstones.mockResolvedValue([])
+    mockListCharacters.mockResolvedValue([])
+  })
+
+  it('device B does not re-upload char that device A deleted (tombstone exists)', async () => {
+    // Device A deleted char_x → cloud tombstone exists, cloud characters row is gone
+    // Device B still has char_x in its local Zustand store (hasn't synced yet)
+    const charX = makeChar({ id: 'char_x', name: 'TesteDelete' })
+    mockCharacters.splice(0, Infinity, charX)
+    mockCharsSelectData = []                       // not in cloud characters
+    mockTombsSelectData = [makeTombRow('char_x')]  // tombstone exists
+
+    await syncAll()
+
+    expect(mockCharsUpsert).not.toHaveBeenCalled()  // not re-uploaded
+    expect(mockDeleteCharacterDB).toHaveBeenCalledWith('char_x')  // deleted locally
+  })
+
+  it('device B local char deleted (upload phase) does not get re-imported in download phase', async () => {
+    // Ensure download phase does not resurrect a char just deleted in upload phase:
+    // after deleteCharacter(), listCharacters() returns [] → download loop finds nothing
+    const charX = makeChar({ id: 'char_x' })
+    mockCharacters.splice(0, Infinity, charX)
+    mockCharsSelectData = []                       // not in cloud characters (deleted by A)
+    mockTombsSelectData = [makeTombRow('char_x')]
+    // listCharacters returns empty (char_x was already deleted from DB by upload phase)
+    mockListCharacters.mockResolvedValue([])
+
+    await syncAll()
+
+    // importCharacter should NOT be called (no resurrection)
+    expect(mockImportCharacter).not.toHaveBeenCalled()
+  })
+
+  it('multi-char: tombstoned char deleted locally while non-tombstoned char uploaded', async () => {
+    const tombstoned = makeChar({ id: 'char_deleted', updatedAt: 1_000 })
+    const normal     = makeChar({ id: 'char_normal',  updatedAt: 1_000 })
+    mockCharacters.splice(0, Infinity, tombstoned, normal)
+    mockCharsSelectData = []
+    mockTombsSelectData = [makeTombRow('char_deleted')]
+    mockListCharacters.mockResolvedValue([])
+
+    await syncAll()
+
+    expect(mockDeleteCharacterDB).toHaveBeenCalledWith('char_deleted')
+    expect(mockCharsUpsert).toHaveBeenCalledTimes(1)
+    const uploadedId = (mockCharsUpsert.mock.calls[0]![0] as Record<string, unknown>).id
+    expect(uploadedId).toBe('char_normal')
+  })
+})
+
 // ── blobToBase64 ──────────────────────────────────────────────────────────────
 
 describe('blobToBase64', () => {
