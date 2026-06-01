@@ -618,3 +618,17 @@ export async function removeTombstone(id: string): Promise<void> {
     db.close()
   }
 }
+
+/**
+ * Store a character exactly as-is, without updating updatedAt.
+ * Used by the sync service when downloading from the cloud to preserve
+ * the cloud timestamp for LWW conflict resolution.
+ */
+export async function importCharacter(character: Character): Promise<void> {
+  const db = await openV2()
+  try {
+    await db.put(V2_STORE, character)
+  } finally {
+    db.close()
+  }
+}
