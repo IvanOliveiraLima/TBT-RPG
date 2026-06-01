@@ -34,7 +34,26 @@
 import { openDB } from 'idb'
 import type { Character } from '@/domain/character'
 import { isValidCategory } from './canonical/item-categories'
-import { migrateProfString, inferAttackKind, parseBonusString } from './adapter'
+/* ── Migration helpers (inlined from former adapter.ts) ──────────────────── */
+
+function migrateProfString(raw: unknown): string[] {
+  if (!raw || typeof raw !== 'string') return []
+  return raw.split(/[,;\n]+/).map(s => s.trim()).filter(s => s.length > 0)
+}
+
+function inferAttackKind(toHit: string | undefined | null, stat: string): 'melee' | 'ranged' | 'spell' {
+  if (toHit && /^DC\s*\d+/i.test(toHit)) return 'spell'
+  if (stat === 'int' || stat === 'wis' || stat === 'cha') return 'spell'
+  if (stat === 'dex') return 'ranged'
+  return 'melee'
+}
+
+function parseBonusString(toHit: string | undefined | null): number {
+  const s = (toHit ?? '').trim()
+  if (/^DC\s*\d+/i.test(s)) return 0
+  const n = parseInt(s.replace(/^\+/, ''), 10)
+  return isNaN(n) ? 0 : n
+}
 
 /* ── DB constants ─────────────────────────────────────────────────────── */
 
