@@ -336,7 +336,8 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
             data-testid={`spell-name-${spell.id}`}
             style={{ ...SEAMLESS, flex: 1, minWidth: 0 }}
             className="hover:border-[#2A2537] focus:border-[#2A2537] outline-none transition-colors"
-            autoFocus
+            readOnly={locked}
+            autoFocus={!locked}
           />
         ) : (
           <span

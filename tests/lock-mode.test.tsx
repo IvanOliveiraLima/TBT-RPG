@@ -14,7 +14,7 @@ import { screen, fireEvent } from '@testing-library/react'
 import { renderHook } from '@testing-library/react'
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import type { Character, Attack, InventoryItem, Feature } from '@/domain/character'
+import type { Character, Attack, InventoryItem, Feature, Spell } from '@/domain/character'
 import { I18nProvider } from '@/i18n'
 import { renderWithI18n } from './helpers/render'
 import { useCharactersStore } from '@/store/characters'
@@ -546,5 +546,184 @@ describe('Locked mode — inventory item cards and feature remove buttons', () =
     setStoreChar(char)
     renderWithI18n(<FeaturesList character={char} onUpdate={vi.fn()} />, 'en')
     expect(screen.getByTestId('feature-remove-feat_unlock')).toBeDefined()
+  })
+})
+
+// ── 8. SpellCard — field-level lock regression ────────────────────────────────
+
+import { SpellList } from '@/components/sheet/parts/SpellList'
+
+function makeSpell(overrides: Partial<Spell> = {}): Spell {
+  return {
+    id: 'sp_001',
+    name: '',           // empty name → auto-expands SpellCard
+    level: 1,
+    school: 'abjuration',
+    castingTime: '1 action',
+    range: '30 ft',
+    description: 'A test spell description',
+    prepared: false,
+    ...overrides,
+  }
+}
+
+describe('Lock — SpellCard fields read-only when locked', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  it('spell name input is readOnly when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const input = screen.getByTestId('spell-name-sp_001') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('spell name input is NOT readOnly when unlocked', () => {
+    const spell = makeSpell()
+    const char = { ...UNLOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const input = screen.getByTestId('spell-name-sp_001') as HTMLInputElement
+    expect(input.readOnly).toBe(false)
+  })
+
+  it('spell level select is disabled when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const select = screen.getByTestId('spell-level-sp_001') as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+  })
+
+  it('spell school select is disabled when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const select = screen.getByTestId('spell-school-sp_001') as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+  })
+
+  it('spell casting time is readOnly when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const input = screen.getByTestId('spell-casting-time-sp_001') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('spell range is readOnly when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const input = screen.getByTestId('spell-range-sp_001') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('spell description is readOnly when locked', () => {
+    const spell = makeSpell()
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const ta = screen.getByTestId('spell-description-sp_001') as HTMLTextAreaElement
+    expect(ta.readOnly).toBe(true)
+  })
+
+  it('spell prepared toggle is NOT disabled when locked (transient)', () => {
+    const spell = makeSpell({ level: 1 })
+    const char = { ...LOCKED_CHAR, spells: [spell] }
+    setStoreChar(char)
+    renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    const cb = screen.getByTestId('spell-prepared-sp_001') as HTMLInputElement
+    expect(cb.disabled).toBe(false)
+  })
+})
+
+// ── 9. ItemCard — field-level lock regression ─────────────────────────────────
+
+function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
+  return {
+    id: 'itm_001',
+    name: 'Iron Shield',
+    quantity: 2,
+    weight: 6,
+    category: 'armor',
+    description: 'A sturdy iron shield',
+    equipped: false,
+    ...overrides,
+  }
+}
+
+describe('Lock — ItemCard fields read-only when locked', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  it('item name is readOnly when locked', () => {
+    const item = makeItem()
+    const char = { ...LOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const input = screen.getByTestId('item-name-itm_001') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('item name is NOT readOnly when unlocked', () => {
+    const item = makeItem()
+    const char = { ...UNLOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const input = screen.getByTestId('item-name-itm_001') as HTMLInputElement
+    expect(input.readOnly).toBe(false)
+  })
+
+  it('item weight input is readOnly when locked', () => {
+    const item = makeItem()
+    const char = { ...LOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const input = screen.getByTestId('item-weight-input-itm_001') as HTMLInputElement
+    expect(input.readOnly).toBe(true)
+  })
+
+  it('item category select is disabled when locked', () => {
+    const item = makeItem()
+    const char = { ...LOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const select = screen.getByTestId('item-category-itm_001') as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+  })
+
+  it('item description is readOnly when locked', () => {
+    const item = makeItem()
+    const char = { ...LOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const ta = screen.getByTestId('item-description-itm_001') as HTMLTextAreaElement
+    expect(ta.readOnly).toBe(true)
+  })
+
+  it('item quantity is NOT readOnly when locked (transient — spending consumables)', () => {
+    const item = makeItem()
+    const char = { ...LOCKED_CHAR, inventory: [item] }
+    setStoreChar(char)
+    renderWithI18n(<InventoryList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-itm_001'))
+    const input = screen.getByTestId('item-quantity-itm_001') as HTMLInputElement
+    expect(input.readOnly).toBe(false)
   })
 })
