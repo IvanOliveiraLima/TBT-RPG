@@ -1,14 +1,34 @@
-node_modules/
-dist/
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Audit artifacts (kept local only)
+AUDIT-*.md
+
+# Worker sub-project
 worker/node_modules/
 worker/.dev.vars
-.env
-.env.local
-.env*.local
-
-# v2 sub-project build artifacts
-v2/node_modules/
-v2/dist/
 
 # Design prototype reference (local only)
 design-reference/
