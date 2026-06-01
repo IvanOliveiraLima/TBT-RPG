@@ -133,7 +133,7 @@ describe('Schema migration → v9 (deleted_characters store)', () => {
         createObjectStore: upgradeMock,
         deleteObjectStore: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, makeTransactionMock() as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
@@ -151,7 +151,7 @@ describe('Schema migration → v9 (deleted_characters store)', () => {
         createObjectStore: upgradeMock,
         deleteObjectStore: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 8, 9, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 8, 9, makeTransactionMock() as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
@@ -167,7 +167,7 @@ describe('Schema migration → v9 (deleted_characters store)', () => {
         createObjectStore: upgradeMock,
         deleteObjectStore: vi.fn(),
       }
-      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, makeTransactionMock() as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')
@@ -183,7 +183,7 @@ describe('Schema migration → v9 (deleted_characters store)', () => {
         createObjectStore: vi.fn(),
         deleteObjectStore: deleteStoreMock,
       }
-      opts?.upgrade?.(fakeDb as never, 7, 9, {} as never, {} as never)
+      opts?.upgrade?.(fakeDb as never, 7, 9, makeTransactionMock() as never, {} as never)
       return Promise.resolve(mockDB)
     })
     await createTombstone('char_x', 'user_x')

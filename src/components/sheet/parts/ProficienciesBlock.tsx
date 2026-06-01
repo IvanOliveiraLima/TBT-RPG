@@ -3,6 +3,7 @@ import { useTranslation } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { EditableStringList } from '@/components/primitives/EditableStringList'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   textMuted:    '#7A7788',
@@ -58,6 +59,7 @@ interface ProficienciesBlockProps {
 
 export function ProficienciesBlock({ character, onUpdate }: ProficienciesBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
 
   function updateSubList(key: ProfKey, newList: string[]) {
     onUpdate({
@@ -103,6 +105,7 @@ export function ProficienciesBlock({ character, onUpdate }: ProficienciesBlockPr
                 addLabel={t('proficiencies.add_button')}
                 emptyHint={t(emptyHintKey as Parameters<typeof t>[0])}
                 listTestId={`prof-items-${key}`}
+                {...(locked ? { locked: true } : {})}
               />
             </div>
           ))}

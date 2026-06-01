@@ -8,6 +8,7 @@ import { CANONICAL_RACES } from '@/data/canonical/races'
 import { CANONICAL_BACKGROUNDS } from '@/data/canonical/backgrounds'
 import { AlignmentSelect } from './AlignmentSelect'
 import { ClassEditor } from './ClassEditor'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9,
@@ -39,6 +40,7 @@ interface HeroCardProps {
 
 export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const portrait = character.images.character
   const classLine = formatClassesShort(character)
   const totalLevel = deriveTotalLevel(character)
@@ -138,6 +140,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
                   aria-label={t('aria.character_name_input')}
                   data-testid="hero-name-input"
                   style={nameInputStyle}
+                  readOnly={locked}
                 />
               </div>
 
@@ -161,6 +164,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
                     data-testid="hero-race-input"
                     className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                     style={SEAMLESS_INPUT}
+                    readOnly={locked}
                   />
                 </div>
                 <div style={{ flex: '1 1 80px', minWidth: 0 }}>
@@ -174,6 +178,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
                     data-testid="hero-background-input"
                     className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                     style={SEAMLESS_INPUT}
+                    readOnly={locked}
                   />
                 </div>
                 <div style={{ flex: '1 1 100px', minWidth: 0 }}>
@@ -181,6 +186,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
                   <AlignmentSelect
                     value={character.alignment}
                     onChange={alignment => onUpdate({ alignment })}
+                    {...(locked ? { disabled: true } : {})}
                   />
                 </div>
               </div>
@@ -188,7 +194,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
               {/* Classes */}
               <div style={{ marginTop: 8 }}>
                 <span style={LABEL_STYLE}>{t('identity.classes_label')}</span>
-                <ClassEditor character={character} onUpdate={onUpdate} />
+                <ClassEditor character={character} onUpdate={onUpdate} {...(locked ? { locked: true } : {})} />
               </div>
 
               {/* Level + XP + Inspiration */}

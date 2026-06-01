@@ -3,6 +3,7 @@ import type { Character, AbilityKey, Abilities } from '@/domain/character'
 import { abilityModifier, formatSigned } from '@/domain/calculations'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 interface AttrGridProps {
   character: Character
@@ -38,10 +39,11 @@ interface AttrCellProps {
   abilities: Abilities
   proficient: boolean
   compact: boolean
+  locked: boolean
   onUpdate?: (partial: Partial<Character>) => void
 }
 
-function AttrCell({ k, score, abilities, proficient, compact, onUpdate }: AttrCellProps) {
+function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }: AttrCellProps) {
   const { t } = useTranslation()
   const mod = abilityModifier(score)
 
@@ -115,6 +117,7 @@ function AttrCell({ k, score, abilities, proficient, compact, onUpdate }: AttrCe
           aria-label={t('aria.ability_score_input', { ability: t(`ability.${k}`) })}
           data-testid={`attr-${k}-score`}
           style={SCORE_INPUT}
+          readOnly={locked}
         />
       </div>
     </div>
@@ -124,6 +127,7 @@ function AttrCell({ k, score, abilities, proficient, compact, onUpdate }: AttrCe
 // ── AttrGrid ──────────────────────────────────────────────────────────────────
 
 export function AttrGrid({ character, cols = 3, compact = false, onUpdate }: AttrGridProps) {
+  const locked = useCharacterLocked(character.id)
   const saveProf = new Map(
     character.savingThrows.map((st) => [st.ability, st.proficient]),
   )
@@ -145,6 +149,7 @@ export function AttrGrid({ character, cols = 3, compact = false, onUpdate }: Att
           abilities={character.abilities}
           proficient={saveProf.get(k) ?? false}
           compact={compact}
+          locked={locked}
           {...(onUpdate !== undefined ? { onUpdate } : {})}
         />
       ))}

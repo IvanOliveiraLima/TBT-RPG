@@ -12,6 +12,7 @@ import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { Pip } from '../ui/Pip'
 import { useTranslation } from '@/i18n'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   textMuted:     '#7A7788',
@@ -29,6 +30,7 @@ interface SpellSlotsProps {
 
 export function SpellSlots({ character, onUpdate }: SpellSlotsProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
 
   const slots: Record<string, { current: number; max: number }> = character.spellSlots ?? {}
 
@@ -101,12 +103,12 @@ export function SpellSlots({ character, onUpdate }: SpellSlotsProps) {
               level={level}
               slot={slot}
               onCurrentChange={readOnly ? undefined : (n) => updateCurrent(level, n)}
-              onMaxChange={readOnly ? undefined : (n) => updateMax(level, n)}
+              onMaxChange={(readOnly || locked) ? undefined : (n) => updateMax(level, n)}
             />
           ))}
         </div>
 
-        {!readOnly && availableLevels.length > 0 && (
+        {!readOnly && !locked && availableLevels.length > 0 && (
           <div style={{ marginTop: activeEntries.length > 0 ? 10 : 4 }}>
             <select
               value=""

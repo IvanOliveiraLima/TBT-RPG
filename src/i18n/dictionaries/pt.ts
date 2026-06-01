@@ -35,6 +35,7 @@ const pt: Record<keyof typeof en, string> = {
   'drawer.export_json': 'Exportar',
   'drawer.import_json': 'Importar',
   'drawer.lock': 'Bloquear',
+  'chrome.unlock': 'Destravar',
 
   // Auth
   'auth.connected':     'Conectado',
@@ -453,7 +454,6 @@ const pt: Record<keyof typeof en, string> = {
   'phase_c.editing_coming_soon': 'Edição virá na Fase C',
   'phase_c.details_coming_soon': 'Detalhes virão na Fase C',
   'phase_c.export_unavailable': 'Exportar — não implementado nesta fase.',
-  'phase_c.lock_unavailable': 'Destravar / Travar — não implementado nesta fase.',
 
   // Common
   'common.cancel': 'Cancelar',
