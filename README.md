@@ -4,17 +4,13 @@ Uma ficha de personagem moderna, offline e com persistência automática para Du
 
 ## Demo
 
-- **v1 (atual):** [https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
-- **v2 (preview):** [https://ivanoliveiralima.github.io/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/)
+[https://ivanoliveiralima.github.io/TBT-RPG/](https://ivanoliveiralima.github.io/TBT-RPG/)
 
-## v2 status (preview)
+## Funcionalidades
 
-A v2 é uma reescrita completa em React 19 + TypeScript + Vite, com
-derived-model architecture e UX moderna. **v2 é totalmente independente
-do v1 DB** — atualmente em preview ativo, próxima de substituir v1 como
-versão default.
-
-Acessível em [/TBT-RPG/v2/](https://ivanoliveiralima.github.io/TBT-RPG/v2/).
+Uma reescrita completa em React 19 + TypeScript + Vite, com
+derived-model architecture e UX moderna. Totalmente independente do
+banco v1 — cada personagem vive no seu próprio IndexedDB v2.
 
 ### Funcionalidades implementadas
 
@@ -53,14 +49,14 @@ ConfirmableRemoveButton).
 - Interface bilíngue EN/PT com alternância instantânea (sem reload)
 - Auth status badge no header (Conectado/Entrar)
 - Auth Supabase (login/registro/logout)
-- ~1265 testes unitários e de integração
+- ~1200 testes unitários e de integração
 - PWA instalável
 
 ### Limitações conhecidas
 
-- **Sync multi-device não implementado.** Personagem criado em um device não
-  aparece em outro automaticamente. Para multi-device hoje, use Importar/
-  Exportar JSON manualmente.
+- **Sync bidirectional implementado (sub-fase 2.2).** Upload + download com
+  LWW conflict resolution e propagação de tombstones entre devices. Sub-fase
+  2.3 (polish + lock funcional) ainda pendente.
 - **Localização de valores livres:** labels da UI traduzem entre PT e EN,
   mas valores livres armazenados no personagem (raça, classe, antecedente,
   alinhamento) permanecem como o usuário digitou — não são traduzidos.
@@ -78,31 +74,24 @@ ConfirmableRemoveButton).
 
 ### Roadmap
 
-- **Sync Supabase + tombstones:** upload local→cloud, download cloud→local,
-  multi-device propagation
+- **Sync sub-fase 2.3 — polish:** realtime updates, retry com backoff, UI de status
 - **Lock funcional:** modo read-only vs editable pra evitar edição acidental
 - **Auth status interativo:** click no badge abre menu (sair, conta)
 - **Internacionalização de canonical names** (raça, classe, antecedente — hoje
   free-text não traduzido)
 - **Ampliação do worker de IA** (items + spells na geração)
 
-### Stack v2
+### Stack
 
 Vite + React 19 + TypeScript + Tailwind + Zustand + Supabase + IndexedDB.
 
-O projeto usa uma estrutura monorepo leve:
-- `./` — v1 (vanilla JS, Vite) — produção atual
-- `v2/` — v2 (React, TypeScript, Tailwind, Vite) — preview
-
-Ambas as versões são deployadas pelo mesmo CI para `gh-pages`:
 ```
-ivanoliveiralima.github.io/TBT-RPG/      → v1
-ivanoliveiralima.github.io/TBT-RPG/v2/   → v2
+ivanoliveiralima.github.io/TBT-RPG/   → aplicação
 ```
 
-Para desenvolver a v2:
+Para desenvolver:
 ```bash
-cd v2 && npm install && npm run dev
+npm install && npm run dev
 # Acesse http://localhost:5173
 ```
 
@@ -120,9 +109,7 @@ Este projeto tem como objetivo oferecer uma ficha de personagem:
 
 A aplicação roda inteiramente no navegador e utiliza:
 
-- HTML, CSS (W3.css) e JavaScript vanilla (sem frameworks)
-- Vite como bundler e ferramenta de build
-- ES Modules organizados em `js/modules/`
+- React 19 + TypeScript + Vite como framework e bundler
 - `IndexedDB` (via `idb`) para persistência local (sem limite prático de tamanho)
 - PWA instalável (via `vite-plugin-pwa`) — funciona offline após primeira visita
 - Cloudflare Workers AI (Llama 3 8B) como backend da geração por IA — grátis para o usuário, sem chave de API
