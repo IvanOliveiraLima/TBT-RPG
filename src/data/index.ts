@@ -1,5 +1,3 @@
-export type { V1Character } from './schema-v1'
-export { adaptCharacter } from './adapter'
 export { listCharacters, getCharacter, saveCharacter, deleteCharacter } from './db'
 export type { DeletedCharacterTombstone } from './db'
 export { createTombstone, getPendingTombstones, markTombstoneSynced, removeTombstone } from './db'
