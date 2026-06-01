@@ -16,6 +16,7 @@ import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   textPrimary:   '#F4EFE0',
@@ -50,6 +51,7 @@ interface SpellListProps {
 
 export function SpellList({ character, onUpdate }: SpellListProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const readOnly = !onUpdate
 
   // Defense-in-depth: guard against legacy object shape that slipped past normalizeSpells.
@@ -194,12 +196,13 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
                       readOnly={readOnly}
                       onUpdate={partial => updateSpell(spell.id, partial)}
                       onRemove={() => removeSpell(spell.id)}
+                      {...(locked ? { locked: true } : {})}
                     />
                   ))}
                 </div>
 
                 {/* Per-level add button */}
-                {!readOnly && (
+                {!readOnly && !locked && (
                   <button
                     data-testid={level === 0 ? 'add-cantrip' : `add-spell-level-${level}`}
                     onClick={() => addSpell(level)}
@@ -247,9 +250,10 @@ interface SpellCardProps {
   readOnly: boolean
   onUpdate: (partial: Partial<Spell>) => void
   onRemove: () => void
+  locked?: boolean
 }
 
-function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
+function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -264,6 +268,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
   }, [spell.name])
 
   function handleCardClick(e: React.MouseEvent) {
+    // When readOnly (no onUpdate at all): never expand
     if (readOnly) return
     const target = e.target as HTMLElement
     if (target.closest('input, button, textarea, select, [role="checkbox"]')) return
@@ -365,7 +370,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
         )}
 
         {/* Remove button */}
-        {!readOnly && (
+        {!readOnly && !locked && (
           <ConfirmableRemoveButton
             onConfirm={onRemove}
             ariaLabel={t('aria.remove_spell', { name: spell.name || '#' })}
@@ -375,7 +380,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
         )}
       </div>
 
-      {/* Expanded edit form */}
+      {/* Expanded edit form — shown when expanded and either editable or locked (for read-only view) */}
       {expanded && !readOnly && (
         <div
           style={{
@@ -392,12 +397,13 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
               <select
                 value={spell.level}
                 onChange={e => onUpdate({ level: parseInt(e.target.value, 10) })}
+                disabled={locked}
                 data-testid={`spell-level-${spell.id}`}
                 className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:        `1px solid ${T.borderSubtle}`,
-                  cursor:        'pointer',
+                  cursor:        locked ? 'default' : 'pointer',
                   appearance:    'none',
                 }}
               >
@@ -414,12 +420,13 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
               <select
                 value={spell.school}
                 onChange={e => onUpdate({ school: e.target.value as SpellSchool })}
+                disabled={locked}
                 data-testid={`spell-school-${spell.id}`}
                 className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:        `1px solid ${T.borderSubtle}`,
-                  cursor:        'pointer',
+                  cursor:        locked ? 'default' : 'pointer',
                   appearance:    'none',
                 }}
               >
@@ -442,6 +449,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
                 data-testid={`spell-casting-time-${spell.id}`}
                 style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
                 className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                readOnly={locked}
               />
             </div>
 
@@ -455,6 +463,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
                 data-testid={`spell-range-${spell.id}`}
                 style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
                 className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                readOnly={locked}
               />
             </div>
           </div>
@@ -475,6 +484,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove }: SpellCardProps) {
                 lineHeight:   1.5,
               }}
               className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+              readOnly={locked}
             />
           </div>
         </div>

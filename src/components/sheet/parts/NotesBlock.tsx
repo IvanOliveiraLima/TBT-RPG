@@ -2,6 +2,7 @@ import type React from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { Label } from '../ui/Label'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -32,6 +33,7 @@ interface NotesBlockProps {
 
 export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   // notes1 is editable; notes2 is preserved read-only and shown below
   // Edit: only notes1 receives user input
   const isReadonlySuffix = Boolean(character.notes2)
@@ -49,6 +51,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
             aria-label={t('notes.section_title')}
             data-testid="notes-textarea"
             style={TEXTAREA}
+            readOnly={locked}
           />
           <p
             style={{
@@ -75,6 +78,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
             ...TEXTAREA,
             minHeight: !character.notes1 ? 120 : undefined,
           }}
+          readOnly={locked}
         />
       )}
     </div>

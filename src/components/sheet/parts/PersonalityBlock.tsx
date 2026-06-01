@@ -3,6 +3,7 @@ import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Label } from '../ui/Label'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -43,9 +44,10 @@ interface PersonalityFieldProps {
   placeholder: string
   value: string
   onChange: (value: string) => void
+  locked?: boolean
 }
 
-function PersonalityField({ testId, label, placeholder, value, onChange }: PersonalityFieldProps) {
+function PersonalityField({ testId, label, placeholder, value, onChange, locked }: PersonalityFieldProps) {
   return (
     <div data-testid={`personality-field-${testId}`}>
       <h4
@@ -68,6 +70,7 @@ function PersonalityField({ testId, label, placeholder, value, onChange }: Perso
         aria-label={label}
         data-testid={`personality-textarea-${testId}`}
         style={TEXTAREA}
+        readOnly={locked}
       />
     </div>
   )
@@ -80,6 +83,7 @@ interface PersonalityBlockProps {
 
 export function PersonalityBlock({ character, onUpdate }: PersonalityBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   return (
     <div style={CARD} data-testid="personality-block">
       <Label style={{ marginBottom: 14 }}>{t('personality.section_title')}</Label>
@@ -92,6 +96,7 @@ export function PersonalityBlock({ character, onUpdate }: PersonalityBlockProps)
             placeholder={t(f.placeholderKey)}
             value={character.personality[f.key]}
             onChange={(value) => onUpdate({ personality: { ...character.personality, [f.key]: value } })}
+            {...(locked ? { locked: true } : {})}
           />
         ))}
       </div>

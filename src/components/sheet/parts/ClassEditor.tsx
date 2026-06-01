@@ -36,9 +36,10 @@ const CLASS_LEVEL_INPUT: React.CSSProperties = {
 interface ClassEditorProps {
   character: Character
   onUpdate: (partial: Partial<Character>) => void
+  locked?: boolean
 }
 
-export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
+export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
   const { t } = useTranslation()
   // Holds the index of a newly-added class so we can focus+select its name input after render
   const newlyAddedIndexRef = useRef<number | null>(null)
@@ -128,6 +129,7 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
             className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
             style={CLASS_NAME_INPUT}
             data-testid={`class-name-${i}`}
+            readOnly={locked}
           />
           <NumberField
             value={cls.level}
@@ -137,10 +139,11 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
             aria-label={t('aria.class_level_input', { index: String(i + 1) })}
             style={CLASS_LEVEL_INPUT}
             data-testid={`class-level-${i}`}
+            {...(locked ? { readOnly: true } : {})}
           />
           <ConfirmableRemoveButton
             onConfirm={() => removeClass(i)}
-            disabled={character.classes.length === 1}
+            disabled={character.classes.length === 1 || locked}
             ariaLabel={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
             testId={`remove-class-${i}`}
             size="sm"
@@ -153,6 +156,7 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
       <button
         type="button"
         onClick={addClass}
+        disabled={locked}
         style={{
           background: 'transparent',
           border: '1px dashed #3A3450',
@@ -160,9 +164,10 @@ export function ClassEditor({ character, onUpdate }: ClassEditorProps) {
           color: '#7A7788',
           fontSize: 11,
           padding: '4px 10px',
-          cursor: 'pointer',
+          cursor: locked ? 'not-allowed' : 'pointer',
           width: '100%',
           marginTop: 2,
+          opacity: locked ? 0.5 : 1,
         }}
         data-testid="add-class"
       >

@@ -3,6 +3,7 @@ import { useTranslation } from '@/i18n'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { EditableStringList } from '@/components/primitives/EditableStringList'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 interface LanguagesBlockProps {
   character: Character
@@ -11,6 +12,7 @@ interface LanguagesBlockProps {
 
 export function LanguagesBlock({ character, onUpdate }: LanguagesBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
 
   return (
     <div data-testid="languages-block">
@@ -26,6 +28,7 @@ export function LanguagesBlock({ character, onUpdate }: LanguagesBlockProps) {
             addLabel={t('languages.add_button')}
             emptyHint={t('languages.empty_state_hint')}
             listTestId="languages-list"
+            {...(locked ? { locked: true } : {})}
           />
         </div>
       </Card>

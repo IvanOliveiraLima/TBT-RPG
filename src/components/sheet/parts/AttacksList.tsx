@@ -9,6 +9,7 @@ import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemo
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
 
@@ -47,9 +48,10 @@ interface AttackCardProps {
   attack: Attack
   onUpdate: (partial: Partial<Attack>) => void
   onRemove: () => void
+  locked?: boolean
 }
 
-function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
+function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
@@ -134,11 +136,13 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
           {formatAttackBonus(attack.attackBonus)}
         </span>
 
-        <ConfirmableRemoveButton
-          onConfirm={onRemove}
-          ariaLabel={t('aria.remove_attack', { name: attack.name || t('combat.unnamed_attack') })}
-          testId={`remove-attack-${attack.id}`}
-        />
+        {!locked && (
+          <ConfirmableRemoveButton
+            onConfirm={onRemove}
+            ariaLabel={t('aria.remove_attack', { name: attack.name || t('combat.unnamed_attack') })}
+            testId={`remove-attack-${attack.id}`}
+          />
+        )}
       </div>
 
       {/* ── Compact: summary line ────────────────────────────────────────── */}
@@ -169,6 +173,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
               <select
                 value={attack.kind}
                 onChange={e => onUpdate({ kind: e.target.value as Attack['kind'] })}
+                disabled={locked}
                 aria-label={t('aria.kind_select')}
                 data-testid={`attack-kind-select-${attack.id}`}
                 className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
@@ -204,6 +209,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
               <select
                 value={attack.ability}
                 onChange={e => onUpdate({ ability: e.target.value as AbilityKey | '' })}
+                disabled={locked}
                 aria-label={t('aria.ability_select')}
                 data-testid={`attack-ability-select-${attack.id}`}
                 className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
@@ -244,6 +250,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 onChange={n => onUpdate({ attackBonus: n })}
                 aria-label={t('aria.attack_bonus_input')}
                 data-testid={`attack-bonus-input-${attack.id}`}
+                {...(locked ? { readOnly: true } : {})}
                 style={{
                   background: 'rgba(255,255,255,0.04)',
                   border: '1px solid #2A2537',
@@ -273,6 +280,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 data-testid={`attack-damage-input-${attack.id}`}
                 className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                 style={SEAMLESS_INPUT}
+                readOnly={locked}
               />
             </div>
 
@@ -289,6 +297,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 data-testid={`attack-damage-type-input-${attack.id}`}
                 className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                 style={SEAMLESS_INPUT}
+                readOnly={locked}
               />
             </div>
 
@@ -305,6 +314,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
                 data-testid={`attack-range-input-${attack.id}`}
                 className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
                 style={SEAMLESS_INPUT}
+                readOnly={locked}
               />
             </div>
           </div>
@@ -322,6 +332,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
               data-testid={`attack-properties-input-${attack.id}`}
               className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
               style={SEAMLESS_INPUT}
+              readOnly={locked}
             />
           </div>
 
@@ -336,6 +347,7 @@ function AttackCard({ attack, onUpdate, onRemove }: AttackCardProps) {
               placeholder={t('combat.notes_placeholder')}
               rows={3}
               data-testid={`attack-notes-textarea-${attack.id}`}
+              readOnly={locked}
               style={{
                 ...SEAMLESS_INPUT,
                 resize: 'vertical',
@@ -358,6 +370,7 @@ interface AttacksListProps {
 
 export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
   function addAttack() {
@@ -408,7 +421,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
         <span style={{ fontSize: 11, color: T.textMuted, marginRight: 8, fontFamily: T.sans }}>
           {t('attacks.count_label', { count: String(attacks.length) })}
         </span>
-        {onUpdate && (
+        {onUpdate && !locked && (
           <button
             type="button"
             data-testid="add-attack-btn"
@@ -451,6 +464,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
               attack={attack}
               onUpdate={partial => updateAttack(attack.id, partial)}
               onRemove={() => removeAttack(attack.id)}
+              {...(locked ? { locked: true } : {})}
             />
           ))}
         </div>

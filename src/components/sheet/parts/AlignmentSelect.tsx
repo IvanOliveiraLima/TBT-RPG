@@ -6,6 +6,7 @@ import type { Alignment } from '@/data/canonical/alignments'
 interface AlignmentSelectProps {
   value: string
   onChange: (alignment: string) => void
+  disabled?: boolean
 }
 
 // backgroundColor (not 'background' shorthand) preserves backgroundImage (chevron) as a separate property
@@ -29,7 +30,7 @@ const SELECT_STYLE: React.CSSProperties = {
   backgroundSize: '1em',
 }
 
-export function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
+export function AlignmentSelect({ value, onChange, disabled }: AlignmentSelectProps) {
   const { t } = useTranslation()
 
   const isCustom = value !== '' && !ALIGNMENTS.includes(value as Alignment)
@@ -44,6 +45,7 @@ export function AlignmentSelect({ value, onChange }: AlignmentSelectProps) {
     <select
       value={isCustom ? '__custom__' : value}
       onChange={handleChange}
+      disabled={disabled}
       aria-label={t('aria.alignment_input')}
       data-testid="alignment-select"
       className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
