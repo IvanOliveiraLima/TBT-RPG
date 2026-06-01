@@ -5,13 +5,13 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === 'production' ? '/TBT-RPG/v2/' : '/',
+  base: mode === 'production' ? '/TBT-RPG/' : '/',
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'TBT-RPG v2',
+        name: 'TBT-RPG',
         short_name: 'TBT-RPG',
         description: 'Sua ficha de D&D, facilitada.',
         theme_color: '#0F0D14',
