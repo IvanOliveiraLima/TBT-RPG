@@ -197,4 +197,6 @@ export interface Character {
   // Metadata
   createdAt: number
   updatedAt: number
+
+  locked?: boolean        // when true: permanent fields read-only; transients still editable
 }

@@ -2,6 +2,7 @@ import type React from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { Label } from '../ui/Label'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -32,6 +33,7 @@ interface BackstoryBlockProps {
 
 export function BackstoryBlock({ character, onUpdate }: BackstoryBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   return (
     <div style={CARD} data-testid="backstory-block">
       <Label style={{ marginBottom: 10 }}>{t('backstory.section_title')}</Label>
@@ -42,6 +44,7 @@ export function BackstoryBlock({ character, onUpdate }: BackstoryBlockProps) {
         aria-label={t('backstory.section_title')}
         data-testid="backstory-textarea"
         style={TEXTAREA}
+        readOnly={locked}
       />
     </div>
   )

@@ -5,6 +5,7 @@ import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Pip } from '../ui/Pip'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 interface SkillsBlockProps {
   character: Character
@@ -47,6 +48,7 @@ const PIP_BUTTON: React.CSSProperties = {
 
 export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
 
   function skillLabel(name: string): string {
@@ -109,11 +111,11 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
               <button
                 type="button"
                 data-testid={`skill-${s.name}-prof-toggle`}
-                disabled={!onUpdate}
+                disabled={!onUpdate || locked}
                 aria-pressed={s.proficient}
                 aria-label={t('aria.skill_proficient_toggle', { skill: label })}
                 onClick={() => { handleToggleProficient(s) }}
-                style={{ ...PIP_BUTTON, cursor: onUpdate ? 'pointer' : 'default' }}
+                style={{ ...PIP_BUTTON, cursor: (onUpdate && !locked) ? 'pointer' : 'default' }}
               >
                 <Pip
                   state={s.proficient ? 'filled' : 'empty'}
@@ -124,11 +126,11 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
               <button
                 type="button"
                 data-testid={`skill-${s.name}-exp-toggle`}
-                disabled={!onUpdate}
+                disabled={!onUpdate || locked}
                 aria-pressed={s.expertise}
                 aria-label={t('aria.skill_expertise_toggle', { skill: label })}
                 onClick={() => { handleToggleExpertise(s) }}
-                style={{ ...PIP_BUTTON, cursor: onUpdate ? 'pointer' : 'default' }}
+                style={{ ...PIP_BUTTON, cursor: (onUpdate && !locked) ? 'pointer' : 'default' }}
               >
                 <Pip
                   state={s.expertise ? 'filled' : 'empty'}

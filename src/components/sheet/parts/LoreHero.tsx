@@ -4,6 +4,7 @@ import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { CharacterImageModal } from './CharacterImageModal'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -24,6 +25,7 @@ interface LoreHeroProps {
 
 export function LoreHero({ character, onUpdate }: LoreHeroProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [modalOpenCount, setModalOpenCount] = useState(0)
 
@@ -47,11 +49,12 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
     <div style={CARD} data-testid="lore-hero">
       <div className="flex flex-col lg:flex-row" style={{ gap: 18, alignItems: 'flex-start' }}>
 
-        {/* Portrait — clickable to open image modal */}
+        {/* Portrait — clickable to open image modal (disabled when locked) */}
         <button
           type="button"
           aria-label={t('aria.edit_image')}
-          onClick={() => { setModalOpenCount(c => c + 1); setImageModalOpen(true) }}
+          disabled={locked}
+          onClick={() => { if (!locked) { setModalOpenCount(c => c + 1); setImageModalOpen(true) } }}
           className="w-40 h-40 lg:w-[200px] lg:h-[200px]"
           style={{
             flexShrink: 0,

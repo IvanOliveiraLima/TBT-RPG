@@ -9,6 +9,7 @@
 import { useTranslation } from '@/i18n'
 import { ConfirmableRemoveButton } from './ConfirmableRemoveButton'
 
+
 const T = {
   bg:           '#15121C',
   bgInput:      'transparent',
@@ -37,6 +38,8 @@ interface EditableStringListProps {
   emptyHint: string
   /** data-testid prefix applied to the container */
   listTestId?: string
+  /** When true, inputs are readOnly and add/remove buttons are hidden */
+  locked?: boolean
 }
 
 export function EditableStringList({
@@ -48,18 +51,22 @@ export function EditableStringList({
   addLabel,
   emptyHint,
   listTestId,
+  locked,
 }: EditableStringListProps) {
   const { t } = useTranslation()
 
   function add() {
+    if (locked) return
     onUpdate([...items, ''])
   }
 
   function update(index: number, value: string) {
+    if (locked) return
     onUpdate(items.map((v, i) => (i === index ? value : v)))
   }
 
   function remove(index: number) {
+    if (locked) return
     onUpdate(items.filter((_, i) => i !== index))
   }
 
@@ -95,6 +102,7 @@ export function EditableStringList({
             onChange={e => update(i, e.target.value)}
             placeholder={placeholder}
             aria-label={t(inputAriaKey as Parameters<typeof t>[0], { index: i + 1 })}
+            readOnly={locked}
             style={{
               flex: 1,
               background: T.bgInput,
@@ -109,32 +117,36 @@ export function EditableStringList({
             onFocus={e => { e.currentTarget.style.borderColor = T.borderFocus }}
             onBlur={e => { e.currentTarget.style.borderColor = T.border }}
           />
-          <ConfirmableRemoveButton
-            onConfirm={() => remove(i)}
-            ariaLabel={t(removeAriaKey as Parameters<typeof t>[0], { name: item || `#${i + 1}` })}
-            size="sm"
-          />
+          {!locked && (
+            <ConfirmableRemoveButton
+              onConfirm={() => remove(i)}
+              ariaLabel={t(removeAriaKey as Parameters<typeof t>[0], { name: item || `#${i + 1}` })}
+              size="sm"
+            />
+          )}
         </div>
       ))}
 
-      <button
-        type="button"
-        data-action="add"
-        onClick={add}
-        style={{
-          background: 'none',
-          border: `1px dashed ${T.border}`,
-          borderRadius: 6,
-          color: T.textMuted,
-          fontSize: 11,
-          padding: '3px 8px',
-          cursor: 'pointer',
-          marginTop: 2,
-          fontFamily: T.sans,
-        }}
-      >
-        {addLabel}
-      </button>
+      {!locked && (
+        <button
+          type="button"
+          data-action="add"
+          onClick={add}
+          style={{
+            background: 'none',
+            border: `1px dashed ${T.border}`,
+            borderRadius: 6,
+            color: T.textMuted,
+            fontSize: 11,
+            padding: '3px 8px',
+            cursor: 'pointer',
+            marginTop: 2,
+            fontFamily: T.sans,
+          }}
+        >
+          {addLabel}
+        </button>
+      )}
     </div>
   )
 }

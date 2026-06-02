@@ -1,6 +1,7 @@
 import type { Character, Feature } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   bg:          '#1A1625',
@@ -46,9 +47,10 @@ interface FeatureCardProps {
   datalistId: string
   onUpdate: (partial: Partial<Feature>) => void
   onRemove: () => void
+  locked?: boolean
 }
 
-function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardProps) {
+function FeatureCard({ feature, datalistId, onUpdate, onRemove, locked }: FeatureCardProps) {
   const { t } = useTranslation()
 
   function focusBorder(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
@@ -83,6 +85,7 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           style={{ ...INPUT_STYLE, flex: 2, minWidth: 0 }}
           onFocus={focusBorder}
           onBlur={blurBorder}
+          readOnly={locked}
         />
 
         <input
@@ -96,6 +99,7 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           style={{ ...INPUT_STYLE, flex: 1, minWidth: 0 }}
           onFocus={focusBorder}
           onBlur={blurBorder}
+          readOnly={locked}
         />
 
         <select
@@ -103,13 +107,14 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           onChange={e => {
             onUpdate({ type: e.target.value as Feature['type'] })
           }}
+          disabled={locked}
           aria-label={t('aria.feature_type')}
           data-testid={`feature-type-${feature.id}`}
           className="dark-select"
           style={{
             ...INPUT_STYLE,
             flexShrink: 0,
-            cursor: 'pointer',
+            cursor: locked ? 'default' : 'pointer',
           }}
           onFocus={focusBorder}
           onBlur={blurBorder}
@@ -119,11 +124,13 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
           <option value="reaction">{t('features.type_reaction')}</option>
         </select>
 
-        <ConfirmableRemoveButton
-          onConfirm={onRemove}
-          ariaLabel={t('aria.remove_feature', { name: feature.name || `#${feature.id}` })}
-          testId={`feature-remove-${feature.id}`}
-        />
+        {!locked && (
+          <ConfirmableRemoveButton
+            onConfirm={onRemove}
+            ariaLabel={t('aria.remove_feature', { name: feature.name || `#${feature.id}` })}
+            testId={`feature-remove-${feature.id}`}
+          />
+        )}
       </div>
 
       {/* Row 2: description */}
@@ -142,6 +149,7 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove }: FeatureCardPro
         }}
         onFocus={focusBorder}
         onBlur={blurBorder}
+        readOnly={locked}
       />
 
       {/* Row 3: uses (only when type=active) */}
@@ -203,6 +211,7 @@ interface FeaturesListProps {
 
 export function FeaturesList({ character, onUpdate }: FeaturesListProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const { features } = character
 
   const DATALIST_ID = 'feature-sources-datalist'
@@ -278,10 +287,11 @@ export function FeaturesList({ character, onUpdate }: FeaturesListProps) {
           datalistId={DATALIST_ID}
           onUpdate={partial => updateFeature(f.id, partial)}
           onRemove={() => removeFeature(f.id)}
+          {...(locked ? { locked: true } : {})}
         />
       ))}
 
-      {onUpdate && (
+      {onUpdate && !locked && (
         <button
           type="button"
           data-testid="features-add"

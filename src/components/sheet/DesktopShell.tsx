@@ -6,6 +6,8 @@ import { Sidebar } from './Sidebar'
 import { useTranslation } from '@/i18n'
 import { StatusBadge } from '@/components/primitives/StatusBadge'
 import { useAuthStatus } from '@/hooks/useAuthStatus'
+import { useCharactersStore } from '@/store/characters'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   borderSubtle: '#2A2537',
@@ -29,6 +31,8 @@ interface DesktopShellProps {
 export function DesktopShell({ character, activeTab, onTabChange, children }: DesktopShellProps) {
   const { t } = useTranslation()
   const authStatus = useAuthStatus()
+  const updateCharacter = useCharactersStore(s => s.updateCharacter)
+  const locked = useCharacterLocked(character.id)
   return (
     <div style={{
       display: 'flex',
@@ -108,15 +112,17 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
           ))}
 
           <button
-            onClick={() => alert(t('phase_c.lock_unavailable'))}
+            data-testid="lock-btn"
+            onClick={() => void updateCharacter(character.id, { locked: !locked })}
             style={{
-              background: T.ruby,
-              border: `1px solid ${T.rubyHover}`,
-              color: '#fff', borderRadius: 8,
+              background: locked ? 'rgba(244, 67, 54, 0.15)' : T.ruby,
+              border: `1px solid ${locked ? 'rgba(244, 67, 54, 0.8)' : T.rubyHover}`,
+              color: locked ? 'rgba(244, 67, 54, 0.8)' : '#fff',
+              borderRadius: 8,
               padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            🔒 {t('drawer.lock')}
+            {locked ? `🔓 ${t('chrome.unlock')}` : `🔒 ${t('drawer.lock')}`}
           </button>
         </div>
 

@@ -13,6 +13,7 @@ import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   textPrimary:   '#F4EFE0',
@@ -43,15 +44,18 @@ interface SpellHeaderProps {
 
 export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
 
   const saveDC     = deriveSpellSaveDC(character.abilities, character.spellcastingAbility, character.proficiencyBonus)
   const atkBonus   = deriveSpellAttackBonus(character.abilities, character.spellcastingAbility, character.proficiencyBonus)
 
   function handleClassChange(value: string) {
+    if (locked) return
     onUpdate?.({ spellcastingClass: value })
   }
 
   function handleAbilityChange(value: string) {
+    if (locked) return
     const ability = value as AbilityKey | ''
     // Derive new DC for CombatStrip (keep spellSaveDC in sync)
     const newDC = ability
@@ -90,6 +94,7 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
                 style={SEAMLESS}
                 className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors outline-none"
                 placeholder={t('spells.class_placeholder')}
+                readOnly={locked}
               />
             )}
           </div>
@@ -107,10 +112,11 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
               <select
                 value={character.spellcastingAbility}
                 onChange={e => handleAbilityChange(e.target.value)}
+                disabled={locked}
                 aria-label={t('aria.spellcasting_ability_select')}
                 style={{
                   ...SEAMLESS,
-                  cursor: 'pointer',
+                  cursor: locked ? 'default' : 'pointer',
                   appearance: 'none',
                 }}
                 className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors outline-none"

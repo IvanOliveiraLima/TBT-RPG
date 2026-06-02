@@ -7,6 +7,8 @@ import { BottomTabBar } from './BottomTabBar'
 import { useTranslation } from '@/i18n'
 import { StatusBadge } from '@/components/primitives/StatusBadge'
 import { useAuthStatus } from '@/hooks/useAuthStatus'
+import { useCharactersStore } from '@/store/characters'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   surface:      '#15121C',
@@ -32,6 +34,8 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
   const navigate = useNavigate()
   const { t, lang, setLang } = useTranslation()
   const authStatus = useAuthStatus()
+  const updateCharacter = useCharactersStore(s => s.updateCharacter)
+  const locked = useCharacterLocked(character.id)
 
   return (
     <div style={{
@@ -126,7 +130,6 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
             {([
               ['drawer.export_json', 'phase_c.export_unavailable'],
               ['drawer.import_json', 'phase_c.editing_coming_soon'],
-              ['drawer.lock',        'phase_c.lock_unavailable'],
             ] as const).map(([labelKey, alertKey]) => (
               <button
                 key={labelKey}
@@ -145,6 +148,24 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                 {t(labelKey)}
               </button>
             ))}
+
+            {/* Lock / Unlock button */}
+            <button
+              data-testid="mobile-lock-btn"
+              onClick={() => { void updateCharacter(character.id, { locked: !locked }); setDrawerOpen(false) }}
+              style={{
+                background: locked ? 'rgba(244, 67, 54, 0.15)' : 'transparent',
+                border: 'none',
+                color: locked ? 'rgba(244, 67, 54, 0.8)' : T.textSecondary,
+                padding: '10px 12px',
+                borderRadius: 8,
+                fontSize: 13, fontWeight: locked ? 600 : 500,
+                textAlign: 'left', cursor: 'pointer',
+                fontFamily: T.sans,
+              }}
+            >
+              {locked ? `🔓 ${t('chrome.unlock')}` : `🔒 ${t('drawer.lock')}`}
+            </button>
 
             <div style={{ marginTop: 'auto' }}>
               <div style={{

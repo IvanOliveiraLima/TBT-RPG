@@ -7,6 +7,7 @@ import {
 import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Pip } from '../ui/Pip'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 interface SavingThrowsProps {
   character: Character
@@ -17,6 +18,7 @@ const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
 export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const profMap = new Map(character.savingThrows.map((st) => [st.ability, st.proficient]))
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
 
@@ -58,7 +60,7 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
             <button
               type="button"
               onClick={() => handleToggle(k)}
-              disabled={!onUpdate}
+              disabled={!onUpdate || locked}
               aria-label={t('aria.save_proficiency_toggle', { ability: t(`saves.ability.${k}`) })}
               aria-pressed={proficient}
               data-testid={`save-${k}-toggle`}
@@ -67,7 +69,7 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
                 border: 'none',
                 padding: 0,
                 margin: 0,
-                cursor: onUpdate ? 'pointer' : 'default',
+                cursor: (onUpdate && !locked) ? 'pointer' : 'default',
                 display: 'flex',
                 alignItems: 'center',
                 flexShrink: 0,

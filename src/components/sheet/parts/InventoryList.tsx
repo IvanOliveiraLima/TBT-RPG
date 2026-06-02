@@ -24,6 +24,7 @@ import {
 import { formatWeight } from '@/utils/format'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
   textPrimary:   '#F4EFE0',
@@ -65,6 +66,7 @@ interface InventoryListProps {
 
 export function InventoryList({ character, onUpdate }: InventoryListProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const readOnly = !onUpdate
 
   const items = character.inventory
@@ -208,12 +210,13 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
                       readOnly={readOnly}
                       onUpdate={partial => updateItem(item.id, partial)}
                       onRemove={() => removeItem(item.id)}
+                      {...(locked ? { locked: true } : {})}
                     />
                   ))}
                 </div>
 
                 {/* Per-category add button */}
-                {!readOnly && (
+                {!readOnly && !locked && (
                   <button
                     data-testid={`add-item-${category}`}
                     onClick={() => addItem(category)}
@@ -251,9 +254,10 @@ interface ItemCardProps {
   readOnly: boolean
   onUpdate: (partial: Partial<InventoryItem>) => void
   onRemove: () => void
+  locked?: boolean
 }
 
-function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
+function ItemCard({ item, readOnly, onUpdate, onRemove, locked }: ItemCardProps) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -268,7 +272,8 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
   }, [item.name])
 
   function handleCardClick(e: React.MouseEvent) {
-    if (readOnly) return
+    // readOnly (no onUpdate at all): don't expand; locked: allow expand for read-only view
+    if (readOnly && !locked) return
     const target = e.target as HTMLElement
     if (target.closest('input, button, textarea, select, [role="checkbox"]')) return
     setExpanded(prev => !prev)
@@ -287,15 +292,15 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
       ref={cardRef}
       data-testid={`inventory-item-${item.id}`}
       onClick={handleCardClick}
-      onBlur={readOnly ? undefined : handleBlur}
-      tabIndex={readOnly ? undefined : -1}
+      onBlur={(readOnly && !locked) ? undefined : handleBlur}
+      tabIndex={(readOnly && !locked) ? undefined : -1}
       style={{
         borderRadius:  8,
         border:        `1px solid ${expanded ? T.borderDefault : T.borderSubtle}`,
         background:    expanded ? T.bgCard : 'transparent',
         transition:    'background 150ms, border-color 150ms',
         overflow:      'hidden',
-        cursor:        readOnly ? 'default' : 'pointer',
+        cursor:        (readOnly && !locked) ? 'default' : 'pointer',
       }}
     >
       {/* Compact header row */}
@@ -338,7 +343,8 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
             data-testid={`item-name-${item.id}`}
             style={{ ...SEAMLESS, flex: 1, minWidth: 0 }}
             className="hover:border-[#2A2537] focus:border-[#2A2537] outline-none transition-colors"
-            autoFocus
+            autoFocus={!locked}
+            readOnly={locked}
           />
         ) : (
           <span
@@ -386,7 +392,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
         </span>
 
         {/* Remove button */}
-        {!readOnly && (
+        {!readOnly && !locked && (
           <ConfirmableRemoveButton
             onConfirm={onRemove}
             ariaLabel={t('aria.remove_item' as TranslationKey, { name: item.name || '#' })}
@@ -396,7 +402,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
         )}
       </div>
 
-      {/* Expanded edit form */}
+      {/* Expanded edit form — shown when expanded and either editable or locked (for read-only view) */}
       {expanded && !readOnly && (
         <div
           style={{
@@ -410,6 +416,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
           <div style={{ display: 'flex', gap: 8 }}>
             <div style={{ flex: 1 }}>
               <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('inventory.quantity_label')}</Label>
+              {/* Quantity is transient (spending consumables) — NOT locked */}
               <NumberField
                 value={item.quantity}
                 min={0}
@@ -436,6 +443,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
                 onChange={n => onUpdate({ weight: n })}
                 aria-label={t('aria.item_weight_input' as TranslationKey)}
                 data-testid={`item-weight-input-${item.id}`}
+                {...(locked ? { readOnly: true } : {})}
                 style={{
                   ...SEAMLESS,
                   border: `1px solid ${T.borderSubtle}`,
@@ -448,13 +456,14 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
               <select
                 value={item.category}
                 onChange={e => onUpdate({ category: e.target.value as ItemCategory })}
+                disabled={locked}
                 aria-label={t('aria.item_category' as TranslationKey)}
                 data-testid={`item-category-${item.id}`}
                 className="dark-select"
                 style={{
                   ...SEAMLESS,
                   border:     `1px solid ${T.borderSubtle}`,
-                  cursor:     'pointer',
+                  cursor:     locked ? 'default' : 'pointer',
                   appearance: 'none',
                 }}
               >
@@ -477,6 +486,7 @@ function ItemCard({ item, readOnly, onUpdate, onRemove }: ItemCardProps) {
               rows={3}
               aria-label={t('aria.item_description' as TranslationKey)}
               data-testid={`item-description-${item.id}`}
+              readOnly={locked}
               style={{
                 ...SEAMLESS,
                 border:     `1px solid ${T.borderSubtle}`,

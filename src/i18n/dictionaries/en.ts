@@ -33,6 +33,7 @@ const en = {
   'drawer.export_json': 'Export',
   'drawer.import_json': 'Import',
   'drawer.lock': 'Lock',
+  'chrome.unlock': 'Unlock',
 
   // Auth
   'auth.connected':     'Connected',
@@ -449,7 +450,6 @@ const en = {
   'phase_c.editing_coming_soon': 'Editing will come in Phase C',
   'phase_c.details_coming_soon': 'Details will come in Phase C',
   'phase_c.export_unavailable': 'Export — not implemented in this phase.',
-  'phase_c.lock_unavailable': 'Unlock / Lock — not implemented in this phase.',
 
   // Common
   'common.cancel': 'Cancel',

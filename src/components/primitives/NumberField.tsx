@@ -9,6 +9,7 @@ interface NumberFieldProps
   max?: number
   onChange: (n: number) => void
   showSteppers?: boolean
+  readOnly?: boolean
 }
 
 /**
@@ -28,6 +29,7 @@ export function NumberField({
   max = 999,
   onChange,
   showSteppers = false,
+  readOnly,
   ...rest
 }: NumberFieldProps) {
   const { t } = useTranslation()
@@ -41,6 +43,7 @@ export function NumberField({
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (readOnly) return
     const raw = e.target.value
     setInputValue(raw)
     if (raw === '') return
@@ -66,7 +69,7 @@ export function NumberField({
     if (next !== value) onChange(next)
   }
 
-  const fieldDisabled = rest.disabled === true
+  const fieldDisabled = rest.disabled === true || readOnly === true
 
   // When steppers are active, separate the passed style so we can override
   // width-related properties. The input must use flex: 1 1 0 to consume
@@ -87,6 +90,7 @@ export function NumberField({
       value={inputValue}
       onChange={handleChange}
       onBlur={handleBlur}
+      readOnly={readOnly}
       style={inputStyle}
       {...inputRest}
     />
