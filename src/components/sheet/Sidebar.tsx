@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Character } from '@/domain/character'
 import { formatClassesShort } from '@/domain/derived'
 import type { TabKey } from './types'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
+import { useAuthStore } from '@/store/auth'
 
 const T = {
   surface:      '#15121C',
@@ -35,6 +36,8 @@ interface SidebarProps {
 
 export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
   const { t, lang, setLang } = useTranslation()
+  const navigate = useNavigate()
+  const user = useAuthStore(s => s.user)
   const portrait = character.images.character
 
   return (
@@ -89,7 +92,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
           padding: '6px 10px',
           fontSize: 12,
           fontWeight: 500,
-          marginBottom: 12,
+          marginBottom: 4,
           borderRadius: 6,
         }}
       >
@@ -100,6 +103,30 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
         </svg>
         <span>{t('nav.my_characters')}</span>
       </Link>
+
+      {/* Campaigns link */}
+      <button
+        data-testid="sidebar-campaigns-btn"
+        onClick={() => navigate(user ? '/campaigns' : '/login?redirectTo=/campaigns')}
+        style={{
+          background: 'transparent', border: 'none',
+          color: T.textMuted,
+          padding: '6px 10px',
+          fontSize: 12, fontWeight: 500,
+          textAlign: 'left', cursor: 'pointer',
+          borderRadius: 6, marginBottom: 12,
+          fontFamily: T.sans,
+          display: 'flex', alignItems: 'center', gap: 6,
+          width: '100%',
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span>{t('chrome.my_campaigns')}</span>
+      </button>
 
       {/* Character mini-card */}
       <div style={{
