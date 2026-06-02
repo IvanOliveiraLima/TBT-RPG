@@ -555,9 +555,15 @@ const pt: Record<keyof typeof en, string> = {
   'profile_setup.error_unknown':               'Ocorreu um erro inesperado.',
 
   // Aria — campaigns
-  'aria.create_campaign':  'Criar nova campanha',
-  'aria.delete_campaign':  'Excluir campanha {name}',
-  'aria.campaign_options': 'Opções da campanha {name}',
+  'aria.create_campaign':       'Criar nova campanha',
+  'aria.delete_campaign':       'Excluir campanha {name}',
+  'aria.campaign_options':      'Opções da campanha {name}',
+  'aria.compact_campaign_card': 'Campanha {name}',
+
+  // CharSelect — campaigns section
+  'characters_screen.my_campaigns':           'Minhas Campanhas',
+  'characters_screen.campaigns_empty':        'Nenhuma campanha ainda. Crie a sua primeira!',
+  'characters_screen.campaigns_login_prompt': 'Entre para criar e gerenciar campanhas.',
 };
 
 export default pt;

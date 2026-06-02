@@ -551,9 +551,15 @@ const en = {
   'profile_setup.error_unknown':               'An unexpected error occurred.',
 
   // Aria — campaigns
-  'aria.create_campaign':  'Create new campaign',
-  'aria.delete_campaign':  'Delete campaign {name}',
-  'aria.campaign_options': 'Options for campaign {name}',
+  'aria.create_campaign':       'Create new campaign',
+  'aria.delete_campaign':       'Delete campaign {name}',
+  'aria.campaign_options':      'Options for campaign {name}',
+  'aria.compact_campaign_card': 'Campaign {name}',
+
+  // CharSelect — campaigns section
+  'characters_screen.my_campaigns':           'My Campaigns',
+  'characters_screen.campaigns_empty':        'No campaigns yet. Create your first one!',
+  'characters_screen.campaigns_login_prompt': 'Sign in to create and manage campaigns.',
 } as const;
 
 export default en;
