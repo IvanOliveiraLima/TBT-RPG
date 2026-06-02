@@ -509,6 +509,55 @@ const pt: Record<keyof typeof en, string> = {
   'aria.character_options': 'Opções do personagem',
   'aria.confirm_delete':    'Confirmar exclusão',
   'aria.cancel_delete':     'Cancelar exclusão',
+
+  // Navigation — campaigns
+  'chrome.my_campaigns': 'Minhas Campanhas',
+
+  // Campaign select page
+  'campaigns.my_campaigns':    'Minhas Campanhas',
+  'campaigns.count_one':       '{count} campanha',
+  'campaigns.count_other':     '{count} campanhas',
+  'campaigns.create':          'Criar Campanha',
+  'campaigns.empty_state':     'Nenhuma campanha ainda. Crie a sua primeira!',
+  'campaigns.detail_placeholder':      'Conteúdo da campanha em breve.',
+  'campaigns.detail_placeholder_hint': 'Convidar jogadores e adicionar personagens estará disponível em breve.',
+
+  // Create campaign modal
+  'create_campaign.title':              'Criar Nova Campanha',
+  'create_campaign.name_label':         'Nome da Campanha',
+  'create_campaign.name_placeholder':   'A Mina Perdida de Phandelver',
+  'create_campaign.description_label':  'Descrição (opcional)',
+  'create_campaign.description_placeholder': 'Uma breve descrição da campanha...',
+  'create_campaign.create_button':      'Criar',
+  'create_campaign.creating':           'Criando…',
+  'create_campaign.error_create_failed': 'Não foi possível criar a campanha. Tente novamente.',
+  'create_campaign.error_not_authenticated': 'Você precisa estar conectado para criar uma campanha.',
+
+  // Delete campaign modal
+  'delete_campaign.title':   'Excluir Campanha?',
+  'delete_campaign.warning': 'Tem certeza que deseja excluir "{name}"?',
+  'delete_campaign.note':    'Esta ação não pode ser desfeita. Todos os membros serão removidos.',
+  'delete_campaign.confirm': 'Excluir',
+  'delete_campaign.deleting': 'Excluindo…',
+  'delete_campaign.error_delete_failed': 'Não foi possível excluir a campanha. Tente novamente.',
+
+  // Profile setup modal
+  'profile_setup.title':              'Bem-vindo(a)!',
+  'profile_setup.description':        'Escolha um nome de exibição. É assim que outros membros da campanha verão você.',
+  'profile_setup.display_name_label': 'Nome de exibição',
+  'profile_setup.display_name_placeholder': 'Seu nome ou apelido',
+  'profile_setup.save':               'Continuar',
+  'profile_setup.saving':             'Salvando…',
+  'profile_setup.error_empty_display_name':    'Nome de exibição não pode ficar vazio.',
+  'profile_setup.error_display_name_too_long': 'Nome muito longo (máx 50 caracteres).',
+  'profile_setup.error_upsert_failed':         'Não foi possível salvar. Tente novamente.',
+  'profile_setup.error_not_authenticated':     'Você precisa estar conectado.',
+  'profile_setup.error_unknown':               'Ocorreu um erro inesperado.',
+
+  // Aria — campaigns
+  'aria.create_campaign':  'Criar nova campanha',
+  'aria.delete_campaign':  'Excluir campanha {name}',
+  'aria.campaign_options': 'Opções da campanha {name}',
 };
 
 export default pt;

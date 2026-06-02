@@ -505,6 +505,55 @@ const en = {
   'aria.character_options': 'Character options',
   'aria.confirm_delete':    'Confirm deletion',
   'aria.cancel_delete':     'Cancel deletion',
+
+  // Navigation — campaigns
+  'chrome.my_campaigns': 'My Campaigns',
+
+  // Campaign select page
+  'campaigns.my_campaigns':    'My Campaigns',
+  'campaigns.count_one':       '{count} campaign',
+  'campaigns.count_other':     '{count} campaigns',
+  'campaigns.create':          'Create Campaign',
+  'campaigns.empty_state':     "No campaigns yet. Create your first one!",
+  'campaigns.detail_placeholder':      'Campaign content coming soon.',
+  'campaigns.detail_placeholder_hint': 'Inviting players and adding characters will be available shortly.',
+
+  // Create campaign modal
+  'create_campaign.title':              'Create New Campaign',
+  'create_campaign.name_label':         'Campaign Name',
+  'create_campaign.name_placeholder':   'The Lost Mine of Phandelver',
+  'create_campaign.description_label':  'Description (optional)',
+  'create_campaign.description_placeholder': 'A brief description of the campaign...',
+  'create_campaign.create_button':      'Create',
+  'create_campaign.creating':           'Creating…',
+  'create_campaign.error_create_failed': 'Could not create campaign. Please try again.',
+  'create_campaign.error_not_authenticated': 'You must be signed in to create a campaign.',
+
+  // Delete campaign modal
+  'delete_campaign.title':   'Delete Campaign?',
+  'delete_campaign.warning': 'Are you sure you want to delete "{name}"?',
+  'delete_campaign.note':    'This action cannot be undone. All members will be removed.',
+  'delete_campaign.confirm': 'Delete',
+  'delete_campaign.deleting': 'Deleting…',
+  'delete_campaign.error_delete_failed': 'Could not delete campaign. Please try again.',
+
+  // Profile setup modal
+  'profile_setup.title':              'Welcome!',
+  'profile_setup.description':        'Choose a display name. This is how other campaign members will see you.',
+  'profile_setup.display_name_label': 'Display name',
+  'profile_setup.display_name_placeholder': 'Your name or nickname',
+  'profile_setup.save':               'Continue',
+  'profile_setup.saving':             'Saving…',
+  'profile_setup.error_empty_display_name':    'Display name cannot be empty.',
+  'profile_setup.error_display_name_too_long': 'Display name is too long (max 50 chars).',
+  'profile_setup.error_upsert_failed':         'Could not save profile. Please try again.',
+  'profile_setup.error_not_authenticated':     'You must be signed in.',
+  'profile_setup.error_unknown':               'An unexpected error occurred.',
+
+  // Aria — campaigns
+  'aria.create_campaign':  'Create new campaign',
+  'aria.delete_campaign':  'Delete campaign {name}',
+  'aria.campaign_options': 'Options for campaign {name}',
 } as const;
 
 export default en;
