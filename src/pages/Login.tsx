@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useTranslation } from '@/i18n'
 
 export default function Login() {
   const navigate   = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') ?? '/'
   const { signIn } = useAuthStore()
   const { t }      = useTranslation()
 
@@ -19,7 +21,7 @@ export default function Login() {
     setLoading(true)
     try {
       await signIn(email, password)
-      navigate('/')
+      navigate(redirectTo)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('auth.sign_in_failed'))
     } finally {

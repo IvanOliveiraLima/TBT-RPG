@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/primitives/StatusBadge'
 import { useAuthStatus } from '@/hooks/useAuthStatus'
 import { useCharactersStore } from '@/store/characters'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useAuthStore } from '@/store/auth'
 
 const T = {
   surface:      '#15121C',
@@ -36,6 +37,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
   const authStatus = useAuthStatus()
   const updateCharacter = useCharactersStore(s => s.updateCharacter)
   const locked = useCharacterLocked(character.id)
+  const authUser = useAuthStore(s => s.user)
 
   return (
     <div style={{
@@ -125,6 +127,33 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
                   stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               {t('nav.my_characters')}
+            </button>
+
+            {/* Campaigns link */}
+            <button
+              data-testid="mobile-campaigns-btn"
+              onClick={() => {
+                navigate(authUser ? '/campaigns' : '/login?redirectTo=/campaigns')
+                setDrawerOpen(false)
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: T.textSecondary,
+                padding: '10px 12px',
+                borderRadius: 8,
+                fontSize: 13, fontWeight: 500,
+                textAlign: 'left', cursor: 'pointer',
+                fontFamily: T.sans,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('chrome.my_campaigns')}
             </button>
 
             {([
