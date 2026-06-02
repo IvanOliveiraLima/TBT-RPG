@@ -221,7 +221,7 @@ If `design-reference/` is absent in a new session, ask the user to provide the f
 
 ### IndexedDB strategy
 
-The app uses `dnd-character-sheet-v2` (version 9) and stores `Character` objects
+The app uses `dnd-character-sheet-v2` (version 10) and stores `Character` objects
 directly (v2-native schema). The app never reads the v1 DB (`dnd-character-sheet`)
 at boot or runtime. `adapter.ts` and `migration.ts` have been deleted as part of
 the v2 promotion refactor (tag `v1-final` preserves v1 history).
@@ -342,8 +342,8 @@ After a clean `npm install` (no flags), `npm test` should report:
 
 | Metric | Baseline (after promote-v2-to-root refactor) |
 |--------|----------------------------------------------|
-| Test files | 58 |
-| Tests | 1200 |
+| Test files | 59 |
+| Tests | 1251 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -512,6 +512,46 @@ Visual-only badge showing login state in header (desktop) and drawer (mobile).
 - `importCharacter()`: preserves cloud timestamp exactly (no `Date.now()` stamp → no ping-pong re-upload)
 - 9 new tests covering upload-phase guard and multi-device delete propagation
 
+### Lock functional sub-phase (COMPLETED — PR #122)
+
+Read-only mode with well-defined permanent vs transient scope.
+
+- `locked?: boolean` added to `Character` domain model (`src/domain/character.ts`)
+- DB schema bumped v9 → v10: cursor-based backfill + `normalizeLocked()` runtime defense
+- `useCharacterLocked(characterId)` hook in `src/hooks/useCharacterLocked.ts` — thin
+  Zustand selector, called directly by leaf components (no prop drilling through tabs)
+- Lock toggle button in `DesktopShell` (header, top-right) and `MobileShell` (drawer);
+  shows 🔒 Bloquear (unlocked) ↔ 🔓 Destravar (locked) with red-tint visual
+- **Permanent stats read-only when locked:** identity fields, abilities, saving throw
+  proficiencies, skill proficiencies, features, languages, proficiencies, attacks,
+  spell card fields (except prepared toggle), inventory item fields (except quantity
+  and equipped), lore/backstory/notes/personality, portrait upload
+- **Transient stats always editable:** HP current/temp, ±HP steppers, death saves,
+  hit dice current, spell slot pips (current), prepared toggle, equipped toggle,
+  item quantity, currency PP/GP/SP/CP, inspiration, XP
+- Cards (AttackCard, SpellCard, ItemCard) still expand when locked — form shows with
+  `readOnly` inputs so user can consult details during play
+- `readOnly = !onUpdate` (preview mode) vs `locked` (lock mode): two distinct concepts;
+  `onUpdate` continues to pass when locked (transients need it)
+- Hotfix: SpellCard name input lives in the compact header row (outside the
+  `{expanded && !readOnly && (...)}` form block). The input was missing `readOnly={locked}`;
+  fix added `readOnly={locked}` and `autoFocus={!locked}` to that specific input
+- 51 new tests in `tests/lock-mode.test.tsx` (normalizeLocked, DB migration, hook,
+  toggle button, field read-only coverage for all permanent and transient fields)
+
+#### Lock mode pattern
+
+Permanent fields receive `readOnly={fieldReadOnly}` or `disabled={fieldReadOnly}`
+where `fieldReadOnly = !onUpdate || locked`. Transient fields receive only
+`readOnly={transientReadOnly}` where `transientReadOnly = !onUpdate` — lock does NOT
+restrict transient fields.
+
+Care must be taken when inputs live **outside** the expanded form block
+(e.g. spell name input in the compact row header) — these also need explicit
+`readOnly={locked}`.
+
+---
+
 ### v2 promotion to root — v1 removal (COMPLETED — PR #118)
 
 Structural reorganisation: v2 becomes the root application; v1 is removed from the repository.
@@ -625,6 +665,7 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 | v7 | `dnd-character-sheet-v2` | inventory items with category/equipped; EP removed from currency (C.1.f) |
 | v8 | `dnd-character-sheet-v2` | BUGGY — `deleted_characters` store was placed after async cursor ops; versionchange tx auto-committed before createObjectStore ran for some install paths |
 | v9 | `dnd-character-sheet-v2` | `deleted_characters` store (tombstones for sync sub-fase 2.1); createObjectStore moved to synchronous Phase 1 of upgrade callback before any `await`; also heals broken v8 installs via defensive `< 9` guard |
+| v10 | `dnd-character-sheet-v2` | adds `locked: boolean` field to `Character`; cursor-based backfill sets `locked: false` on existing characters; `normalizeLocked()` runtime defense added to read path (lock functional sub-phase) |
 
 Each schema bump is a cursor-based upgrade callback in `src/data/db.ts`, idempotent.
 
@@ -1009,6 +1050,15 @@ cycle to avoid N+1 queries.
 | Auth badge text "Conectado"/"Entrar" (not "Sincronizado") | Auth badge sub-phase | Doesn't promise sync that doesn't exist yet |
 | Auth badge renders null during loading (no flash) | Auth badge sub-phase | `useAuthStore` initial state has `loading: true`; prevents FOUC |
 | Lock button is stub until functional sub-phase | Polish horizontal | Labels consistent; behavior placeholder |
+| Lock scope: permanent vs transient stats | Lock sub-phase | Play-session use case — track HP/slots without altering permanent stats |
+| Lock visual feedback subtle (button label + red tint, no banner) | Lock sub-phase | Non-intrusive; lock destroys nothing so no alarming UI needed |
+| Lock toggle direct (no confirmation modal) | Lock sub-phase | Lock is reversible instantly; accidental destravar has no consequence |
+| Cards (AttackCard/SpellCard/ItemCard) expand even when locked | Lock sub-phase | User consults details during play without unlocking |
+| Lock persisted per-character via IndexedDB schema v10 | Lock sub-phase | Lock state survives reload independently per character |
+| Item quantity is transient (editable when locked) | Lock sub-phase | Consumibles spent during play |
+| Item equipped toggle is transient (editable when locked) | Lock sub-phase | Equipping/unequipping happens during play |
+| Spell prepared toggle is transient (editable when locked) | Lock sub-phase | Long rest preparation may happen mid-session |
+| `useCharacterLocked` hook reads from `useCharactersStore` directly | Lock sub-phase | No prop drilling through tabs; each leaf component subscribes independently |
 | Sync upload reactive 15s + periodic 30s | Sub-fase 2.1 | Reactive captures active edits; periodic self-heals idle sessions |
 | Tombstones created only when user is logged in | Sub-fase 2.1 | Offline deletes don't propagate (intentional) |
 | Sync silent by default | Sub-fase 2.1 | Intrusive UI is annoying; automatic retry covers transients |
@@ -1084,8 +1134,8 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   voltar em Device B após sync. Hipóteses não validadas (RLS, schema sutil, insert
   silenciosamente falha em `deleted_characters`). Workaround para single user: deletar
   manualmente em cada device. Investigar quando virar prioridade. Sintoma reproduzível.
-- **OQ — Lock functional (read-only mode).** Today only stub label; functionality
-  (editing disabled, fields read-only) deferred to lock sub-phase.
+- ~~**OQ — Lock functional (read-only mode).**~~ *Resolved. Permanent stats read-only
+  when locked; transients always editable. DB schema v10. PR #122.*
 - **OQ — Auth status interactive.** Click on badge could open a menu (logout, account
   info). Deferred per Q4.1 (visual-only decision).
 - **OQ — Worker AI expansion (items + spells).** Worker template currently doesn't

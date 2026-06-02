@@ -24,6 +24,14 @@ PWA instalável.
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
 
+**Lock (modo leitura):**
+
+- Botão "Bloquear" no header (desktop) ou drawer (mobile)
+- Stats permanentes ficam read-only: atributos, classe, features, ataques, spells, itens, história, portrait
+- Stats transientes continuam editáveis: HP, slots de magia (uso), equipped, currency, "preparada", XP
+- Persiste por personagem via IndexedDB
+- "Destravar" restaura edição completa
+
 **Sincronização (opcional):**
 
 - **Login com email/senha** via Supabase Auth
@@ -40,11 +48,10 @@ PWA instalável.
 - Image upload (character portrait via canvas-based modal)
 - Bilíngue PT/EN com toggle persistente
 - PWA instalável
-- Importar/Exportar JSON
 
 ### Roadmap
 
-- **Lock funcional** — modo read-only vs editable pra evitar edição acidental em jogo
+- **Import/Export JSON** — exportar e importar fichas individuais em JSON
 - **Polish sync** — persistent error state, manual refresh button, edge cases
 - **Auth status interativo** — click no badge abre menu (sair, conta)
 - **Worker AI expansion** — incluir items + spells na geração
@@ -54,7 +61,8 @@ PWA instalável.
 - **Delete multi-device pode falhar em propagar.** Char deletado em Device A
   pode voltar em Device B após sync. Workaround: deletar manualmente em cada
   device. Investigação futura quando virar prioridade.
-- **Bloquear é stub.** Botão presente, funcionalidade real (read-only mode) pendente.
+- **Import/Export de fichas não implementado ainda.** Botões presentes na UI mostram
+  aviso "em breve"; a funcionalidade de arquivo JSON virá em versão futura.
 - **Worker AI não gera items nem spells** — campos ficam vazios.
 - **Items importados ganham category "misc"** — user reclassifica manualmente.
 - **Race, classe, antecedente, alinhamento são free-text** com sugestões — não
@@ -135,83 +143,60 @@ O app pode ser instalado diretamente no celular ou desktop:
 
 O app instalado funciona offline e se comporta como um aplicativo nativo.
 
-### 4. Criar uma ficha
+### 4. Criar um personagem
 
-- Preencha os campos normalmente
-- A ficha é salva automaticamente no navegador
+Na tela inicial ("Meus Personagens"), escolha:
 
-### 5. Salvamento automático
+- **Criar do zero** — abre uma ficha em branco pronta para edição
+- **Criar com IA** — descreva seu personagem e a IA preenche automaticamente
+  nome, raça, classe, atributos, perícias e história (ver seção 7)
 
-- Qualquer alteração é salva automaticamente no `IndexedDB`
+A ficha abre automaticamente na aba Status após a criação.
+
+### 5. Editar e salvar
+
+- Clique em qualquer card na tela "Meus Personagens" para abrir a ficha
+- Navegue entre as abas: Status, Combate, Magias, Inventário, Lore
+- As alterações são salvas automaticamente no `IndexedDB`
 - Ao recarregar a página, a ficha é restaurada
-- Se não houver dados salvos, uma ficha em branco será carregada
 
-### 6. Nova ficha (limpar tudo)
+### 6. Múltiplos personagens
 
-- Menu -> `Options` -> `New Blank Sheet`
-- Remove todos os dados atuais
-- Inicia uma nova ficha vazia
+A tela inicial lista todos os personagens salvos.
 
-### 7. Backup (Import/Export)
+- **Criar:** clique em "Criar do zero" ou "Criar com IA"
+- **Abrir:** clique no card do personagem
+- **Excluir:** clique no kebab (⋮) no canto do card → "Excluir" → confirme no modal
+- **Voltar à lista:** botão "← Meus Personagens" no menu lateral (desktop)
+  ou drawer hambúrguer (mobile)
 
-#### Exportar
+### 7. Gerar personagem com IA
 
-- Menu -> `Options` -> `Export JSON`
-- Baixa um arquivo `.json` com a ficha atual
-- O nome do arquivo usa o nome do personagem
-
-#### Importar
-
-- Menu -> `Options` -> `Import JSON`
-- Carrega um arquivo `.json`
-- Valida o formato antes de aplicar
-- Substitui os dados atuais
-- Recarrega automaticamente a ficha
-
-### 8. Múltiplos personagens
-
-Ao abrir o app sem um personagem ativo, a tela "My Characters" é exibida.
-
-- **Criar:** clique em "+ New Character"
-- **Abrir:** clique em "Open" no card do personagem
-- **Duplicar:** clique no ícone de duplicar no card
-- **Excluir:** clique no "✕" vermelho no card
-- **Voltar:** clique em "← My Characters" no menu lateral
-
-#### Export em lote
-- Na tela "My Characters", clique em **Export All**
-- Baixa um único JSON com todos os personagens
-
-#### Import em lote
-- Na tela "My Characters", clique em **Import**
-- Escolha um arquivo JSON exportado anteriormente
-- Selecione **Replace** para substituir tudo ou **Merge** para mesclar com os existentes
-
-### 9. Gerar personagem com IA
-
-- Abra um personagem e clique em "✨ Generate with AI" no menu lateral
+- Na tela "Meus Personagens", clique em **Criar com IA**
 - Descreva seu personagem em até 1000 caracteres
-- Clique em "Generate" e aguarde alguns segundos
-- No modal, é possível escolher o idioma da geração (EN ou PT) antes de clicar em Generate — em PT, os campos de texto livre (personalidade, ideais, vínculos, defeitos, história) vêm em português
-- A IA preenche automaticamente: nome, raça, background, alinhamento, classe, atributos, perícias, proficiências, traços de personalidade e história
+- Escolha o idioma da geração (PT ou EN) antes de gerar — em PT, os campos de
+  texto livre (personalidade, ideais, vínculos, defeitos, história) vêm em português
+- Clique em **Gerar** e aguarde alguns segundos
 
-A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o usuário, sem necessidade de conta ou chave de API.
+A IA preenche automaticamente: nome, raça, background, alinhamento, classe, atributos,
+perícias, proficiências, traços de personalidade e história. Items e magias ficam
+vazios para preenchimento manual.
 
-### 10. Sincronização em nuvem (opcional)
+A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o
+usuário, sem necessidade de conta ou chave de API.
+
+### 8. Sincronização em nuvem (opcional)
 
 A sincronização é completamente opcional — o app funciona 100% offline sem conta.
 
-#### Criar conta
-- No menu lateral, clique em **Sign in to sync**
-- Clique em **Create account** e informe email e senha
-- Confirme o email recebido na caixa de entrada
+#### Criar conta / Fazer login
 
-#### Fazer login
-- No menu lateral, clique em **Sign in to sync**
-- Informe email e senha e clique em **Sign in**
-- Após o login, os personagens sincronizam automaticamente em background
+- Na tela "Meus Personagens", role até o rodapé e clique em **Criar conta** ou **Entrar**
+- Informe email e senha
+- Para novas contas, confirme o email recebido na caixa de entrada
 
 #### Comportamento do sync
+
 - Sincronização automática a cada 30 segundos quando logado
 - Alterações na ficha sincronizam 15 segundos após a última edição
 - Estratégia last-write-wins — o dado mais recente prevalece
@@ -219,37 +204,48 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 - Ao fazer logout, dados locais permanecem intactos
 
 #### Imagens
+
 - Imagens dos personagens sincronizam via Supabase Storage
 - Limite de 50MB por conta
 
-### 11. Idiomas (EN/PT)
+### 9. Idiomas (EN/PT)
 
-- No menu lateral, clique em **EN** ou **PT** para alternar o idioma da interface
-- O toggle aplica um dicionário PT-BR — não é necessário recarregar a página
+- **Desktop:** clique em **PT** ou **EN** na parte inferior da barra lateral (visível
+  ao abrir qualquer ficha)
+- **Mobile:** abra o menu hambúrguer (☰) → clique em **PT** ou **EN** no rodapé do drawer
 - A preferência é salva no navegador e restaurada em visitas futuras
-- Textos gerados pela IA podem ser produzidos já em português escolhendo o idioma no modal de geração (seção 9)
+- Textos gerados pela IA podem ser produzidos em português escolhendo PT no modal
+  de geração (seção 7)
 
-### 12. Imagens (Character Appearance e Symbol)
+### 10. Imagem do personagem
 
-- Vá até a aba `Backstory`
-- Use os botões de upload
-- Ajuste a imagem (zoom + posição)
-- Clique em `Apply`
-
-As imagens:
-
-- São salvas no navegador
-- Entram no JSON exportado
-- São restauradas ao importar
+- Abra a aba **Lore** de qualquer personagem
+- Clique no retrato grande (avatar) no topo da aba
+- O modal de imagem abre: carregue um arquivo, ajuste zoom e posição, clique em **Aplicar**
 
 Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 13. Lock da ficha
+### 11. Lock da ficha (modo leitura)
 
-- Menu -> `Options` -> `Lock`
-- **Funcionalidade em desenvolvimento.** O botão está presente; o modo read-only real será implementado em versão futura.
+Use o lock durante sessões de jogo para evitar edição acidental em stats permanentes.
+
+**Desktop:** clique em **Bloquear** no header superior direito
+
+**Mobile:** abra o menu hambúrguer (☰) → clique em **Bloquear**
+
+Quando bloqueada:
+
+- Stats permanentes ficam read-only: atributos, classes, habilidades, features,
+  proficiências, ataques, spells (exceto "preparada"), itens (exceto quantidade e
+  equipped), lore, portrait
+- Stats transientes continuam editáveis: HP atual/temp, inspiração, dados de vida
+  (current), slots de magia (uso), "preparada", equipped, quantidade de items,
+  currency (PP/GP/SP/CP), XP
+
+Clique em **Destravar** para voltar ao modo de edição completa. O lock persiste por
+personagem — cada ficha tem seu estado independente.
 
 ## Scripts Disponíveis
 
@@ -267,7 +263,7 @@ Limite: `2MB` por imagem
 O projeto conta com:
 
 - **ESLint** — análise estática com regras para TypeScript moderno
-- **Vitest** — ~1200 testes unitários e de integração
+- **Vitest** — ~1251 testes unitários e de integração
 - **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
 - **Segurança no Worker** — rate limiting, proteção contra prompt injection e validação estrutural do JSON retornado pela IA, com mensagens de erro amigáveis ao usuário final
 
