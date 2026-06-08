@@ -101,7 +101,7 @@ describe('acceptCampaignInvite', () => {
   it('returns joined status on success', async () => {
     setupSupabase()
     mockRpcChain.single.mockResolvedValue({
-      data: { campaign_id: 'c1', status: 'joined' },
+      data: { r_campaign_id: 'c1', r_status: 'joined' },
       error: null,
     })
     const result = await acceptCampaignInvite('ABCD1234')
@@ -112,7 +112,7 @@ describe('acceptCampaignInvite', () => {
   it('returns already_member when user is already in campaign', async () => {
     setupSupabase()
     mockRpcChain.single.mockResolvedValue({
-      data: { campaign_id: 'c1', status: 'already_member' },
+      data: { r_campaign_id: 'c1', r_status: 'already_member' },
       error: null,
     })
     const result = await acceptCampaignInvite('ABCD1234')
@@ -122,7 +122,7 @@ describe('acceptCampaignInvite', () => {
   it('returns not_found for invalid code', async () => {
     setupSupabase()
     mockRpcChain.single.mockResolvedValue({
-      data: { campaign_id: null, status: 'not_found' },
+      data: { r_campaign_id: null, r_status: 'not_found' },
       error: null,
     })
     const result = await acceptCampaignInvite('ZZZZ9999')
@@ -144,7 +144,7 @@ describe('acceptCampaignInvite', () => {
   it('strips hyphen before calling RPC', async () => {
     setupSupabase()
     mockRpcChain.single.mockResolvedValue({
-      data: { campaign_id: 'c1', status: 'joined' },
+      data: { r_campaign_id: 'c1', r_status: 'joined' },
       error: null,
     })
     await acceptCampaignInvite('ABCD-1234')

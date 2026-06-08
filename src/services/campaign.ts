@@ -158,8 +158,8 @@ export async function acceptCampaignInvite(code: string): Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row = data as any
   return {
-    campaignId: row.campaign_id as string,
-    status: row.status as 'joined' | 'already_member' | 'not_found',
+    campaignId: row.r_campaign_id as string,
+    status: row.r_status as 'joined' | 'already_member' | 'not_found',
   }
 }
 
