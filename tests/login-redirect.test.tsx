@@ -10,7 +10,10 @@ import Login from '@/pages/Login'
 const mockSignIn = vi.fn()
 
 vi.mock('@/store/auth', () => ({
-  useAuthStore: () => ({ signIn: mockSignIn }),
+  useAuthStore: (selector: (s: { signIn: typeof mockSignIn; signUp: () => void }) => unknown) => {
+    const state = { signIn: mockSignIn, signUp: vi.fn() }
+    return selector ? selector(state) : state
+  },
 }))
 
 // ── Mock useNavigate ──────────────────────────────────────────────────────────
@@ -70,7 +73,7 @@ describe('Login — redirectTo param', () => {
     fireEvent.change(container.querySelector('input[type="password"]') as HTMLInputElement, { target: { value: 'wrong' } })
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
 
-    await waitFor(() => expect(screen.getByText('Invalid credentials')).toBeDefined())
+    await waitFor(() => expect(screen.getByTestId('login-error')).toBeDefined())
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 })

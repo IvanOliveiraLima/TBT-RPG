@@ -452,7 +452,7 @@ function AuthStrip() {
         {t('auth.sign_in')}
       </button>
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/login?mode=signup')}
         style={{
           flex: 1, background: 'transparent',
           border: `1px solid ${T.borderSubtle}`,
