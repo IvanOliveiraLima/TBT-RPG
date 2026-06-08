@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { getCampaign, listCampaignMembers } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
+import { listCampaignCharacters, unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { useTranslation } from '@/i18n'
 import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
-import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
+import { LinkCharacterModal } from '@/components/campaigns/LinkCharacterModal'
+import type { Campaign, CampaignMember, UserProfile, CampaignCharacter } from '@/domain/campaign'
 
 const T = {
   bg:           '#0F0D14',
@@ -33,6 +35,9 @@ export default function CampaignDetail() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [members, setMembers] = useState<EnrichedMember[]>([])
   const [loading, setLoading] = useState(true)
+  const [linkedChars, setLinkedChars] = useState<CampaignCharacter[]>([])
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [unlinking, setUnlinking] = useState<string | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -49,19 +54,45 @@ export default function CampaignDetail() {
     getCampaign(campaignId).then(async (c) => {
       if (!c) return
       setCampaign(c)
-      const m = await listCampaignMembers(campaignId)
+      const [m, chars] = await Promise.all([
+        listCampaignMembers(campaignId),
+        listCampaignCharacters(campaignId).catch(() => [] as CampaignCharacter[]),
+      ])
       const profiles = await listProfilesByIds(m.map(x => x.userId))
       const enriched = m.map(member => ({
         ...member,
         profile: profiles.find(p => p.userId === member.userId) ?? null,
       }))
       setMembers(enriched)
+      setLinkedChars(chars)
     }).catch(() => {
       // show "not found" state
     }).finally(() => {
       setLoading(false)
     })
   }, [id, user, authLoading, navigate])
+
+  const ownerNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    members.forEach(m => {
+      if (m.profile?.displayName) map.set(m.userId, m.profile.displayName)
+    })
+    return map
+  }, [members])
+
+  async function handleUnlink(characterId: string) {
+    if (!id) return
+    if (!confirm(t('campaign_chars.unlink_confirm'))) return
+    setUnlinking(characterId)
+    try {
+      await unlinkCharacterFromCampaign({ campaignId: id, characterId })
+      setLinkedChars(prev => prev.filter(c => c.characterId !== characterId))
+    } catch {
+      alert(t('campaign_chars.unlink_failed'))
+    } finally {
+      setUnlinking(null)
+    }
+  }
 
   if (authLoading || loading) {
     return (
@@ -225,21 +256,126 @@ export default function CampaignDetail() {
           </div>
         </div>
 
-        {/* Characters placeholder — Camp.3 */}
+        {/* Linked characters section */}
         <div
-          data-testid="campaign-detail-chars-placeholder"
+          data-testid="campaign-detail-linked-chars"
           style={{
             background: T.surface,
-            border: `1px dashed ${T.borderSubtle}`,
+            border: `1px solid ${T.borderSubtle}`,
             borderRadius: 14,
-            padding: 32,
-            textAlign: 'center',
+            padding: 20,
           }}
         >
-          <div style={{ fontSize: 12, color: T.textMuted }}>
-            {t('campaign_detail.chars_placeholder')}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 14,
+          }}>
+            <div style={{
+              fontFamily: T.serif, fontSize: 11, fontWeight: 600,
+              letterSpacing: 2, textTransform: 'uppercase',
+              color: T.textMuted,
+            }}>
+              {t('campaign_chars.title')} ({linkedChars.length})
+            </div>
+            <button
+              onClick={() => setLinkModalOpen(true)}
+              data-testid="link-char-open-btn"
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderSubtle}`,
+                borderRadius: 8, padding: '5px 12px',
+                color: T.textSecondary, fontFamily: T.sans,
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              + {t('campaign_chars.link_button')}
+            </button>
+          </div>
+
+          {linkedChars.length === 0 && (
+            <div
+              data-testid="linked-chars-empty"
+              style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}
+            >
+              {t('campaign_chars.empty_state')}
+            </div>
+          )}
+
+          {linkedChars.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {linkedChars.map(char => {
+                const ownerName = ownerNameById.get(char.userId) ?? t('campaign_detail.unknown_member')
+                const isCharOwner = char.userId === user?.id
+                return (
+                  <div
+                    key={char.characterId}
+                    data-testid={`linked-char-${char.characterId}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: T.elevated,
+                      border: `1px solid ${T.borderSubtle}`,
+                      borderRadius: 10,
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>
+                        {char.characterName}
+                      </div>
+                      {char.characterSummary && (
+                        <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                          {char.characterSummary}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                        {t('campaign_chars.owner_label')}: {ownerName}
+                      </div>
+                    </div>
+
+                    {isCharOwner && (
+                      <button
+                        onClick={() => { void handleUnlink(char.characterId) }}
+                        disabled={unlinking === char.characterId}
+                        data-testid={`unlink-char-${char.characterId}`}
+                        aria-label={t('aria.unlink_character', { name: char.characterName })}
+                        style={{
+                          background: 'transparent',
+                          border: `1px solid ${T.borderSubtle}`,
+                          borderRadius: 8, padding: '5px 10px',
+                          color: T.textMuted, fontFamily: T.sans,
+                          fontSize: 11, cursor: unlinking === char.characterId ? 'default' : 'pointer',
+                          opacity: unlinking === char.characterId ? 0.5 : 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {unlinking === char.characterId
+                          ? t('campaign_chars.unlinking')
+                          : t('campaign_chars.unlink')}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ marginTop: 14, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
+            {t('campaign_chars.full_view_coming_soon')}
           </div>
         </div>
+
+        {linkModalOpen && id && (
+          <LinkCharacterModal
+            campaignId={id}
+            alreadyLinkedIds={linkedChars.filter(c => c.userId === user?.id).map(c => c.characterId)}
+            onLinked={(newLink) => {
+              setLinkModalOpen(false)
+              setLinkedChars(prev => [...prev, newLink])
+            }}
+            onCancel={() => setLinkModalOpen(false)}
+          />
+        )}
       </div>
     </div>
   )
