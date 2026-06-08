@@ -623,6 +623,32 @@ const pt: Record<keyof typeof en, string> = {
   'aria.copy_invite_code':       'Copiar código de convite',
   'aria.regenerate_invite_code': 'Regenerar código de convite',
   'aria.invite_code_input':      'Campo de código de convite',
+
+  // Campaign detail — linked chars section
+  'campaign_chars.title':               'Personagens vinculados',
+  'campaign_chars.link_button':         'Vincular personagem',
+  'campaign_chars.empty_state':         'Nenhum personagem vinculado ainda.',
+  'campaign_chars.owner_label':         'Jogador',
+  'campaign_chars.unlink':              'Desvincular',
+  'campaign_chars.unlinking':           'Desvinculando…',
+  'campaign_chars.unlink_confirm':      'Desvincular este personagem da campanha?',
+  'campaign_chars.unlink_failed':       'Não foi possível desvincular. Tente novamente.',
+  'campaign_chars.full_view_coming_soon': 'Visualização completa em breve.',
+
+  // Link character modal
+  'link_character.title':               'Vincular personagem',
+  'link_character.description':         'Selecione um de seus personagens para vincular a esta campanha.',
+  'link_character.no_chars_at_all':     'Você não tem nenhum personagem ainda. Crie um primeiro.',
+  'link_character.all_already_linked':  'Todos os seus personagens já estão vinculados a esta campanha.',
+  'link_character.confirm':             'Vincular',
+  'link_character.linking':             'Vinculando…',
+  'link_character.error_already_linked':    'Este personagem já está vinculado.',
+  'link_character.error_link_failed':       'Não foi possível vincular. Tente novamente.',
+  'link_character.error_not_authenticated': 'Você precisa estar logado.',
+  'link_character.error_unknown':           'Erro inesperado.',
+
+  // Aria — campaign chars
+  'aria.unlink_character': 'Desvincular personagem {name}',
 };
 
 export default pt;

@@ -619,6 +619,32 @@ const en = {
   'aria.copy_invite_code':       'Copy invite code',
   'aria.regenerate_invite_code': 'Regenerate invite code',
   'aria.invite_code_input':      'Invite code input',
+
+  // Campaign detail — linked chars section
+  'campaign_chars.title':               'Linked characters',
+  'campaign_chars.link_button':         'Link character',
+  'campaign_chars.empty_state':         'No characters linked yet.',
+  'campaign_chars.owner_label':         'Player',
+  'campaign_chars.unlink':              'Unlink',
+  'campaign_chars.unlinking':           'Unlinking…',
+  'campaign_chars.unlink_confirm':      'Unlink this character from the campaign?',
+  'campaign_chars.unlink_failed':       'Could not unlink. Please try again.',
+  'campaign_chars.full_view_coming_soon': 'Full character view coming soon.',
+
+  // Link character modal
+  'link_character.title':               'Link a character',
+  'link_character.description':         'Select one of your characters to link to this campaign.',
+  'link_character.no_chars_at_all':     "You don't have any characters yet. Create one first.",
+  'link_character.all_already_linked':  'All your characters are already linked to this campaign.',
+  'link_character.confirm':             'Link',
+  'link_character.linking':             'Linking…',
+  'link_character.error_already_linked':    'This character is already linked.',
+  'link_character.error_link_failed':       'Could not link character. Please try again.',
+  'link_character.error_not_authenticated': 'You must be signed in.',
+  'link_character.error_unknown':           'Unexpected error.',
+
+  // Aria — campaign chars
+  'aria.unlink_character': 'Unlink character {name}',
 } as const;
 
 export default en;
