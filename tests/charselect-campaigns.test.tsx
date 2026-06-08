@@ -97,11 +97,31 @@ vi.mock('@/components/campaigns/CreateCampaignModal', () => ({
       <div data-testid="create-campaign-modal">
         <button
           data-testid="create-campaign-submit-stub"
-          onClick={() => onCreated({ id: 'camp_01', name: 'Test Campaign', description: null, ownerId: 'u1', createdAt: 0, updatedAt: 0 })}
+          onClick={() => onCreated({ id: 'camp_01', name: 'Test Campaign', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 0, updatedAt: 0 })}
         >
           Create
         </button>
         <button data-testid="create-campaign-cancel-stub" onClick={onCancel}>Cancel</button>
+      </div>
+    )
+  },
+}))
+
+// ── Mock JoinCampaignModal ────────────────────────────────────────────────────
+const mockJoinCampaignOnJoined = vi.fn()
+
+vi.mock('@/components/campaigns/JoinCampaignModal', () => ({
+  JoinCampaignModal: ({ onJoined, onCancel }: { onJoined: (id: string, status: string) => void; onCancel: () => void }) => {
+    mockJoinCampaignOnJoined.mockImplementation(onJoined)
+    return (
+      <div data-testid="join-campaign-modal-stub">
+        <button
+          data-testid="join-campaign-submit-stub"
+          onClick={() => onJoined('joined_camp_01', 'joined')}
+        >
+          Join
+        </button>
+        <button data-testid="join-campaign-cancel-stub" onClick={onCancel}>Cancel</button>
       </div>
     )
   },
@@ -253,8 +273,8 @@ describe('CharSelect — campaigns section — authenticated, no campaigns', () 
 })
 
 describe('CharSelect — campaigns section — authenticated, with campaigns', () => {
-  const CAMP_A: Campaign = { id: 'ca1', name: 'Mines of Moria', description: 'A dangerous dungeon', ownerId: 'u1', createdAt: 0, updatedAt: 0 }
-  const CAMP_B: Campaign = { id: 'ca2', name: 'Icewind Dale', description: null, ownerId: 'u2', createdAt: 0, updatedAt: 0 }
+  const CAMP_A: Campaign = { id: 'ca1', name: 'Mines of Moria', description: 'A dangerous dungeon', ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 0, updatedAt: 0 }
+  const CAMP_B: Campaign = { id: 'ca2', name: 'Icewind Dale', description: null, ownerId: 'u2', inviteCode: 'EFGH5678', createdAt: 0, updatedAt: 0 }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -328,5 +348,68 @@ describe('CharSelect — campaigns section — loading state', () => {
   it('does not show campaign list while loading', () => {
     render('pt')
     expect(screen.queryByTestId('compact-campaign-list')).toBeNull()
+  })
+})
+
+describe('CharSelect — campaigns section — join button', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCampaigns = []
+    mockCampaignsLoading = false
+    mockGetMyProfile.mockResolvedValue({ userId: 'u1', displayName: 'Alice', createdAt: 0, updatedAt: 0 })
+    localStorage.clear()
+  })
+
+  it('shows "Entrar com código" button (PT)', () => {
+    mockUser = null
+    render('pt')
+    expect(screen.getByTestId('charselect-join-campaign-btn')).toBeDefined()
+  })
+
+  it('shows "Join with code" button (EN)', () => {
+    mockUser = null
+    render('en')
+    expect(screen.getByText('Join with code')).toBeDefined()
+  })
+
+  it('redirects to login when not authenticated', async () => {
+    mockUser = null
+    render('pt')
+    fireEvent.click(screen.getByTestId('charselect-join-campaign-btn'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/login?redirectTo=/campaigns'))
+  })
+
+  it('opens JoinCampaignModal when authenticated with profile', async () => {
+    mockUser = { id: 'u1', email: 'a@b.com' }
+    render('pt')
+    fireEvent.click(screen.getByTestId('charselect-join-campaign-btn'))
+    await waitFor(() => expect(screen.getByTestId('join-campaign-modal-stub')).toBeDefined())
+  })
+
+  it('opens ProfileSetupModal when authenticated but no profile', async () => {
+    mockUser = { id: 'u1', email: 'a@b.com' }
+    mockGetMyProfile.mockResolvedValue(null)
+    render('pt')
+    fireEvent.click(screen.getByTestId('charselect-join-campaign-btn'))
+    await waitFor(() => expect(screen.getByTestId('profile-setup-modal')).toBeDefined())
+    expect(screen.queryByTestId('join-campaign-modal-stub')).toBeNull()
+  })
+
+  it('successful join navigates to /campaigns/{id}', async () => {
+    mockUser = { id: 'u1', email: 'a@b.com' }
+    render('pt')
+    fireEvent.click(screen.getByTestId('charselect-join-campaign-btn'))
+    await waitFor(() => expect(screen.getByTestId('join-campaign-modal-stub')).toBeDefined())
+    fireEvent.click(screen.getByTestId('join-campaign-submit-stub'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/campaigns/joined_camp_01'))
+  })
+
+  it('cancelling join modal closes it', async () => {
+    mockUser = { id: 'u1', email: 'a@b.com' }
+    render('pt')
+    fireEvent.click(screen.getByTestId('charselect-join-campaign-btn'))
+    await waitFor(() => expect(screen.getByTestId('join-campaign-modal-stub')).toBeDefined())
+    fireEvent.click(screen.getByTestId('join-campaign-cancel-stub'))
+    expect(screen.queryByTestId('join-campaign-modal-stub')).toBeNull()
   })
 })

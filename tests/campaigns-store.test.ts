@@ -24,6 +24,7 @@ function makeCampaign(overrides: Partial<Campaign> = {}): Campaign {
     name: 'Test Campaign',
     description: null,
     ownerId: 'u1',
+    inviteCode: 'ABCD1234',
     createdAt: 1000,
     updatedAt: 2000,
     ...overrides,
