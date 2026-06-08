@@ -11,6 +11,7 @@ import { useCampaignsStore } from '@/store/campaigns'
 import { getMyProfile } from '@/services/user-profile'
 import { ProfileSetupModal } from '@/components/campaigns/ProfileSetupModal'
 import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
+import { JoinCampaignModal } from '@/components/campaigns/JoinCampaignModal'
 import { AIGenerationModal } from '@/components/AIGenerationModal'
 import { CharacterCardMenu } from '@/components/CharacterCardMenu'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
@@ -277,6 +278,7 @@ function CampaignsSection() {
   const fetchCampaigns = useCampaignsStore(s => s.fetchCampaigns)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [profileSetupOpen, setProfileSetupOpen] = useState(false)
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
 
   useEffect(() => {
     if (user) void fetchCampaigns()
@@ -292,6 +294,19 @@ function CampaignsSection() {
       setProfileSetupOpen(true)
     } else {
       setCreateModalOpen(true)
+    }
+  }
+
+  async function handleJoinClick() {
+    if (!user) {
+      navigate('/login?redirectTo=/campaigns')
+      return
+    }
+    const profile = await getMyProfile()
+    if (!profile) {
+      setProfileSetupOpen(true)
+    } else {
+      setJoinModalOpen(true)
     }
   }
 
@@ -351,23 +366,40 @@ function CampaignsSection() {
           </div>
         )}
 
-        <button
-          data-testid="charselect-create-campaign-btn"
-          onClick={() => void handleCreateClick()}
-          style={{
-            width: '100%',
-            marginTop: campaigns.length > 0 ? 0 : 6,
-            padding: '9px',
-            borderRadius: 8,
-            background: 'transparent',
-            border: `1px solid ${T.borderSubtle}`,
-            color: T.textSecondary,
-            fontSize: 11, fontWeight: 600,
-            cursor: 'pointer', letterSpacing: 0.3,
-          }}
-        >
-          + {t('campaigns.create')}
-        </button>
+        <div style={{ display: 'flex', gap: 6, marginTop: campaigns.length > 0 ? 0 : 6 }}>
+          <button
+            data-testid="charselect-create-campaign-btn"
+            onClick={() => void handleCreateClick()}
+            style={{
+              flex: 1,
+              padding: '9px',
+              borderRadius: 8,
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              color: T.textSecondary,
+              fontSize: 11, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: 0.3,
+            }}
+          >
+            + {t('campaigns.create')}
+          </button>
+          <button
+            data-testid="charselect-join-campaign-btn"
+            onClick={() => void handleJoinClick()}
+            style={{
+              flex: 1,
+              padding: '9px',
+              borderRadius: 8,
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              color: T.textSecondary,
+              fontSize: 11, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: 0.3,
+            }}
+          >
+            {t('campaigns.join_with_code')}
+          </button>
+        </div>
       </div>
 
       {createModalOpen && (
@@ -377,6 +409,16 @@ function CampaignsSection() {
             navigate(`/campaigns/${campaign.id}`)
           }}
           onCancel={() => setCreateModalOpen(false)}
+        />
+      )}
+
+      {joinModalOpen && (
+        <JoinCampaignModal
+          onJoined={(campaignId) => {
+            setJoinModalOpen(false)
+            navigate(`/campaigns/${campaignId}`)
+          }}
+          onCancel={() => setJoinModalOpen(false)}
         />
       )}
 

@@ -1,22 +1,28 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getCampaign } from '@/services/campaign'
+import { getCampaign, listCampaignMembers } from '@/services/campaign'
+import { listProfilesByIds } from '@/services/user-profile'
 import { useTranslation } from '@/i18n'
-import type { Campaign } from '@/domain/campaign'
+import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
+import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
   bg:           '#0F0D14',
   surface:      '#15121C',
+  elevated:     '#1B1725',
   borderSubtle: '#2A2537',
   textPrimary:  '#F4EFE0',
   textSecondary:'#C8C4D6',
   textMuted:    '#7A7788',
   purple:       '#5B3FA8',
   gold:         '#D4A017',
+  ruby:         '#8B1A2E',
   sans:         "'Inter', system-ui, sans-serif",
   serif:        "'Cinzel', Georgia, serif",
 } as const
+
+type EnrichedMember = CampaignMember & { profile: UserProfile | null }
 
 export default function CampaignDetail() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +31,7 @@ export default function CampaignDetail() {
   const user = useAuthStore(s => s.user)
   const authLoading = useAuthStore(s => s.loading)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [members, setMembers] = useState<EnrichedMember[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,10 +45,20 @@ export default function CampaignDetail() {
       return
     }
 
-    getCampaign(id).then(c => {
+    const campaignId = id
+    getCampaign(campaignId).then(async (c) => {
+      if (!c) return
       setCampaign(c)
-      setLoading(false)
+      const m = await listCampaignMembers(campaignId)
+      const profiles = await listProfilesByIds(m.map(x => x.userId))
+      const enriched = m.map(member => ({
+        ...member,
+        profile: profiles.find(p => p.userId === member.userId) ?? null,
+      }))
+      setMembers(enriched)
     }).catch(() => {
+      // show "not found" state
+    }).finally(() => {
       setLoading(false)
     })
   }, [id, user, authLoading, navigate])
@@ -83,6 +100,8 @@ export default function CampaignDetail() {
     )
   }
 
+  const isOwner = user?.id === campaign.ownerId
+
   return (
     <div style={{
       minHeight: '100dvh',
@@ -115,7 +134,7 @@ export default function CampaignDetail() {
         </button>
 
         {/* Campaign header */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 24 }}>
           <div style={{
             fontFamily: T.serif, fontSize: 24, fontWeight: 700,
             color: T.textPrimary, marginBottom: 8,
@@ -129,30 +148,96 @@ export default function CampaignDetail() {
           )}
         </div>
 
-        {/* Placeholder content */}
+        {/* Invite code — owner only */}
+        <InviteCodeBlock
+          campaign={campaign}
+          isOwner={isOwner}
+          onCodeRegenerated={(newCode) => {
+            setCampaign(prev => prev ? { ...prev, inviteCode: newCode } : prev)
+          }}
+        />
+
+        {/* Members list */}
         <div
-          data-testid="campaign-detail-placeholder"
+          data-testid="campaign-detail-members"
           style={{
             background: T.surface,
             border: `1px solid ${T.borderSubtle}`,
+            borderRadius: 14,
+            padding: 20,
+            marginBottom: 20,
+          }}
+        >
+          <div style={{
+            fontFamily: T.serif, fontSize: 11, fontWeight: 600,
+            letterSpacing: 2, textTransform: 'uppercase',
+            color: T.textMuted, marginBottom: 14,
+          }}>
+            {t('campaign_detail.members')} ({members.length})
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {members.map(m => (
+              <div
+                key={m.userId}
+                data-testid={`member-row-${m.userId}`}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  background: T.elevated,
+                  border: `1px solid ${T.borderSubtle}`,
+                  borderRadius: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: m.role === 'master'
+                      ? `linear-gradient(135deg, ${T.gold}, #8B5E05)`
+                      : `linear-gradient(135deg, ${T.purple}, #2A1F3D)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: T.serif, fontSize: 12, fontWeight: 700,
+                    color: T.textPrimary,
+                  }}>
+                    {(m.profile?.displayName ?? '?')[0]?.toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>
+                    {m.profile?.displayName ?? t('campaign_detail.unknown_member')}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
+                  color: m.role === 'master' ? T.gold : T.textMuted,
+                  textTransform: 'uppercase',
+                }}>
+                  {m.role === 'master'
+                    ? t('campaign_detail.role_master')
+                    : t('campaign_detail.role_player')}
+                </div>
+              </div>
+            ))}
+
+            {members.length === 0 && (
+              <div style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}>
+                …
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Characters placeholder — Camp.3 */}
+        <div
+          data-testid="campaign-detail-chars-placeholder"
+          style={{
+            background: T.surface,
+            border: `1px dashed ${T.borderSubtle}`,
             borderRadius: 14,
             padding: 32,
             textAlign: 'center',
           }}
         >
-          <div style={{
-            fontSize: 32, marginBottom: 16,
-            opacity: 0.4,
-          }}>
-            ⚔
-          </div>
-          <div style={{
-            fontSize: 14, color: T.textSecondary, marginBottom: 8, fontWeight: 500,
-          }}>
-            {t('campaigns.detail_placeholder')}
-          </div>
-          <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-            {t('campaigns.detail_placeholder_hint')}
+          <div style={{ fontSize: 12, color: T.textMuted }}>
+            {t('campaign_detail.chars_placeholder')}
           </div>
         </div>
       </div>
