@@ -3,6 +3,7 @@ export interface Campaign {
   name: string
   description: string | null
   ownerId: string
+  inviteCode: string
   createdAt: number
   updatedAt: number
 }

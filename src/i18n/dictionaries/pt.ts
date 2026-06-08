@@ -585,6 +585,44 @@ const pt: Record<keyof typeof en, string> = {
   'characters_screen.my_campaigns':           'Minhas Campanhas',
   'characters_screen.campaigns_empty':        'Nenhuma campanha ainda. Crie a sua primeira!',
   'characters_screen.campaigns_login_prompt': 'Entre para criar e gerenciar campanhas.',
+
+  // Invite code block (owner view in CampaignDetail)
+  'invite.title':              'Código de convite',
+  'invite.description':        'Compartilhe este código com os jogadores para convidá-los para a campanha.',
+  'invite.copy':               'Copiar',
+  'invite.copied':             'Copiado!',
+  'invite.regenerate':         'Regenerar código',
+  'invite.regenerating':       'Regenerando…',
+  'invite.regenerate_confirm': 'Regenerar código? O código anterior deixará de funcionar.',
+  'invite.regenerate_error':   'Não foi possível regenerar. Tente novamente.',
+
+  // Join campaign modal
+  'join_campaign.title':                  'Entrar em campanha com código',
+  'join_campaign.description':            'Digite o código de convite compartilhado pelo mestre da campanha.',
+  'join_campaign.code_label':             'Código de convite',
+  'join_campaign.join':                   'Entrar',
+  'join_campaign.joining':                'Entrando…',
+  'join_campaign.error_not_found':        'Código não encontrado. Verifique e tente novamente.',
+  'join_campaign.error_lookup_failed':    'Não foi possível buscar o código. Tente novamente.',
+  'join_campaign.error_accept_failed':    'Não foi possível entrar na campanha. Tente novamente.',
+  'join_campaign.error_not_authenticated':'Você precisa estar logado para entrar em uma campanha.',
+  'join_campaign.error_unknown':          'Erro inesperado. Tente novamente.',
+  'join_campaign.already_member_note':    'Você já é membro desta campanha.',
+
+  // Campaign detail
+  'campaign_detail.members':           'Membros',
+  'campaign_detail.role_master':       'Mestre',
+  'campaign_detail.role_player':       'Jogador',
+  'campaign_detail.unknown_member':    'Membro desconhecido',
+  'campaign_detail.chars_placeholder': 'Visualização de personagens em breve.',
+
+  // Buttons — join with code
+  'campaigns.join_with_code': 'Entrar com código',
+
+  // Aria — invite
+  'aria.copy_invite_code':       'Copiar código de convite',
+  'aria.regenerate_invite_code': 'Regenerar código de convite',
+  'aria.invite_code_input':      'Campo de código de convite',
 };
 
 export default pt;

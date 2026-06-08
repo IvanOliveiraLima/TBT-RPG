@@ -105,6 +105,84 @@ export async function listCampaignMembers(campaignId: string): Promise<CampaignM
   return (data ?? []).map(mapMemberRow)
 }
 
+// ── Invite operations ─────────────────────────────────────────────────────
+
+export async function lookupCampaignByCode(code: string): Promise<{
+  id: string
+  name: string
+  description: string | null
+} | null> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+
+  const cleaned = code.replace(/-/g, '').trim().toUpperCase()
+
+  const { data, error } = await supabase
+    .rpc('lookup_campaign_by_code', { p_code: cleaned })
+    .maybeSingle()
+
+  if (error) {
+    console.error('[campaign] lookupCampaignByCode error', error)
+    throw new CampaignServiceError('lookup_failed')
+  }
+
+  if (!data) return null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    description: (row.description ?? null) as string | null,
+  }
+}
+
+export async function acceptCampaignInvite(code: string): Promise<{
+  campaignId: string
+  status: 'joined' | 'already_member' | 'not_found'
+}> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+
+  const cleaned = code.replace(/-/g, '').trim().toUpperCase()
+
+  const { data, error } = await supabase
+    .rpc('accept_campaign_invite', { p_code: cleaned })
+    .single()
+
+  if (error) {
+    console.error('[campaign] acceptCampaignInvite error', error)
+    if (error.message?.includes('not_authenticated')) {
+      throw new CampaignServiceError('not_authenticated')
+    }
+    throw new CampaignServiceError('accept_failed')
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any
+  return {
+    campaignId: row.campaign_id as string,
+    status: row.status as 'joined' | 'already_member' | 'not_found',
+  }
+}
+
+export async function regenerateInviteCode(campaignId: string): Promise<string> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+
+  const { data, error } = await supabase
+    .rpc('regenerate_invite_code', { p_campaign_id: campaignId })
+
+  if (error) {
+    console.error('[campaign] regenerateInviteCode error', error)
+    if (error.message?.includes('not_owner')) {
+      throw new CampaignServiceError('not_owner')
+    }
+    if (error.message?.includes('campaign_not_found')) {
+      throw new CampaignServiceError('campaign_not_found')
+    }
+    throw new CampaignServiceError('regenerate_failed')
+  }
+
+  return data as string
+}
+
 // ── Mappers ───────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,6 +192,7 @@ function mapCampaignRow(row: any): Campaign {
     name: row.name as string,
     description: (row.description ?? null) as string | null,
     ownerId: row.owner_id as string,
+    inviteCode: (row.invite_code ?? '') as string,
     createdAt: new Date(row.created_at as string).getTime(),
     updatedAt: new Date(row.updated_at as string).getTime(),
   }

@@ -581,6 +581,44 @@ const en = {
   'characters_screen.my_campaigns':           'My Campaigns',
   'characters_screen.campaigns_empty':        'No campaigns yet. Create your first one!',
   'characters_screen.campaigns_login_prompt': 'Sign in to create and manage campaigns.',
+
+  // Invite code block (owner view in CampaignDetail)
+  'invite.title':              'Invite code',
+  'invite.description':        'Share this code with players to invite them to the campaign.',
+  'invite.copy':               'Copy',
+  'invite.copied':             'Copied!',
+  'invite.regenerate':         'Regenerate code',
+  'invite.regenerating':       'Regenerating…',
+  'invite.regenerate_confirm': 'Regenerate code? The previous code will stop working.',
+  'invite.regenerate_error':   'Could not regenerate. Please try again.',
+
+  // Join campaign modal
+  'join_campaign.title':                  'Join campaign with code',
+  'join_campaign.description':            'Enter the invite code shared by the campaign master.',
+  'join_campaign.code_label':             'Invite code',
+  'join_campaign.join':                   'Join',
+  'join_campaign.joining':                'Joining…',
+  'join_campaign.error_not_found':        'Code not found. Please check and try again.',
+  'join_campaign.error_lookup_failed':    'Could not look up code. Please try again.',
+  'join_campaign.error_accept_failed':    'Could not join campaign. Please try again.',
+  'join_campaign.error_not_authenticated':'You must be signed in to join a campaign.',
+  'join_campaign.error_unknown':          'Unexpected error. Please try again.',
+  'join_campaign.already_member_note':    'You are already a member of this campaign.',
+
+  // Campaign detail
+  'campaign_detail.members':           'Members',
+  'campaign_detail.role_master':       'Master',
+  'campaign_detail.role_player':       'Player',
+  'campaign_detail.unknown_member':    'Unknown member',
+  'campaign_detail.chars_placeholder': 'Character viewing coming soon.',
+
+  // Buttons — join with code
+  'campaigns.join_with_code': 'Join with code',
+
+  // Aria — invite
+  'aria.copy_invite_code':       'Copy invite code',
+  'aria.regenerate_invite_code': 'Regenerate invite code',
+  'aria.invite_code_input':      'Invite code input',
 } as const;
 
 export default en;
