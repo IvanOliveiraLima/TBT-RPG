@@ -48,6 +48,23 @@ export async function getProfileById(userId: string): Promise<UserProfile | null
   return data ? mapProfileRow(data) : null
 }
 
+export async function listProfilesByIds(userIds: string[]): Promise<UserProfile[]> {
+  if (!supabase) return []
+  if (userIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .in('user_id', userIds)
+
+  if (error) {
+    console.error('[user-profile] listProfilesByIds error', error)
+    return []
+  }
+
+  return (data ?? []).map(mapProfileRow)
+}
+
 export async function upsertMyProfile(displayName: string): Promise<UserProfile> {
   if (!supabase) throw new UserProfileServiceError('not_authenticated')
 

@@ -8,6 +8,7 @@ import { CampaignCard } from '@/components/campaigns/CampaignCard'
 import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
 import { ConfirmDeleteCampaignModal } from '@/components/campaigns/ConfirmDeleteCampaignModal'
 import { ProfileSetupModal } from '@/components/campaigns/ProfileSetupModal'
+import { JoinCampaignModal } from '@/components/campaigns/JoinCampaignModal'
 import type { Campaign } from '@/domain/campaign'
 
 const T = {
@@ -31,6 +32,7 @@ export default function CampaignSelect() {
   const { campaigns, loading, fetchCampaigns } = useCampaignsStore()
   const [profileSetupOpen, setProfileSetupOpen] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Campaign | null>(null)
   const [profileChecked, setProfileChecked] = useState(false)
 
@@ -107,26 +109,44 @@ export default function CampaignSelect() {
           )}
         </div>
 
-        {/* Create button */}
-        <button
-          data-testid="create-campaign-btn"
-          aria-label={t('aria.create_campaign')}
-          onClick={() => setCreateModalOpen(true)}
-          style={{
-            width: '100%',
-            background: T.purple,
-            border: 'none',
-            borderRadius: 10,
-            padding: '12px',
-            fontSize: 13, fontWeight: 600,
-            color: T.textPrimary,
-            cursor: 'pointer',
-            marginBottom: 20,
-            fontFamily: T.sans,
-          }}
-        >
-          + {t('campaigns.create')}
-        </button>
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <button
+            data-testid="create-campaign-btn"
+            aria-label={t('aria.create_campaign')}
+            onClick={() => setCreateModalOpen(true)}
+            style={{
+              flex: 1,
+              background: T.purple,
+              border: 'none',
+              borderRadius: 10,
+              padding: '12px',
+              fontSize: 13, fontWeight: 600,
+              color: T.textPrimary,
+              cursor: 'pointer',
+              fontFamily: T.sans,
+            }}
+          >
+            + {t('campaigns.create')}
+          </button>
+          <button
+            data-testid="join-campaign-btn"
+            onClick={() => setJoinModalOpen(true)}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              borderRadius: 10,
+              padding: '12px',
+              fontSize: 13, fontWeight: 600,
+              color: T.textSecondary,
+              cursor: 'pointer',
+              fontFamily: T.sans,
+            }}
+          >
+            {t('campaigns.join_with_code')}
+          </button>
+        </div>
 
         {/* Loading */}
         {loading && (
@@ -163,7 +183,7 @@ export default function CampaignSelect() {
                 campaign={c}
                 currentUserId={user.id}
                 onOpen={() => navigate(`/campaigns/${c.id}`)}
-                onRequestDelete={(id, name) => setPendingDelete(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: user.id, createdAt: 0, updatedAt: 0 })}
+                onRequestDelete={(id, name) => setPendingDelete(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: user.id, inviteCode: '', createdAt: 0, updatedAt: 0 })}
               />
             ))}
           </div>
@@ -188,6 +208,16 @@ export default function CampaignSelect() {
             navigate(`/campaigns/${campaign.id}`)
           }}
           onCancel={() => setCreateModalOpen(false)}
+        />
+      )}
+
+      {joinModalOpen && (
+        <JoinCampaignModal
+          onJoined={(campaignId) => {
+            setJoinModalOpen(false)
+            navigate(`/campaigns/${campaignId}`)
+          }}
+          onCancel={() => setJoinModalOpen(false)}
         />
       )}
 

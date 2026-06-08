@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
@@ -49,6 +49,21 @@ vi.mock('@/store/campaigns', () => ({
     }
     return selector ? selector(state) : state
   },
+}))
+
+// ── Mock JoinCampaignModal ────────────────────────────────────────────────────
+vi.mock('@/components/campaigns/JoinCampaignModal', () => ({
+  JoinCampaignModal: ({ onJoined, onCancel }: { onJoined: (id: string, status: string) => void; onCancel: () => void }) => (
+    <div data-testid="join-campaign-modal-stub">
+      <button
+        data-testid="join-modal-submit-stub"
+        onClick={() => onJoined('joined_camp_01', 'joined')}
+      >
+        Join
+      </button>
+      <button data-testid="join-modal-cancel-stub" onClick={onCancel}>Cancel</button>
+    </div>
+  ),
 }))
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -162,8 +177,8 @@ describe('CampaignSelect — with campaigns', () => {
     mockFetchCampaigns.mockResolvedValue(undefined)
     mockCampaigns.length = 0
     mockCampaigns.push(
-      { id: 'c1', name: 'Campaign A', description: null, ownerId: 'u1', createdAt: 1000, updatedAt: 2000 },
-      { id: 'c2', name: 'Campaign B', description: 'A desc', ownerId: 'other', createdAt: 1000, updatedAt: 1500 }
+      { id: 'c1', name: 'Campaign A', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000 },
+      { id: 'c2', name: 'Campaign B', description: 'A desc', ownerId: 'other', inviteCode: 'EFGH5678', createdAt: 1000, updatedAt: 1500 }
     )
     mockCampaignsLoading = false
   })
@@ -184,5 +199,51 @@ describe('CampaignSelect — with campaigns', () => {
   it('does not show empty state when campaigns exist', async () => {
     renderPage()
     await waitFor(() => expect(screen.queryByTestId('campaigns-empty')).toBeNull())
+  })
+})
+
+describe('CampaignSelect — join with code button', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockUser = { id: 'u1', email: 'test@test.com' }
+    mockAuthLoading = false
+    mockGetMyProfile.mockResolvedValue({ userId: 'u1', displayName: 'Alice', createdAt: 0, updatedAt: 0 })
+    mockFetchCampaigns.mockResolvedValue(undefined)
+    mockCampaigns.length = 0
+    mockCampaignsLoading = false
+  })
+
+  it('shows "Entrar com código" button (PT)', async () => {
+    renderPage('pt')
+    await waitFor(() => expect(screen.getByTestId('join-campaign-btn')).toBeDefined())
+  })
+
+  it('shows "Join with code" button (EN)', async () => {
+    renderPage('en')
+    await waitFor(() => expect(screen.getByText('Join with code')).toBeDefined())
+  })
+
+  it('clicking join button opens JoinCampaignModal', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('join-campaign-btn')).toBeDefined())
+    fireEvent.click(screen.getByTestId('join-campaign-btn'))
+    expect(screen.getByTestId('join-campaign-modal-stub')).toBeDefined()
+  })
+
+  it('successful join navigates to campaign detail', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('join-campaign-btn')).toBeDefined())
+    fireEvent.click(screen.getByTestId('join-campaign-btn'))
+    fireEvent.click(screen.getByTestId('join-modal-submit-stub'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/campaigns/joined_camp_01'))
+  })
+
+  it('cancelling join modal closes it', async () => {
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('join-campaign-btn')).toBeDefined())
+    fireEvent.click(screen.getByTestId('join-campaign-btn'))
+    fireEvent.click(screen.getByTestId('join-modal-cancel-stub'))
+    expect(screen.queryByTestId('join-campaign-modal-stub')).toBeNull()
   })
 })
