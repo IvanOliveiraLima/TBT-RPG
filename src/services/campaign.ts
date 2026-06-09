@@ -87,6 +87,38 @@ export async function deleteCampaign(id: string): Promise<void> {
   }
 }
 
+export async function leaveCampaign(campaignId: string): Promise<void> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id
+  if (!userId) throw new CampaignServiceError('not_authenticated')
+
+  // 1. Remove own chars from campaign_characters
+  const { error: charsError } = await supabase
+    .from('campaign_characters')
+    .delete()
+    .eq('campaign_id', campaignId)
+    .eq('user_id', userId)
+
+  if (charsError) {
+    console.error('[campaign] leaveCampaign chars error', charsError)
+    throw new CampaignServiceError('leave_failed')
+  }
+
+  // 2. Remove own campaign_members row
+  const { error: memberError } = await supabase
+    .from('campaign_members')
+    .delete()
+    .eq('campaign_id', campaignId)
+    .eq('user_id', userId)
+
+  if (memberError) {
+    console.error('[campaign] leaveCampaign member error', memberError)
+    throw new CampaignServiceError('leave_failed')
+  }
+}
+
 // ── Members ───────────────────────────────────────────────────────────────
 
 export async function listCampaignMembers(campaignId: string): Promise<CampaignMember[]> {

@@ -5,11 +5,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockCreateCampaign = vi.fn()
 const mockListMyCampaigns = vi.fn()
 const mockDeleteCampaign = vi.fn()
+const mockLeaveCampaign = vi.fn()
 
 vi.mock('@/services/campaign', () => ({
   createCampaign:     (...args: unknown[]) => mockCreateCampaign(...args),
   listMyCampaigns:    (...args: unknown[]) => mockListMyCampaigns(...args),
   deleteCampaign:     (...args: unknown[]) => mockDeleteCampaign(...args),
+  leaveCampaign:      (...args: unknown[]) => mockLeaveCampaign(...args),
   CampaignServiceError: class CampaignServiceError extends Error {
     constructor(public code: string) { super(code) }
   },
@@ -121,6 +123,36 @@ describe('useCampaignsStore', () => {
       await expect(useCampaignsStore.getState().deleteCampaign('c1')).rejects.toThrow('delete_failed')
       // List unchanged on failure
       expect(useCampaignsStore.getState().campaigns).toHaveLength(1)
+    })
+  })
+
+  describe('leaveCampaign', () => {
+    it('removes campaign from list on success', async () => {
+      useCampaignsStore.setState({ campaigns: [makeCampaign({ id: 'c1' }), makeCampaign({ id: 'c2', name: 'B' })] })
+      mockLeaveCampaign.mockResolvedValue(undefined)
+
+      await useCampaignsStore.getState().leaveCampaign('c1')
+
+      const { campaigns } = useCampaignsStore.getState()
+      expect(campaigns).toHaveLength(1)
+      expect(campaigns[0]?.id).toBe('c2')
+    })
+
+    it('propagates error from service', async () => {
+      useCampaignsStore.setState({ campaigns: [makeCampaign()] })
+      mockLeaveCampaign.mockRejectedValue(new Error('leave_failed'))
+
+      await expect(useCampaignsStore.getState().leaveCampaign('c1')).rejects.toThrow('leave_failed')
+      expect(useCampaignsStore.getState().campaigns).toHaveLength(1)
+    })
+
+    it('calls leaveCampaign service with correct id', async () => {
+      useCampaignsStore.setState({ campaigns: [makeCampaign({ id: 'c99' })] })
+      mockLeaveCampaign.mockResolvedValue(undefined)
+
+      await useCampaignsStore.getState().leaveCampaign('c99')
+
+      expect(mockLeaveCampaign).toHaveBeenCalledWith('c99')
     })
   })
 })

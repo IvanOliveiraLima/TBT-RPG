@@ -28,7 +28,7 @@ const TEXTAREA: React.CSSProperties = {
 
 interface NotesBlockProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
@@ -46,7 +46,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
         <>
           <textarea
             value={character.notes1}
-            onChange={(e) => onUpdate({ notes1: e.target.value })}
+            onChange={(e) => onUpdate?.({ notes1: e.target.value })}
             placeholder={t('notes.placeholder')}
             aria-label={t('notes.section_title')}
             data-testid="notes-textarea"
@@ -70,7 +70,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
       ) : (
         <textarea
           value={character.notes1}
-          onChange={(e) => onUpdate({ notes1: e.target.value })}
+          onChange={(e) => onUpdate?.({ notes1: e.target.value })}
           placeholder={t('notes.placeholder')}
           aria-label={t('notes.section_title')}
           data-testid="notes-textarea"

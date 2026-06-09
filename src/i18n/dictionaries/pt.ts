@@ -649,6 +649,35 @@ const pt: Record<keyof typeof en, string> = {
 
   // Aria — campaign chars
   'aria.unlink_character': 'Desvincular personagem {name}',
+
+  // Campaign char view page (Camp.4)
+  'campaign_view.back_to_campaign':        'Voltar para campanha',
+  'campaign_view.linked_characters':       'Personagens vinculados',
+  'campaign_view.viewing_as_master':       'Visualizando como mestre',
+  'campaign_view.viewing_own_char_hint':   'Este é seu próprio personagem. Para editar, vá em "Meus Personagens".',
+  'campaign_view.char_not_found':          'O personagem não existe mais.',
+  'campaign_view.redirecting':             'Voltando para a campanha…',
+  'campaign_view.error_not_authenticated': 'Você precisa estar logado.',
+  'campaign_view.error_fetch_failed':      'Não foi possível carregar o personagem.',
+  'campaign_view.error_unknown':           'Erro inesperado.',
+
+  // Aria — campaign view
+  'aria.linked_char_view':  'Visualizar personagem {name}',
+  'aria.campaign_char_nav': 'Ir para personagem {name}',
+
+  // Leave campaign
+  'campaigns.leave':              'Sair',
+  'leave_campaign.title':         'Sair da Campanha?',
+  'leave_campaign.warning':       'Tem certeza que deseja sair de "{name}"?',
+  'leave_campaign.note':          'Seus personagens vinculados serão desvinculados desta campanha.',
+  'leave_campaign.confirm':       'Sair',
+  'leave_campaign.leaving':       'Saindo…',
+  'leave_campaign.error':         'Não foi possível sair da campanha. Tente novamente.',
+
+  // Campaign detail — actions section
+  'campaign_detail.actions':       'Ações',
+  'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
+  'campaign_detail.leave_warning':  'Remove você desta campanha.',
 };
 
 export default pt;

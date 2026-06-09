@@ -7,6 +7,8 @@ import { listCampaignCharacters, unlinkCharacterFromCampaign } from '@/services/
 import { useTranslation } from '@/i18n'
 import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
 import { LinkCharacterModal } from '@/components/campaigns/LinkCharacterModal'
+import { ConfirmDeleteCampaignModal } from '@/components/campaigns/ConfirmDeleteCampaignModal'
+import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCampaignModal'
 import type { Campaign, CampaignMember, UserProfile, CampaignCharacter } from '@/domain/campaign'
 
 const T = {
@@ -38,6 +40,8 @@ export default function CampaignDetail() {
   const [linkedChars, setLinkedChars] = useState<CampaignCharacter[]>([])
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [unlinking, setUnlinking] = useState<string | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
@@ -310,6 +314,14 @@ export default function CampaignDetail() {
                   <div
                     key={char.characterId}
                     data-testid={`linked-char-${char.characterId}`}
+                    onClick={() => navigate(`/campaigns/${id}/characters/${char.characterId}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ')
+                        navigate(`/campaigns/${id}/characters/${char.characterId}`)
+                    }}
+                    aria-label={t('aria.linked_char_view', { name: char.characterName })}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 12px',
@@ -317,6 +329,7 @@ export default function CampaignDetail() {
                       border: `1px solid ${T.borderSubtle}`,
                       borderRadius: 10,
                       gap: 12,
+                      cursor: 'pointer',
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -335,7 +348,7 @@ export default function CampaignDetail() {
 
                     {isCharOwner && (
                       <button
-                        onClick={() => { void handleUnlink(char.characterId) }}
+                        onClick={e => { e.stopPropagation(); void handleUnlink(char.characterId) }}
                         disabled={unlinking === char.characterId}
                         data-testid={`unlink-char-${char.characterId}`}
                         aria-label={t('aria.unlink_character', { name: char.characterName })}
@@ -359,10 +372,6 @@ export default function CampaignDetail() {
               })}
             </div>
           )}
-
-          <div style={{ marginTop: 14, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
-            {t('campaign_chars.full_view_coming_soon')}
-          </div>
         </div>
 
         {linkModalOpen && id && (
@@ -376,7 +385,92 @@ export default function CampaignDetail() {
             onCancel={() => setLinkModalOpen(false)}
           />
         )}
+
+        {/* Actions section */}
+        <div
+          data-testid="campaign-detail-actions"
+          style={{
+            background: T.surface,
+            border: `1px solid ${T.borderSubtle}`,
+            borderRadius: 14,
+            padding: 20,
+            marginTop: 20,
+          }}
+        >
+          <div style={{
+            fontFamily: T.serif, fontSize: 11, fontWeight: 600,
+            letterSpacing: 2, textTransform: 'uppercase',
+            color: T.textMuted, marginBottom: 14,
+          }}>
+            {t('campaign_detail.actions')}
+          </div>
+
+          {isOwner ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
+                {t('campaign_detail.delete_warning')}
+              </div>
+              <button
+                data-testid="campaign-detail-delete-btn"
+                onClick={() => setDeleteModalOpen(true)}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid rgba(226,75,74,0.4)`,
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  color: '#E24B4A',
+                  fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: T.sans,
+                  flexShrink: 0,
+                }}
+              >
+                {t('delete_campaign.confirm')}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
+                {t('campaign_detail.leave_warning')}
+              </div>
+              <button
+                data-testid="campaign-detail-leave-btn"
+                onClick={() => setLeaveModalOpen(true)}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid rgba(226,75,74,0.4)`,
+                  borderRadius: 8,
+                  padding: '8px 14px',
+                  color: '#E24B4A',
+                  fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: T.sans,
+                  flexShrink: 0,
+                }}
+              >
+                {t('campaigns.leave')}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Modals */}
+      {deleteModalOpen && campaign && (
+        <ConfirmDeleteCampaignModal
+          campaign={campaign}
+          onDeleted={() => navigate('/campaigns')}
+          onCancel={() => setDeleteModalOpen(false)}
+        />
+      )}
+
+      {leaveModalOpen && campaign && (
+        <ConfirmLeaveCampaignModal
+          campaign={campaign}
+          onLeft={() => navigate('/campaigns')}
+          onCancel={() => setLeaveModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

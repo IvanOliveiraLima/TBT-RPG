@@ -1,6 +1,8 @@
+import { useContext } from 'react'
 import { create } from 'zustand'
 import type { Character } from '@/domain/character'
 import { useCharactersStore } from './characters'
+import { RemoteCharacterContext } from '@/contexts/CampaignViewContext'
 
 interface CharacterState {
   /** ID of the character currently open in the sheet. */
@@ -53,10 +55,14 @@ export const useCharacterStore = create<CharacterState>(() => ({
  * Derives the active character from the characters list (single source of truth).
  * Any component using this hook will re-render whenever the character is updated
  * via `useCharactersStore.updateCharacter` — no secondary patch needed.
+ *
+ * In campaign view, RemoteCharacterContext takes precedence over the store.
  */
 export function useActiveCharacter(): Character | null {
+  const remoteChar = useContext(RemoteCharacterContext)
   const activeId = useCharacterStore(s => s.activeId)
-  return useCharactersStore(s =>
+  const charFromStore = useCharactersStore(s =>
     activeId ? (s.characters.find(c => c.id === activeId) ?? null) : null
   )
+  return remoteChar ?? charFromStore
 }
