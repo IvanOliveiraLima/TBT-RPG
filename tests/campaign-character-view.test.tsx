@@ -88,7 +88,7 @@ vi.mock('react-router-dom', async () => {
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 function makeChar(id = 'char1'): Partial<Character> {
-  return { id, name: 'Aragorn', updatedAt: 1000, images: {} }
+  return { id, name: 'Aragorn', updatedAt: 1000, images: {}, classes: [], race: 'Human' }
 }
 
 const LINKED_CHARS: CampaignCharacter[] = [
