@@ -39,13 +39,14 @@ const mockCampaigns: unknown[] = []
 let mockCampaignsLoading = false
 
 vi.mock('@/store/campaigns', () => ({
-  useCampaignsStore: (selector?: (s: { campaigns: unknown[]; loading: boolean; fetchCampaigns: typeof mockFetchCampaigns; createCampaign: () => void; deleteCampaign: () => void }) => unknown) => {
+  useCampaignsStore: (selector?: (s: { campaigns: unknown[]; loading: boolean; fetchCampaigns: typeof mockFetchCampaigns; createCampaign: () => void; deleteCampaign: () => void; leaveCampaign: () => void }) => unknown) => {
     const state = {
       campaigns: mockCampaigns,
       loading: mockCampaignsLoading,
       fetchCampaigns: mockFetchCampaigns,
       createCampaign: vi.fn(),
       deleteCampaign: vi.fn(),
+      leaveCampaign: vi.fn(),
     }
     return selector ? selector(state) : state
   },

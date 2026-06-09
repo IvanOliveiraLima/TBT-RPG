@@ -660,6 +660,20 @@ const en = {
   // Aria — campaign view
   'aria.linked_char_view':  'View character {name}',
   'aria.campaign_char_nav': 'Navigate to character {name}',
+
+  // Leave campaign
+  'campaigns.leave':              'Leave',
+  'leave_campaign.title':         'Leave Campaign?',
+  'leave_campaign.warning':       'Are you sure you want to leave "{name}"?',
+  'leave_campaign.note':          'Your linked characters will be unlinked from this campaign.',
+  'leave_campaign.confirm':       'Leave',
+  'leave_campaign.leaving':       'Leaving…',
+  'leave_campaign.error':         'Could not leave campaign. Please try again.',
+
+  // Campaign detail — actions section
+  'campaign_detail.actions':       'Actions',
+  'campaign_detail.delete_warning': 'Permanently deletes the campaign and removes all members.',
+  'campaign_detail.leave_warning':  'Removes you from this campaign.',
 } as const;
 
 export default en;

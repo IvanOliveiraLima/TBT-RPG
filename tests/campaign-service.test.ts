@@ -66,6 +66,7 @@ import {
   listMyCampaigns,
   getCampaign,
   deleteCampaign,
+  leaveCampaign,
   listCampaignMembers,
   CampaignServiceError,
 } from '@/services/campaign'
@@ -301,5 +302,56 @@ describe('listCampaignMembers', () => {
     expect(result).toHaveLength(1)
     expect(result[0]?.role).toBe('master')
     expect(result[0]?.userId).toBe('u1')
+  })
+})
+
+// ── leaveCampaign ──────────────────────────────────────────────────────────────
+
+describe('leaveCampaign', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('throws not_authenticated when supabase is null', async () => {
+    resetAuth()
+    await expect(leaveCampaign('c1')).rejects.toMatchObject({ code: 'not_authenticated' })
+  })
+
+  it('throws not_authenticated when no session', async () => {
+    mockSupabaseConfigured = true
+    mockClient.auth.getSession.mockResolvedValue({ data: { session: null } })
+    await expect(leaveCampaign('c1')).rejects.toMatchObject({ code: 'not_authenticated' })
+  })
+
+  it('throws leave_failed when campaign_characters delete fails', async () => {
+    setupAuth()
+    // First call (campaign_characters delete) fails
+    const failChain = {
+      delete: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: { message: 'fail' } }),
+        }),
+      }),
+    }
+    mockFrom.mockReturnValue(failChain)
+    await expect(leaveCampaign('c1')).rejects.toMatchObject({ code: 'leave_failed' })
+  })
+
+  it('throws leave_failed when campaign_members delete fails', async () => {
+    setupAuth()
+    const okEq = { eq: vi.fn().mockResolvedValue({ error: null }) }
+    const failEq = { eq: vi.fn().mockResolvedValue({ error: { message: 'fail' } }) }
+    const okDeleteChain = { delete: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(okEq) }) }
+    const failDeleteChain = { delete: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(failEq) }) }
+    mockFrom
+      .mockReturnValueOnce(okDeleteChain)   // campaign_characters
+      .mockReturnValueOnce(failDeleteChain) // campaign_members
+    await expect(leaveCampaign('c1')).rejects.toMatchObject({ code: 'leave_failed' })
+  })
+
+  it('resolves without error on success', async () => {
+    setupAuth()
+    const okEq = { eq: vi.fn().mockResolvedValue({ error: null }) }
+    const okChain = { delete: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(okEq) }) }
+    mockFrom.mockReturnValue(okChain)
+    await expect(leaveCampaign('c1')).resolves.toBeUndefined()
   })
 })

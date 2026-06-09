@@ -23,9 +23,10 @@ interface CampaignCardProps {
   currentUserId: string
   onOpen: () => void
   onRequestDelete: (id: string, name: string) => void
+  onRequestLeave: (id: string, name: string) => void
 }
 
-export function CampaignCard({ campaign, currentUserId, onOpen, onRequestDelete }: CampaignCardProps) {
+export function CampaignCard({ campaign, currentUserId, onOpen, onRequestDelete, onRequestLeave }: CampaignCardProps) {
   const { t } = useTranslation()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -119,25 +120,47 @@ export function CampaignCard({ campaign, currentUserId, onOpen, onRequestDelete 
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
             overflow: 'hidden',
           }}>
-            <button
-              data-testid={`campaign-delete-${campaign.id}`}
-              onClick={e => {
-                e.stopPropagation()
-                setMenuOpen(false)
-                onRequestDelete(campaign.id, campaign.name)
-              }}
-              style={{
-                width: '100%',
-                background: 'transparent', border: 'none',
-                color: T.danger,
-                padding: '10px 14px',
-                fontSize: 13, fontWeight: 500,
-                textAlign: 'left', cursor: 'pointer',
-                fontFamily: T.sans,
-              }}
-            >
-              {t('delete_campaign.confirm')}
-            </button>
+            {isOwner ? (
+              <button
+                data-testid={`campaign-delete-${campaign.id}`}
+                onClick={e => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onRequestDelete(campaign.id, campaign.name)
+                }}
+                style={{
+                  width: '100%',
+                  background: 'transparent', border: 'none',
+                  color: T.danger,
+                  padding: '10px 14px',
+                  fontSize: 13, fontWeight: 500,
+                  textAlign: 'left', cursor: 'pointer',
+                  fontFamily: T.sans,
+                }}
+              >
+                {t('delete_campaign.confirm')}
+              </button>
+            ) : (
+              <button
+                data-testid={`campaign-leave-${campaign.id}`}
+                onClick={e => {
+                  e.stopPropagation()
+                  setMenuOpen(false)
+                  onRequestLeave(campaign.id, campaign.name)
+                }}
+                style={{
+                  width: '100%',
+                  background: 'transparent', border: 'none',
+                  color: T.danger,
+                  padding: '10px 14px',
+                  fontSize: 13, fontWeight: 500,
+                  textAlign: 'left', cursor: 'pointer',
+                  fontFamily: T.sans,
+                }}
+              >
+                {t('campaigns.leave')}
+              </button>
+            )}
           </div>
         )}
       </div>

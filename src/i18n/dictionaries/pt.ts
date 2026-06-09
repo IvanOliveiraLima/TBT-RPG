@@ -664,6 +664,20 @@ const pt: Record<keyof typeof en, string> = {
   // Aria — campaign view
   'aria.linked_char_view':  'Visualizar personagem {name}',
   'aria.campaign_char_nav': 'Ir para personagem {name}',
+
+  // Leave campaign
+  'campaigns.leave':              'Sair',
+  'leave_campaign.title':         'Sair da Campanha?',
+  'leave_campaign.warning':       'Tem certeza que deseja sair de "{name}"?',
+  'leave_campaign.note':          'Seus personagens vinculados serão desvinculados desta campanha.',
+  'leave_campaign.confirm':       'Sair',
+  'leave_campaign.leaving':       'Saindo…',
+  'leave_campaign.error':         'Não foi possível sair da campanha. Tente novamente.',
+
+  // Campaign detail — actions section
+  'campaign_detail.actions':       'Ações',
+  'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
+  'campaign_detail.leave_warning':  'Remove você desta campanha.',
 };
 
 export default pt;

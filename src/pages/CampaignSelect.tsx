@@ -7,6 +7,7 @@ import { useTranslation } from '@/i18n'
 import { CampaignCard } from '@/components/campaigns/CampaignCard'
 import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
 import { ConfirmDeleteCampaignModal } from '@/components/campaigns/ConfirmDeleteCampaignModal'
+import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCampaignModal'
 import { ProfileSetupModal } from '@/components/campaigns/ProfileSetupModal'
 import { JoinCampaignModal } from '@/components/campaigns/JoinCampaignModal'
 import type { Campaign } from '@/domain/campaign'
@@ -34,6 +35,7 @@ export default function CampaignSelect() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [joinModalOpen, setJoinModalOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<Campaign | null>(null)
+  const [pendingLeave, setPendingLeave] = useState<Campaign | null>(null)
   const [profileChecked, setProfileChecked] = useState(false)
 
   useEffect(() => {
@@ -184,6 +186,7 @@ export default function CampaignSelect() {
                 currentUserId={user.id}
                 onOpen={() => navigate(`/campaigns/${c.id}`)}
                 onRequestDelete={(id, name) => setPendingDelete(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: user.id, inviteCode: '', createdAt: 0, updatedAt: 0 })}
+              onRequestLeave={(id, name) => setPendingLeave(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: '', inviteCode: '', createdAt: 0, updatedAt: 0 })}
               />
             ))}
           </div>
@@ -226,6 +229,14 @@ export default function CampaignSelect() {
           campaign={pendingDelete}
           onDeleted={() => setPendingDelete(null)}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {pendingLeave && (
+        <ConfirmLeaveCampaignModal
+          campaign={pendingLeave}
+          onLeft={() => setPendingLeave(null)}
+          onCancel={() => setPendingLeave(null)}
         />
       )}
     </div>
