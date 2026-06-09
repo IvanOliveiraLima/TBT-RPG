@@ -310,6 +310,14 @@ export default function CampaignDetail() {
                   <div
                     key={char.characterId}
                     data-testid={`linked-char-${char.characterId}`}
+                    onClick={() => navigate(`/campaigns/${id}/characters/${char.characterId}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ')
+                        navigate(`/campaigns/${id}/characters/${char.characterId}`)
+                    }}
+                    aria-label={t('aria.linked_char_view', { name: char.characterName })}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 12px',
@@ -317,6 +325,7 @@ export default function CampaignDetail() {
                       border: `1px solid ${T.borderSubtle}`,
                       borderRadius: 10,
                       gap: 12,
+                      cursor: 'pointer',
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -335,7 +344,7 @@ export default function CampaignDetail() {
 
                     {isCharOwner && (
                       <button
-                        onClick={() => { void handleUnlink(char.characterId) }}
+                        onClick={e => { e.stopPropagation(); void handleUnlink(char.characterId) }}
                         disabled={unlinking === char.characterId}
                         data-testid={`unlink-char-${char.characterId}`}
                         aria-label={t('aria.unlink_character', { name: char.characterName })}
@@ -359,10 +368,6 @@ export default function CampaignDetail() {
               })}
             </div>
           )}
-
-          <div style={{ marginTop: 14, fontSize: 11, color: T.textMuted, textAlign: 'center' }}>
-            {t('campaign_chars.full_view_coming_soon')}
-          </div>
         </div>
 
         {linkModalOpen && id && (

@@ -649,6 +649,21 @@ const pt: Record<keyof typeof en, string> = {
 
   // Aria — campaign chars
   'aria.unlink_character': 'Desvincular personagem {name}',
+
+  // Campaign char view page (Camp.4)
+  'campaign_view.back_to_campaign':        'Voltar para campanha',
+  'campaign_view.linked_characters':       'Personagens vinculados',
+  'campaign_view.viewing_as_master':       'Visualizando como mestre',
+  'campaign_view.viewing_own_char_hint':   'Este é seu próprio personagem. Para editar, vá em "Meus Personagens".',
+  'campaign_view.char_not_found':          'O personagem não existe mais.',
+  'campaign_view.redirecting':             'Voltando para a campanha…',
+  'campaign_view.error_not_authenticated': 'Você precisa estar logado.',
+  'campaign_view.error_fetch_failed':      'Não foi possível carregar o personagem.',
+  'campaign_view.error_unknown':           'Erro inesperado.',
+
+  // Aria — campaign view
+  'aria.linked_char_view':  'Visualizar personagem {name}',
+  'aria.campaign_char_nav': 'Ir para personagem {name}',
 };
 
 export default pt;

@@ -20,7 +20,7 @@ const PORTRAIT_GRADIENT =
 
 interface LoreHeroProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function LoreHero({ character, onUpdate }: LoreHeroProps) {
@@ -41,7 +41,7 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
   ].filter(Boolean)
 
   const handleImageApply = (dataUrl: string) => {
-    onUpdate({ images: { ...character.images, character: dataUrl } })
+    onUpdate?.({ images: { ...character.images, character: dataUrl } })
     setImageModalOpen(false)
   }
 

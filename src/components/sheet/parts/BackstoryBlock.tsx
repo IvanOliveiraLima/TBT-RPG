@@ -28,7 +28,7 @@ const TEXTAREA: React.CSSProperties = {
 
 interface BackstoryBlockProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function BackstoryBlock({ character, onUpdate }: BackstoryBlockProps) {
@@ -39,7 +39,7 @@ export function BackstoryBlock({ character, onUpdate }: BackstoryBlockProps) {
       <Label style={{ marginBottom: 10 }}>{t('backstory.section_title')}</Label>
       <textarea
         value={character.backstory}
-        onChange={(e) => onUpdate({ backstory: e.target.value })}
+        onChange={(e) => onUpdate?.({ backstory: e.target.value })}
         placeholder={t('backstory.placeholder')}
         aria-label={t('backstory.section_title')}
         data-testid="backstory-textarea"

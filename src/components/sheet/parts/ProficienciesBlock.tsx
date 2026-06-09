@@ -54,7 +54,7 @@ const SUB_LISTS: SubListConfig[] = [
 
 interface ProficienciesBlockProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function ProficienciesBlock({ character, onUpdate }: ProficienciesBlockProps) {
@@ -62,7 +62,7 @@ export function ProficienciesBlock({ character, onUpdate }: ProficienciesBlockPr
   const locked = useCharacterLocked(character.id)
 
   function updateSubList(key: ProfKey, newList: string[]) {
-    onUpdate({
+    onUpdate?.({
       proficiencies: { ...character.proficiencies, [key]: newList },
     })
   }

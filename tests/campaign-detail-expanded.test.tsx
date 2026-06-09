@@ -288,3 +288,34 @@ describe('CampaignDetail — linked chars section', () => {
     expect(screen.getByTestId('link-char-modal-stub')).toBeDefined()
   })
 })
+
+describe('CampaignDetail — char card navigation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetCampaign.mockResolvedValue(CAMPAIGN)
+    mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER, MEMBER_PLAYER])
+    mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER, PROFILE_PLAYER])
+    mockListCampaignCharacters.mockResolvedValue([LINKED_CHAR_OWNER, LINKED_CHAR_PLAYER])
+  })
+
+  it('clicking a linked char card navigates to char view', async () => {
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
+    screen.getByTestId('linked-char-char1').click()
+    expect(mockNavigate).toHaveBeenCalledWith('/campaigns/c1/characters/char1')
+  })
+
+  it('clicking unlink button does not navigate', async () => {
+    const { userEvent } = await import('@testing-library/user-event')
+    const ue = userEvent.setup()
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByTestId('unlink-char-char1')).toBeDefined())
+    await ue.click(screen.getByTestId('unlink-char-char1'))
+    // mockNavigate should NOT have been called for char view navigation
+    const charViewCalls = mockNavigate.mock.calls.filter(
+      (call: string[]) => call[0]?.includes('/characters/')
+    )
+    expect(charViewCalls.length).toBe(0)
+  })
+})

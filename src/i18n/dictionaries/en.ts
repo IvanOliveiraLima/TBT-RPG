@@ -645,6 +645,21 @@ const en = {
 
   // Aria — campaign chars
   'aria.unlink_character': 'Unlink character {name}',
+
+  // Campaign char view page (Camp.4)
+  'campaign_view.back_to_campaign':        'Back to campaign',
+  'campaign_view.linked_characters':       'Linked characters',
+  'campaign_view.viewing_as_master':       'Viewing as master',
+  'campaign_view.viewing_own_char_hint':   "This is your own character. To edit, go to 'My Characters'.",
+  'campaign_view.char_not_found':          'Character no longer exists.',
+  'campaign_view.redirecting':             'Returning to campaign…',
+  'campaign_view.error_not_authenticated': 'You must be signed in.',
+  'campaign_view.error_fetch_failed':      'Could not load character.',
+  'campaign_view.error_unknown':           'Unexpected error.',
+
+  // Aria — campaign view
+  'aria.linked_char_view':  'View character {name}',
+  'aria.campaign_char_nav': 'Navigate to character {name}',
 } as const;
 
 export default en;

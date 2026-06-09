@@ -78,7 +78,7 @@ function PersonalityField({ testId, label, placeholder, value, onChange, locked 
 
 interface PersonalityBlockProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function PersonalityBlock({ character, onUpdate }: PersonalityBlockProps) {
@@ -95,7 +95,7 @@ export function PersonalityBlock({ character, onUpdate }: PersonalityBlockProps)
             label={t(f.labelKey)}
             placeholder={t(f.placeholderKey)}
             value={character.personality[f.key]}
-            onChange={(value) => onUpdate({ personality: { ...character.personality, [f.key]: value } })}
+            onChange={(value) => onUpdate?.({ personality: { ...character.personality, [f.key]: value } })}
             {...(locked ? { locked: true } : {})}
           />
         ))}

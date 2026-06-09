@@ -7,7 +7,7 @@ import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 interface LanguagesBlockProps {
   character: Character
-  onUpdate: (partial: Partial<Character>) => void
+  onUpdate?: (partial: Partial<Character>) => void
 }
 
 export function LanguagesBlock({ character, onUpdate }: LanguagesBlockProps) {
@@ -21,7 +21,7 @@ export function LanguagesBlock({ character, onUpdate }: LanguagesBlockProps) {
         <div style={{ marginTop: 8 }}>
           <EditableStringList
             items={character.languages}
-            onUpdate={newLangs => onUpdate({ languages: newLangs })}
+            onUpdate={newLangs => onUpdate?.({ languages: newLangs })}
             placeholder={t('languages.placeholder')}
             inputAriaKey="aria.language_input"
             removeAriaKey="aria.remove_language"
