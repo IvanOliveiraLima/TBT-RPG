@@ -585,8 +585,10 @@ const en = {
   // Invite code block (owner view in CampaignDetail)
   'invite.title':              'Invite code',
   'invite.description':        'Share this code with players to invite them to the campaign.',
-  'invite.copy':               'Copy',
-  'invite.copied':             'Copied!',
+  'invite.copy_link':          'Copy link',
+  'invite.link_copied':        'Link copied!',
+  'invite.copy_code':          'Copy code',
+  'invite.code_copied':        'Code copied!',
   'invite.regenerate':         'Regenerate code',
   'invite.regenerating':       'Regenerating…',
   'invite.regenerate_confirm': 'Regenerate code? The previous code will stop working.',
@@ -616,6 +618,7 @@ const en = {
   'campaigns.join_with_code': 'Join with code',
 
   // Aria — invite
+  'aria.copy_invite_link':       'Copy invite link',
   'aria.copy_invite_code':       'Copy invite code',
   'aria.regenerate_invite_code': 'Regenerate invite code',
   'aria.invite_code_input':      'Invite code input',

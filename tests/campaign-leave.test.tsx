@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
 import React from 'react'
 import { CampaignCard } from '@/components/campaigns/CampaignCard'
@@ -256,23 +256,3 @@ describe('ConfirmLeaveCampaignModal', () => {
   })
 })
 
-// ── CampaignDetail — actions section ─────────────────────────────────────────
-
-import CampaignDetail from '@/pages/CampaignDetail'
-
-function renderDetail(campaignOwnerId: string) {
-  localStorage.setItem('tbt-rpg-v2-lang', 'pt')
-  mockGetCampaign.mockResolvedValue(makeCampaign({ ownerId: campaignOwnerId }))
-  mockListCampaignMembers.mockResolvedValue([])
-  mockListProfilesByIds.mockResolvedValue([])
-  mockListCampaignCharacters.mockResolvedValue([])
-  return render(
-    <MemoryRouter initialEntries={['/campaigns/c1']}>
-      <I18nProvider>
-        <Routes>
-          <Route path="/campaigns/:id" element={<CampaignDetail />} />
-        </Routes>
-      </I18nProvider>
-    </MemoryRouter>
-  )
-}

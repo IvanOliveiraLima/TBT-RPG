@@ -589,8 +589,10 @@ const pt: Record<keyof typeof en, string> = {
   // Invite code block (owner view in CampaignDetail)
   'invite.title':              'Código de convite',
   'invite.description':        'Compartilhe este código com os jogadores para convidá-los para a campanha.',
-  'invite.copy':               'Copiar',
-  'invite.copied':             'Copiado!',
+  'invite.copy_link':          'Copiar link',
+  'invite.link_copied':        'Link copiado!',
+  'invite.copy_code':          'Copiar código',
+  'invite.code_copied':        'Código copiado!',
   'invite.regenerate':         'Regenerar código',
   'invite.regenerating':       'Regenerando…',
   'invite.regenerate_confirm': 'Regenerar código? O código anterior deixará de funcionar.',
@@ -620,6 +622,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaigns.join_with_code': 'Entrar com código',
 
   // Aria — invite
+  'aria.copy_invite_link':       'Copiar link de convite',
   'aria.copy_invite_code':       'Copiar código de convite',
   'aria.regenerate_invite_code': 'Regenerar código de convite',
   'aria.invite_code_input':      'Campo de código de convite',
