@@ -32,7 +32,41 @@ vi.mock('@/store/characters', () => ({
 let mockCharacters: unknown[] = []
 
 vi.mock('@/store/auth', () => ({
-  useAuthStore: () => ({ user: null, loading: false, signOut: vi.fn() }),
+  useAuthStore: (selector?: (s: { user: null; loading: boolean; signOut: () => void }) => unknown) => {
+    const state = { user: null, loading: false, signOut: vi.fn() }
+    return selector ? selector(state) : state
+  },
+}))
+
+// ── mock campaigns store ───────────────────────────────────────────────────────
+const mockFetchCampaigns = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/store/campaigns', () => ({
+  useCampaignsStore: (selector?: (s: { campaigns: unknown[]; loading: boolean; fetchCampaigns: () => Promise<void> }) => unknown) => {
+    const state = { campaigns: [], loading: false, error: null, fetchCampaigns: mockFetchCampaigns, createCampaign: vi.fn(), deleteCampaign: vi.fn() }
+    return selector ? selector(state) : state
+  },
+}))
+
+// ── mock user-profile service ─────────────────────────────────────────────────
+vi.mock('@/services/user-profile', () => ({
+  getMyProfile: vi.fn().mockResolvedValue(null),
+  upsertMyProfile: vi.fn(),
+}))
+
+// ── mock campaign modals ──────────────────────────────────────────────────────
+vi.mock('@/components/campaigns/ProfileSetupModal', () => ({
+  ProfileSetupModal: ({ onCancel }: { onComplete: () => void; onCancel: () => void }) => (
+    <div data-testid="profile-setup-modal-stub">
+      <button data-testid="profile-setup-cancel-stub" onClick={onCancel}>Cancel</button>
+    </div>
+  ),
+}))
+vi.mock('@/components/campaigns/CreateCampaignModal', () => ({
+  CreateCampaignModal: ({ onCancel }: { onCreated: (c: unknown) => void; onCancel: () => void }) => (
+    <div data-testid="create-campaign-modal-stub">
+      <button data-testid="create-campaign-cancel-stub" onClick={onCancel}>Cancel</button>
+    </div>
+  ),
 }))
 
 // ── mock AI modal so we don't pull in service fetch ───────────────────────────
@@ -83,6 +117,7 @@ describe('CharSelect — create buttons', () => {
     mockNavigate.mockClear()
     mockAddCharacter.mockClear()
     mockDeleteCharacter.mockClear()
+    mockFetchCampaigns.mockClear()
     mockCharacters = []
     localStorage.clear()
   })

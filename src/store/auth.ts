@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { supabase, signIn as supaSignIn, signOut as supaSignOut, type User, type Session } from '@/lib/supabase'
 
+export type SignUpResult =
+  | { status: 'signed_in' }
+  | { status: 'email_confirmation_required' }
+  | { status: 'error'; code: string }
+
 interface AuthState {
   user:    User | null
   session: Session | null
@@ -8,6 +13,7 @@ interface AuthState {
 
   initAuth:   () => Promise<void>
   signIn:     (email: string, password: string) => Promise<void>
+  signUp:     (email: string, password: string) => Promise<SignUpResult>
   signOut:    () => Promise<void>
   /** Placeholder — Supabase OAuth not wired in Phase A */
   signInWithGoogle: () => Promise<void>
@@ -44,6 +50,38 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  signUp: async (email, password) => {
+    if (!supabase) {
+      return { status: 'error', code: 'not_configured' }
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+
+    if (error) {
+      console.error('[auth] signUp error', error)
+      if (error.message.includes('already registered') || error.message.includes('already exists')) {
+        return { status: 'error', code: 'email_already_registered' }
+      }
+      if (error.message.includes('Password should be')) {
+        return { status: 'error', code: 'password_too_weak' }
+      }
+      if (error.message.includes('invalid email') || error.message.includes('Invalid email')) {
+        return { status: 'error', code: 'invalid_email' }
+      }
+      return { status: 'error', code: 'signup_failed' }
+    }
+
+    if (data.session) {
+      set({ user: data.user, loading: false })
+      return { status: 'signed_in' }
+    }
+
+    return { status: 'email_confirmation_required' }
   },
 
   signOut: async () => {

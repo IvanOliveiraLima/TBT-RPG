@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useCharactersStore } from '@/store/characters'
 import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
+import type { Campaign } from '@/domain/campaign'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { createEmptyCharacter } from '@/domain/factories'
 import { useTranslation, pluralKey } from '@/i18n'
+import { useCampaignsStore } from '@/store/campaigns'
+import { getMyProfile } from '@/services/user-profile'
+import { ProfileSetupModal } from '@/components/campaigns/ProfileSetupModal'
+import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
+import { JoinCampaignModal } from '@/components/campaigns/JoinCampaignModal'
 import { AIGenerationModal } from '@/components/AIGenerationModal'
 import { CharacterCardMenu } from '@/components/CharacterCardMenu'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
@@ -210,6 +216,225 @@ function CharCard({ ch, selected, onRequestDelete }: CharCardProps) {
   )
 }
 
+/* ── Compact campaign card ─────────────────────────────────────────────── */
+interface CompactCampaignCardProps {
+  campaign: Campaign
+  onClick: () => void
+}
+
+function CompactCampaignCard({ campaign, onClick }: CompactCampaignCardProps) {
+  const { t } = useTranslation()
+  return (
+    <button
+      data-testid={`compact-campaign-card-${campaign.id}`}
+      onClick={onClick}
+      aria-label={t('aria.compact_campaign_card').replace('{name}', campaign.name)}
+      style={{
+        width: '100%',
+        padding: '10px 12px',
+        borderRadius: 10,
+        background: T.elevated,
+        border: `1px solid ${T.borderSubtle}`,
+        display: 'flex', alignItems: 'center', gap: 10,
+        cursor: 'pointer', textAlign: 'left',
+        transition: 'border-color 200ms',
+      }}
+    >
+      <div style={{
+        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+        background: `linear-gradient(135deg, ${T.purple}, #2A1F3D)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: T.serif, fontSize: 14, fontWeight: 700, color: T.gold,
+      }}>
+        {(campaign.name[0] ?? '?').toUpperCase()}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, fontWeight: 600, color: T.textPrimary,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {campaign.name}
+        </div>
+        {campaign.description && (
+          <div style={{
+            fontSize: 11, color: T.textTertiary,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {campaign.description}
+          </div>
+        )}
+      </div>
+    </button>
+  )
+}
+
+/* ── Campaigns section ──────────────────────────────────────────────────── */
+function CampaignsSection() {
+  const navigate = useNavigate()
+  const { t } = useTranslation()
+  const user = useAuthStore(s => s.user)
+  const campaigns = useCampaignsStore(s => s.campaigns)
+  const loading = useCampaignsStore(s => s.loading)
+  const fetchCampaigns = useCampaignsStore(s => s.fetchCampaigns)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [profileSetupOpen, setProfileSetupOpen] = useState(false)
+  const [joinModalOpen, setJoinModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (user) void fetchCampaigns()
+  }, [user, fetchCampaigns])
+
+  async function handleCreateClick() {
+    if (!user) {
+      navigate('/login?redirectTo=/campaigns')
+      return
+    }
+    const profile = await getMyProfile()
+    if (!profile) {
+      setProfileSetupOpen(true)
+    } else {
+      setCreateModalOpen(true)
+    }
+  }
+
+  async function handleJoinClick() {
+    if (!user) {
+      navigate('/login?redirectTo=/campaigns')
+      return
+    }
+    const profile = await getMyProfile()
+    if (!profile) {
+      setProfileSetupOpen(true)
+    } else {
+      setJoinModalOpen(true)
+    }
+  }
+
+  return (
+    <>
+      <div style={{
+        marginTop: 14,
+        paddingTop: 14,
+        borderTop: `1px solid ${T.borderSubtle}`,
+      }}>
+        <div style={{
+          fontFamily: T.serif,
+          fontSize: 11, fontWeight: 600,
+          letterSpacing: 2, textTransform: 'uppercase',
+          color: T.textMuted,
+          marginBottom: 8,
+        }}>
+          {t('characters_screen.my_campaigns')}
+        </div>
+
+        {!user && (
+          <div
+            data-testid="campaigns-login-prompt"
+            style={{ fontSize: 13, color: T.textMuted, marginBottom: 8, lineHeight: 1.55 }}
+          >
+            {t('characters_screen.campaigns_login_prompt')}
+          </div>
+        )}
+
+        {user && loading && (
+          <div style={{ padding: '12px 0', textAlign: 'center', color: T.textMuted, fontSize: 13 }}>
+            {t('charselect.loading')}
+          </div>
+        )}
+
+        {user && !loading && campaigns.length === 0 && (
+          <div
+            data-testid="campaigns-empty-charselect"
+            style={{ fontSize: 13, color: T.textMuted, marginBottom: 8 }}
+          >
+            {t('characters_screen.campaigns_empty')}
+          </div>
+        )}
+
+        {user && !loading && campaigns.length > 0 && (
+          <div
+            data-testid="compact-campaign-list"
+            style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}
+          >
+            {campaigns.map(c => (
+              <CompactCampaignCard
+                key={c.id}
+                campaign={c}
+                onClick={() => navigate(`/campaigns/${c.id}`)}
+              />
+            ))}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 6, marginTop: campaigns.length > 0 ? 0 : 6 }}>
+          <button
+            data-testid="charselect-create-campaign-btn"
+            onClick={() => void handleCreateClick()}
+            style={{
+              flex: 1,
+              padding: '9px',
+              borderRadius: 8,
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              color: T.textSecondary,
+              fontSize: 11, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: 0.3,
+            }}
+          >
+            + {t('campaigns.create')}
+          </button>
+          <button
+            data-testid="charselect-join-campaign-btn"
+            onClick={() => void handleJoinClick()}
+            style={{
+              flex: 1,
+              padding: '9px',
+              borderRadius: 8,
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              color: T.textSecondary,
+              fontSize: 11, fontWeight: 600,
+              cursor: 'pointer', letterSpacing: 0.3,
+            }}
+          >
+            {t('campaigns.join_with_code')}
+          </button>
+        </div>
+      </div>
+
+      {createModalOpen && (
+        <CreateCampaignModal
+          onCreated={(campaign) => {
+            setCreateModalOpen(false)
+            navigate(`/campaigns/${campaign.id}`)
+          }}
+          onCancel={() => setCreateModalOpen(false)}
+        />
+      )}
+
+      {joinModalOpen && (
+        <JoinCampaignModal
+          onJoined={(campaignId) => {
+            setJoinModalOpen(false)
+            navigate(`/campaigns/${campaignId}`)
+          }}
+          onCancel={() => setJoinModalOpen(false)}
+        />
+      )}
+
+      {profileSetupOpen && (
+        <ProfileSetupModal
+          onComplete={() => {
+            setProfileSetupOpen(false)
+            setCreateModalOpen(true)
+          }}
+          onCancel={() => setProfileSetupOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
 /* ── Auth strip ────────────────────────────────────────────────────────── */
 function AuthStrip() {
   const navigate                   = useNavigate()
@@ -269,7 +494,7 @@ function AuthStrip() {
         {t('auth.sign_in')}
       </button>
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/login?mode=signup')}
         style={{
           flex: 1, background: 'transparent',
           border: `1px solid ${T.borderSubtle}`,
@@ -528,6 +753,9 @@ export default function CharSelect() {
             {t('charselect.export')}
           </button>
         </div>
+
+        {/* Campaigns */}
+        <CampaignsSection />
 
         {/* Auth */}
         <AuthStrip />

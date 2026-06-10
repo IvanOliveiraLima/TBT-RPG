@@ -48,9 +48,30 @@ const pt: Record<keyof typeof en, string> = {
   'auth.create_account': 'Criar conta',
   'auth.email': 'E-mail',
   'auth.password': 'Senha',
+  'auth.password_confirm': 'Confirmar senha',
   'auth.signing_in': 'Entrando…',
   'auth.sign_in_title': 'Entrar na conta',
   'auth.sign_in_failed': 'Falha no login',
+  'auth.signup': 'Criar conta',
+  'auth.signup_title': 'Crie sua conta',
+  'auth.submitting': 'Enviando…',
+  'auth.no_account_yet': 'Não tem conta? Criar conta',
+  'auth.already_have_account': 'Já tem conta? Entrar',
+  'auth.back_to_signin': 'Voltar para entrar',
+  'auth.signup_success_title': 'Conta criada!',
+  'auth.signup_success_message': 'Enviamos um link de confirmação para {email}. Clique no link da sua caixa de entrada para ativar sua conta.',
+  'auth.signup_success_hint': 'Não esqueça de verificar a pasta de spam caso não encontre o e-mail.',
+  'auth.error_invalid_credentials': 'E-mail ou senha inválidos.',
+  'auth.error_email_already_registered': 'Este e-mail já está cadastrado. Tente entrar.',
+  'auth.error_password_too_weak': 'Senha muito fraca. Use ao menos 6 caracteres.',
+  'auth.error_invalid_email': 'E-mail inválido.',
+  'auth.error_signup_failed': 'Não foi possível criar a conta. Tente novamente.',
+  'auth.error_signin_failed': 'Não foi possível entrar. Tente novamente.',
+  'auth.error_not_configured': 'Autenticação não configurada.',
+  'auth.error_invalid_email_format': 'Digite um e-mail válido.',
+  'auth.error_password_too_short': 'Senha deve ter ao menos 6 caracteres.',
+  'auth.error_passwords_do_not_match': 'As senhas não coincidem.',
+  'auth.error_unknown': 'Ocorreu um erro inesperado.',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
@@ -509,6 +530,179 @@ const pt: Record<keyof typeof en, string> = {
   'aria.character_options': 'Opções do personagem',
   'aria.confirm_delete':    'Confirmar exclusão',
   'aria.cancel_delete':     'Cancelar exclusão',
+
+  // Navigation — campaigns
+  'chrome.my_campaigns': 'Minhas Campanhas',
+
+  // Campaign select page
+  'campaigns.my_campaigns':    'Minhas Campanhas',
+  'campaigns.count_one':       '{count} campanha',
+  'campaigns.count_other':     '{count} campanhas',
+  'campaigns.create':          'Criar Campanha',
+  'campaigns.empty_state':     'Nenhuma campanha ainda. Crie a sua primeira!',
+  'campaigns.detail_placeholder':      'Conteúdo da campanha em breve.',
+  'campaigns.detail_placeholder_hint': 'Convidar jogadores e adicionar personagens estará disponível em breve.',
+
+  // Create campaign modal
+  'create_campaign.title':              'Criar Nova Campanha',
+  'create_campaign.name_label':         'Nome da Campanha',
+  'create_campaign.name_placeholder':   'A Mina Perdida de Phandelver',
+  'create_campaign.description_label':  'Descrição (opcional)',
+  'create_campaign.description_placeholder': 'Uma breve descrição da campanha...',
+  'create_campaign.create_button':      'Criar',
+  'create_campaign.creating':           'Criando…',
+  'create_campaign.error_create_failed': 'Não foi possível criar a campanha. Tente novamente.',
+  'create_campaign.error_not_authenticated': 'Você precisa estar conectado para criar uma campanha.',
+
+  // Delete campaign modal
+  'delete_campaign.title':   'Excluir Campanha?',
+  'delete_campaign.warning': 'Tem certeza que deseja excluir "{name}"?',
+  'delete_campaign.note':    'Esta ação não pode ser desfeita. Todos os membros serão removidos.',
+  'delete_campaign.confirm': 'Excluir',
+  'delete_campaign.deleting': 'Excluindo…',
+  'delete_campaign.error_delete_failed': 'Não foi possível excluir a campanha. Tente novamente.',
+
+  // Profile setup modal
+  'profile_setup.title':              'Bem-vindo(a)!',
+  'profile_setup.description':        'Escolha um nome de exibição. É assim que outros membros da campanha verão você.',
+  'profile_setup.display_name_label': 'Nome de exibição',
+  'profile_setup.display_name_placeholder': 'Seu nome ou apelido',
+  'profile_setup.save':               'Continuar',
+  'profile_setup.saving':             'Salvando…',
+  'profile_setup.error_empty_display_name':    'Nome de exibição não pode ficar vazio.',
+  'profile_setup.error_display_name_too_long': 'Nome muito longo (máx 50 caracteres).',
+  'profile_setup.error_upsert_failed':         'Não foi possível salvar. Tente novamente.',
+  'profile_setup.error_not_authenticated':     'Você precisa estar conectado.',
+  'profile_setup.error_unknown':               'Ocorreu um erro inesperado.',
+
+  // Aria — campaigns
+  'aria.create_campaign':       'Criar nova campanha',
+  'aria.delete_campaign':       'Excluir campanha {name}',
+  'aria.campaign_options':      'Opções da campanha {name}',
+  'aria.compact_campaign_card': 'Campanha {name}',
+
+  // CharSelect — campaigns section
+  'characters_screen.my_campaigns':           'Minhas Campanhas',
+  'characters_screen.campaigns_empty':        'Nenhuma campanha ainda. Crie a sua primeira!',
+  'characters_screen.campaigns_login_prompt': 'Entre para criar e gerenciar campanhas.',
+
+  // Invite code block (owner view in CampaignDetail)
+  'invite.title':              'Código de convite',
+  'invite.description':        'Compartilhe este código com os jogadores para convidá-los para a campanha.',
+  'invite.copy_link':          'Copiar link',
+  'invite.link_copied':        'Link copiado!',
+  'invite.copy_code':          'Copiar código',
+  'invite.code_copied':        'Código copiado!',
+  'invite.regenerate':         'Regenerar código',
+  'invite.regenerating':       'Regenerando…',
+  'invite.regenerate_confirm': 'Regenerar código? O código anterior deixará de funcionar.',
+  'invite.regenerate_error':   'Não foi possível regenerar. Tente novamente.',
+
+  // Join campaign modal
+  'join_campaign.title':                  'Entrar em campanha com código',
+  'join_campaign.description':            'Digite o código de convite compartilhado pelo mestre da campanha.',
+  'join_campaign.code_label':             'Código de convite',
+  'join_campaign.join':                   'Entrar',
+  'join_campaign.joining':                'Entrando…',
+  'join_campaign.error_not_found':        'Código não encontrado. Verifique e tente novamente.',
+  'join_campaign.error_lookup_failed':    'Não foi possível buscar o código. Tente novamente.',
+  'join_campaign.error_accept_failed':    'Não foi possível entrar na campanha. Tente novamente.',
+  'join_campaign.error_not_authenticated':'Você precisa estar logado para entrar em uma campanha.',
+  'join_campaign.error_unknown':          'Erro inesperado. Tente novamente.',
+  'join_campaign.already_member_note':    'Você já é membro desta campanha.',
+
+  // Campaign detail
+  'campaign_detail.members':           'Membros',
+  'campaign_detail.role_master':       'Mestre',
+  'campaign_detail.role_player':       'Jogador',
+  'campaign_detail.unknown_member':    'Membro desconhecido',
+  'campaign_detail.chars_placeholder': 'Visualização de personagens em breve.',
+
+  // Buttons — join with code
+  'campaigns.join_with_code': 'Entrar com código',
+
+  // Aria — invite
+  'aria.copy_invite_link':       'Copiar link de convite',
+  'aria.copy_invite_code':       'Copiar código de convite',
+  'aria.regenerate_invite_code': 'Regenerar código de convite',
+  'aria.invite_code_input':      'Campo de código de convite',
+
+  // Campaign detail — linked chars section
+  'campaign_chars.title':               'Personagens vinculados',
+  'campaign_chars.link_button':         'Vincular personagem',
+  'campaign_chars.empty_state':         'Nenhum personagem vinculado ainda.',
+  'campaign_chars.owner_label':         'Jogador',
+  'campaign_chars.unlink':              'Desvincular',
+  'campaign_chars.unlinking':           'Desvinculando…',
+  'campaign_chars.unlink_confirm':      'Desvincular este personagem da campanha?',
+  'campaign_chars.unlink_failed':       'Não foi possível desvincular. Tente novamente.',
+  'campaign_chars.full_view_coming_soon': 'Visualização completa em breve.',
+
+  // Link character modal
+  'link_character.title':               'Vincular personagem',
+  'link_character.description':         'Selecione um de seus personagens para vincular a esta campanha.',
+  'link_character.no_chars_at_all':     'Você não tem nenhum personagem ainda. Crie um primeiro.',
+  'link_character.all_already_linked':  'Todos os seus personagens já estão vinculados a esta campanha.',
+  'link_character.confirm':             'Vincular',
+  'link_character.linking':             'Vinculando…',
+  'link_character.error_already_linked':    'Este personagem já está vinculado.',
+  'link_character.error_link_failed':       'Não foi possível vincular. Tente novamente.',
+  'link_character.error_not_authenticated': 'Você precisa estar logado.',
+  'link_character.error_unknown':           'Erro inesperado.',
+
+  // Aria — campaign chars
+  'aria.unlink_character': 'Desvincular personagem {name}',
+
+  // Campaign char view page (Camp.4)
+  'campaign_view.back_to_campaign':        'Voltar para campanha',
+  'campaign_view.linked_characters':       'Personagens vinculados',
+  'campaign_view.viewing_as_master':       'Visualizando como mestre',
+  'campaign_view.viewing_own_char_hint':   'Este é seu próprio personagem. Para editar, vá em "Meus Personagens".',
+  'campaign_view.char_not_found':          'O personagem não existe mais.',
+  'campaign_view.redirecting':             'Voltando para a campanha…',
+  'campaign_view.error_not_authenticated': 'Você precisa estar logado.',
+  'campaign_view.error_fetch_failed':      'Não foi possível carregar o personagem.',
+  'campaign_view.error_unknown':           'Erro inesperado.',
+
+  // Aria — campaign view
+  'aria.linked_char_view':  'Visualizar personagem {name}',
+  'aria.campaign_char_nav': 'Ir para personagem {name}',
+
+  // Leave campaign
+  'campaigns.leave':              'Sair',
+  'leave_campaign.title':         'Sair da Campanha?',
+  'leave_campaign.warning':       'Tem certeza que deseja sair de "{name}"?',
+  'leave_campaign.note':          'Seus personagens vinculados serão desvinculados desta campanha.',
+  'leave_campaign.confirm':       'Sair',
+  'leave_campaign.leaving':       'Saindo…',
+  'leave_campaign.error':         'Não foi possível sair da campanha. Tente novamente.',
+
+  // Campaign detail — actions section
+  'campaign_detail.actions':       'Ações',
+  'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
+  'campaign_detail.leave_warning':  'Remove você desta campanha.',
+
+  // Member row menu
+  'member_menu.edit_name':     'Editar nome de exibição',
+  'member_menu.remove_member': 'Remover membro',
+
+  // Edit display name modal
+  'edit_display_name.title':       'Editar nome de exibição',
+  'edit_display_name.description': 'Este nome é visível para outros membros das campanhas das quais você participa.',
+  'edit_display_name.save':        'Salvar',
+  'edit_display_name.saving':      'Salvando…',
+
+  // Remove member modal
+  'remove_member.title':    'Remover membro?',
+  'remove_member.warning':  'Tem certeza que deseja remover {name} desta campanha?',
+  'remove_member.note':     'Os personagens vinculados também serão desvinculados. Eles podem voltar com o código de convite.',
+  'remove_member.confirm':  'Remover',
+  'remove_member.removing': 'Removendo…',
+  'remove_member.error':    'Não foi possível remover. Tente novamente.',
+
+  // Aria — member row
+  'aria.member_row_menu':          'Ações para {name}',
+  'aria.edit_display_name_input':  'Nome de exibição',
 };
 
 export default pt;

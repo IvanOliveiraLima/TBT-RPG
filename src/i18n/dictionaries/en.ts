@@ -46,9 +46,30 @@ const en = {
   'auth.create_account': 'Create account',
   'auth.email': 'Email',
   'auth.password': 'Password',
+  'auth.password_confirm': 'Confirm password',
   'auth.signing_in': 'Signing in…',
   'auth.sign_in_title': 'Sign in',
   'auth.sign_in_failed': 'Sign in failed',
+  'auth.signup': 'Create account',
+  'auth.signup_title': 'Create your account',
+  'auth.submitting': 'Submitting…',
+  'auth.no_account_yet': "Don't have an account? Create one",
+  'auth.already_have_account': 'Already have an account? Sign in',
+  'auth.back_to_signin': 'Back to sign in',
+  'auth.signup_success_title': 'Account created!',
+  'auth.signup_success_message': 'We sent a confirmation link to {email}. Click the link in your inbox to activate your account.',
+  'auth.signup_success_hint': "Don't forget to check your spam folder if you don't see the email.",
+  'auth.error_invalid_credentials': 'Invalid email or password.',
+  'auth.error_email_already_registered': 'This email is already registered. Try signing in instead.',
+  'auth.error_password_too_weak': 'Password is too weak. Use at least 6 characters.',
+  'auth.error_invalid_email': 'Invalid email address.',
+  'auth.error_signup_failed': 'Could not create account. Please try again.',
+  'auth.error_signin_failed': 'Could not sign in. Please try again.',
+  'auth.error_not_configured': 'Authentication is not configured.',
+  'auth.error_invalid_email_format': 'Please enter a valid email address.',
+  'auth.error_password_too_short': 'Password must be at least 6 characters.',
+  'auth.error_passwords_do_not_match': 'Passwords do not match.',
+  'auth.error_unknown': 'An unexpected error occurred.',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',
@@ -505,6 +526,179 @@ const en = {
   'aria.character_options': 'Character options',
   'aria.confirm_delete':    'Confirm deletion',
   'aria.cancel_delete':     'Cancel deletion',
+
+  // Navigation — campaigns
+  'chrome.my_campaigns': 'My Campaigns',
+
+  // Campaign select page
+  'campaigns.my_campaigns':    'My Campaigns',
+  'campaigns.count_one':       '{count} campaign',
+  'campaigns.count_other':     '{count} campaigns',
+  'campaigns.create':          'Create Campaign',
+  'campaigns.empty_state':     "No campaigns yet. Create your first one!",
+  'campaigns.detail_placeholder':      'Campaign content coming soon.',
+  'campaigns.detail_placeholder_hint': 'Inviting players and adding characters will be available shortly.',
+
+  // Create campaign modal
+  'create_campaign.title':              'Create New Campaign',
+  'create_campaign.name_label':         'Campaign Name',
+  'create_campaign.name_placeholder':   'The Lost Mine of Phandelver',
+  'create_campaign.description_label':  'Description (optional)',
+  'create_campaign.description_placeholder': 'A brief description of the campaign...',
+  'create_campaign.create_button':      'Create',
+  'create_campaign.creating':           'Creating…',
+  'create_campaign.error_create_failed': 'Could not create campaign. Please try again.',
+  'create_campaign.error_not_authenticated': 'You must be signed in to create a campaign.',
+
+  // Delete campaign modal
+  'delete_campaign.title':   'Delete Campaign?',
+  'delete_campaign.warning': 'Are you sure you want to delete "{name}"?',
+  'delete_campaign.note':    'This action cannot be undone. All members will be removed.',
+  'delete_campaign.confirm': 'Delete',
+  'delete_campaign.deleting': 'Deleting…',
+  'delete_campaign.error_delete_failed': 'Could not delete campaign. Please try again.',
+
+  // Profile setup modal
+  'profile_setup.title':              'Welcome!',
+  'profile_setup.description':        'Choose a display name. This is how other campaign members will see you.',
+  'profile_setup.display_name_label': 'Display name',
+  'profile_setup.display_name_placeholder': 'Your name or nickname',
+  'profile_setup.save':               'Continue',
+  'profile_setup.saving':             'Saving…',
+  'profile_setup.error_empty_display_name':    'Display name cannot be empty.',
+  'profile_setup.error_display_name_too_long': 'Display name is too long (max 50 chars).',
+  'profile_setup.error_upsert_failed':         'Could not save profile. Please try again.',
+  'profile_setup.error_not_authenticated':     'You must be signed in.',
+  'profile_setup.error_unknown':               'An unexpected error occurred.',
+
+  // Aria — campaigns
+  'aria.create_campaign':       'Create new campaign',
+  'aria.delete_campaign':       'Delete campaign {name}',
+  'aria.campaign_options':      'Options for campaign {name}',
+  'aria.compact_campaign_card': 'Campaign {name}',
+
+  // CharSelect — campaigns section
+  'characters_screen.my_campaigns':           'My Campaigns',
+  'characters_screen.campaigns_empty':        'No campaigns yet. Create your first one!',
+  'characters_screen.campaigns_login_prompt': 'Sign in to create and manage campaigns.',
+
+  // Invite code block (owner view in CampaignDetail)
+  'invite.title':              'Invite code',
+  'invite.description':        'Share this code with players to invite them to the campaign.',
+  'invite.copy_link':          'Copy link',
+  'invite.link_copied':        'Link copied!',
+  'invite.copy_code':          'Copy code',
+  'invite.code_copied':        'Code copied!',
+  'invite.regenerate':         'Regenerate code',
+  'invite.regenerating':       'Regenerating…',
+  'invite.regenerate_confirm': 'Regenerate code? The previous code will stop working.',
+  'invite.regenerate_error':   'Could not regenerate. Please try again.',
+
+  // Join campaign modal
+  'join_campaign.title':                  'Join campaign with code',
+  'join_campaign.description':            'Enter the invite code shared by the campaign master.',
+  'join_campaign.code_label':             'Invite code',
+  'join_campaign.join':                   'Join',
+  'join_campaign.joining':                'Joining…',
+  'join_campaign.error_not_found':        'Code not found. Please check and try again.',
+  'join_campaign.error_lookup_failed':    'Could not look up code. Please try again.',
+  'join_campaign.error_accept_failed':    'Could not join campaign. Please try again.',
+  'join_campaign.error_not_authenticated':'You must be signed in to join a campaign.',
+  'join_campaign.error_unknown':          'Unexpected error. Please try again.',
+  'join_campaign.already_member_note':    'You are already a member of this campaign.',
+
+  // Campaign detail
+  'campaign_detail.members':           'Members',
+  'campaign_detail.role_master':       'Master',
+  'campaign_detail.role_player':       'Player',
+  'campaign_detail.unknown_member':    'Unknown member',
+  'campaign_detail.chars_placeholder': 'Character viewing coming soon.',
+
+  // Buttons — join with code
+  'campaigns.join_with_code': 'Join with code',
+
+  // Aria — invite
+  'aria.copy_invite_link':       'Copy invite link',
+  'aria.copy_invite_code':       'Copy invite code',
+  'aria.regenerate_invite_code': 'Regenerate invite code',
+  'aria.invite_code_input':      'Invite code input',
+
+  // Campaign detail — linked chars section
+  'campaign_chars.title':               'Linked characters',
+  'campaign_chars.link_button':         'Link character',
+  'campaign_chars.empty_state':         'No characters linked yet.',
+  'campaign_chars.owner_label':         'Player',
+  'campaign_chars.unlink':              'Unlink',
+  'campaign_chars.unlinking':           'Unlinking…',
+  'campaign_chars.unlink_confirm':      'Unlink this character from the campaign?',
+  'campaign_chars.unlink_failed':       'Could not unlink. Please try again.',
+  'campaign_chars.full_view_coming_soon': 'Full character view coming soon.',
+
+  // Link character modal
+  'link_character.title':               'Link a character',
+  'link_character.description':         'Select one of your characters to link to this campaign.',
+  'link_character.no_chars_at_all':     "You don't have any characters yet. Create one first.",
+  'link_character.all_already_linked':  'All your characters are already linked to this campaign.',
+  'link_character.confirm':             'Link',
+  'link_character.linking':             'Linking…',
+  'link_character.error_already_linked':    'This character is already linked.',
+  'link_character.error_link_failed':       'Could not link character. Please try again.',
+  'link_character.error_not_authenticated': 'You must be signed in.',
+  'link_character.error_unknown':           'Unexpected error.',
+
+  // Aria — campaign chars
+  'aria.unlink_character': 'Unlink character {name}',
+
+  // Campaign char view page (Camp.4)
+  'campaign_view.back_to_campaign':        'Back to campaign',
+  'campaign_view.linked_characters':       'Linked characters',
+  'campaign_view.viewing_as_master':       'Viewing as master',
+  'campaign_view.viewing_own_char_hint':   "This is your own character. To edit, go to 'My Characters'.",
+  'campaign_view.char_not_found':          'Character no longer exists.',
+  'campaign_view.redirecting':             'Returning to campaign…',
+  'campaign_view.error_not_authenticated': 'You must be signed in.',
+  'campaign_view.error_fetch_failed':      'Could not load character.',
+  'campaign_view.error_unknown':           'Unexpected error.',
+
+  // Aria — campaign view
+  'aria.linked_char_view':  'View character {name}',
+  'aria.campaign_char_nav': 'Navigate to character {name}',
+
+  // Leave campaign
+  'campaigns.leave':              'Leave',
+  'leave_campaign.title':         'Leave Campaign?',
+  'leave_campaign.warning':       'Are you sure you want to leave "{name}"?',
+  'leave_campaign.note':          'Your linked characters will be unlinked from this campaign.',
+  'leave_campaign.confirm':       'Leave',
+  'leave_campaign.leaving':       'Leaving…',
+  'leave_campaign.error':         'Could not leave campaign. Please try again.',
+
+  // Campaign detail — actions section
+  'campaign_detail.actions':       'Actions',
+  'campaign_detail.delete_warning': 'Permanently deletes the campaign and removes all members.',
+  'campaign_detail.leave_warning':  'Removes you from this campaign.',
+
+  // Member row menu
+  'member_menu.edit_name':     'Edit display name',
+  'member_menu.remove_member': 'Remove member',
+
+  // Edit display name modal
+  'edit_display_name.title':       'Edit display name',
+  'edit_display_name.description': 'This name is visible to other members of campaigns you belong to.',
+  'edit_display_name.save':        'Save',
+  'edit_display_name.saving':      'Saving…',
+
+  // Remove member modal
+  'remove_member.title':    'Remove member?',
+  'remove_member.warning':  'Are you sure you want to remove {name} from this campaign?',
+  'remove_member.note':     'Their linked characters will also be unlinked. They can rejoin with the invite code.',
+  'remove_member.confirm':  'Remove',
+  'remove_member.removing': 'Removing…',
+  'remove_member.error':    'Could not remove member. Please try again.',
+
+  // Aria — member row
+  'aria.member_row_menu':          'Actions for {name}',
+  'aria.edit_display_name_input':  'Display name',
 } as const;
 
 export default en;

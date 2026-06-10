@@ -14,6 +14,7 @@
 
 import { deleteCharacter as deleteFromDB, createTombstone, removeTombstone } from '@/data/db'
 import { supabase, getSession } from '@/lib/supabase'
+import { unlinkCharacterFromAllCampaigns } from '@/services/campaign-characters'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,14 @@ export async function deleteCharacterService(characterId: string): Promise<Delet
   // 2a. Tombstone — guarantees eventual cloud propagation (even if offline)
   await createTombstone(characterId, userId)
 
-  // 2b. Delete row from characters table (best-effort; tombstone retries if fails)
+  // 2b. Cascade unlink from campaign_characters (best-effort; mestre won't see stale links)
+  try {
+    await unlinkCharacterFromAllCampaigns(characterId)
+  } catch {
+    // non-fatal
+  }
+
+  // 2d. Delete row from characters table (best-effort; tombstone retries if fails)
   try {
     const { error } = await supabase
       .from('characters')
@@ -84,7 +92,7 @@ export async function deleteCharacterService(characterId: string): Promise<Delet
     // non-fatal — tombstone will retry on next sync cycle
   }
 
-  // 2c. Delete uploaded images from the character-images bucket (best-effort)
+  // 2e. Delete uploaded images from the character-images bucket (best-effort)
   try {
     await deleteCharacterImages(userId, characterId)
     result.storageOk = true
