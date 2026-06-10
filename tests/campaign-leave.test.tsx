@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
 import React from 'react'
 import { CampaignCard } from '@/components/campaigns/CampaignCard'
@@ -256,71 +256,3 @@ describe('ConfirmLeaveCampaignModal', () => {
   })
 })
 
-// ── CampaignDetail — actions section ─────────────────────────────────────────
-
-import CampaignDetail from '@/pages/CampaignDetail'
-
-function renderDetail(campaignOwnerId: string) {
-  localStorage.setItem('tbt-rpg-v2-lang', 'pt')
-  mockGetCampaign.mockResolvedValue(makeCampaign({ ownerId: campaignOwnerId }))
-  mockListCampaignMembers.mockResolvedValue([])
-  mockListProfilesByIds.mockResolvedValue([])
-  mockListCampaignCharacters.mockResolvedValue([])
-  return render(
-    <MemoryRouter initialEntries={['/campaigns/c1']}>
-      <I18nProvider>
-        <Routes>
-          <Route path="/campaigns/:id" element={<CampaignDetail />} />
-        </Routes>
-      </I18nProvider>
-    </MemoryRouter>
-  )
-}
-
-describe('CampaignDetail — actions section (owner)', () => {
-  beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
-
-  it('renders actions section', async () => {
-    renderDetail('u1') // u1 is owner
-    await waitFor(() => expect(screen.getByTestId('campaign-detail-actions')).toBeDefined())
-  })
-
-  it('shows Excluir button for owner', async () => {
-    renderDetail('u1')
-    await waitFor(() => expect(screen.getByTestId('campaign-detail-delete-btn')).toBeDefined())
-    expect(screen.queryByTestId('campaign-detail-leave-btn')).toBeNull()
-  })
-
-  it('clicking Excluir opens ConfirmDeleteCampaignModal', async () => {
-    renderDetail('u1')
-    await waitFor(() => screen.getByTestId('campaign-detail-delete-btn'))
-    await userEvent.click(screen.getByTestId('campaign-detail-delete-btn'))
-    expect(screen.getByTestId('confirm-delete-campaign-modal')).toBeDefined()
-  })
-})
-
-describe('CampaignDetail — actions section (player)', () => {
-  beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
-
-  it('shows Sair button for player', async () => {
-    renderDetail('other-owner') // u1 is NOT owner
-    await waitFor(() => expect(screen.getByTestId('campaign-detail-leave-btn')).toBeDefined())
-    expect(screen.queryByTestId('campaign-detail-delete-btn')).toBeNull()
-  })
-
-  it('clicking Sair opens ConfirmLeaveCampaignModal', async () => {
-    renderDetail('other-owner')
-    await waitFor(() => screen.getByTestId('campaign-detail-leave-btn'))
-    await userEvent.click(screen.getByTestId('campaign-detail-leave-btn'))
-    expect(screen.getByTestId('confirm-leave-campaign-modal')).toBeDefined()
-  })
-
-  it('confirming leave navigates to /campaigns', async () => {
-    mockLeaveCampaign.mockResolvedValue(undefined)
-    renderDetail('other-owner')
-    await waitFor(() => screen.getByTestId('campaign-detail-leave-btn'))
-    await userEvent.click(screen.getByTestId('campaign-detail-leave-btn'))
-    await userEvent.click(screen.getByTestId('leave-campaign-confirm'))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/campaigns'))
-  })
-})

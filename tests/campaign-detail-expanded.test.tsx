@@ -247,13 +247,13 @@ describe('CampaignDetail — linked chars section', () => {
     expect(screen.getByText('Legolas')).toBeDefined()
   })
 
-  it('shows unlink button only for chars owned by current user', async () => {
+  it('shows unlink button for own chars and for owner on others chars', async () => {
     renderDetail('owner1')
     await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
-    // owner1's char1 → unlink button visible
+    // owner1's char1 → unlink button visible (own char)
     expect(screen.getByTestId('unlink-char-char1')).toBeDefined()
-    // player1's char2 → no unlink button for owner1
-    expect(screen.queryByTestId('unlink-char-char2')).toBeNull()
+    // player1's char2 → owner1 also sees unlink (isOwner allows unlink on any char)
+    expect(screen.getByTestId('unlink-char-char2')).toBeDefined()
   })
 
   it('does not show unlink button on chars owned by other users', async () => {

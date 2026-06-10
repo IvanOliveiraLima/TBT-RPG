@@ -20,13 +20,14 @@ const T = {
 interface JoinCampaignModalProps {
   onJoined: (campaignId: string, status: 'joined' | 'already_member') => void
   onCancel: () => void
+  prefilledCode?: string
 }
 
 type Status = 'idle' | 'looking_up' | 'previewing' | 'joining' | 'error'
 
-export function JoinCampaignModal({ onJoined, onCancel }: JoinCampaignModalProps) {
+export function JoinCampaignModal({ onJoined, onCancel, prefilledCode }: JoinCampaignModalProps) {
   const { t } = useTranslation()
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(prefilledCode ?? '')
   const [preview, setPreview] = useState<{ id: string; name: string; description: string | null } | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [errorCode, setErrorCode] = useState<string | null>(null)

@@ -1,5 +1,5 @@
 /**
- * Tests for InviteCodeBlock — copy, regenerate, owner-only visibility.
+ * Tests for InviteCodeBlock — copy link, copy code, regenerate, owner-only visibility.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
@@ -30,7 +30,7 @@ Object.defineProperty(navigator, 'clipboard', {
   configurable: true,
 })
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const CAMPAIGN: Campaign = {
   id: 'c1',
@@ -53,7 +53,7 @@ function renderBlock(isOwner: boolean, onCodeRegenerated = vi.fn()) {
   )
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── Tests — visibility ────────────────────────────────────────────────────────
 
 describe('InviteCodeBlock — visibility', () => {
   beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
@@ -69,6 +69,8 @@ describe('InviteCodeBlock — visibility', () => {
   })
 })
 
+// ── Tests — code display ──────────────────────────────────────────────────────
+
 describe('InviteCodeBlock — code display', () => {
   beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
 
@@ -83,26 +85,99 @@ describe('InviteCodeBlock — code display', () => {
   })
 })
 
-describe('InviteCodeBlock — copy', () => {
+// ── Tests — copy link ─────────────────────────────────────────────────────────
+
+describe('InviteCodeBlock — copy link', () => {
   beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
 
-  it('calls navigator.clipboard.writeText with raw code on copy', async () => {
+  it('renders "Copiar link" as primary button', () => {
     renderBlock(true)
-    fireEvent.click(screen.getByTestId('invite-code-copy'))
+    expect(screen.getByTestId('copy-invite-link').textContent).toBe('Copiar link')
+  })
+
+  it('copy link writes full URL to clipboard', async () => {
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-link'))
+    await waitFor(() =>
+      expect(mockClipboardWriteText).toHaveBeenCalledWith(
+        expect.stringContaining('/join/ABCD1234')
+      )
+    )
+  })
+
+  it('copy link URL uses window.location.origin + BASE_URL', async () => {
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-link'))
+    await waitFor(() => {
+      // Build expected URL from runtime values (origin includes port in test env)
+      const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+      const expected = `${window.location.origin}${base}/join/ABCD1234`
+      expect(mockClipboardWriteText).toHaveBeenCalledWith(expected)
+    })
+  })
+
+  it('shows "Link copiado!" on link button after copy', async () => {
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-link'))
+    await waitFor(() =>
+      expect(screen.getByTestId('copy-invite-link').textContent).toBe('Link copiado!')
+    )
+  })
+
+  it('does not show link feedback on code button when link is copied', async () => {
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-link'))
+    await waitFor(() =>
+      expect(screen.getByTestId('copy-invite-link').textContent).toBe('Link copiado!')
+    )
+    expect(screen.getByTestId('copy-invite-code').textContent).toBe('Copiar código')
+  })
+
+  it('handles clipboard error gracefully on copy link', async () => {
+    mockClipboardWriteText.mockRejectedValueOnce(new Error('denied'))
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-link'))
+    await new Promise(r => setTimeout(r, 50))
+    // button text unchanged — no crash
+    expect(screen.getByTestId('copy-invite-link').textContent).toBe('Copiar link')
+  })
+})
+
+// ── Tests — copy code ─────────────────────────────────────────────────────────
+
+describe('InviteCodeBlock — copy code', () => {
+  beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
+
+  it('renders "Copiar código" as secondary button', () => {
+    renderBlock(true)
+    expect(screen.getByTestId('copy-invite-code').textContent).toBe('Copiar código')
+  })
+
+  it('copy code writes raw code (no hyphen) to clipboard', async () => {
+    renderBlock(true)
+    fireEvent.click(screen.getByTestId('copy-invite-code'))
     await waitFor(() => expect(mockClipboardWriteText).toHaveBeenCalledWith('ABCD1234'))
   })
 
-  it('shows "Copiado!" immediately after copy', async () => {
+  it('shows "Código copiado!" on code button after copy', async () => {
     renderBlock(true)
-    fireEvent.click(screen.getByTestId('invite-code-copy'))
-    await waitFor(() => expect(screen.getByTestId('invite-code-copy').textContent).toBe('Copiado!'))
+    fireEvent.click(screen.getByTestId('copy-invite-code'))
+    await waitFor(() =>
+      expect(screen.getByTestId('copy-invite-code').textContent).toBe('Código copiado!')
+    )
   })
 
-  it('shows "Copiar" initially', () => {
+  it('does not show code feedback on link button when code is copied', async () => {
     renderBlock(true)
-    expect(screen.getByTestId('invite-code-copy').textContent).toBe('Copiar')
+    fireEvent.click(screen.getByTestId('copy-invite-code'))
+    await waitFor(() =>
+      expect(screen.getByTestId('copy-invite-code').textContent).toBe('Código copiado!')
+    )
+    expect(screen.getByTestId('copy-invite-link').textContent).toBe('Copiar link')
   })
 })
+
+// ── Tests — regenerate ────────────────────────────────────────────────────────
 
 describe('InviteCodeBlock — regenerate', () => {
   beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })

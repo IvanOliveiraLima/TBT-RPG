@@ -589,8 +589,10 @@ const pt: Record<keyof typeof en, string> = {
   // Invite code block (owner view in CampaignDetail)
   'invite.title':              'Código de convite',
   'invite.description':        'Compartilhe este código com os jogadores para convidá-los para a campanha.',
-  'invite.copy':               'Copiar',
-  'invite.copied':             'Copiado!',
+  'invite.copy_link':          'Copiar link',
+  'invite.link_copied':        'Link copiado!',
+  'invite.copy_code':          'Copiar código',
+  'invite.code_copied':        'Código copiado!',
   'invite.regenerate':         'Regenerar código',
   'invite.regenerating':       'Regenerando…',
   'invite.regenerate_confirm': 'Regenerar código? O código anterior deixará de funcionar.',
@@ -620,6 +622,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaigns.join_with_code': 'Entrar com código',
 
   // Aria — invite
+  'aria.copy_invite_link':       'Copiar link de convite',
   'aria.copy_invite_code':       'Copiar código de convite',
   'aria.regenerate_invite_code': 'Regenerar código de convite',
   'aria.invite_code_input':      'Campo de código de convite',
@@ -678,6 +681,28 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.actions':       'Ações',
   'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
   'campaign_detail.leave_warning':  'Remove você desta campanha.',
+
+  // Member row menu
+  'member_menu.edit_name':     'Editar nome de exibição',
+  'member_menu.remove_member': 'Remover membro',
+
+  // Edit display name modal
+  'edit_display_name.title':       'Editar nome de exibição',
+  'edit_display_name.description': 'Este nome é visível para outros membros das campanhas das quais você participa.',
+  'edit_display_name.save':        'Salvar',
+  'edit_display_name.saving':      'Salvando…',
+
+  // Remove member modal
+  'remove_member.title':    'Remover membro?',
+  'remove_member.warning':  'Tem certeza que deseja remover {name} desta campanha?',
+  'remove_member.note':     'Os personagens vinculados também serão desvinculados. Eles podem voltar com o código de convite.',
+  'remove_member.confirm':  'Remover',
+  'remove_member.removing': 'Removendo…',
+  'remove_member.error':    'Não foi possível remover. Tente novamente.',
+
+  // Aria — member row
+  'aria.member_row_menu':          'Ações para {name}',
+  'aria.edit_display_name_input':  'Nome de exibição',
 };
 
 export default pt;

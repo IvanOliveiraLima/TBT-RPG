@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { useCampaignsStore } from '@/store/campaigns'
 import { getMyProfile } from '@/services/user-profile'
@@ -28,15 +28,30 @@ const T = {
 export default function CampaignSelect() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const user = useAuthStore(s => s.user)
   const authLoading = useAuthStore(s => s.loading)
   const { campaigns, loading, fetchCampaigns } = useCampaignsStore()
   const [profileSetupOpen, setProfileSetupOpen] = useState(false)
   const [createModalOpen, setCreateModalOpen] = useState(false)
-  const [joinModalOpen, setJoinModalOpen] = useState(false)
+  // openJoin: initialize from URL param on first render (lazy init avoids setState-in-effect)
+  const [prefilledCode, setPrefilledCode] = useState<string | undefined>(
+    () => searchParams.get('openJoin') ?? undefined
+  )
+  const [joinModalOpen, setJoinModalOpen] = useState(
+    () => !!searchParams.get('openJoin')
+  )
   const [pendingDelete, setPendingDelete] = useState<Campaign | null>(null)
   const [pendingLeave, setPendingLeave] = useState<Campaign | null>(null)
   const [profileChecked, setProfileChecked] = useState(false)
+
+  // Clean openJoin from URL after reading it (side effect only — no setState)
+  useEffect(() => {
+    if (!searchParams.get('openJoin')) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('openJoin')
+    setSearchParams(next, { replace: true })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (authLoading) return
@@ -216,11 +231,16 @@ export default function CampaignSelect() {
 
       {joinModalOpen && (
         <JoinCampaignModal
+          {...(prefilledCode !== undefined ? { prefilledCode } : {})}
           onJoined={(campaignId) => {
             setJoinModalOpen(false)
+            setPrefilledCode(undefined)
             navigate(`/campaigns/${campaignId}`)
           }}
-          onCancel={() => setJoinModalOpen(false)}
+          onCancel={() => {
+            setJoinModalOpen(false)
+            setPrefilledCode(undefined)
+          }}
         />
       )}
 

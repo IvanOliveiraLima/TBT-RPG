@@ -10,6 +10,7 @@ const T = {
   textPrimary:   '#F4EFE0',
   textSecondary: '#C8C4D6',
   textMuted:     '#7A7788',
+  purple:        '#5B3FA8',
   gold:          '#D4A017',
   danger:        '#E24B4A',
   success:       '#5DCAA5',
@@ -30,16 +31,35 @@ interface InviteCodeBlockProps {
 
 export function InviteCodeBlock({ campaign, isOwner, onCodeRegenerated }: InviteCodeBlockProps) {
   const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
+  const [copiedTarget, setCopiedTarget] = useState<'link' | 'code' | null>(null)
   const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (!isOwner) return null
 
-  function handleCopy() {
-    void navigator.clipboard.writeText(campaign.inviteCode)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  function buildInviteLink(): string {
+    const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+    return `${window.location.origin}${base}/join/${campaign.inviteCode}`
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(buildInviteLink())
+      setCopiedTarget('link')
+      setTimeout(() => setCopiedTarget(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy link', err)
+    }
+  }
+
+  async function handleCopyCode() {
+    try {
+      await navigator.clipboard.writeText(campaign.inviteCode)
+      setCopiedTarget('code')
+      setTimeout(() => setCopiedTarget(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy code', err)
+    }
   }
 
   async function handleRegenerate() {
@@ -79,38 +99,59 @@ export function InviteCodeBlock({ campaign, isOwner, onCodeRegenerated }: Invite
         {t('invite.description')}
       </div>
 
-      {/* Code display + copy */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <div
-          data-testid="invite-code-text"
+      {/* Code display */}
+      <div
+        data-testid="invite-code-text"
+        style={{
+          fontFamily: T.serif, fontSize: 20, fontWeight: 700,
+          color: T.gold, letterSpacing: 3,
+          background: T.bg,
+          border: `1px solid ${T.borderSubtle}`,
+          borderRadius: 8, padding: '10px 16px',
+          textAlign: 'center',
+          marginBottom: 10,
+        }}
+      >
+        {formatCode(campaign.inviteCode)}
+      </div>
+
+      {/* Copy buttons */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button
+          data-testid="copy-invite-link"
+          onClick={() => void handleCopyLink()}
+          aria-label={t('aria.copy_invite_link')}
           style={{
             flex: 1,
-            fontFamily: T.serif, fontSize: 20, fontWeight: 700,
-            color: T.gold, letterSpacing: 3,
-            background: T.bg,
-            border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 8, padding: '10px 16px',
-            textAlign: 'center',
+            background: copiedTarget === 'link' ? T.borderSubtle : T.purple,
+            border: 'none',
+            borderRadius: 8, padding: '10px',
+            color: T.textPrimary, fontSize: 12, fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: T.sans,
+            transition: 'background 200ms',
           }}
         >
-          {formatCode(campaign.inviteCode)}
-        </div>
+          {copiedTarget === 'link' ? t('invite.link_copied') : t('invite.copy_link')}
+        </button>
+
         <button
-          data-testid="invite-code-copy"
-          onClick={handleCopy}
+          data-testid="copy-invite-code"
+          onClick={() => void handleCopyCode()}
           aria-label={t('aria.copy_invite_code')}
           style={{
+            flex: 1,
             background: 'transparent',
             border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 8, padding: '10px 16px',
-            color: copied ? T.success : T.textSecondary,
+            borderRadius: 8, padding: '10px',
+            color: copiedTarget === 'code' ? T.success : T.textSecondary,
             fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', whiteSpace: 'nowrap',
+            cursor: 'pointer',
             fontFamily: T.sans,
             transition: 'color 200ms',
           }}
         >
-          {copied ? t('invite.copied') : t('invite.copy')}
+          {copiedTarget === 'code' ? t('invite.code_copied') : t('invite.copy_code')}
         </button>
       </div>
 
