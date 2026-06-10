@@ -15,6 +15,17 @@ import { JoinCampaignModal } from '@/components/campaigns/JoinCampaignModal'
 import { AIGenerationModal } from '@/components/AIGenerationModal'
 import { CharacterCardMenu } from '@/components/CharacterCardMenu'
 import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
+import { ChooseImportModeModal } from '@/components/import-export/ChooseImportModeModal'
+import { ImportSuccessModal } from '@/components/import-export/ImportSuccessModal'
+import { ImportErrorModal } from '@/components/import-export/ImportErrorModal'
+import {
+  buildExportBlob,
+  triggerDownload,
+  parseImportFile,
+  applyImport,
+  ImportError,
+} from '@/services/import-export'
+import type { ExportPayload } from '@/services/import-export'
 
 /* ── Token constants (avoid Tailwind for inline styles — matches prototype) */
 const T = {
@@ -517,6 +528,12 @@ export default function CharSelect() {
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
+  // Import flow
+  const [importPayload, setImportPayload] = useState<ExportPayload | null>(null)
+  const [importStatus, setImportStatus] = useState<'idle' | 'choosing_mode' | 'importing' | 'done' | 'error'>('idle')
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importResult, setImportResult] = useState<{ imported: number; replaced: number } | null>(null)
+
   useEffect(() => {
     void fetchCharacters()
   }, [fetchCharacters])
@@ -540,6 +557,49 @@ export default function CharSelect() {
     if (!pendingDelete) return
     await deleteCharacter(pendingDelete.id)
     setPendingDelete(null)
+  }
+
+  function handleExport() {
+    const chars = useCharactersStore.getState().characters
+    if (chars.length === 0) {
+      alert(t('export.empty_warning'))
+      return
+    }
+    const { blob, filename } = buildExportBlob(chars)
+    triggerDownload(blob, filename)
+  }
+
+  async function handleImportFile(file: File) {
+    setImportError(null)
+    setImportPayload(null)
+    try {
+      const payload = await parseImportFile(file)
+      setImportPayload(payload)
+      setImportStatus('choosing_mode')
+    } catch (err) {
+      setImportStatus('error')
+      setImportError(err instanceof ImportError ? err.code : 'unknown')
+    }
+  }
+
+  async function handleConfirmImport(mode: 'merge' | 'replace') {
+    if (!importPayload) return
+    setImportStatus('importing')
+    try {
+      const result = await applyImport(importPayload.characters, mode)
+      setImportResult(result)
+      setImportStatus('done')
+    } catch {
+      setImportStatus('error')
+      setImportError('apply_failed')
+    }
+  }
+
+  function resetImport() {
+    setImportPayload(null)
+    setImportStatus('idle')
+    setImportError(null)
+    setImportResult(null)
   }
 
   return (
@@ -728,20 +788,34 @@ export default function CharSelect() {
           display: 'flex', gap: 6, marginTop: 14,
           paddingTop: 14, borderTop: `1px solid ${T.borderSubtle}`,
         }}>
+          <input
+            id="import-file-input"
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleImportFile(file)
+              e.target.value = ''
+            }}
+          />
           <button
-            onClick={() => alert(t('charselect.import_unavailable'))}
+            onClick={() => document.getElementById('import-file-input')?.click()}
+            disabled={importStatus === 'importing'}
             style={{
               flex: 1, background: 'transparent',
               border: `1px solid ${T.borderSubtle}`,
               color: T.textSecondary, borderRadius: 8,
               padding: '9px', fontSize: 11, fontWeight: 600,
-              cursor: 'pointer', letterSpacing: 0.3,
+              cursor: importStatus === 'importing' ? 'default' : 'pointer',
+              letterSpacing: 0.3,
+              opacity: importStatus === 'importing' ? 0.5 : 1,
             }}
           >
             {t('charselect.import')}
           </button>
           <button
-            onClick={() => alert(t('charselect.export_unavailable'))}
+            onClick={handleExport}
             style={{
               flex: 1, background: 'transparent',
               border: `1px solid ${T.borderSubtle}`,
@@ -773,6 +847,28 @@ export default function CharSelect() {
           characterName={pendingDelete.name}
           onConfirm={handleConfirmDelete}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+
+      {importStatus === 'choosing_mode' && importPayload && (
+        <ChooseImportModeModal
+          payload={importPayload}
+          onConfirm={mode => void handleConfirmImport(mode)}
+          onCancel={resetImport}
+        />
+      )}
+
+      {importStatus === 'done' && importResult && (
+        <ImportSuccessModal
+          result={importResult}
+          onClose={resetImport}
+        />
+      )}
+
+      {importStatus === 'error' && importError && (
+        <ImportErrorModal
+          errorCode={importError}
+          onClose={resetImport}
         />
       )}
     </div>
