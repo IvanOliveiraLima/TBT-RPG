@@ -39,7 +39,7 @@ export function StatusTab() {
         <HeroCard character={character} {...upd} compact />
 
         <HpBlock character={character} {...upd} />
-        <CombatStrip character={character} cols={3} />
+        <CombatStrip character={character} cols={3} {...upd} />
 
         {/* Atributos */}
         <div style={CARD}>
@@ -89,7 +89,7 @@ export function StatusTab() {
           <div style={{ gridColumn: 'span 2' }}>
             <div style={{ ...CARD, height: '100%' }}>
               <Label>{t('nav.combat')}</Label>
-              <CombatStrip character={character} cols={6} />
+              <CombatStrip character={character} cols={6} {...upd} />
             </div>
           </div>
         </div>
