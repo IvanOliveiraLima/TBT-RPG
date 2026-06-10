@@ -49,10 +49,10 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | File | Role |
 |------|------|
 | `src/domain/character.ts` | Domain model — canonical `Character` shape all UI components consume |
-| `src/data/db.ts` | IndexedDB wrapper: `dnd-character-sheet-v2` v9, stores `Character` directly |
+| `src/data/db.ts` | IndexedDB wrapper: `dnd-character-sheet-v2` v10, stores `Character` directly |
 | `src/data/canonical/item-categories.ts` | `ITEM_CATEGORIES` array + `isValidCategory()` guard |
 | `src/lib/supabase.ts` | Supabase client singleton |
-| `src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut) |
+| `src/store/auth.ts` | Zustand auth store (initAuth, signIn, signOut, signUp) |
 | `src/store/characters.ts` | Zustand characters store — single source of truth for all character data; `updateCharacter(id, partial)` does optimistic in-memory update + 800ms debounced IndexedDB persist |
 | `src/store/character.ts` | Zustand UI store — holds only `activeId` (the id of the character open in the sheet) and loading/error state; exports `useActiveCharacter()` derived hook |
 | `src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
@@ -340,10 +340,10 @@ component without dual-lang tests is incomplete.
 
 After a clean `npm install` (no flags), `npm test` should report:
 
-| Metric | Baseline (after promote-v2-to-root refactor) |
-|--------|----------------------------------------------|
-| Test files | 59 |
-| Tests | 1251 |
+| Metric | Baseline (after Camp.5 + hotfix — PR #130) |
+|--------|---------------------------------------------|
+| Test files | 83 |
+| Tests | 1661 |
 
 These numbers grow with each phase — check the latest merged PR for the
 current baseline. If `npm test` reports significantly fewer test files,
@@ -552,6 +552,104 @@ Care must be taken when inputs live **outside** the expanded form block
 
 ---
 
+### Auth signup flow (COMPLETED — PR #127)
+
+Dual mode signin/signup integrado em `/login`. Antes do fix, botão "Criar conta" da CharSelect levava pra `/login` sem fluxo de signup real (bug bloqueador).
+
+- Auth store ganha action `signUp(email, password)` retornando `{ status: 'signed_in' | 'email_confirmation_required' | 'error' }`
+- `Login.tsx` aceita query param `?mode=signup` ou toggle interno; estado `mode: 'signin' | 'signup'` inicializado via lazy `useState` do query param
+- Tela de "aguardando confirmação de email" após signup quando Supabase exige (detecção via `data.session === null` no retorno do signUp)
+- Validação client: email regex, password 6+ chars, confirmação igual
+- Erros server-side parseados: email já registrado, password fraca, email inválido
+- `CharSelect` aponta "Criar conta" pra `/login?mode=signup`
+- Email normalizado (trim + lowercase) no signup pra evitar duplicação acidental
+
+---
+
+### Camp.1 — Foundation (COMPLETED — PR #125)
+
+Base do sistema multi-user de campanhas. Tabelas + RLS + service layer + UI inicial.
+
+- Tabelas: `campaigns`, `campaign_members`, `user_profiles`
+- RLS recursive bug (42P17) resolvido via SECURITY DEFINER function `is_campaign_member(campaign_id, user_id)` — usada em policies de campaigns, campaign_members, user_profiles e depois reutilizada em characters/storage
+- Trigger `on_campaign_created` (AFTER INSERT) insere owner como master member automaticamente — invariante a nível de schema
+- `ProfileSetupModal`: upsert de `user_profiles.display_name` na primeira vez que user acessa Campanhas
+- `CharSelect` ganhou seção "Minhas Campanhas" com cards compactos e botão "+ Criar"
+- Login com `redirectTo` via `useSearchParams`
+- Routes `/campaigns` (`CampaignSelect`) + `/campaigns/:id` (`CampaignDetail`)
+
+---
+
+### Camp.2 — Invites (COMPLETED — PR #126)
+
+Sistema de convite por código de 8 caracteres alfanuméricos.
+
+- Coluna `invite_code text UNIQUE` em campaigns + trigger `on_campaign_invite_code` (BEFORE INSERT) pra gerar automático com retry pra unicidade
+- Alfabeto seguro (sem 0/O/1/I/L) pra evitar ambiguidade visual
+- Função `generate_invite_code()` com retry até encontrar código único
+- 3 SECURITY DEFINER functions: `lookup_campaign_by_code` (retorna só id/name/description — sem dados sensíveis), `accept_campaign_invite` (insert atômico bypass RLS), `regenerate_invite_code` (owner-only, gera novo código)
+- Hotfix Postgres 42702 (ambiguous column): renomear `RETURNS TABLE` columns pra `r_campaign_id` + `r_status`, aliasing `cm` em queries internas
+- `InviteCodeBlock` + `JoinCampaignModal`
+- `CampaignDetail` expandida com members list (display_name + role badge)
+- Botão "Entrar com código" em `CharSelect` + `/campaigns`
+
+---
+
+### Camp.3 — Vincular chars (COMPLETED — PR #128)
+
+Tabela `campaign_characters` linkando chars locais (IndexedDB) a campanhas (Supabase).
+
+- `character_id` como `text` (não `uuid`) — chars locais usam ID format custom `char_<timestamp>_<random>` (hotfix Postgres 22P02)
+- Sem FK pra `characters` table — char canônico vive no IDB, não na cloud; cascade delete tratado em camada de aplicação
+- RLS: owner do char + member da campanha pode vincular; owner do char pode desvincular (expandido em Camp.5 pra master também)
+- `buildCharacterSummary` deriva "Race — Class Level" a partir do `Character` (snapshot no momento do vínculo)
+- Cascade delete em camada de aplicação: `deleteCharacter` chama `unlinkCharacterFromAllCampaigns` antes do row delete
+- `LinkCharacterModal` filtra chars já vinculados
+- `CampaignDetail` mostra lista de vinculados com owner display name e botão desvincular (próprio user only — expandido em Camp.5)
+
+---
+
+### Camp.4 — Live read-only view (COMPLETED — PR #129)
+
+Mestre visualiza fichas vinculadas em modo read-only universal com polling de 15s.
+
+- Policy adicional em `characters` permite members lerem chars vinculados (via `is_campaign_member`)
+- Policy adicional em `storage.objects` permite ler imagens de chars vinculados
+- Service `campaign-view.ts` faz fetch sem persistir no IndexedDB (memory only via `useCampaignViewStore`)
+- `useCampaignViewStore` com polling silencioso (diff por `updatedAt`); loading state estático na primeira carga, silencioso nos polls seguintes
+- `ForceReadOnlyContext` + `useEffectiveReadOnly` hook: locked normal preserva transients editáveis; campaign view bloqueia tudo (HP, slots, equipped — tudo)
+- Página `/campaigns/:id/characters/:charId` (`CampaignCharacterView`)
+- Hotfix layout: refazer reusing pattern do `DesktopShell`/`MobileShell` via variantes `CampaignDesktopShell` + `CampaignMobileShell` (evita duplicação visual)
+- Hotfix leave campaign: novo service `leaveCampaign` (DELETE em `campaign_members`) + cascade unlink + `ConfirmLeaveCampaignModal`
+- Char deletado detectado durante polling → redirect automático pro `/campaigns`
+
+---
+
+### Camp.5 — Polish (COMPLETED — PR #130)
+
+Refinamentos finais: kebab por row de member, edit display name, remoção de members pelo master, deep link, expansão do master desvincular chars.
+
+- Nova policy RLS: "Owners can unlink any character in their campaigns" — cascade para master
+- `MemberRowMenu` com matriz de visibilidade contextual:
+  - Player na própria row: edit name + leave campaign
+  - Owner na própria row: edit name + delete campaign
+  - Owner em row de player: remove member (com cascade de chars vinculados)
+  - Outros casos: sem kebab
+- `EditDisplayNameModal`: reusa `upsertMyProfile` do Camp.1
+- `removeMember` service com cascade unlink + guard `cannot_remove_self`
+- `ConfirmRemoveMemberModal`
+- Bloco "Ações da campanha" no rodapé REMOVIDO — centralizado no kebab
+- Master agora pode desvincular char de qualquer player (via policy nova)
+- Deep link `/join/:code` → `JoinByLink` page → redirect inteligente:
+  - Não logado: `/login?redirectTo=/campaigns?openJoin=CODE`
+  - Logado: `/campaigns?openJoin=CODE` → `JoinCampaignModal` abre pré-preenchido
+- `CampaignSelect` lê `openJoin` param via lazy `useState` (evita setState-in-effect); cleanup do param após abrir
+- Hotfix copy link: `InviteCodeBlock` ganha 2 botões — primário "Copiar link" (URL com `import.meta.env.BASE_URL`) + secundário "Copiar código"
+- Estado `copiedTarget: 'link' | 'code' | null` isola feedback "Copiado!" por botão sem cross-contamination
+- Hotfix lint: cleanup de `renderDetail` + `CampaignDetail` import + `Routes, Route` orphaned após remoção dos describe blocks
+
+---
+
 ### v2 promotion to root — v1 removal (COMPLETED — PR #118)
 
 Structural reorganisation: v2 becomes the root application; v1 is removed from the repository.
@@ -670,6 +768,8 @@ Using `useRef` (not state) avoids triggering a re-render for the focus side-effe
 Each schema bump is a cursor-based upgrade callback in `src/data/db.ts`, idempotent.
 
 **Critical invariant:** ALL `createObjectStore` / `deleteObjectStore` calls must live in the synchronous "Phase 1" header of the `upgrade` callback, before any `await`. Data migrations (cursor-based) go in "Phase 2" after all stores are declared. See db.ts comments.
+
+**Note:** Camp.1-5 sub-phases did NOT modify IndexedDB schema. All campaign data lives in Supabase tables (`campaigns`, `campaign_members`, `user_profiles`, `campaign_characters`). Character data continues in IndexedDB v10; only the link between char and campaign is in Supabase.
 
 ---
 
@@ -1007,6 +1107,162 @@ cycle to avoid N+1 queries.
 
 ---
 
+## Patterns established during Camp.1-5 (multi-user)
+
+### Multi-user database patterns (Supabase)
+
+#### Postgres SECURITY DEFINER functions for controlled RLS bypass
+
+Cenários onde RLS estrita bloqueia operações legítimas:
+
+1. **Recursive RLS** — policies que consultam a mesma tabela onde estão definidas geram erro 42P17 (infinite recursion). Solução: SECURITY DEFINER function que bypassa RLS pra fazer a query crítica.
+
+   Exemplo: `is_campaign_member(campaign_id, user_id)` — usado em policies de campaigns, campaign_members, user_profiles, characters, storage.objects.
+
+2. **Public lookup com filtragem** — qualquer user logado precisa buscar info de campanha por código sem ser member ainda. `lookup_campaign_by_code` retorna apenas (id, name, description), nada sensível.
+
+3. **Operações atômicas multi-step** — `accept_campaign_invite` verifica existência, verifica se já é member, e insere — tudo numa transação que precisa bypassar RLS do INSERT (RLS de campaign_members exige ownership).
+
+4. **Ownership checks com side-effects** — `regenerate_invite_code` valida ownership, gera novo código único, faz UPDATE — tudo via function.
+
+Pattern: `GRANT EXECUTE` pra `authenticated` apenas. Functions SECURITY DEFINER são executadas com privilégios do owner da function, então não rodam policies durante sua execução.
+
+#### Postgres column type for foreign keys to non-Postgres sources
+
+`campaign_characters.character_id` é `text` (não `uuid`) porque chars vivem no IndexedDB local com format custom `char_<timestamp>_<random>`. Postgres aceita qualquer string. Sem FK pra `characters` table porque char canônico vive no IDB, não na cloud. Cascade delete tratado em camada de aplicação no `deleteCharacter` service.
+
+#### Trigger-based invariants
+
+Triggers no Postgres garantem invariantes sem depender da app:
+
+1. `on_campaign_created` (AFTER INSERT em campaigns) → insere owner como master member. Garante que toda campanha tem ao menos 1 master.
+2. `on_campaign_invite_code` (BEFORE INSERT em campaigns) → popula `invite_code` se for null. Garante que toda campanha tem código. Com retry interno pra unicidade.
+
+Pattern: invariantes que devem valer no schema, não na app.
+
+#### RETURNS TABLE column naming to avoid ambiguity
+
+Quando uma SECURITY DEFINER function usa `RETURNS TABLE(campaign_id, ...)` e a query interna também referencia colunas com o mesmo nome, Postgres lança 42702 (ambiguous column). Solução: prefixar os nomes das colunas do RETURNS TABLE com `r_` (ex: `r_campaign_id`, `r_status`) e usar alias de tabela nas queries internas.
+
+---
+
+### Multi-user UI patterns
+
+#### Memory-only stores for remote data
+
+Quando um user precisa ver dados que NÃO são seus (ex: char de outro player na view de campanha), persistir no IndexedDB local poluiria estado pessoal.
+
+`useCampaignViewStore` mantém char remoto em memory only. Quando user sai da view, `clear()` no unmount descarta estado. Trade-off: dados perdidos em reload (re-fetch necessário). Aceitável quando o ciclo de vida da view é curto e dados são live.
+
+#### Silent polling with diff-based updates
+
+Polling de 15s consulta o servidor, mas só atualiza state se algo realmente mudou (diff por `updatedAt`). Evita re-renders desnecessários. Loading state não muda durante polling silencioso — só na primeira carga.
+
+```ts
+const current = get().character;
+if (!current || char.updatedAt > current.updatedAt) {
+  set({ character: char, lastFetchedAt: Date.now() });
+}
+```
+
+#### Force read-only context overriding lock
+
+`useEffectiveReadOnly` compõe lock normal + ForceReadOnly context:
+
+- Lock normal: `fieldReadOnly = !onUpdate || locked` (permanents); `transientReadOnly = !onUpdate` (HP/slots editáveis)
+- Force read-only (via `ForceReadOnlyContext`): `fieldReadOnly = true; transientReadOnly = true` (TUDO bloqueado)
+
+Pattern usado na `CampaignCharacterView`: mestre não deveria editar nem transients de chars de outros players.
+
+#### Role-based UI visibility matrix
+
+Quando ações dependem de role (owner vs player) E contexto (self vs other), matriz explícita evita lógica espalhada por condicional. Componente recebe `isCurrentUserOwner`, `member`, `currentUserId` e renderiza ações com `if-else` explícito por combinação:
+
+| Olhando | Self | Other player |
+|---------|------|--------------|
+| Player | edit name + leave | sem kebab |
+| Owner | edit name + delete | remove member |
+
+#### Deep link via query param pattern
+
+Deep links como `/join/CODE` preservam intent através de auth redirect via query params:
+
+1. `/join/CODE` → `JoinByLink` page
+2. Não logado: `/login?redirectTo=%2Fcampaigns%3FopenJoin%3DCODE`
+3. Após login: `/campaigns?openJoin=CODE`
+4. `CampaignSelect` lê query param via lazy `useState`, abre modal com `prefilledCode`
+5. Cleanup do query param após abrir (evita re-abrir em reload)
+
+URL é fonte de verdade. State follow URL, não o contrário.
+
+#### Lazy useState for URL params (avoids setState-in-effect)
+
+Para ler um query param apenas na montagem e evitar `setState` dentro de `useEffect` (react lint rule), inicializar via função:
+
+```tsx
+const [searchParams] = useSearchParams()
+const [prefilledCode] = useState<string | undefined>(
+  () => searchParams.get('openJoin') ?? undefined
+)
+```
+
+Estado é congelado no valor inicial. Cleanup do param é side-effect no `useEffect` sem setState.
+
+#### Cascade delete in application layer
+
+Quando FK + cascade Postgres não está disponível (ex: char no IDB sem FK real pra Supabase), cascade vira responsabilidade da camada de aplicação. Pattern:
+
+```ts
+async function deleteCharacter(id) {
+  await db.delete(id);                          // 1. local IDB (blocking)
+  await unlinkCharacterFromAllCampaigns(id);    // 2. cascade Supabase (best-effort)
+  await supabase.from('characters').delete()...; // 3. cloud row
+  await storage.remove(...);                    // 4. images cleanup
+}
+```
+
+#### Dual mode auth screen
+
+`/login` aceita query param `?mode=signup` ou toggle interno:
+
+```tsx
+const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
+// renderiza campos compartilhados (email, password) + condicional (confirm pra signup)
+```
+
+Compartilha ~80% da UI. Toggle preserva email entre modes (resetando password+error). Evita duplicação de rotas/componentes.
+
+#### Copy-with-feedback isolation
+
+Quando há múltiplos botões de copiar na mesma área, usar discriminador em vez de boolean:
+
+```tsx
+const [copiedTarget, setCopiedTarget] = useState<'link' | 'code' | null>(null);
+
+async function handleCopyLink() {
+  await navigator.clipboard.writeText(buildInviteLink());
+  setCopiedTarget('link');
+  setTimeout(() => setCopiedTarget(null), 2000);
+}
+```
+
+Cada botão verifica `copiedTarget === 'mine'` pra mostrar feedback. Único state, sem cross-contamination.
+
+#### Invite URL with BASE_URL
+
+Para gerar URLs absolutas de convite que funcionem em dev e prod (GitHub Pages usa `/TBT-RPG/`):
+
+```ts
+function buildInviteLink(): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  return `${window.location.origin}${base}/join/${inviteCode}`
+}
+```
+
+`BASE_URL.replace(/\/$/, '')` evita double-slash quando BASE_URL termina com `/` (ex: `/TBT-RPG/` → `/TBT-RPG`).
+
+---
+
 ## Decisions that must remain
 
 | Decision | Introduced | Rationale |
@@ -1071,6 +1327,40 @@ cycle to avoid N+1 queries.
 | adapter.ts, migration.ts, schema-v1.ts deleted | Promotion refactor | v1 completely removed; helpers inlined in db.ts as private |
 | v1 IndexedDB in browser not touched | Promotion refactor | No data loss risk; eventually GC'd by browser |
 | Build path /TBT-RPG/ (not /TBT-RPG/v2/) | Promotion refactor | v2 is the default application; old path is gone |
+| Dual mode signin/signup in /login | Auth signup | Shares ~80% of UI; no duplicated routes |
+| Email confirmation detects via data.session === null | Auth signup | Supabase returns null session when confirmation required |
+| Email normalized (trim + lowercase) on signup | Auth signup | Prevents accidental duplicate accounts |
+| 4 Supabase tables for campaigns | Camp.1 | campaigns, members, profiles, characters — separated concerns |
+| SECURITY DEFINER to bypass recursive RLS | Camp.1 | is_campaign_member as shared helper across 5+ policies |
+| Owner always added as master member via trigger | Camp.1 | Schema-level invariant; app can't bypass it |
+| display_name in dedicated table (user_profiles) | Camp.1 | Avoids exposing email to other members |
+| Invite codes: 8 alphanumeric chars no ambiguous | Camp.2 | Short enough to dictate; excludes 0/O/1/I/L |
+| One active code per campaign (no multi-code) | Camp.2 | Single user case; regenerate replaces |
+| Code permanent until regenerated (no expiry) | Camp.2 | Time-based expiry adds friction; revoke manually |
+| SECURITY DEFINER for accept_campaign_invite | Camp.2 | Atomic insert that bypasses RLS |
+| RETURNS TABLE columns prefixed r_ | Camp.2 hotfix | Avoids Postgres 42702 ambiguous column |
+| Join button in CharSelect + /campaigns | Camp.2 | Dual entry points for discoverability |
+| character_id as text (not uuid) in Supabase | Camp.3 hotfix | Local chars use custom format char_<ts>_<rand> |
+| Cascade delete in application layer | Camp.3 | No FK because char lives in IDB; deleteCharacter handles cascade |
+| Only char owner + campaign member can link | Camp.3 | RLS guarantees; double-checked in service |
+| Char can be linked to multiple campaigns | Camp.3 | No unique constraint; no business reason to block |
+| character_name + summary are snapshots | Camp.3 | Live data comes from Camp.4 polling; snapshot for list display |
+| Memory-only store for remote chars | Camp.4 | Avoids polluting "Meus Personagens" with others' chars |
+| 15s polling (Realtime deferred) | Camp.4 | Simplicity; acceptable latency for tabletop |
+| Force read-only in campaign view (incl. transients) | Camp.4 | Master must not interfere with player agency |
+| Campaign members can read linked chars (additive RLS) | Camp.4 | Players can see each other's sheets |
+| Deleted char detected by polling → redirect | Camp.4 | Stop polling + navigate to /campaigns automatically |
+| Reuse shell variants pattern (Caminho B) | Camp.4 hotfix | Visual consistency; isolated shell for campaign context |
+| Leave campaign via DELETE on campaign_members | Camp.4 hotfix | Owner deletes campaign; player removes only membership |
+| Cascade unlinks on leave | Camp.4 hotfix | Avoids ghost chars visible to master after player leaves |
+| Kebab per member row with contextual matrix | Camp.5 | Centralizes actions; visibility explicit per role+context |
+| Footer actions block removed | Camp.5 | Centralized in kebab; less visual clutter |
+| Master can unlink any player's char | Camp.5 | Additive RLS policy; camp.3 owner-only expanded |
+| removeMember cascades char unlinks | Camp.5 | Reuses unlink service; no ghost chars after removal |
+| Deep link /join/:code via query param redirect | Camp.5 | Preserves intent through login redirect |
+| Copy link primary, copy code secondary | Camp.5 hotfix | Link is more useful now with deep link support |
+| Invite URL uses import.meta.env.BASE_URL | Camp.5 hotfix | Works in dev (/) and prod (/TBT-RPG/) |
+| copiedTarget discriminator isolates copy feedback | Camp.5 hotfix | Single state prevents cross-contamination between 2 copy buttons |
 
 ---
 
@@ -1149,3 +1439,64 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   no TTL (permanent) — revisit if storage becomes an issue.
 - **OQ — Versionamento futuro do app.** Atualmente sem versioning visível ao usuário.
   Considerar `/about` page com versão, links, créditos quando fizer sentido.
+
+New from Auth signup + Camp.1-5:
+
+- ~~**OQ — Auth signup flow quebrado.**~~ *Resolved. Dual mode signin/signup in /login. PR #127.*
+- ~~**OQ — Sistema de Campanhas.**~~ *Resolved. Camp.1-5 delivered (PRs #125–#130). Remaining OQs listed below.*
+- **OQ — Transfer ownership de campanha.** Mestre passa a campanha pra outro membro. Deferred to future sub-phase.
+- **OQ — Realtime via Supabase Channels.** Upgrade do polling 15s pra subscribe em mudanças de chars vinculados. Deferred.
+- **OQ — QR code do convite.** Geração visual de QR code com o link de convite. Deferred.
+- **OQ — Promote player to master.** Multi-master support. Não modelado.
+- **OQ — Password reset / forgot password.** Fluxo de recuperação de senha não implementado.
+- **OQ — OAuth providers.** Google, Discord. Não implementado.
+- **OQ — Account deletion via UI.** Não implementado.
+- **OQ — Re-send confirmation email.** Não implementado.
+
+---
+
+## Supabase schema
+
+### Tables
+
+| Table | Since | Purpose |
+|-------|-------|---------|
+| `characters` | Sync 2.1 | Cloud sync de personagens (mirror do IDB) |
+| `deleted_characters` | Sync 2.1 | Tombstones pra propagação de deleções entre devices |
+| `user_profiles` | Camp.1 | Display name por user (evita expor email a outros members) |
+| `campaigns` | Camp.1 | Campanhas com nome, descrição, ownerId, invite_code |
+| `campaign_members` | Camp.1 | Membership user ↔ campanha com role (master/player) |
+| `campaign_characters` | Camp.3 | Vinculações char ↔ campanha (character_id como text) |
+
+### Storage buckets
+
+| Bucket | Purpose |
+|--------|---------|
+| `character-images` | Imagens de personagens (portrait, symbol) |
+
+### Functions SECURITY DEFINER
+
+| Function | Since | Purpose |
+|----------|-------|---------|
+| `is_campaign_member(campaign_id uuid, user_id uuid) returns boolean` | Camp.1 | Helper pra bypassa RLS recursivo. Usado em policies de campaigns, campaign_members, user_profiles, characters, storage.objects |
+| `generate_invite_code() returns text` | Camp.2 | Gera código 8-char alfanumérico seguro (sem 0/O/1/I/L) com retry pra unicidade |
+| `lookup_campaign_by_code(p_code text) returns table(r_id, r_name, r_description)` | Camp.2 | Busca campanha por código. Retorna apenas id/name/description (sem dados sensíveis) |
+| `accept_campaign_invite(p_code text) returns table(r_campaign_id, r_status)` | Camp.2 | Aceita convite atomicamente: verifica código, verifica se já é member, insere membership |
+| `regenerate_invite_code(p_campaign_id uuid) returns text` | Camp.2 | Owner-only. Gera novo código único e faz UPDATE na campanha |
+
+### Triggers
+
+| Trigger | Table | When | Action |
+|---------|-------|------|--------|
+| `on_campaign_created` | campaigns | AFTER INSERT | Insere owner como master member automaticamente |
+| `on_campaign_invite_code` | campaigns | BEFORE INSERT | Popula invite_code com retry pra unicidade se vier null |
+
+### RLS policy overview
+
+All tables use Row Level Security. Key patterns:
+- **campaigns**: owner full CRUD; members read-only
+- **campaign_members**: owner can insert/delete others; members read own row; acceptance via SECURITY DEFINER function
+- **user_profiles**: owner read/write own; members read others in shared campaigns (via `is_campaign_member`)
+- **campaign_characters**: char owner can link/unlink; campaign owner can unlink any (Camp.5 additive policy)
+- **characters**: owner full CRUD; campaign members can read chars linked to shared campaigns (Camp.4 additive policy)
+- **storage.objects**: owner read/write own images; campaign members can read images of linked chars (Camp.4 additive policy)
