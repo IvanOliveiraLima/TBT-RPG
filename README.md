@@ -32,9 +32,22 @@ PWA instalável.
 - Persiste por personagem via IndexedDB
 - "Destravar" restaura edição completa
 
+**Campanhas (multi-user):**
+
+- **Criar campanha** — Mestre cria uma campanha pra organizar jogadores e seus personagens
+- **Convite por código** — Cada campanha tem um código único formato `XXXX-XXXX`; mestre compartilha com jogadores
+- **Link de convite** — Mestre também pode copiar um link direto que abre a tela de entrada já preenchida
+- **Entrar em campanha** — Jogador entra com o código (ou link), passa a ser visível na lista de membros
+- **Vincular personagens** — Jogador escolhe quais de seus personagens fazem parte da campanha
+- **Visualização ao vivo (modo mestre)** — Mestre acessa a ficha completa de cada personagem vinculado em modo somente-leitura; mudanças do jogador refletem no mestre a cada ~15s
+- **Sair de campanha** — Jogador pode sair a qualquer momento (vinculações de chars são removidas)
+- **Excluir campanha** — Apenas o mestre; cascade remove todos os membros e vinculações
+- **Mestre remove jogador** — Mestre pode remover qualquer jogador da campanha
+- **Nome de exibição editável** — Cada user define um nome visível pros membros das suas campanhas
+
 **Sincronização (opcional):**
 
-- **Login com email/senha** via Supabase Auth
+- **Login com email/senha** via Supabase Auth — criar conta integrada no fluxo de login
 - **Upload reactive** — edições sobem pra cloud 15s após (debounced)
 - **Upload periodic** — background a cada 30s pra garantir consistência
 - **Download** — chars da cloud baixam pro IndexedDB local no login + periodic
@@ -53,16 +66,17 @@ PWA instalável.
 
 - **Import/Export JSON** — exportar e importar fichas individuais em JSON
 - **Polish sync** — persistent error state, manual refresh button, edge cases
-- **Auth status interativo** — click no badge abre menu (sair, conta)
-- **Worker AI expansion** — incluir items + spells na geração
+- **Auth status interativo** — click no badge abre menu (sair, conta, etc.)
+- **Worker AI expansion** — incluir items e magias na geração de personagem
+- **Transfer ownership de campanha** — Mestre passa a campanha pra outro membro
+- **Realtime via Supabase Channels** — Substituir polling por subscribe em mudanças
+- **QR code do convite** — Geração visual de QR code com o link de convite
 
 ### Limitações conhecidas
 
 - **Delete multi-device pode falhar em propagar.** Char deletado em Device A
   pode voltar em Device B após sync. Workaround: deletar manualmente em cada
   device. Investigação futura quando virar prioridade.
-- **Import/Export de fichas não implementado ainda.** Botões presentes na UI mostram
-  aviso "em breve"; a funcionalidade de arquivo JSON virá em versão futura.
 - **Worker AI não gera items nem spells** — campos ficam vazios.
 - **Items importados ganham category "misc"** — user reclassifica manualmente.
 - **Race, classe, antecedente, alinhamento são free-text** com sugestões — não
@@ -70,6 +84,9 @@ PWA instalável.
 - **Initiative deriva sempre de DEX** sem campo de override.
 - **Spellcasting ability única por character** — multiclass spellcasters com
   abilities diferentes anotam no description.
+- **Polling de campanha a 15s** — Mestre vê edições do jogador com até 15s de atraso.
+- **Mestre não pode transferir ownership** — Apenas excluir a campanha.
+- **Sem QR code do convite** — Apenas código texto + link copiável.
 
 ### Stack
 
@@ -90,6 +107,18 @@ Para desenvolver:
 npm install && npm run dev
 # Acesse http://localhost:5173
 ```
+
+### Variáveis de ambiente
+
+Crie um arquivo `.env.local` na raiz:
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Sem essas variáveis, a app funciona offline (sem sync, sem campanhas). Com elas, sync e
+campanhas ficam disponíveis após criar conta.
 
 ## Como Usar
 
@@ -185,7 +214,41 @@ vazios para preenchimento manual.
 A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o
 usuário, sem necessidade de conta ou chave de API.
 
-### 8. Sincronização em nuvem (opcional)
+### 8. Campanhas
+
+#### Como mestre
+
+1. Logar na conta
+2. No menu lateral ou na tela inicial → "Minhas Campanhas"
+3. Clicar **+ Criar Campanha** → preencher nome e descrição
+4. Na tela da campanha, copiar o **link** ou **código de convite** e compartilhar com jogadores
+5. Conforme jogadores entram, eles aparecem na lista de membros
+6. Conforme jogadores vinculam personagens, aparecem na seção "Personagens vinculados"
+7. Clicar em um personagem vinculado para abrir a ficha em modo somente-leitura
+8. A ficha atualiza automaticamente a cada ~15s com mudanças do jogador
+
+#### Como jogador
+
+1. Receber o link ou código de convite do mestre
+2. Logar na conta (criar uma se necessário, no fluxo de signup)
+3. Clicar no link **OU** ir em "Minhas Campanhas" e clicar em **Entrar com código**
+4. Inserir o código → ver preview da campanha → clicar em **Entrar**
+5. Na tela da campanha, clicar em **+ Vincular personagem** → escolher um dos seus personagens
+6. O mestre passa a ver a sua ficha em tempo real
+
+#### Editar nome de exibição
+
+1. Na tela de uma campanha, clicar no kebab (⋮) ao lado do seu próprio nome na lista de membros
+2. Escolher "Editar nome"
+3. Digitar novo nome → salvar
+4. O novo nome aparece pros outros membros após próximo refresh deles
+
+#### Sair de campanha
+
+1. Na lista de campanhas (ou na própria campanha) → kebab → "Sair da campanha"
+2. Confirmar → suas vinculações de personagens são removidas
+
+### 9. Sincronização em nuvem (opcional)
 
 A sincronização é completamente opcional — o app funciona 100% offline sem conta.
 
@@ -208,7 +271,7 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 - Imagens dos personagens sincronizam via Supabase Storage
 - Limite de 50MB por conta
 
-### 9. Idiomas (EN/PT)
+### 10. Idiomas (EN/PT)
 
 - **Desktop:** clique em **PT** ou **EN** na parte inferior da barra lateral (visível
   ao abrir qualquer ficha)
@@ -217,7 +280,7 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 - Textos gerados pela IA podem ser produzidos em português escolhendo PT no modal
   de geração (seção 7)
 
-### 10. Imagem do personagem
+### 11. Imagem do personagem
 
 - Abra a aba **Lore** de qualquer personagem
 - Clique no retrato grande (avatar) no topo da aba
@@ -227,7 +290,7 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 11. Lock da ficha (modo leitura)
+### 12. Lock da ficha (modo leitura)
 
 Use o lock durante sessões de jogo para evitar edição acidental em stats permanentes.
 
@@ -263,7 +326,7 @@ personagem — cada ficha tem seu estado independente.
 O projeto conta com:
 
 - **ESLint** — análise estática com regras para TypeScript moderno
-- **Vitest** — ~1251 testes unitários e de integração
+- **Vitest** — ~1661 testes unitários e de integração (83 arquivos)
 - **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
 - **Segurança no Worker** — rate limiting, proteção contra prompt injection e validação estrutural do JSON retornado pela IA, com mensagens de erro amigáveis ao usuário final
 
