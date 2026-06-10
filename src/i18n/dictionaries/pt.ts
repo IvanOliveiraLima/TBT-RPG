@@ -703,6 +703,32 @@ const pt: Record<keyof typeof en, string> = {
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',
   'aria.edit_display_name_input':  'Nome de exibição',
+
+  // Aria — combat
+  'aria.ac_input': 'Classe de Armadura',
+
+  // Export
+  'export.empty_warning': 'Nenhum personagem para exportar.',
+
+  // Import
+  'import.choose_mode_title':        'Escolher modo de importação',
+  'import.payload_summary':          'Arquivo contém {count} personagens.',
+  'import.mode_merge_title':         'Mesclar',
+  'import.mode_merge_description':   'Adiciona novos personagens e atualiza os existentes por ID. Seguro para dados existentes.',
+  'import.mode_replace_title':       'Substituir tudo',
+  'import.mode_replace_description': 'Remove todos os personagens atuais e substitui pelos importados.',
+  'import.replace_warning':          'Isso vai apagar todos os seus personagens atuais. Esta ação não pode ser desfeita localmente (sync da nuvem pode restaurar se você estiver logado).',
+  'import.confirm':                  'Importar',
+  'import.success_title':            'Importação concluída',
+  'import.success_summary':          'Importados {imported} novos, atualizados {replaced} existentes.',
+  'import.success_close':            'Fechar',
+  'import.error_title':              'Falha na importação',
+  'import.error_read_failed':        'Não foi possível ler o arquivo.',
+  'import.error_invalid_json':       'O arquivo não é um JSON válido.',
+  'import.error_invalid_schema':     'Formato de arquivo não reconhecido.',
+  'import.error_incompatible_version': 'Este arquivo foi exportado de uma versão incompatível. Use uma exportação recente.',
+  'import.error_apply_failed':       'Não foi possível importar. Tente novamente.',
+  'import.error_unknown':            'Erro inesperado.',
 };
 
 export default pt;
