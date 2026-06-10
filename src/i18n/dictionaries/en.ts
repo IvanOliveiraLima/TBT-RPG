@@ -674,6 +674,28 @@ const en = {
   'campaign_detail.actions':       'Actions',
   'campaign_detail.delete_warning': 'Permanently deletes the campaign and removes all members.',
   'campaign_detail.leave_warning':  'Removes you from this campaign.',
+
+  // Member row menu
+  'member_menu.edit_name':     'Edit display name',
+  'member_menu.remove_member': 'Remove member',
+
+  // Edit display name modal
+  'edit_display_name.title':       'Edit display name',
+  'edit_display_name.description': 'This name is visible to other members of campaigns you belong to.',
+  'edit_display_name.save':        'Save',
+  'edit_display_name.saving':      'Saving…',
+
+  // Remove member modal
+  'remove_member.title':    'Remove member?',
+  'remove_member.warning':  'Are you sure you want to remove {name} from this campaign?',
+  'remove_member.note':     'Their linked characters will also be unlinked. They can rejoin with the invite code.',
+  'remove_member.confirm':  'Remove',
+  'remove_member.removing': 'Removing…',
+  'remove_member.error':    'Could not remove member. Please try again.',
+
+  // Aria — member row
+  'aria.member_row_menu':          'Actions for {name}',
+  'aria.edit_display_name_input':  'Display name',
 } as const;
 
 export default en;

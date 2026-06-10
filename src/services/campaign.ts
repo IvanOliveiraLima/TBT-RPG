@@ -119,6 +119,45 @@ export async function leaveCampaign(campaignId: string): Promise<void> {
   }
 }
 
+export async function removeMember(input: {
+  campaignId: string
+  userId: string
+}): Promise<void> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+
+  const { data: { session } } = await supabase.auth.getSession()
+  const currentUserId = session?.user?.id
+  if (!currentUserId) throw new CampaignServiceError('not_authenticated')
+
+  if (input.userId === currentUserId) {
+    throw new CampaignServiceError('cannot_remove_self')
+  }
+
+  // 1. Remove chars linked to this user in this campaign (best-effort cascade)
+  const { error: charsError } = await supabase
+    .from('campaign_characters')
+    .delete()
+    .eq('campaign_id', input.campaignId)
+    .eq('user_id', input.userId)
+
+  if (charsError) {
+    console.warn('[campaign] removeMember — failed to unlink chars', charsError)
+    // non-blocking — proceed to membership removal
+  }
+
+  // 2. Remove the membership row
+  const { error } = await supabase
+    .from('campaign_members')
+    .delete()
+    .eq('campaign_id', input.campaignId)
+    .eq('user_id', input.userId)
+
+  if (error) {
+    console.error('[campaign] removeMember error', error)
+    throw new CampaignServiceError('remove_member_failed')
+  }
+}
+
 // ── Members ───────────────────────────────────────────────────────────────
 
 export async function listCampaignMembers(campaignId: string): Promise<CampaignMember[]> {

@@ -678,6 +678,28 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.actions':       'Ações',
   'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
   'campaign_detail.leave_warning':  'Remove você desta campanha.',
+
+  // Member row menu
+  'member_menu.edit_name':     'Editar nome de exibição',
+  'member_menu.remove_member': 'Remover membro',
+
+  // Edit display name modal
+  'edit_display_name.title':       'Editar nome de exibição',
+  'edit_display_name.description': 'Este nome é visível para outros membros das campanhas das quais você participa.',
+  'edit_display_name.save':        'Salvar',
+  'edit_display_name.saving':      'Salvando…',
+
+  // Remove member modal
+  'remove_member.title':    'Remover membro?',
+  'remove_member.warning':  'Tem certeza que deseja remover {name} desta campanha?',
+  'remove_member.note':     'Os personagens vinculados também serão desvinculados. Eles podem voltar com o código de convite.',
+  'remove_member.confirm':  'Remover',
+  'remove_member.removing': 'Removendo…',
+  'remove_member.error':    'Não foi possível remover. Tente novamente.',
+
+  // Aria — member row
+  'aria.member_row_menu':          'Ações para {name}',
+  'aria.edit_display_name_input':  'Nome de exibição',
 };
 
 export default pt;

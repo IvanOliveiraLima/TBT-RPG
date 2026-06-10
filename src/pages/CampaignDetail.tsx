@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getCampaign, listCampaignMembers } from '@/services/campaign'
+import { getCampaign, listCampaignMembers, removeMember } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
 import { listCampaignCharacters, unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { useTranslation } from '@/i18n'
@@ -9,6 +9,9 @@ import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
 import { LinkCharacterModal } from '@/components/campaigns/LinkCharacterModal'
 import { ConfirmDeleteCampaignModal } from '@/components/campaigns/ConfirmDeleteCampaignModal'
 import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCampaignModal'
+import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
+import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModal'
+import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
 import type { Campaign, CampaignMember, UserProfile, CampaignCharacter } from '@/domain/campaign'
 
 const T = {
@@ -42,6 +45,22 @@ export default function CampaignDetail() {
   const [unlinking, setUnlinking] = useState<string | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [leaveModalOpen, setLeaveModalOpen] = useState(false)
+  const [editNameOpen, setEditNameOpen] = useState(false)
+  const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
+
+  async function loadCampaignData(campaignId: string) {
+    const [m, chars] = await Promise.all([
+      listCampaignMembers(campaignId),
+      listCampaignCharacters(campaignId).catch(() => [] as CampaignCharacter[]),
+    ])
+    const profiles = await listProfilesByIds(m.map(x => x.userId))
+    const enriched = m.map(member => ({
+      ...member,
+      profile: profiles.find(p => p.userId === member.userId) ?? null,
+    }))
+    setMembers(enriched)
+    setLinkedChars(chars)
+  }
 
   useEffect(() => {
     if (authLoading) return
@@ -58,17 +77,7 @@ export default function CampaignDetail() {
     getCampaign(campaignId).then(async (c) => {
       if (!c) return
       setCampaign(c)
-      const [m, chars] = await Promise.all([
-        listCampaignMembers(campaignId),
-        listCampaignCharacters(campaignId).catch(() => [] as CampaignCharacter[]),
-      ])
-      const profiles = await listProfilesByIds(m.map(x => x.userId))
-      const enriched = m.map(member => ({
-        ...member,
-        profile: profiles.find(p => p.userId === member.userId) ?? null,
-      }))
-      setMembers(enriched)
-      setLinkedChars(chars)
+      await loadCampaignData(campaignId)
     }).catch(() => {
       // show "not found" state
     }).finally(() => {
@@ -240,14 +249,27 @@ export default function CampaignDetail() {
                     {m.profile?.displayName ?? t('campaign_detail.unknown_member')}
                   </div>
                 </div>
-                <div style={{
-                  fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-                  color: m.role === 'master' ? T.gold : T.textMuted,
-                  textTransform: 'uppercase',
-                }}>
-                  {m.role === 'master'
-                    ? t('campaign_detail.role_master')
-                    : t('campaign_detail.role_player')}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
+                    color: m.role === 'master' ? T.gold : T.textMuted,
+                    textTransform: 'uppercase',
+                  }}>
+                    {m.role === 'master'
+                      ? t('campaign_detail.role_master')
+                      : t('campaign_detail.role_player')}
+                  </div>
+
+                  <MemberRowMenu
+                    member={m}
+                    currentUserId={user?.id ?? ''}
+                    isCurrentUserOwner={isOwner}
+                    onEditName={() => setEditNameOpen(true)}
+                    onLeaveCampaign={() => setLeaveModalOpen(true)}
+                    onDeleteCampaign={() => setDeleteModalOpen(true)}
+                    onRemoveMember={() => setPendingRemoveMember(m)}
+                  />
                 </div>
               </div>
             ))}
@@ -346,7 +368,7 @@ export default function CampaignDetail() {
                       </div>
                     </div>
 
-                    {isCharOwner && (
+                    {(isCharOwner || isOwner) && (
                       <button
                         onClick={e => { e.stopPropagation(); void handleUnlink(char.characterId) }}
                         disabled={unlinking === char.characterId}
@@ -385,77 +407,9 @@ export default function CampaignDetail() {
             onCancel={() => setLinkModalOpen(false)}
           />
         )}
-
-        {/* Actions section */}
-        <div
-          data-testid="campaign-detail-actions"
-          style={{
-            background: T.surface,
-            border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 14,
-            padding: 20,
-            marginTop: 20,
-          }}
-        >
-          <div style={{
-            fontFamily: T.serif, fontSize: 11, fontWeight: 600,
-            letterSpacing: 2, textTransform: 'uppercase',
-            color: T.textMuted, marginBottom: 14,
-          }}>
-            {t('campaign_detail.actions')}
-          </div>
-
-          {isOwner ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
-                {t('campaign_detail.delete_warning')}
-              </div>
-              <button
-                data-testid="campaign-detail-delete-btn"
-                onClick={() => setDeleteModalOpen(true)}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid rgba(226,75,74,0.4)`,
-                  borderRadius: 8,
-                  padding: '8px 14px',
-                  color: '#E24B4A',
-                  fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: T.sans,
-                  flexShrink: 0,
-                }}
-              >
-                {t('delete_campaign.confirm')}
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
-                {t('campaign_detail.leave_warning')}
-              </div>
-              <button
-                data-testid="campaign-detail-leave-btn"
-                onClick={() => setLeaveModalOpen(true)}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid rgba(226,75,74,0.4)`,
-                  borderRadius: 8,
-                  padding: '8px 14px',
-                  color: '#E24B4A',
-                  fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: T.sans,
-                  flexShrink: 0,
-                }}
-              >
-                {t('campaigns.leave')}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals — outside maxWidth container */}
       {deleteModalOpen && campaign && (
         <ConfirmDeleteCampaignModal
           campaign={campaign}
@@ -469,6 +423,29 @@ export default function CampaignDetail() {
           campaign={campaign}
           onLeft={() => navigate('/campaigns')}
           onCancel={() => setLeaveModalOpen(false)}
+        />
+      )}
+
+      {editNameOpen && (
+        <EditDisplayNameModal
+          currentName={members.find(m => m.userId === user?.id)?.profile?.displayName ?? ''}
+          onSaved={() => {
+            setEditNameOpen(false)
+            if (id) void loadCampaignData(id)
+          }}
+          onCancel={() => setEditNameOpen(false)}
+        />
+      )}
+
+      {pendingRemoveMember && id && (
+        <ConfirmRemoveMemberModal
+          member={pendingRemoveMember}
+          onConfirm={async () => {
+            await removeMember({ campaignId: id, userId: pendingRemoveMember.userId })
+            setPendingRemoveMember(null)
+            await loadCampaignData(id)
+          }}
+          onCancel={() => setPendingRemoveMember(null)}
         />
       )}
     </div>
