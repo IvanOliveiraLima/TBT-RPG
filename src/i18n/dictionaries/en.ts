@@ -30,8 +30,6 @@ const en = {
   'tab.lore': 'Lore',
 
   // Drawer / Sidebar chrome actions
-  'drawer.export_json': 'Export',
-  'drawer.import_json': 'Import',
   'drawer.lock': 'Lock',
   'chrome.unlock': 'Unlock',
 
@@ -466,11 +464,6 @@ const en = {
   // Remove confirmation (ConfirmableRemoveButton)
   'remove.confirm':           'Confirm?',
   'remove.confirm_aria':      'Confirm deletion',
-
-  // Phase C placeholder alerts
-  'phase_c.editing_coming_soon': 'Editing will come in Phase C',
-  'phase_c.details_coming_soon': 'Details will come in Phase C',
-  'phase_c.export_unavailable': 'Export — not implemented in this phase.',
 
   // Common
   'common.cancel': 'Cancel',

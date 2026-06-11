@@ -32,8 +32,6 @@ const pt: Record<keyof typeof en, string> = {
   'tab.lore': 'Histórico',
 
   // Drawer / Sidebar chrome actions
-  'drawer.export_json': 'Exportar',
-  'drawer.import_json': 'Importar',
   'drawer.lock': 'Bloquear',
   'chrome.unlock': 'Destravar',
 
@@ -470,11 +468,6 @@ const pt: Record<keyof typeof en, string> = {
   // Remove confirmation (ConfirmableRemoveButton)
   'remove.confirm':           'Confirmar?',
   'remove.confirm_aria':      'Confirmar exclusão',
-
-  // Phase C placeholder alerts
-  'phase_c.editing_coming_soon': 'Edição virá na Fase C',
-  'phase_c.details_coming_soon': 'Detalhes virão na Fase C',
-  'phase_c.export_unavailable': 'Exportar — não implementado nesta fase.',
 
   // Common
   'common.cancel': 'Cancelar',

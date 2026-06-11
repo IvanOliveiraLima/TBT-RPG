@@ -153,15 +153,15 @@ describe('DesktopShell — auth badge', () => {
     expect(screen.getByText('Sync error')).toBeDefined()
   })
 
-  it('badge appears before the Import button in DOM order', () => {
+  it('badge appears before the Lock button in DOM order', () => {
     mockStatus.mockReturnValue('unauthenticated')
     const { container } = renderDesktop('pt')
     const badge = container.querySelector('[data-testid="status-badge-neutral"]')
-    const importBtn = screen.getByText('Importar')
-    if (!badge || !importBtn) throw new Error('elements missing')
-    // badge should come before import button in DOM
+    const lockBtn = screen.getByTestId('lock-btn')
+    if (!badge || !lockBtn) throw new Error('elements missing')
+    // badge should come before lock button in DOM
     expect(
-      badge.compareDocumentPosition(importBtn) & Node.DOCUMENT_POSITION_FOLLOWING
+      badge.compareDocumentPosition(lockBtn) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
   })
 })
