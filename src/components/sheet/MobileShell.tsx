@@ -156,27 +156,6 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
               {t('chrome.my_campaigns')}
             </button>
 
-            {([
-              ['drawer.export_json', 'phase_c.export_unavailable'],
-              ['drawer.import_json', 'phase_c.editing_coming_soon'],
-            ] as const).map(([labelKey, alertKey]) => (
-              <button
-                key={labelKey}
-                onClick={() => { alert(t(alertKey)); setDrawerOpen(false) }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: T.textSecondary,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  fontSize: 13, fontWeight: 500,
-                  textAlign: 'left', cursor: 'pointer',
-                  fontFamily: T.sans,
-                }}
-              >
-                {t(labelKey)}
-              </button>
-            ))}
 
             {/* Lock / Unlock button */}
             <button

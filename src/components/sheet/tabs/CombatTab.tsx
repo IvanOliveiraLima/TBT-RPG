@@ -26,7 +26,7 @@ export function CombatTab() {
     <>
       {/* ── MOBILE STACK (hidden on lg+) ── */}
       <div className="lg:hidden flex flex-col gap-3">
-        <CombatStrip character={character} cols={3} />
+        <CombatStrip character={character} cols={3} {...upd} />
         <div style={CARD}>
           <AttacksList character={character} {...upd} />
         </div>
@@ -34,7 +34,7 @@ export function CombatTab() {
 
       {/* ── DESKTOP (hidden below lg) ── */}
       <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
-        <CombatStrip character={character} cols={6} />
+        <CombatStrip character={character} cols={6} {...upd} />
         <div style={CARD}>
           <AttacksList character={character} {...upd} />
         </div>

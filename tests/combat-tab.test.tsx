@@ -99,7 +99,9 @@ describe('CombatTab integration', () => {
     useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
     renderWithI18n(<CombatTab />, 'pt')
     const acStats = screen.getAllByTestId('combat-stat-ac')
-    expect(acStats[0]!.textContent).toContain('14')
+    const acInput = acStats[0]!.querySelector('input') as HTMLInputElement | null
+    const acValue = acInput ? acInput.value : acStats[0]!.textContent
+    expect(acValue).toContain('14')
   })
 
   it('CombatStrip shows correct initiative', () => {
