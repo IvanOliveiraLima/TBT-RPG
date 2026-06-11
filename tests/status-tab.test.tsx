@@ -115,7 +115,9 @@ describe('StatusTab integration', () => {
     renderWithI18n(<StatusTab />, 'pt')
     const acStats = screen.getAllByTestId('combat-stat-ac')
     expect(acStats.length).toBeGreaterThanOrEqual(1)
-    expect(acStats[0]!.textContent).toContain('16')
+    const acInput = acStats[0]!.querySelector('input') as HTMLInputElement | null
+    const acValue = acInput ? acInput.value : acStats[0]!.textContent
+    expect(acValue).toContain('16')
   })
 
   it('renders AttrGrid with all 6 abilities', () => {

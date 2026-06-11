@@ -30,8 +30,6 @@ const en = {
   'tab.lore': 'Lore',
 
   // Drawer / Sidebar chrome actions
-  'drawer.export_json': 'Export',
-  'drawer.import_json': 'Import',
   'drawer.lock': 'Lock',
   'chrome.unlock': 'Unlock',
 
@@ -467,11 +465,6 @@ const en = {
   'remove.confirm':           'Confirm?',
   'remove.confirm_aria':      'Confirm deletion',
 
-  // Phase C placeholder alerts
-  'phase_c.editing_coming_soon': 'Editing will come in Phase C',
-  'phase_c.details_coming_soon': 'Details will come in Phase C',
-  'phase_c.export_unavailable': 'Export — not implemented in this phase.',
-
   // Common
   'common.cancel': 'Cancel',
 
@@ -699,6 +692,32 @@ const en = {
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',
   'aria.edit_display_name_input':  'Display name',
+
+  // Aria — combat
+  'aria.ac_input': 'Armor Class',
+
+  // Export
+  'export.empty_warning': 'No characters to export.',
+
+  // Import
+  'import.choose_mode_title':        'Choose import mode',
+  'import.payload_summary':          'File contains {count} characters.',
+  'import.mode_merge_title':         'Merge',
+  'import.mode_merge_description':   'Add new characters and update existing ones by ID. Safe for existing data.',
+  'import.mode_replace_title':       'Replace all',
+  'import.mode_replace_description': 'Remove all current characters and replace with the imported ones.',
+  'import.replace_warning':          'This will delete all your current characters. This action cannot be undone locally (cloud sync may restore them later if you are signed in).',
+  'import.confirm':                  'Import',
+  'import.success_title':            'Import complete',
+  'import.success_summary':          'Imported {imported} new, updated {replaced} existing.',
+  'import.success_close':            'Close',
+  'import.error_title':              'Import failed',
+  'import.error_read_failed':        'Could not read the file.',
+  'import.error_invalid_json':       'File is not valid JSON.',
+  'import.error_invalid_schema':     'File format is not recognized.',
+  'import.error_incompatible_version': 'This file was exported from an incompatible version. Please use a recent export.',
+  'import.error_apply_failed':       'Could not import characters. Please try again.',
+  'import.error_unknown':            'Unexpected error.',
 } as const;
 
 export default en;

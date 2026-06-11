@@ -93,24 +93,6 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
             <StatusBadge variant="neutral">{t('auth.signin_prompt')}</StatusBadge>
           )}
 
-          {([
-            ['drawer.import_json', 'phase_c.editing_coming_soon'],
-            ['drawer.export_json', 'phase_c.export_unavailable'],
-          ] as const).map(([labelKey, alertKey]) => (
-            <button
-              key={labelKey}
-              onClick={() => alert(t(alertKey))}
-              style={{
-                background: 'transparent',
-                border: `1px solid ${T.borderDefault}`,
-                color: T.textSecondary, borderRadius: 8,
-                padding: '6px 12px', fontSize: 12, cursor: 'pointer',
-              }}
-            >
-              {t(labelKey)}
-            </button>
-          ))}
-
           <button
             data-testid="lock-btn"
             onClick={() => void updateCharacter(character.id, { locked: !locked })}
