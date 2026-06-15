@@ -1,9 +1,12 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { getCampaign, listCampaignMembers, removeMember } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
-import { listCampaignCharacters, unlinkCharacterFromCampaign } from '@/services/campaign-characters'
+import { unlinkCharacterFromCampaign } from '@/services/campaign-characters'
+import { fetchLinkedCharactersDetails } from '@/services/campaign-view'
+import type { LinkedCharacterDetails } from '@/services/campaign-view'
+import { LinkedCharCard } from '@/components/campaigns/LinkedCharCard'
 import { useTranslation } from '@/i18n'
 import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
 import { LinkCharacterModal } from '@/components/campaigns/LinkCharacterModal'
@@ -12,7 +15,7 @@ import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCa
 import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
 import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModal'
 import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
-import type { Campaign, CampaignMember, UserProfile, CampaignCharacter } from '@/domain/campaign'
+import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
   bg:           '#0F0D14',
@@ -40,26 +43,26 @@ export default function CampaignDetail() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [members, setMembers] = useState<EnrichedMember[]>([])
   const [loading, setLoading] = useState(true)
-  const [linkedChars, setLinkedChars] = useState<CampaignCharacter[]>([])
+  const [linkedDetails, setLinkedDetails] = useState<LinkedCharacterDetails[]>([])
   const [linkModalOpen, setLinkModalOpen] = useState(false)
-  const [unlinking, setUnlinking] = useState<string | null>(null)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [leaveModalOpen, setLeaveModalOpen] = useState(false)
   const [editNameOpen, setEditNameOpen] = useState(false)
   const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
 
   async function loadCampaignData(campaignId: string) {
-    const [m, chars] = await Promise.all([
-      listCampaignMembers(campaignId),
-      listCampaignCharacters(campaignId).catch(() => [] as CampaignCharacter[]),
-    ])
+    const m = await listCampaignMembers(campaignId)
     const profiles = await listProfilesByIds(m.map(x => x.userId))
     const enriched = m.map(member => ({
       ...member,
       profile: profiles.find(p => p.userId === member.userId) ?? null,
     }))
     setMembers(enriched)
-    setLinkedChars(chars)
+  }
+
+  async function loadLinkedDetails(campaignId: string) {
+    const details = await fetchLinkedCharactersDetails(campaignId).catch(() => [])
+    setLinkedDetails(details)
   }
 
   useEffect(() => {
@@ -77,7 +80,10 @@ export default function CampaignDetail() {
     getCampaign(campaignId).then(async (c) => {
       if (!c) return
       setCampaign(c)
-      await loadCampaignData(campaignId)
+      await Promise.all([
+        loadCampaignData(campaignId),
+        loadLinkedDetails(campaignId),
+      ])
     }).catch(() => {
       // show "not found" state
     }).finally(() => {
@@ -85,25 +91,14 @@ export default function CampaignDetail() {
     })
   }, [id, user, authLoading, navigate])
 
-  const ownerNameById = useMemo(() => {
-    const map = new Map<string, string>()
-    members.forEach(m => {
-      if (m.profile?.displayName) map.set(m.userId, m.profile.displayName)
-    })
-    return map
-  }, [members])
-
   async function handleUnlink(characterId: string) {
     if (!id) return
     if (!confirm(t('campaign_chars.unlink_confirm'))) return
-    setUnlinking(characterId)
     try {
       await unlinkCharacterFromCampaign({ campaignId: id, characterId })
-      setLinkedChars(prev => prev.filter(c => c.characterId !== characterId))
+      setLinkedDetails(prev => prev.filter(d => d.characterId !== characterId))
     } catch {
       alert(t('campaign_chars.unlink_failed'))
-    } finally {
-      setUnlinking(null)
     }
   }
 
@@ -301,7 +296,7 @@ export default function CampaignDetail() {
               letterSpacing: 2, textTransform: 'uppercase',
               color: T.textMuted,
             }}>
-              {t('campaign_chars.title')} ({linkedChars.length})
+              {t('campaign_chars.title')} ({linkedDetails.length})
             </div>
             <button
               onClick={() => setLinkModalOpen(true)}
@@ -318,7 +313,7 @@ export default function CampaignDetail() {
             </button>
           </div>
 
-          {linkedChars.length === 0 && (
+          {linkedDetails.length === 0 && (
             <div
               data-testid="linked-chars-empty"
               style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}
@@ -327,71 +322,18 @@ export default function CampaignDetail() {
             </div>
           )}
 
-          {linkedChars.length > 0 && (
+          {linkedDetails.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {linkedChars.map(char => {
-                const ownerName = ownerNameById.get(char.userId) ?? t('campaign_detail.unknown_member')
-                const isCharOwner = char.userId === user?.id
-                return (
-                  <div
-                    key={char.characterId}
-                    data-testid={`linked-char-${char.characterId}`}
-                    onClick={() => navigate(`/campaigns/${id}/characters/${char.characterId}`)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ')
-                        navigate(`/campaigns/${id}/characters/${char.characterId}`)
-                    }}
-                    aria-label={t('aria.linked_char_view', { name: char.characterName })}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: T.elevated,
-                      border: `1px solid ${T.borderSubtle}`,
-                      borderRadius: 10,
-                      gap: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>
-                        {char.characterName}
-                      </div>
-                      {char.characterSummary && (
-                        <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
-                          {char.characterSummary}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
-                        {t('campaign_chars.owner_label')}: {ownerName}
-                      </div>
-                    </div>
-
-                    {(isCharOwner || isOwner) && (
-                      <button
-                        onClick={e => { e.stopPropagation(); void handleUnlink(char.characterId) }}
-                        disabled={unlinking === char.characterId}
-                        data-testid={`unlink-char-${char.characterId}`}
-                        aria-label={t('aria.unlink_character', { name: char.characterName })}
-                        style={{
-                          background: 'transparent',
-                          border: `1px solid ${T.borderSubtle}`,
-                          borderRadius: 8, padding: '5px 10px',
-                          color: T.textMuted, fontFamily: T.sans,
-                          fontSize: 11, cursor: unlinking === char.characterId ? 'default' : 'pointer',
-                          opacity: unlinking === char.characterId ? 0.5 : 1,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {unlinking === char.characterId
-                          ? t('campaign_chars.unlinking')
-                          : t('campaign_chars.unlink')}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
+              {linkedDetails.map(detail => (
+                <LinkedCharCard
+                  key={detail.characterId}
+                  detail={detail}
+                  campaignId={id!}
+                  isCurrentUserOwner={isOwner}
+                  currentUserId={user?.id ?? null}
+                  onUnlink={() => handleUnlink(detail.characterId)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -399,10 +341,10 @@ export default function CampaignDetail() {
         {linkModalOpen && id && (
           <LinkCharacterModal
             campaignId={id}
-            alreadyLinkedIds={linkedChars.filter(c => c.userId === user?.id).map(c => c.characterId)}
-            onLinked={(newLink) => {
+            alreadyLinkedIds={linkedDetails.filter(d => d.ownerUserId === user?.id).map(d => d.characterId)}
+            onLinked={() => {
               setLinkModalOpen(false)
-              setLinkedChars(prev => [...prev, newLink])
+              void loadLinkedDetails(id)
             }}
             onCancel={() => setLinkModalOpen(false)}
           />

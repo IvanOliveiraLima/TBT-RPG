@@ -1,6 +1,6 @@
 /**
  * Tests for campaign-view service:
- * fetchCampaignCharacter, fetchCampaignCharacterImages
+ * fetchCampaignCharacter, fetchCampaignCharacterImages, fetchLinkedCharactersDetails
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -30,8 +30,26 @@ function resetSupabase() { mockSupabaseConfigured = false }
 import {
   fetchCampaignCharacter,
   fetchCampaignCharacterImages,
+  fetchLinkedCharactersDetails,
   CampaignViewError,
 } from '@/services/campaign-view'
+
+// ── Mock @/services/campaign-characters ──────────────────────────────────────
+
+const mockListCampaignCharacters = vi.fn()
+
+vi.mock('@/services/campaign-characters', () => ({
+  listCampaignCharacters: (...args: unknown[]) => mockListCampaignCharacters(...args),
+}))
+
+// ── Mock @/services/user-profile ─────────────────────────────────────────────
+
+const mockListProfilesByIds = vi.fn()
+
+vi.mock('@/services/user-profile', () => ({
+  listProfilesByIds: (...args: unknown[]) => mockListProfilesByIds(...args),
+  getMyProfile: vi.fn(),
+}))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -205,5 +223,146 @@ describe('fetchCampaignCharacterImages', () => {
     expect(result.portraitData).toBeNull()
     expect(result.symbolData).toBeNull()
     expect(downloadFn).not.toHaveBeenCalled()
+  })
+})
+
+// ── fetchLinkedCharactersDetails — batch query ────────────────────────────────
+
+const BATCH_LINK_1 = {
+  campaignId: 'c1', characterId: 'char1', userId: 'user1',
+  characterName: 'Aragorn', characterSummary: 'Human — Ranger 5', addedAt: 0,
+}
+const BATCH_LINK_2 = {
+  campaignId: 'c1', characterId: 'char2', userId: 'user2',
+  characterName: 'Legolas', characterSummary: 'Elf — Ranger 5', addedAt: 1000,
+}
+const BATCH_CHAR_ROW_1 = {
+  id: 'char1', user_id: 'user1',
+  data: { id: 'char1', name: 'Aragorn', race: 'Human', classes: [], abilities: {}, hp: { current: 40, max: 40, temp: 0 } },
+  updated_at: '2024-01-01T00:00:00Z',
+}
+const BATCH_CHAR_ROW_2 = {
+  id: 'char2', user_id: 'user2',
+  data: { id: 'char2', name: 'Legolas', race: 'Elf', classes: [], abilities: {}, hp: { current: 35, max: 35, temp: 0 } },
+  updated_at: '2024-01-01T00:00:00Z',
+}
+const BATCH_PROFILE_1 = { userId: 'user1', displayName: 'Alice', createdAt: 0, updatedAt: 0 }
+const BATCH_PROFILE_2 = { userId: 'user2', displayName: 'Bob', createdAt: 0, updatedAt: 0 }
+
+// Build a chainable mock that supports .in() as a terminal Promise
+function makeInChain(result: { data: unknown; error: unknown }) {
+  const inFn = vi.fn().mockResolvedValue(result)
+  const selectFn = vi.fn().mockReturnValue({ in: inFn })
+  return { selectFn, inFn }
+}
+
+describe('fetchLinkedCharactersDetails — batch query', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignCharacters.mockResolvedValue([BATCH_LINK_1, BATCH_LINK_2])
+    mockListProfilesByIds.mockResolvedValue([BATCH_PROFILE_1, BATCH_PROFILE_2])
+  })
+
+  it('returns empty array when supabase is null', async () => {
+    resetSupabase()
+    const result = await fetchLinkedCharactersDetails('c1')
+    expect(result).toEqual([])
+  })
+
+  it('returns empty array when no links exist', async () => {
+    setupSupabase()
+    mockListCampaignCharacters.mockResolvedValue([])
+    mockFrom.mockReturnValue(makeInChain({ data: [], error: null }).selectFn)
+    const result = await fetchLinkedCharactersDetails('c1')
+    expect(result).toEqual([])
+  })
+
+  it('uses .in() to batch-fetch characters (not per-char .eq() calls)', async () => {
+    setupSupabase()
+    const { selectFn, inFn } = makeInChain({ data: [BATCH_CHAR_ROW_1, BATCH_CHAR_ROW_2], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    await fetchLinkedCharactersDetails('c1')
+
+    expect(inFn).toHaveBeenCalledWith('id', ['char1', 'char2'])
+  })
+
+  it('does NOT fetch images (portraitData and symbolData are null)', async () => {
+    setupSupabase()
+    const { selectFn } = makeInChain({ data: [BATCH_CHAR_ROW_1, BATCH_CHAR_ROW_2], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    const result = await fetchLinkedCharactersDetails('c1')
+
+    for (const detail of result) {
+      expect(detail.portraitData).toBeNull()
+      expect(detail.symbolData).toBeNull()
+    }
+    // Storage should not have been touched
+    expect(mockStorage.from).not.toHaveBeenCalled()
+  })
+
+  it('populates character data from batch result', async () => {
+    setupSupabase()
+    const { selectFn } = makeInChain({ data: [BATCH_CHAR_ROW_1, BATCH_CHAR_ROW_2], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    const result = await fetchLinkedCharactersDetails('c1')
+
+    expect(result).toHaveLength(2)
+    expect(result[0]!.character?.name).toBe('Aragorn')
+    expect(result[1]!.character?.name).toBe('Legolas')
+  })
+
+  it('populates ownerDisplayName from profiles batch', async () => {
+    setupSupabase()
+    const { selectFn } = makeInChain({ data: [BATCH_CHAR_ROW_1, BATCH_CHAR_ROW_2], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    const result = await fetchLinkedCharactersDetails('c1')
+
+    expect(result[0]!.ownerDisplayName).toBe('Alice')
+    expect(result[1]!.ownerDisplayName).toBe('Bob')
+  })
+
+  it('returns character: null for links whose char is absent from batch (deleted char)', async () => {
+    setupSupabase()
+    // Only char1 in batch result — char2 is gone
+    const { selectFn } = makeInChain({ data: [BATCH_CHAR_ROW_1], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    const result = await fetchLinkedCharactersDetails('c1')
+    const char2Detail = result.find(d => d.characterId === 'char2')
+    expect(char2Detail).toBeDefined()
+    expect(char2Detail!.character).toBeNull()
+  })
+
+  it('returns character: null for all when batch query errors (graceful degradation)', async () => {
+    setupSupabase()
+    const { selectFn } = makeInChain({ data: null, error: { message: 'DB error' } })
+    mockFrom.mockReturnValue({ select: selectFn })
+
+    const result = await fetchLinkedCharactersDetails('c1')
+    expect(result).toHaveLength(2)
+    for (const detail of result) {
+      expect(detail.character).toBeNull()
+    }
+  })
+
+  it('returns [] gracefully when listCampaignCharacters rejects', async () => {
+    setupSupabase()
+    mockListCampaignCharacters.mockRejectedValue(new Error('network'))
+    const result = await fetchLinkedCharactersDetails('c1')
+    expect(result).toEqual([])
+  })
+
+  it('sets ownerDisplayName to null when profiles fetch rejects', async () => {
+    setupSupabase()
+    const { selectFn } = makeInChain({ data: [BATCH_CHAR_ROW_1], error: null })
+    mockFrom.mockReturnValue({ select: selectFn })
+    mockListProfilesByIds.mockRejectedValue(new Error('network'))
+
+    const result = await fetchLinkedCharactersDetails('c1')
+    expect(result[0]!.ownerDisplayName).toBeNull()
   })
 })
