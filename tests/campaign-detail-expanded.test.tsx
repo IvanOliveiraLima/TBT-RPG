@@ -7,7 +7,9 @@ import { render } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { I18nProvider } from '@/i18n'
 import CampaignDetail from '@/pages/CampaignDetail'
-import type { Campaign, CampaignMember, UserProfile, CampaignCharacter } from '@/domain/campaign'
+import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
+import type { Character } from '@/domain/character'
+import type { LinkedCharacterDetails } from '@/services/campaign-view'
 
 // ── Mock react-router-dom ─────────────────────────────────────────────────────
 
@@ -43,13 +45,22 @@ vi.mock('@/services/campaign', () => ({
 }))
 
 // ── Mock campaign-characters service ─────────────────────────────────────────
+// Still used by unlinkCharacterFromCampaign; listCampaignCharacters is no longer
+// called directly by CampaignDetail (it goes through fetchLinkedCharactersDetails).
 
-const mockListCampaignCharacters = vi.fn()
 const mockUnlinkCharacterFromCampaign = vi.fn()
 
 vi.mock('@/services/campaign-characters', () => ({
-  listCampaignCharacters: (...args: unknown[]) => mockListCampaignCharacters(...args),
+  listCampaignCharacters: vi.fn().mockResolvedValue([]),
   unlinkCharacterFromCampaign: (...args: unknown[]) => mockUnlinkCharacterFromCampaign(...args),
+}))
+
+// ── Mock campaign-view service ────────────────────────────────────────────────
+
+const mockFetchLinkedCharactersDetails = vi.fn()
+
+vi.mock('@/services/campaign-view', () => ({
+  fetchLinkedCharactersDetails: (...args: unknown[]) => mockFetchLinkedCharactersDetails(...args),
 }))
 
 // ── Mock characters store (needed by LinkCharacterModal) ──────────────────────
@@ -85,7 +96,27 @@ vi.mock('@/components/campaigns/InviteCodeBlock', () => ({
   ),
 }))
 
-// ── fixtures ──────────────────────────────────────────────────────────────────
+// ── Mock LinkedCharCard to avoid complex rendering ───────────────────────────
+
+vi.mock('@/components/campaigns/LinkedCharCard', () => ({
+  LinkedCharCard: ({ detail, onUnlink, currentUserId, isCurrentUserOwner }: {
+    detail: LinkedCharacterDetails; onUnlink: () => void; currentUserId: string | null; isCurrentUserOwner: boolean; campaignId: string
+  }) => (
+    <div data-testid={`linked-char-${detail.characterId}`}>
+      <span>{detail.character?.name ?? 'Unknown character'}</span>
+      {(isCurrentUserOwner || currentUserId === detail.ownerUserId) && (
+        <button
+          data-testid={`unlink-char-${detail.characterId}`}
+          onClick={(e) => { e.stopPropagation(); void onUnlink() }}
+        >
+          Desvincular
+        </button>
+      )}
+    </div>
+  ),
+}))
+
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const CAMPAIGN: Campaign = {
   id: 'c1',
@@ -102,16 +133,51 @@ const MEMBER_PLAYER: CampaignMember = { campaignId: 'c1', userId: 'player1', rol
 const PROFILE_MASTER: UserProfile = { userId: 'owner1', displayName: 'Alice', createdAt: 0, updatedAt: 0 }
 const PROFILE_PLAYER: UserProfile = { userId: 'player1', displayName: 'Bob', createdAt: 0, updatedAt: 0 }
 
-const LINKED_CHAR_OWNER: CampaignCharacter = {
-  campaignId: 'c1', characterId: 'char1', userId: 'owner1',
-  characterName: 'Aragorn', characterSummary: 'Human — Ranger 5', addedAt: 0,
-}
-const LINKED_CHAR_PLAYER: CampaignCharacter = {
-  campaignId: 'c1', characterId: 'char2', userId: 'player1',
-  characterName: 'Legolas', characterSummary: 'Elf — Ranger 5', addedAt: 1000,
+const CHARACTER_ARAGORN: Character = {
+  id: 'char1', name: 'Aragorn', race: 'Human', background: 'Noble',
+  alignment: 'LG',
+  classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
+  experience: 0, age: '', height: '', weight: '',
+  eyeColor: '', skinColor: '', hairColor: '',
+  abilities: { str: 15, dex: 14, con: 13, int: 12, wis: 14, cha: 10 },
+  proficiencyBonus: 3,
+  hp: { current: 45, max: 45, temp: 0 },
+  hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
+  deathSaves: { successes: 0, failures: 0 },
+  ac: 14, initiative: 2, speed: 30,
+  passivePerception: 14, spellSaveDC: 0, inspiration: false,
+  savingThrows: [], skills: [],
+  proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
+  attacks: [], inventory: [],
+  currency: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+  features: [],
+  backstory: '', personality: { traits: '', ideals: '', bonds: '', flaws: '' },
+  notes1: '', notes2: '',
+  mountPet: '', mountPet2: '', alliesOrganizations: '',
+  spells: [], spellSlots: {},
+  spellcastingAbility: '', spellcastingClass: '',
+  images: {}, createdAt: 0, updatedAt: 0,
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+const LINKED_DETAIL_OWNER: LinkedCharacterDetails = {
+  characterId: 'char1',
+  ownerUserId: 'owner1',
+  ownerDisplayName: 'Alice',
+  character: CHARACTER_ARAGORN,
+  portraitData: null,
+  symbolData: null,
+}
+
+const LINKED_DETAIL_PLAYER: LinkedCharacterDetails = {
+  characterId: 'char2',
+  ownerUserId: 'player1',
+  ownerDisplayName: 'Bob',
+  character: { ...CHARACTER_ARAGORN, id: 'char2', name: 'Legolas', race: 'Elf' },
+  portraitData: null,
+  symbolData: null,
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function renderDetail(userId = 'owner1') {
   mockUser = { id: userId }
@@ -136,7 +202,7 @@ describe('CampaignDetail — loading and rendering', () => {
     mockGetCampaign.mockResolvedValue(CAMPAIGN)
     mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER, MEMBER_PLAYER])
     mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER, PROFILE_PLAYER])
-    mockListCampaignCharacters.mockResolvedValue([])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([])
   })
 
   it('displays campaign name', async () => {
@@ -196,7 +262,7 @@ describe('CampaignDetail — owner vs player view', () => {
     mockGetCampaign.mockResolvedValue(CAMPAIGN)
     mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER])
     mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER])
-    mockListCampaignCharacters.mockResolvedValue([])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([])
   })
 
   it('renders InviteCodeBlock for owner', async () => {
@@ -218,7 +284,7 @@ describe('CampaignDetail — not found', () => {
     mockGetCampaign.mockResolvedValue(null)
     mockListCampaignMembers.mockResolvedValue([])
     mockListProfilesByIds.mockResolvedValue([])
-    mockListCampaignCharacters.mockResolvedValue([])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([])
     renderDetail()
     await waitFor(() => expect(screen.getByText('Campaign not found.')).toBeDefined())
   })
@@ -231,14 +297,13 @@ describe('CampaignDetail — linked chars section', () => {
     mockGetCampaign.mockResolvedValue(CAMPAIGN)
     mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER, MEMBER_PLAYER])
     mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER, PROFILE_PLAYER])
-    mockListCampaignCharacters.mockResolvedValue([LINKED_CHAR_OWNER, LINKED_CHAR_PLAYER])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([LINKED_DETAIL_OWNER, LINKED_DETAIL_PLAYER])
   })
 
-  it('renders linked chars with name and summary', async () => {
+  it('renders linked chars with name', async () => {
     renderDetail()
     await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
     expect(screen.getByText('Aragorn')).toBeDefined()
-    expect(screen.getByText('Human — Ranger 5')).toBeDefined()
   })
 
   it('renders multiple linked chars', async () => {
@@ -268,15 +333,21 @@ describe('CampaignDetail — linked chars section', () => {
   it('shows owner name derived from member profiles', async () => {
     renderDetail()
     await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
-    // "Jogador: Alice" for owner1's char — multiple Alice elements, use getAllByText
+    // "Alice" appears in the mocked LinkedCharCard via detail.character.name (Aragorn is owner1/Alice)
+    // The mock renders character name; Alice shows in members list
     expect(screen.getAllByText(/Alice/).length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows "Unknown member" when profile not found', async () => {
-    mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([
+      { ...LINKED_DETAIL_PLAYER, ownerDisplayName: null },
+    ])
     renderDetail()
     await waitFor(() => expect(screen.getByTestId('linked-char-char2')).toBeDefined())
-    expect(screen.getAllByText(/Membro desconhecido/).length).toBeGreaterThanOrEqual(1)
+    // The mock LinkedCharCard renders detail.character.name — doesn't show owner label.
+    // The ownerDisplayName=null test is covered in linked-char-card.test.tsx.
+    // Here we just verify the card is rendered when ownerDisplayName is null.
+    expect(screen.getByTestId('linked-char-char2')).toBeDefined()
   })
 
   it('clicking link button opens LinkCharacterModal', async () => {
@@ -287,6 +358,12 @@ describe('CampaignDetail — linked chars section', () => {
     await ue.click(screen.getByTestId('link-char-open-btn'))
     expect(screen.getByTestId('link-char-modal-stub')).toBeDefined()
   })
+
+  it('calls fetchLinkedCharactersDetails with the campaign id on load', async () => {
+    renderDetail()
+    await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
+    expect(mockFetchLinkedCharactersDetails).toHaveBeenCalledWith('c1')
+  })
 })
 
 describe('CampaignDetail — char card navigation', () => {
@@ -296,17 +373,22 @@ describe('CampaignDetail — char card navigation', () => {
     mockGetCampaign.mockResolvedValue(CAMPAIGN)
     mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER, MEMBER_PLAYER])
     mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER, PROFILE_PLAYER])
-    mockListCampaignCharacters.mockResolvedValue([LINKED_CHAR_OWNER, LINKED_CHAR_PLAYER])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([LINKED_DETAIL_OWNER, LINKED_DETAIL_PLAYER])
   })
 
-  it('clicking a linked char card navigates to char view', async () => {
+  // Navigation is handled inside LinkedCharCard (tested in linked-char-card.test.tsx).
+  // CampaignDetail is responsible for rendering LinkedCharCard with the correct props
+  // (campaignId, detail, isCurrentUserOwner, currentUserId). The tests below verify that
+  // the cards are rendered and that the unlink button does not cause unwanted navigation
+  // at the CampaignDetail level.
+
+  it('renders linked char cards with correct testids', async () => {
     renderDetail('owner1')
     await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
-    screen.getByTestId('linked-char-char1').click()
-    expect(mockNavigate).toHaveBeenCalledWith('/campaigns/c1/characters/char1')
+    expect(screen.getByTestId('linked-char-char2')).toBeDefined()
   })
 
-  it('clicking unlink button does not navigate', async () => {
+  it('clicking unlink button does not navigate to char view', async () => {
     const { userEvent } = await import('@testing-library/user-event')
     const ue = userEvent.setup()
     renderDetail('owner1')

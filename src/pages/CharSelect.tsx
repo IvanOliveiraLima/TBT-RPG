@@ -18,6 +18,7 @@ import { ConfirmDeleteModal } from '@/components/ConfirmDeleteModal'
 import { ChooseImportModeModal } from '@/components/import-export/ChooseImportModeModal'
 import { ImportSuccessModal } from '@/components/import-export/ImportSuccessModal'
 import { ImportErrorModal } from '@/components/import-export/ImportErrorModal'
+import { CharCardVisual } from '@/components/character/CharCardVisual'
 import {
   buildExportBlob,
   triggerDownload,
@@ -85,27 +86,6 @@ function D20Logo() {
   )
 }
 
-/* ── HP bar ────────────────────────────────────────────────────────────── */
-function HpBar({ current, max }: { current: number; max: number }) {
-  const pct = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0
-  const color = pct < 30 ? T.danger : pct < 60 ? T.gold : T.success
-  return (
-    <div style={{
-      marginTop: 6, height: 4,
-      background: T.bg, borderRadius: 2,
-      overflow: 'hidden',
-      border: `1px solid ${T.borderSubtle}`,
-    }}>
-      <div style={{
-        width: `${pct}%`, height: '100%',
-        background: color,
-        borderRadius: 2,
-        transition: 'width 300ms',
-      }} />
-    </div>
-  )
-}
-
 /* ── Character card ────────────────────────────────────────────────────── */
 interface CharCardProps {
   ch: Character
@@ -116,7 +96,6 @@ interface CharCardProps {
 function CharCard({ ch, selected, onRequestDelete }: CharCardProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const portrait = ch.images.character ?? null
 
   function handleClick() {
     navigate(`/character/${ch.id}`)
@@ -140,81 +119,17 @@ function CharCard({ ch, selected, onRequestDelete }: CharCardProps) {
           boxShadow: selected ? `0 4px 14px rgba(0,0,0,0.35), 0 0 0 0.5px ${T.gold}22` : 'none',
         }}
       >
-        {/* Portrait */}
-        <div style={{
-          width: 56, height: 56, borderRadius: 12, flexShrink: 0,
-          background: portrait
-            ? `url(${portrait}) center/cover`
-            : `
-              radial-gradient(circle at 40% 35%, #8B6FC5 0%, transparent 55%),
-              radial-gradient(circle at 60% 65%, ${T.ruby} 0%, transparent 55%),
-              linear-gradient(135deg, #2A1F3D, #1A0F2A)
-            `,
-          border: `1.5px solid ${selected ? T.gold : T.borderDefault}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: T.serif, fontSize: 22, fontWeight: 600,
-          color: selected ? T.gold : T.textSecondary,
-          boxShadow: selected ? `0 0 14px ${T.gold}30` : 'none',
-          position: 'relative',
-        }}>
-          {!portrait && (ch.name || 'X')[0]}
-
-          {/* Level badge */}
-          <div style={{
-            position: 'absolute', bottom: -5, right: -5,
-            background: T.ruby,
-            color: T.textPrimary,
-            fontFamily: T.serif, fontWeight: 700,
-            width: 20, height: 20, borderRadius: '50%',
-            border: `2px solid ${T.bg}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10,
-          }}>
-            {deriveTotalLevel(ch) || '?'}
-          </div>
-        </div>
-
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: T.serif, fontSize: 15, fontWeight: 600,
-            color: T.textPrimary, lineHeight: 1.15,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            // leave room for the kebab menu in the top-right corner
-            paddingRight: 28,
-          }}>
-            {ch.name}
-          </div>
-          <div style={{
-            fontSize: 11, color: T.textTertiary, marginTop: 3,
-            display: 'flex', gap: 5, alignItems: 'center',
-          }}>
-            <span>{ch.race || '—'}</span>
-            <span style={{ color: T.borderDefault }}>·</span>
-            <span style={{ color: T.textSecondary }}>
-              {formatClassesShort(ch) || '—'}
-            </span>
-          </div>
-          <HpBar current={ch.hp.current} max={ch.hp.max} />
-        </div>
-
-        {/* HP display */}
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{
-            fontSize: 9, color: T.textMuted,
-            textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: 600,
-          }}>
-            HP
-          </div>
-          <div style={{
-            fontFamily: T.serif, fontWeight: 600,
-            color: T.textPrimary, fontSize: 14,
-            fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, marginTop: 2,
-          }}>
-            {ch.hp.current}
-            <span style={{ color: T.textMuted, fontSize: 11 }}>/{ch.hp.max}</span>
-          </div>
-        </div>
+        <CharCardVisual
+          name={ch.name}
+          raceLabel={ch.race || '—'}
+          classLabel={formatClassesShort(ch) || '—'}
+          totalLevel={deriveTotalLevel(ch)}
+          portraitData={ch.images.character ?? null}
+          hpCurrent={ch.hp.current}
+          hpMax={ch.hp.max}
+          selected={selected}
+          namePaddingRight={28}
+        />
       </button>
 
       {/* Kebab menu — overlaid in top-right corner, outside the card button */}

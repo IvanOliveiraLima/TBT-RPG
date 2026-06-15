@@ -604,8 +604,9 @@ const en = {
   'campaign_detail.members':           'Members',
   'campaign_detail.role_master':       'Master',
   'campaign_detail.role_player':       'Player',
-  'campaign_detail.unknown_member':    'Unknown member',
-  'campaign_detail.chars_placeholder': 'Character viewing coming soon.',
+  'campaign_detail.unknown_member':      'Unknown member',
+  'campaign_detail.unknown_character':   'Unknown character',
+  'campaign_detail.chars_placeholder':   'Character viewing coming soon.',
 
   // Buttons — join with code
   'campaigns.join_with_code': 'Join with code',

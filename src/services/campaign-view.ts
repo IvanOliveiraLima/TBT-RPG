@@ -1,5 +1,16 @@
 import { supabase, getSession } from '@/lib/supabase'
 import type { Character } from '@/domain/character'
+import { listProfilesByIds } from '@/services/user-profile'
+import { listCampaignCharacters } from '@/services/campaign-characters'
+
+export interface LinkedCharacterDetails {
+  characterId: string
+  ownerUserId: string
+  ownerDisplayName: string | null
+  character: Character | null
+  portraitData: string | null
+  symbolData: string | null
+}
 
 export class CampaignViewError extends Error {
   code: string
@@ -108,4 +119,50 @@ export async function fetchCampaignCharacterImages(input: {
   }
 
   return result
+}
+
+/**
+ * Fetch full details for all characters linked to a campaign.
+ * Best-effort: chars with fetch errors return character: null but preserve link metadata.
+ * Never persists to IndexedDB — memory only.
+ */
+export async function fetchLinkedCharactersDetails(
+  campaignId: string
+): Promise<LinkedCharacterDetails[]> {
+  if (!supabase) return []
+
+  const links = await listCampaignCharacters(campaignId).catch(() => [])
+  if (links.length === 0) return []
+
+  const ownerIds = [...new Set(links.map(l => l.userId))]
+  const profiles = await listProfilesByIds(ownerIds).catch(() => [])
+  const profileById = new Map(profiles.map(p => [p.userId, p]))
+
+  return Promise.all(links.map(async (link) => {
+    const detail: LinkedCharacterDetails = {
+      characterId: link.characterId,
+      ownerUserId: link.userId,
+      ownerDisplayName: profileById.get(link.userId)?.displayName ?? null,
+      character: null,
+      portraitData: null,
+      symbolData: null,
+    }
+
+    try {
+      const result = await fetchCampaignCharacter({ campaignId, characterId: link.characterId })
+      if (result) {
+        detail.character = result.char
+        const images = await fetchCampaignCharacterImages({
+          userId: link.userId,
+          characterId: link.characterId,
+        })
+        detail.portraitData = images.portraitData
+        detail.symbolData = images.symbolData
+      }
+    } catch (err) {
+      console.warn('[campaign-view] fetchLinkedCharactersDetails — char', link.characterId, err)
+    }
+
+    return detail
+  }))
 }
