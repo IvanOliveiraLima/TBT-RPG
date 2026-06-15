@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/i18n'
 import { CharCardVisual } from '@/components/character/CharCardVisual'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { fetchCampaignCharacterImages } from '@/services/campaign-view'
 import type { LinkedCharacterDetails } from '@/services/campaign-view'
 
 const T = {
@@ -30,6 +31,35 @@ export function LinkedCharCard({
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [unlinking, setUnlinking] = useState(false)
+
+  // Lazy image state — images load in background after card renders
+  const [portraitData, setPortraitData] = useState<string | null>(detail.portraitData)
+  const [imagesLoaded, setImagesLoaded] = useState(detail.portraitData != null)
+
+  useEffect(() => {
+    if (imagesLoaded) return
+    if (!detail.character) return  // deleted char — no images to fetch
+
+    let cancelled = false
+
+    fetchCampaignCharacterImages({
+      userId: detail.ownerUserId,
+      characterId: detail.characterId,
+    })
+      .then((images) => {
+        if (cancelled) return
+        setPortraitData(images.portraitData)
+        setImagesLoaded(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setImagesLoaded(true)  // stop retrying — placeholder stays
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [detail.characterId, detail.ownerUserId, detail.character, imagesLoaded])
 
   const char = detail.character
   const canUnlink = isCurrentUserOwner || (currentUserId != null && currentUserId === detail.ownerUserId)
@@ -89,11 +119,11 @@ export function LinkedCharCard({
         raceLabel={raceLabel}
         classLabel={classLabel}
         totalLevel={totalLevel}
-        portraitData={detail.portraitData}
+        portraitData={portraitData}
         hpCurrent={hpCurrent}
         hpMax={hpMax}
         ownerLabel={ownerLabel}
-        isLoading={char == null}
+        isLoading={!imagesLoaded && char != null}
       />
 
       {canUnlink && (

@@ -19,6 +19,14 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// ── Mock fetchCampaignCharacterImages (lazy load) ─────────────────────────────
+
+const mockFetchCampaignCharacterImages = vi.fn()
+
+vi.mock('@/services/campaign-view', () => ({
+  fetchCampaignCharacterImages: (...args: unknown[]) => mockFetchCampaignCharacterImages(...args),
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const CHARACTER_ARAGORN: Character = {
@@ -113,6 +121,8 @@ describe('LinkedCharCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    // Default: lazy image fetch resolves with no images
+    mockFetchCampaignCharacterImages.mockResolvedValue({ portraitData: null, symbolData: null })
   })
 
   it('renders character name from detail.character.name', async () => {
@@ -209,5 +219,69 @@ describe('LinkedCharCard', () => {
     await waitFor(() =>
       expect(screen.getByTestId('linked-char-char2')).toBeDefined()
     )
+  })
+})
+
+describe('LinkedCharCard — lazy image loading', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockFetchCampaignCharacterImages.mockResolvedValue({ portraitData: null, symbolData: null })
+  })
+
+  it('renders card immediately without portrait (placeholder visible before images load)', async () => {
+    // Mock a slow image fetch that never resolves during the test
+    mockFetchCampaignCharacterImages.mockReturnValue(new Promise(() => { /* pending */ }))
+    renderCard()
+    // Card should be visible immediately
+    expect(screen.getByTestId('linked-char-char1')).toBeDefined()
+    // Name should be rendered right away
+    expect(screen.getByText('Aragorn')).toBeDefined()
+  })
+
+  it('calls fetchCampaignCharacterImages on mount when char exists', async () => {
+    renderCard()
+    await waitFor(() => expect(mockFetchCampaignCharacterImages).toHaveBeenCalledOnce())
+    expect(mockFetchCampaignCharacterImages).toHaveBeenCalledWith({
+      userId: 'owner1',
+      characterId: 'char1',
+    })
+  })
+
+  it('does NOT call fetchCampaignCharacterImages when char is null (deleted)', async () => {
+    renderCard({ detail: DETAIL_NO_CHAR })
+    await waitFor(() => expect(screen.getByTestId('linked-char-char2')).toBeDefined())
+    // Give a tick for any potential async effects
+    await new Promise(r => setTimeout(r, 10))
+    expect(mockFetchCampaignCharacterImages).not.toHaveBeenCalled()
+  })
+
+  it('does NOT call fetchCampaignCharacterImages when portraitData is already present', async () => {
+    const detailWithPortrait: LinkedCharacterDetails = {
+      ...DETAIL_WITH_CHAR,
+      portraitData: 'data:image/png;base64,abc123',
+    }
+    renderCard({ detail: detailWithPortrait })
+    await waitFor(() => expect(screen.getByTestId('linked-char-char1')).toBeDefined())
+    await new Promise(r => setTimeout(r, 10))
+    expect(mockFetchCampaignCharacterImages).not.toHaveBeenCalled()
+  })
+
+  it('passes isLoading=true to CharCardVisual while images are loading', async () => {
+    // Images never resolve — card should render immediately while load is pending
+    mockFetchCampaignCharacterImages.mockReturnValue(new Promise(() => { /* pending */ }))
+    renderCard()
+    // Card is rendered immediately even before images arrive
+    expect(screen.getByTestId('linked-char-char1')).toBeDefined()
+    expect(screen.getByText('Aragorn')).toBeDefined()
+  })
+
+  it('handles image fetch failure gracefully (placeholder remains, no crash)', async () => {
+    mockFetchCampaignCharacterImages.mockRejectedValue(new Error('network error'))
+    renderCard()
+    // Card should still render after failure
+    await waitFor(() => expect(screen.getByText('Aragorn')).toBeDefined())
+    // No skeleton after failure (imagesLoaded set to true)
+    await waitFor(() => expect(screen.queryByTestId('char-card-visual-hp-skeleton')).toBeNull())
   })
 })
