@@ -1,5 +1,16 @@
 import { supabase, getSession } from '@/lib/supabase'
 import type { Character } from '@/domain/character'
+import { listProfilesByIds } from '@/services/user-profile'
+import { listCampaignCharacters } from '@/services/campaign-characters'
+
+export interface LinkedCharacterDetails {
+  characterId: string
+  ownerUserId: string
+  ownerDisplayName: string | null
+  character: Character | null
+  portraitData: string | null
+  symbolData: string | null
+}
 
 export class CampaignViewError extends Error {
   code: string
@@ -108,4 +119,62 @@ export async function fetchCampaignCharacterImages(input: {
   }
 
   return result
+}
+
+/**
+ * Fetch full details for all characters linked to a campaign.
+ *
+ * Performance: 2 DB queries regardless of number of chars (batch .in() instead of N .eq()).
+ * Images are NOT fetched here — consumers handle lazy loading to render cards immediately.
+ *
+ * Best-effort: chars missing from batch result return character: null (e.g. deleted chars).
+ * Never persists to IndexedDB — memory only.
+ */
+export async function fetchLinkedCharactersDetails(
+  campaignId: string
+): Promise<LinkedCharacterDetails[]> {
+  if (!supabase) return []
+
+  // 1. Fetch all links (1 query)
+  const links = await listCampaignCharacters(campaignId).catch(() => [])
+  if (links.length === 0) return []
+
+  // 2. Batch-fetch all chars in a single .in() query (1 query, was N*2 before)
+  const characterIds = links.map(l => l.characterId)
+  const { data: rows, error: charsError } = await supabase
+    .from('characters')
+    .select('id, user_id, data, updated_at')
+    .in('id', characterIds)
+
+  if (charsError) {
+    console.error('[campaign-view] fetchLinkedCharactersDetails — chars batch', charsError)
+    // Continue with empty map — cards render as "unknown character"
+  }
+
+  // 3. Batch-fetch owner profiles (1 query, was already batch)
+  const ownerIds = [...new Set(links.map(l => l.userId))]
+  const profiles = await listProfilesByIds(ownerIds).catch(() => [])
+  const profileById = new Map(profiles.map(p => [p.userId, p]))
+
+  // 4. Build chars map from batch result
+  const charsMap = new Map<string, Character>()
+  if (rows) {
+    for (const row of rows) {
+      const char: Character = {
+        ...(row.data as Character),
+        updatedAt: new Date(row.updated_at as string).getTime(),
+      }
+      charsMap.set(row.id as string, char)
+    }
+  }
+
+  // 5. Compose results — images are null (lazy loaded by consumer)
+  return links.map((link) => ({
+    characterId: link.characterId,
+    ownerUserId: link.userId,
+    ownerDisplayName: profileById.get(link.userId)?.displayName ?? null,
+    character: charsMap.get(link.characterId) ?? null,
+    portraitData: null,
+    symbolData: null,
+  }))
 }

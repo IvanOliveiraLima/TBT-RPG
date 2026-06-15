@@ -608,8 +608,9 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.members':           'Membros',
   'campaign_detail.role_master':       'Mestre',
   'campaign_detail.role_player':       'Jogador',
-  'campaign_detail.unknown_member':    'Membro desconhecido',
-  'campaign_detail.chars_placeholder': 'Visualização de personagens em breve.',
+  'campaign_detail.unknown_member':      'Membro desconhecido',
+  'campaign_detail.unknown_character':   'Personagem desconhecido',
+  'campaign_detail.chars_placeholder':   'Visualização de personagens em breve.',
 
   // Buttons — join with code
   'campaigns.join_with_code': 'Entrar com código',
