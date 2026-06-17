@@ -181,11 +181,28 @@ export default {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: description }
         ],
-        max_tokens: 1024,
+        max_tokens: 2048,
         temperature: 0.7
       })
 
-      const text = response?.response || ''
+      // Log de inspeção — diagnóstico do formato do response.
+      // Mantido propositalmente: cada modelo pode usar envelope diferente.
+      // Considerar remoção quando GLM estiver estável por semanas sem incidente.
+      console.log('[worker] AI response shape', {
+        keys: Object.keys(response || {}),
+        preview: JSON.stringify(response || {}).slice(0, 500)
+      })
+
+      // Extração robusta — aceita múltiplos formatos:
+      // 1. Cloudflare clássico (Llama, Mistral, Gemma): response.response
+      // 2. OpenAI Chat Completions (GLM e outros): response.choices[0].message.content
+      // 3. Genérico: response.text ou response.output
+      const text =
+        response?.response ||
+        response?.choices?.[0]?.message?.content ||
+        response?.text ||
+        response?.output ||
+        ''
 
       // Strip markdown code blocks if model added them
       const clean = text.replace(/```json\n?|\n?```/g, '').trim()
