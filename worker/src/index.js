@@ -160,28 +160,21 @@ export default {
       })
     }
 
+    // Note: Cloudflare deprecates Workers AI models periodically (annual cycle observed).
+    // If 500 errors return with AiError 5028, check https://developers.cloudflare.com/workers-ai/models/
+    // and update to the current equivalent. Last update: 2026-06-17 (llama-3 → llama-3.1).
+    const AI_MODEL = '@cf/meta/llama-3.1-8b-instruct'
+
     try {
       const systemPrompt = targetLang === 'pt' ? SYSTEM_PROMPT_PT : SYSTEM_PROMPT
 
-      console.log('[worker] calling AI', {
-        lang: targetLang,
-        descLen: description.length,
-        model: '@cf/meta/llama-3-8b-instruct'
-      })
-
-      const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
+      const response = await env.AI.run(AI_MODEL, {
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: description }
         ],
         max_tokens: 1024,
         temperature: 0.7
-      })
-
-      console.log('[worker] AI returned', {
-        hasResponse: !!response?.response,
-        responseLen: response?.response?.length ?? 0,
-        keys: response ? Object.keys(response) : []
       })
 
       const text = response?.response || ''
@@ -212,8 +205,6 @@ export default {
           error: 'The AI could not generate a complete character. Try describing your character in more detail and try again.'
         }), { status: 500, headers: getCorsHeaders(request) })
       }
-
-      console.log('[worker] generation successful', { charName: character.char_name })
 
       return new Response(JSON.stringify({ character }), {
         status: 200,
