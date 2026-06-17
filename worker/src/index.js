@@ -181,7 +181,7 @@ export default {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: description }
         ],
-        max_tokens: 2048,
+        max_tokens: 1024,
         temperature: 0.7
       })
 
