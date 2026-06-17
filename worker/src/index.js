@@ -162,6 +162,13 @@ export default {
 
     try {
       const systemPrompt = targetLang === 'pt' ? SYSTEM_PROMPT_PT : SYSTEM_PROMPT
+
+      console.log('[worker] calling AI', {
+        lang: targetLang,
+        descLen: description.length,
+        model: '@cf/meta/llama-3-8b-instruct'
+      })
+
       const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
         messages: [
           { role: 'system', content: systemPrompt },
@@ -171,7 +178,13 @@ export default {
         temperature: 0.7
       })
 
-      const text = response.response || ''
+      console.log('[worker] AI returned', {
+        hasResponse: !!response?.response,
+        responseLen: response?.response?.length ?? 0,
+        keys: response ? Object.keys(response) : []
+      })
+
+      const text = response?.response || ''
 
       // Strip markdown code blocks if model added them
       const clean = text.replace(/```json\n?|\n?```/g, '').trim()
@@ -179,7 +192,11 @@ export default {
       let character
       try {
         character = JSON.parse(clean)
-      } catch {
+      } catch (parseErr) {
+        console.error('[worker] JSON parse failed', {
+          error: parseErr?.message,
+          rawSample: clean.slice(0, 500)
+        })
         return new Response(JSON.stringify({ error: 'The character generation was incomplete. Please try again.' }), {
           status: 500,
           headers: getCorsHeaders(request)
@@ -187,16 +204,28 @@ export default {
       }
 
       if (!validateCharacterJSON(character)) {
+        console.error('[worker] validation failed', {
+          keys: Object.keys(character),
+          character
+        })
         return new Response(JSON.stringify({
           error: 'The AI could not generate a complete character. Try describing your character in more detail and try again.'
         }), { status: 500, headers: getCorsHeaders(request) })
       }
+
+      console.log('[worker] generation successful', { charName: character.char_name })
 
       return new Response(JSON.stringify({ character }), {
         status: 200,
         headers: getCorsHeaders(request)
       })
     } catch (err) {
+      console.error('[worker] generation failed (outer catch)', {
+        error: err?.message,
+        name: err?.name,
+        stack: err?.stack,
+        cause: err?.cause
+      })
       return new Response(JSON.stringify({ error: 'Character generation failed. Please try again in a few moments.' }), {
         status: 500,
         headers: getCorsHeaders(request)
