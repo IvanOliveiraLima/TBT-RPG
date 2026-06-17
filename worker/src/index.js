@@ -160,10 +160,18 @@ export default {
       })
     }
 
-    // Note: Cloudflare deprecates Workers AI models periodically (annual cycle observed).
-    // If 500 errors return with AiError 5028, check https://developers.cloudflare.com/workers-ai/models/
-    // and update to the current equivalent. Last update: 2026-06-17 (llama-3 → llama-3.1).
-    const AI_MODEL = '@cf/meta/llama-3.1-8b-instruct'
+    // Note: Cloudflare deprecates Workers AI models in batches — entire FAMILIES at once.
+    // Migrating to a sibling in the same family (e.g. llama-3 → llama-3.1) fails with
+    // the same AiError 5028 if both are in the same deprecation batch.
+    // If 500 errors return with AiError 5028, check:
+    //   https://developers.cloudflare.com/workers-ai/changelog/
+    //   https://developers.cloudflare.com/changelog/post/2026-05-08-planned-model-deprecations/
+    // History:
+    //   2024-XX: initial @cf/meta/llama-3-8b-instruct
+    //   2026-06-17: → @cf/meta/llama-3.1-8b-instruct (failed — same deprecation batch)
+    //   2026-06-17: → @cf/zai-org/glm-4.7-flash (Cloudflare recommended replacement
+    //                 for "Multilingual & fast" use case; supports structured outputs)
+    const AI_MODEL = '@cf/zai-org/glm-4.7-flash'
 
     try {
       const systemPrompt = targetLang === 'pt' ? SYSTEM_PROMPT_PT : SYSTEM_PROMPT

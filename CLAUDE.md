@@ -66,7 +66,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
 | `src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
 | `tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
-| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3.1 8B), handles CORS |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (GLM 4.7 Flash), handles CORS |
 
 ### store architecture
 
@@ -1433,12 +1433,24 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
 - **OQ — Worker AI `sleight_hand` normalization.** Worker returns `sleight_hand` but
   domain uses `sleight_of_hand`. Mapped in merge function as workaround; worker-side
   fix would be cleaner.
-- **OQ — Cloudflare Workers AI deprecation cycle.** Cloudflare deprecates models
-  periodically (annual cycle observed). Last deprecation: `@cf/meta/llama-3-8b-instruct`
-  (2026-05-30) → migrated to `@cf/meta/llama-3.1-8b-instruct` (2026-06-17). Symptom:
-  HTTP 500 from worker with `AiError 5028` in logs. Monitor:
-  https://developers.cloudflare.com/workers-ai/changelog/ quarterly. Pattern: model
-  name is extracted to `AI_MODEL` constant in `worker/src/index.js` for easy update.
+- **OQ — Cloudflare Workers AI deprecates entire model families in batches.**
+  Discovered the hard way: Cloudflare does not deprecate individual models — they
+  deprecate by family in coordinated batches. Trying to migrate from a deprecated
+  model to a sibling in the same family (e.g. `llama-3-8b` → `llama-3.1-8b`) fails
+  with the same `AiError 5028` because both share the same deprecation cycle.
+
+  Timeline:
+  - 2026-05-08: Cloudflare announced batch deprecation (Llama 3.x family + others)
+  - 2026-05-30: Actual deprecation date enforced
+  - 2026-06-17: TBT-RPG `@cf/meta/llama-3-8b-instruct` →
+    `@cf/meta/llama-3.1-8b-instruct` (failed — same batch) →
+    `@cf/zai-org/glm-4.7-flash` (Cloudflare's recommended multilingual replacement)
+
+  Pattern of mitigation: when deprecation announced, check the FULL list of
+  affected models — entire families may be in the same batch. Monitor
+  https://developers.cloudflare.com/workers-ai/changelog/ quarterly.
+  Model name is extracted to `AI_MODEL` constant in `worker/src/index.js`.
+  Symptom: HTTP 500 from worker with `AiError 5028` in logs.
 - **OQ — Multi-tab edition coordination.** Character can be edited in 2 browser tabs
   simultaneously; no locking. Best-effort via debounced saves.
 - **OQ — Tombstone cleanup TTL.** Tombstones accumulate indefinitely. Decision:
