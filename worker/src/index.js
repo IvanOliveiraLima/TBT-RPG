@@ -160,18 +160,25 @@ export default {
       })
     }
 
-    // Note: Cloudflare deprecates Workers AI models in batches — entire FAMILIES at once.
-    // Migrating to a sibling in the same family (e.g. llama-3 → llama-3.1) fails with
-    // the same AiError 5028 if both are in the same deprecation batch.
+    // Note: Cloudflare deprecates Workers AI models in batches, not individually.
+    // Entire model FAMILIES can be deprecated at once (e.g. all Llama 3.x in 2026-05).
+    // Also: model variants matter — reasoning models (like GLM 4.7 Flash) return
+    // content in `message.reasoning` not `message.content`, which breaks naive
+    // extraction. Always check response shape via diagnostic log on migration.
+    //
     // If 500 errors return with AiError 5028, check:
     //   https://developers.cloudflare.com/workers-ai/changelog/
     //   https://developers.cloudflare.com/changelog/post/2026-05-08-planned-model-deprecations/
+    //
     // History:
     //   2024-XX: initial @cf/meta/llama-3-8b-instruct
     //   2026-06-17: → @cf/meta/llama-3.1-8b-instruct (failed — same deprecation batch)
-    //   2026-06-17: → @cf/zai-org/glm-4.7-flash (Cloudflare recommended replacement
-    //                 for "Multilingual & fast" use case; supports structured outputs)
-    const AI_MODEL = '@cf/zai-org/glm-4.7-flash'
+    //   2026-06-17: → @cf/zai-org/glm-4.7-flash (failed — reasoning model, content
+    //                 in message.reasoning not message.content; truncated/timed out
+    //                 under various max_tokens values)
+    //   2026-06-18: → @cf/openai/gpt-oss-20b (OpenAI Chat Completions format,
+    //                 non-reasoning, content directly in message.content)
+    const AI_MODEL = '@cf/openai/gpt-oss-20b'
 
     try {
       const systemPrompt = targetLang === 'pt' ? SYSTEM_PROMPT_PT : SYSTEM_PROMPT

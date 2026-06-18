@@ -66,7 +66,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
 | `src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
 | `tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
-| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (GLM 4.7 Flash), handles CORS |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (gpt-oss-20b), handles CORS |
 
 ### store architecture
 
@@ -1435,22 +1435,39 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   fix would be cleaner.
 - **OQ — Cloudflare Workers AI deprecates entire model families in batches.**
   Discovered the hard way: Cloudflare does not deprecate individual models — they
-  deprecate by family in coordinated batches. Trying to migrate from a deprecated
-  model to a sibling in the same family (e.g. `llama-3-8b` → `llama-3.1-8b`) fails
-  with the same `AiError 5028` because both share the same deprecation cycle.
+  deprecate by family in coordinated batches. Trying to migrate to a sibling in the
+  same family (e.g. `llama-3-8b` → `llama-3.1-8b`) fails with the same `AiError 5028`.
+  Also: reasoning models (e.g. GLM 4.7 Flash) return content in `message.reasoning`,
+  not `message.content` — naive extraction yields empty string with no error indication.
 
   Timeline:
   - 2026-05-08: Cloudflare announced batch deprecation (Llama 3.x family + others)
   - 2026-05-30: Actual deprecation date enforced
-  - 2026-06-17: TBT-RPG `@cf/meta/llama-3-8b-instruct` →
-    `@cf/meta/llama-3.1-8b-instruct` (failed — same batch) →
-    `@cf/zai-org/glm-4.7-flash` (Cloudflare's recommended multilingual replacement)
+  - 2026-06-17: TBT-RPG migration journey:
+    - `@cf/meta/llama-3-8b-instruct` → `@cf/meta/llama-3.1-8b-instruct` (failed — same batch)
+    - → `@cf/zai-org/glm-4.7-flash` (failed — reasoning model, content in
+      `message.reasoning` not `message.content`; truncated/timed out)
+    - → `@cf/openai/gpt-oss-20b` (success — OpenAI Chat Completions, non-reasoning)
+
+  Lessons learned:
+  - Cloudflare deprecates families, not models. Migration to sibling fails.
+  - Reasoning models break naive `.content` extraction — no error, just empty string.
+  - Always log `Object.keys(response)` + JSON preview on first migration to a new
+    model. Cost negligible; cost of debugging without it is high.
+  - Test in Cloudflare AI Playground before deploying to verify response shape.
 
   Pattern of mitigation: when deprecation announced, check the FULL list of
   affected models — entire families may be in the same batch. Monitor
   https://developers.cloudflare.com/workers-ai/changelog/ quarterly.
   Model name is extracted to `AI_MODEL` constant in `worker/src/index.js`.
-  Symptom: HTTP 500 from worker with `AiError 5028` in logs.
+
+  Symptom (deprecated model): HTTP 500 with `AiError 5028` in logs.
+  Symptom (reasoning model misuse): empty `rawSample` in JSON parse failed log,
+  shape log shows `choices[0].message.content: null` with content in
+  `choices[0].message.reasoning` instead.
+
+  Long-term mitigation (deferred): adapter that tries fallback models on `AiError 5028`
+  and extracts text from both `content` and `reasoning` fields.
 - **OQ — Multi-tab edition coordination.** Character can be edited in 2 browser tabs
   simultaneously; no locking. Best-effort via debounced saves.
 - **OQ — Tombstone cleanup TTL.** Tombstones accumulate indefinitely. Decision:
