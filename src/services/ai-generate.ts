@@ -22,7 +22,7 @@ import {
 import { getHitDie } from '@/domain/classes'
 
 const WORKER_URL = 'https://dnd-ai-worker.ivanoliveira-estudos.workers.dev'
-const TIMEOUT_MS = 45_000
+const TIMEOUT_MS = 60_000
 
 // ── Error type ───────────────────────────────────────────────────────────────
 

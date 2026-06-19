@@ -5,3 +5,8 @@ account_id = "9a5e1d11528c182c98ba55f6df46c06d"
 
 [ai]
 binding = "AI"
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true

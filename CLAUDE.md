@@ -66,7 +66,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
 | `src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
 | `tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
-| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (Llama 3 8B), handles CORS |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (llama-3.3-70b-instruct-fp8-fast), handles CORS |
 
 ### store architecture
 
@@ -436,7 +436,7 @@ Character selection screen with create-from-scratch and AI-assisted creation.
   fully valid `Character` with sensible defaults (one class "Nova classe", all abilities 10, empty arrays).
   Navigates to Status tab on creation.
 - **AI-assisted creation:** modal with text description + EN/PT toggle; calls Cloudflare Worker
-  (Llama 3 8B); merges response into empty base via defensive merge (missing fields stay default).
+  (Llama 3.3 70B Fast); merges response into empty base via defensive merge (missing fields stay default).
   Error codes translated via i18n pattern.
 - **Kebab menu** (`CharacterCardMenu`) per character card for future per-row actions (delete first).
 - `src/services/ai-generate.ts` service layer encapsulates worker fetch + error classification.
@@ -1433,6 +1433,71 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
 - **OQ — Worker AI `sleight_hand` normalization.** Worker returns `sleight_hand` but
   domain uses `sleight_of_hand`. Mapped in merge function as workaround; worker-side
   fix would be cleaner.
+- **OQ — Cloudflare Workers AI: deprecação em batches + reasoning silencioso + variabilidade de envelope.** Three intertwined risks discovered the hard way:
+
+  **Risk 1 — Family deprecation:** Cloudflare deprecates entire model FAMILIES in
+  coordinated batches, not individual models. Migrating to a sibling in the same
+  family fails with the same `AiError 5028`.
+
+  **Risk 2 — Silent reasoning models:** Many newer models (GLM 4.7 Flash, gpt-oss-20b,
+  kimi, etc.) are reasoning models that return content in `message.reasoning_content`
+  or `message.reasoning`, NOT in `message.content`. Naive `.content` extraction yields
+  empty string with no error. Variants ending in `-fast` (e.g. `llama-3.3-70b-instruct-fp8-fast`)
+  are typically NON-reasoning and were the refuge during this migration.
+
+  **Risk 3 — Envelope variability:** Different models return different envelope shapes.
+  Llama 3.3 70B Fast returns BOTH `response` (pre-parsed object) AND `choices[]`
+  (OpenAI Chat string). Fallback extraction must verify TYPE, not just truthy, to
+  avoid `TypeError` on non-string values.
+
+  Migration timeline (2026-06-17 to 2026-06-19):
+  1. `@cf/meta/llama-3-8b-instruct` → failed (AiError 5028, deprecated)
+  2. → `@cf/meta/llama-3.1-8b-instruct` → failed (same deprecation batch)
+  3. → `@cf/zai-org/glm-4.7-flash` → failed (reasoning model, content in `reasoning`)
+  4. → `@cf/openai/gpt-oss-20b` → failed (reasoning model, content in `reasoning_content`)
+  5. → `@cf/meta/llama-3.3-70b-instruct-fp8-fast` → SUCCESS (non-reasoning,
+       Playground-validated; pickText helper for type-safe extraction)
+
+  7 Lessons learned:
+  1. **Cloudflare deprecates families, not models.** Migration to sibling fails.
+  2. **Many new Cloudflare models are silently reasoning.** Test envelope shape before committing.
+  3. **`-fast` variants are temporary refuge for non-reasoning** — no guarantee for future.
+  4. **TEST IN PLAYGROUND BEFORE CODING.** 5 minutes saves hours of deploy-fail-redeploy.
+  5. **Diagnostic logs of response shape are CRITICAL DEFENSE, not optional.**
+     Without them, reasoning misuse is invisible for weeks.
+  6. **System prompt size matters.** Lean prompts (~250 tokens) vs bloated (~700-800)
+     improve latency and consistency.
+  7. **Type safety in fallbacks matters.** Helper `pickText` rejects non-string values;
+     truthy-only check breaks with `TypeError` downstream.
+
+  Pattern of mitigation: Monitor https://developers.cloudflare.com/workers-ai/changelog/
+  quarterly. Test in Playground before each migration. Keep `AI_MODEL` extracted to
+  constant. Keep diagnostic logs active for weeks after migration. Maintain `pickText`
+  helper for type-safe extraction. Prefer non-reasoning models for structured JSON output.
+
+  Symptoms:
+  - **Deprecation:** HTTP 500 + `AiError 5028` in outer catch log
+  - **Reasoning misuse:** `rawSample: ""` in parse failed log; shape log shows
+    `message.content: null` and content in `reasoning_content` or `reasoning`
+  - **Envelope variability:** `TypeError: text.replace is not a function`
+    (`response.response` is object, not string)
+
+  Long-term mitigation (deferred sub-phase): adapter that tries fallback models on
+  `AiError 5028` and extracts text from `content`, `reasoning_content`, `reasoning`,
+  and `response` with type checking.
+
+- **OQ — Logs info `[worker] AI response shape` e `response.response type` podem ser
+  removidos quando Llama 3.3 70B Fast estiver estável.** Adicionados em 2026-06-18
+  como defesa diagnóstica. Manter ativos por pelo menos 4 semanas (~meados julho/2026).
+  Se nenhum incidente novo, remover os 2 logs de `console.log` (manter os 3 de
+  `console.error` como defesa permanente).
+
+- **OQ — Explorar `response.response` pré-parseado em modelos Cloudflare modernos.**
+  Llama 3.3 70B Fast retorna `response.response` como object JSON já parseado. Atualmente
+  o código rejeita via `pickText` e usa `choices[0].message.content` (string). Possível
+  otimização: usar `response.response` diretamente evita o `JSON.parse(clean)`. Trade-off:
+  menos defensivo contra modelos que não pré-parseiam. Avaliar se performance virar
+  preocupação real.
 - **OQ — Multi-tab edition coordination.** Character can be edited in 2 browser tabs
   simultaneously; no locking. Best-effort via debounced saves.
 - **OQ — Tombstone cleanup TTL.** Tombstones accumulate indefinitely. Decision:
