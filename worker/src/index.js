@@ -150,6 +150,11 @@ export default {
     //   2026-06-19: → @cf/meta/llama-3.3-70b-instruct-fp8-fast (non-reasoning,
     //                 validated in Playground first; surviving -fast variant;
     //                 paired with leaner system prompts for latency)
+    //
+    // Envelope quirk (Llama 3.3 70B Fast): returns BOTH `response` (pre-parsed
+    // object) AND `choices[]` (OpenAI Chat string). Use pickText() to filter to
+    // string and prefer choices[0].message.content. See `response.response type`
+    // log in Cloudflare dashboard for evidence.
     const AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 
     try {
