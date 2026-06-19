@@ -66,7 +66,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `src/i18n/dictionaries/pt.ts` | Portuguese dictionary — typed `Record<keyof typeof en, string>` |
 | `src/i18n/plural.ts` | `pluralKey(base, count)` helper for singular/plural variants |
 | `tests/helpers/render.tsx` | `renderWithI18n(ui, lang)` test helper for dual-lang assertions |
-| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (gpt-oss-20b), handles CORS |
+| `worker/src/index.js` | Cloudflare Worker — proxies requests to Workers AI (llama-3.3-70b-instruct-fp8-fast), handles CORS |
 
 ### store architecture
 
@@ -1447,14 +1447,22 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
     - `@cf/meta/llama-3-8b-instruct` → `@cf/meta/llama-3.1-8b-instruct` (failed — same batch)
     - → `@cf/zai-org/glm-4.7-flash` (failed — reasoning model, content in
       `message.reasoning` not `message.content`; truncated/timed out)
-    - → `@cf/openai/gpt-oss-20b` (success — OpenAI Chat Completions, non-reasoning)
+    - → `@cf/openai/gpt-oss-20b` (failed — also reasoning model)
+    - → `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (success — non-reasoning,
+        Playground-validated; surviving `-fast` variant of Llama family)
 
   Lessons learned:
   - Cloudflare deprecates families, not models. Migration to sibling fails.
   - Reasoning models break naive `.content` extraction — no error, just empty string.
+    Many new Cloudflare models (GLM Flash, gpt-oss, kimi) are reasoning silently.
+    Variants ending in `-fast` tend to be non-reasoning and survive deprecation batches.
   - Always log `Object.keys(response)` + JSON preview on first migration to a new
     model. Cost negligible; cost of debugging without it is high.
-  - Test in Cloudflare AI Playground before deploying to verify response shape.
+  - Test in Cloudflare AI Playground (https://playground.ai.cloudflare.com) BEFORE
+    deploying to verify response shape and reasoning vs non-reasoning behavior.
+  - System prompt size matters. Original ~700-800 tokens hurt latency. After reducing
+    to ~250 tokens (leaner schema, deduplicated rules, independent PT/EN versions),
+    latency improved without sacrificing output quality.
 
   Pattern of mitigation: when deprecation announced, check the FULL list of
   affected models — entire families may be in the same batch. Monitor
