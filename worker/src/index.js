@@ -172,15 +172,31 @@ export default {
         preview: JSON.stringify(response || {}).slice(0, 500)
       })
 
-      // Extração robusta — aceita múltiplos formatos:
-      // 1. Cloudflare clássico (Llama, Mistral, Gemma): response.response
-      // 2. OpenAI Chat Completions (GLM e outros): response.choices[0].message.content
-      // 3. Genérico: response.text ou response.output
+      // Llama 3.3 70B Fast retorna AMBOS `response` (legado Cloudflare) e `choices[]`
+      // (OpenAI Chat). O campo `response` pode ser objeto — sem o helper abaixo,
+      // text.replace() lança TypeError. Log diagnóstico documenta o tipo pra próximas migrações.
+      console.log('[worker] response.response type', {
+        type: typeof response?.response,
+        isArray: Array.isArray(response?.response),
+        preview: JSON.stringify(response?.response)?.slice(0, 200)
+      })
+
+      // Helper: extrai valor apenas se for string — previne TypeError ao chamar .replace()
+      const pickText = (v) => typeof v === 'string' ? v : null
+
+      // Ordem priorizada:
+      // 1. choices[0].message.content — formato OpenAI Chat (Llama 3.3, gpt-oss, GLM)
+      // 2. choices[0].message.reasoning_content — reasoning models (gpt-oss, kimi)
+      // 3. choices[0].message.reasoning — reasoning models (GLM)
+      // 4. response — legado Cloudflare clássico (Llama 3 antigo, Mistral, Gemma)
+      // 5. text/output — outros formatos genéricos
       const text =
-        response?.response ||
-        response?.choices?.[0]?.message?.content ||
-        response?.text ||
-        response?.output ||
+        pickText(response?.choices?.[0]?.message?.content) ||
+        pickText(response?.choices?.[0]?.message?.reasoning_content) ||
+        pickText(response?.choices?.[0]?.message?.reasoning) ||
+        pickText(response?.response) ||
+        pickText(response?.text) ||
+        pickText(response?.output) ||
         ''
 
       // Strip markdown code blocks if model added them
