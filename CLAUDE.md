@@ -1518,6 +1518,85 @@ New from Auth signup + Camp.1-5:
 - **OQ — Account deletion via UI.** Não implementado.
 - **OQ — Re-send confirmation email.** Não implementado.
 
+New from production feedback (observed bugs):
+
+- **OQ — Email confirmation link returns 404 on GitHub Pages.** [PRIORIDADE ALTA]
+
+  **Sintoma observado:** Usuários relatam que após cadastro recebem email de confirmação
+  normalmente. Ao clicar no link de confirmação, GitHub Pages retorna 404. O cadastro foi
+  realizado com sucesso — abrindo o app novamente, conseguem fazer login. Apenas a página
+  de confirmação dá erro.
+
+  **Causa raiz provável:** Mesma classe da OQ "hard refresh SPA em GitHub Pages".
+  Supabase Auth gera URL com path/hash que o GitHub Pages tenta servir como arquivo
+  estático, falhando. Como BrowserRouter é usado, qualquer rota direta diferente da raiz
+  retorna 404 no GitHub Pages.
+
+  **Soluções conhecidas (avaliar trade-offs ao tratar):**
+  - **404.html duplicado** com script de redirect (técnica clássica spa-github-pages)
+  - **HashRouter** em vez de BrowserRouter (URLs ficam `/#/path` — feio mas robusto)
+  - **Configurar redirect URL no Supabase Auth** pra rota que o GitHub Pages reconhece
+  - **Migrar hosting** pra Cloudflare Pages, Vercel, etc. (resolve definitivamente,
+    elimina a OQ mãe também)
+
+  **Impacto:** Primeira impressão ruim pra novos usuários. Não bloqueia (workaround
+  natural existe — abrir app novamente).
+
+  **Relação:** Ligação direta com a OQ "Hard refresh SPA em GitHub Pages" já existente.
+  Provavelmente mesma sub-fase resolve as duas.
+
+  **Próximo passo:** sub-fase dedicada pra avaliar soluções + escolher caminho.
+
+- **OQ — Dados de vida (d6/d8/d10/d12) não reconhecem nomes de classe em PT-BR.**
+  [PRIORIDADE MÉDIA]
+
+  **Sintoma observado:** Quando o usuário digita nome de classe em inglês
+  (Cleric, Fighter, Wizard, etc.), o sistema aplica corretamente o dado de vida
+  (d8 para Cleric, d10 para Fighter, d6 para Wizard). Quando digita em português
+  (Clérigo, Guerreiro, Mago), o sistema aplica d8 como padrão para qualquer classe.
+
+  **Causa raiz provável:** Adapter v2 tem mapa de classes → hit die hardcoded em
+  inglês. Sem fallback para nomes em PT-BR. Dado que a app é primariamente em PT
+  e que a geração via IA também gera nomes em PT-BR (Clérigo, Mago, etc.),
+  o suporte a PT-BR é necessário.
+
+  **Soluções possíveis:**
+  - **Mapa expandido** com chaves em EN e PT-BR para cada classe
+  - **Função de normalização** que tenta lookup EN primeiro, depois PT-BR
+  - **Lista canônica PT-BR** (app é primariamente PT, EN como sinônimo)
+  - **Lookup case-insensitive** + alias map
+
+  **Classes a cobrir (12 classes oficiais D&D 5e):**
+  Barbarian → Bárbaro (d12), Bard → Bardo (d8), Cleric → Clérigo (d8),
+  Druid → Druida (d8), Fighter → Guerreiro (d10), Monk → Monge (d8),
+  Paladin → Paladino (d10), Ranger → Patrulheiro (d10), Rogue → Ladino (d8),
+  Sorcerer → Feiticeiro (d6), Warlock → Bruxo (d8), Wizard → Mago (d6).
+
+  **Próximo passo:** sub-fase dedicada pra escolher pattern + implementar + testar
+  com geração IA e entrada manual.
+
+- **OQ — Bloco de classe não tem label "Nível" no input do level individual.**
+  [PRIORIDADE BAIXA]
+
+  **Sintoma observado:** No header principal da ficha, "NÍVEL" é label claro para o
+  nível total (soma de todas classes). Mas dentro do bloco de Classes, o input de
+  nível da classe individual aparece como número solto à direita, sem label.
+  Em multiclass (Clérigo 5 + Mago 3), fica especialmente confuso — dois números
+  aparecem sem contexto visual.
+
+  **Causa raiz:** Decisão de UX original — número visualmente próximo ao nome da
+  classe pareceu suficiente. Teste com usuários reais mostrou que primeira leitura
+  confunde.
+
+  **Soluções possíveis:**
+  - **Label pequeno "NÍVEL"** acima de cada input de nível de classe
+  - **Placeholder** dentro do input ("Nível")
+  - **Tooltip** ao hover no input
+  - **Ícone** que sugira "level" (estrela, badge, etc.)
+
+  **Próximo passo:** sub-fase visual rápida — escolher 1 das soluções e aplicar.
+  Trabalho de ~30min, inclui ajuste responsivo.
+
 ---
 
 ## Supabase schema
