@@ -69,6 +69,7 @@ describe('Auth store — signUp', () => {
     expect(mockSignUp).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
+      options: { emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}` },
     })
   })
 
