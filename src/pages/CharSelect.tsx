@@ -442,6 +442,7 @@ export default function CharSelect() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const authCallbackType    = useAuthStore(s => s.authCallbackType)
+  const authCallbackError   = useAuthStore(s => s.authCallbackError)
   const passwordResetSuccess = useAuthStore(s => s.passwordResetSuccess)
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
@@ -594,7 +595,7 @@ export default function CharSelect() {
         }} />
       </div>
 
-      {/* ── Auth success banners ── */}
+      {/* ── Auth banners ── */}
       {authCallbackType === 'signup' && (
         <div style={{ padding: '0 14px 4px' }}>
           <DismissibleBanner
@@ -610,6 +611,19 @@ export default function CharSelect() {
             title={t('auth.password_reset_title')}
             message={t('auth.password_reset_message')}
             onDismiss={() => useAuthStore.setState({ passwordResetSuccess: false })}
+          />
+        </div>
+      )}
+      {authCallbackError && (
+        <div style={{ padding: '0 14px 4px' }}>
+          <DismissibleBanner
+            tone="error"
+            title={t('auth.link_error_title')}
+            message={t('auth.link_error_message')}
+            actionLabel={t('auth.link_error_action')}
+            onAction={() => navigate('/login?mode=forgot')}
+            onDismiss={() => useAuthStore.setState({ authCallbackError: null })}
+            autoDismissMs={0}
           />
         </div>
       )}

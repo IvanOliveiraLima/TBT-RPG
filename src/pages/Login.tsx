@@ -28,7 +28,11 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') ?? '/'
-  const initialMode: AuthMode = searchParams.get('mode') === 'signup' ? 'signup' : 'signin'
+  const modeParam = searchParams.get('mode')
+  const initialMode: AuthMode =
+    modeParam === 'signup' ? 'signup' :
+    modeParam === 'forgot' ? 'forgot' :
+    'signin'
 
   const { t } = useTranslation()
   const signIn = useAuthStore(s => s.signIn)
