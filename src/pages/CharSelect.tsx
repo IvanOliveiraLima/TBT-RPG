@@ -19,6 +19,7 @@ import { ChooseImportModeModal } from '@/components/import-export/ChooseImportMo
 import { ImportSuccessModal } from '@/components/import-export/ImportSuccessModal'
 import { ImportErrorModal } from '@/components/import-export/ImportErrorModal'
 import { CharCardVisual } from '@/components/character/CharCardVisual'
+import { DismissibleBanner } from '@/components/DismissibleBanner'
 import {
   buildExportBlob,
   triggerDownload,
@@ -440,7 +441,8 @@ export default function CharSelect() {
   const { characters, loading, fetchCharacters, addCharacter, deleteCharacter } = useCharactersStore()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const authCallbackType = useAuthStore(s => s.authCallbackType)
+  const authCallbackType    = useAuthStore(s => s.authCallbackType)
+  const passwordResetSuccess = useAuthStore(s => s.passwordResetSuccess)
   const [aiModalOpen, setAiModalOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
 
@@ -592,32 +594,23 @@ export default function CharSelect() {
         }} />
       </div>
 
-      {/* ── Email confirmed banner ── */}
+      {/* ── Auth success banners ── */}
       {authCallbackType === 'signup' && (
         <div style={{ padding: '0 14px 4px' }}>
-          <div
-            role="status"
-            style={{
-              background: 'rgba(76,175,125,0.12)',
-              border: '1px solid rgba(76,175,125,0.35)',
-              borderRadius: 10,
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-            }}
-            onClick={() => useAuthStore.setState({ authCallbackType: null })}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>✓</span>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#4CAF7D', marginBottom: 2 }}>
-                {t('auth.email_confirmed_title')}
-              </div>
-              <div style={{ fontSize: 13, color: '#4CAF7D', opacity: 0.85 }}>
-                {t('auth.email_confirmed_message')}
-              </div>
-            </div>
-          </div>
+          <DismissibleBanner
+            title={t('auth.email_confirmed_title')}
+            message={t('auth.email_confirmed_message')}
+            onDismiss={() => useAuthStore.setState({ authCallbackType: null })}
+          />
+        </div>
+      )}
+      {passwordResetSuccess && (
+        <div style={{ padding: '0 14px 4px' }}>
+          <DismissibleBanner
+            title={t('auth.password_reset_title')}
+            message={t('auth.password_reset_message')}
+            onDismiss={() => useAuthStore.setState({ passwordResetSuccess: false })}
+          />
         </div>
       )}
 
