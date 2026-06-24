@@ -15,6 +15,8 @@ interface AuthState {
   loading: boolean
   /** Transient — set on boot from URL hash, cleared when consumed. */
   authCallbackType: string | null
+  /** Transient — set on boot when the auth callback hash carries an error; cleared on dismiss. */
+  authCallbackError: string | null
   /** Transient — set true after a successful password update; cleared on banner dismiss. */
   passwordResetSuccess: boolean
 
@@ -33,6 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   session:              null,
   loading:              true,
   authCallbackType:     null,
+  authCallbackError:    null,
   passwordResetSuccess: false,
 
   initAuth: async () => {
