@@ -9,6 +9,18 @@ import { startPeriodicSync, stopPeriodicSync, syncAll, initSyncListeners } from 
 // Register online/offline event listeners once at startup
 initSyncListeners()
 
+// Capture auth callback type from URL hash BEFORE initAuth() clears it.
+// Generic: covers 'signup', 'recovery', 'magiclink', etc. — reused by future sub-phases.
+function readAuthCallbackType(): string | null {
+  const h = window.location.hash
+  if (!h.includes('access_token')) return null
+  return new URLSearchParams(h.slice(1)).get('type')
+}
+const authCallbackType = readAuthCallbackType()
+if (authCallbackType) {
+  useAuthStore.setState({ authCallbackType })
+}
+
 // Initialise auth before rendering so the UI has the session state from the start
 useAuthStore.getState().initAuth().then(() => {
   if (useAuthStore.getState().user) {
