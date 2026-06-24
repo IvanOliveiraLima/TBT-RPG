@@ -6,26 +6,34 @@ export type SignUpResult =
   | { status: 'email_confirmation_required' }
   | { status: 'error'; code: string }
 
+export type RequestResetResult  = { status: 'sent' }    | { status: 'error'; code: string }
+export type UpdatePasswordResult = { status: 'updated' } | { status: 'error'; code: string }
+
 interface AuthState {
   user:    User | null
   session: Session | null
   loading: boolean
   /** Transient — set on boot from URL hash, cleared when consumed. */
   authCallbackType: string | null
+  /** Transient — set true after a successful password update; cleared on banner dismiss. */
+  passwordResetSuccess: boolean
 
-  initAuth:   () => Promise<void>
-  signIn:     (email: string, password: string) => Promise<void>
-  signUp:     (email: string, password: string) => Promise<SignUpResult>
-  signOut:    () => Promise<void>
+  initAuth:             () => Promise<void>
+  signIn:               (email: string, password: string) => Promise<void>
+  signUp:               (email: string, password: string) => Promise<SignUpResult>
+  signOut:              () => Promise<void>
+  requestPasswordReset: (email: string)       => Promise<RequestResetResult>
+  updatePassword:       (newPassword: string) => Promise<UpdatePasswordResult>
   /** Placeholder — Supabase OAuth not wired in Phase A */
   signInWithGoogle: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user:             null,
-  session:          null,
-  loading:          true,
-  authCallbackType: null,
+  user:                 null,
+  session:              null,
+  loading:              true,
+  authCallbackType:     null,
+  passwordResetSuccess: false,
 
   initAuth: async () => {
     if (!supabase) {
@@ -92,6 +100,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     await supaSignOut()
     set({ user: null, session: null })
+  },
+
+  requestPasswordReset: async (email) => {
+    if (!supabase) return { status: 'error', code: 'not_configured' }
+    const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo })
+    if (error) {
+      console.error('[auth] resetPasswordForEmail error', error)
+      return { status: 'error', code: 'reset_request_failed' }
+    }
+    return { status: 'sent' }
+  },
+
+  updatePassword: async (newPassword) => {
+    if (!supabase) return { status: 'error', code: 'not_configured' }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) {
+      console.error('[auth] updateUser error', error)
+      if (error.message.includes('Password should be')) return { status: 'error', code: 'password_too_weak' }
+      return { status: 'error', code: 'update_password_failed' }
+    }
+    set({ authCallbackType: null, passwordResetSuccess: true })
+    return { status: 'updated' }
   },
 
   signInWithGoogle: async () => {
