@@ -1,11 +1,16 @@
 import { RouterProvider } from 'react-router-dom'
 import { router } from './routes'
 import { I18nProvider } from './i18n'
+import { useAuthStore } from './store/auth'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
+  const authCallbackType = useAuthStore(s => s.authCallbackType)
   return (
     <I18nProvider>
-      <RouterProvider router={router} />
+      {authCallbackType === 'recovery'
+        ? <ResetPassword />
+        : <RouterProvider router={router} />}
     </I18nProvider>
   )
 }

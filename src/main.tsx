@@ -1,3 +1,6 @@
+// auth-callback MUST be the first import — it parses window.location.hash
+// before any other module runs createClient() (which strips the hash).
+import { authCallback } from './auth-callback'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -6,20 +9,17 @@ import { useAuthStore } from './store/auth'
 import { useCharactersStore } from './store/characters'
 import { startPeriodicSync, stopPeriodicSync, syncAll, initSyncListeners } from './services/sync'
 
+// Seed auth callback state parsed above (before Supabase client construction).
+// Generic: covers 'signup', 'recovery', 'magiclink', etc.
+if (authCallback.type) {
+  useAuthStore.setState({ authCallbackType: authCallback.type })
+}
+if (authCallback.error) {
+  useAuthStore.setState({ authCallbackError: authCallback.errorCode ?? authCallback.error })
+}
+
 // Register online/offline event listeners once at startup
 initSyncListeners()
-
-// Capture auth callback type from URL hash BEFORE initAuth() clears it.
-// Generic: covers 'signup', 'recovery', 'magiclink', etc. — reused by future sub-phases.
-function readAuthCallbackType(): string | null {
-  const h = window.location.hash
-  if (!h.includes('access_token')) return null
-  return new URLSearchParams(h.slice(1)).get('type')
-}
-const authCallbackType = readAuthCallbackType()
-if (authCallbackType) {
-  useAuthStore.setState({ authCallbackType })
-}
 
 // Initialise auth before rendering so the UI has the session state from the start
 useAuthStore.getState().initAuth().then(() => {
