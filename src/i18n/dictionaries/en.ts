@@ -84,6 +84,9 @@ const en = {
   'auth.password_reset_message': 'Your new password is active.',
   'auth.error_reset_request_failed': "Couldn't send the reset link. Try again later.",
   'auth.error_update_password_failed': "Couldn't update the password. Try again.",
+  'auth.link_error_title': 'Link expired',
+  'auth.link_error_message': 'This recovery link has expired or was already used.',
+  'auth.link_error_action': 'Request a new link',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',

@@ -86,6 +86,9 @@ const pt: Record<keyof typeof en, string> = {
   'auth.password_reset_message': 'Sua nova senha está ativa.',
   'auth.error_reset_request_failed': 'Não foi possível enviar o link. Tente mais tarde.',
   'auth.error_update_password_failed': 'Não foi possível atualizar a senha. Tente novamente.',
+  'auth.link_error_title': 'Link expirado',
+  'auth.link_error_message': 'Este link de recuperação expirou ou já foi usado.',
+  'auth.link_error_action': 'Solicitar novo link',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
