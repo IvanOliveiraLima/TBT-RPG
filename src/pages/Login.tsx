@@ -8,7 +8,19 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-type AuthMode = 'signin' | 'signup'
+type AuthMode = 'signin' | 'signup' | 'forgot'
+
+// ── Logo ─────────────────────────────────────────────────────────────────────
+
+function TbtLogo() {
+  return (
+    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+      <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#F4EFE0', letterSpacing: '3px', marginBottom: 6 }}>
+        TBT<span style={{ color: '#D4A017' }}>·</span>RPG
+      </div>
+    </div>
+  )
+}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -21,16 +33,18 @@ export default function Login() {
   const { t } = useTranslation()
   const signIn = useAuthStore(s => s.signIn)
   const signUp = useAuthStore(s => s.signUp)
+  const requestPasswordReset = useAuthStore(s => s.requestPasswordReset)
 
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'awaiting_confirmation'>('idle')
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'awaiting_confirmation' | 'reset_email_sent'>('idle')
   const [errorCode, setErrorCode] = useState<string | null>(null)
 
   const validation = useMemo(() => {
     if (mode === 'signin') return { valid: true, errorKey: null as string | null }
+    if (mode === 'forgot') return { valid: isValidEmail(email), errorKey: 'invalid_email_format' as string | null }
     if (!isValidEmail(email)) return { valid: false, errorKey: 'invalid_email_format' as string | null }
     if (password.length < 6) return { valid: false, errorKey: 'password_too_short' as string | null }
     if (password !== passwordConfirm) return { valid: false, errorKey: 'passwords_do_not_match' as string | null }
@@ -40,6 +54,18 @@ export default function Login() {
   async function handleSubmit() {
     setErrorCode(null)
     setStatus('submitting')
+
+    if (mode === 'forgot') {
+      if (!isValidEmail(email)) {
+        setStatus('idle')
+        setErrorCode('invalid_email_format')
+        return
+      }
+      // Anti-enumeration: always show the same screen regardless of result
+      await requestPasswordReset(email)
+      setStatus('reset_email_sent')
+      return
+    }
 
     if (mode === 'signin') {
       try {
@@ -84,8 +110,23 @@ export default function Login() {
     setStatus('idle')
   }
 
+  function handleGoForgot() {
+    setMode('forgot')
+    setErrorCode(null)
+    setPassword('')
+    setPasswordConfirm('')
+    setStatus('idle')
+  }
+
+  function handleBackToSignin() {
+    setMode('signin')
+    setErrorCode(null)
+    setPassword('')
+    setPasswordConfirm('')
+    setStatus('idle')
+  }
+
   const submitting = status === 'submitting'
-  const submitDisabled = submitting
 
   // ── Awaiting confirmation ────────────────────────────────────────────────
 
@@ -93,11 +134,7 @@ export default function Login() {
     return (
       <div style={pageStyle}>
         <div style={cardStyle}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#F4EFE0', letterSpacing: '3px', marginBottom: 6 }}>
-              TBT<span style={{ color: '#D4A017' }}>·</span>RPG
-            </div>
-          </div>
+          <TbtLogo />
 
           <div
             data-testid="signup-confirmation-screen"
@@ -122,12 +159,45 @@ export default function Login() {
 
           <button
             data-testid="back-to-signin-btn"
-            onClick={() => {
-              setStatus('idle')
-              setMode('signin')
-              setPassword('')
-              setPasswordConfirm('')
+            onClick={handleBackToSignin}
+            style={primaryBtnStyle(false)}
+          >
+            {t('auth.back_to_signin')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Reset email sent ─────────────────────────────────────────────────────
+
+  if (status === 'reset_email_sent') {
+    return (
+      <div style={pageStyle}>
+        <div style={cardStyle}>
+          <TbtLogo />
+
+          <div
+            data-testid="forgot-sent-screen"
+            style={{
+              background: 'rgba(76,175,125,0.12)',
+              border: '1px solid rgba(76,175,125,0.35)',
+              borderRadius: 10,
+              padding: '16px',
+              marginBottom: 20,
             }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#4CAF7D', marginBottom: 6 }}>
+              {t('auth.forgot_email_sent_title')}
+            </div>
+            <div style={{ fontSize: 13, color: '#C8C4D6', lineHeight: 1.6 }}>
+              {t('auth.forgot_email_sent_message')}
+            </div>
+          </div>
+
+          <button
+            data-testid="forgot-back-to-signin-btn"
+            onClick={handleBackToSignin}
             style={primaryBtnStyle(false)}
           >
             {t('auth.back_to_signin')}
@@ -139,6 +209,8 @@ export default function Login() {
 
   // ── Main form ────────────────────────────────────────────────────────────
 
+  const isForgot = mode === 'forgot'
+
   return (
     <div style={pageStyle}>
       <div style={cardStyle}>
@@ -148,7 +220,9 @@ export default function Login() {
             TBT<span style={{ color: '#D4A017' }}>·</span>RPG
           </div>
           <div style={{ fontSize: 13, color: '#7A7788' }}>
-            {mode === 'signin' ? t('auth.sign_in_title') : t('auth.signup_title')}
+            {isForgot
+              ? t('auth.forgot_title')
+              : mode === 'signin' ? t('auth.sign_in_title') : t('auth.signup_title')}
           </div>
         </div>
 
@@ -166,19 +240,21 @@ export default function Login() {
           />
         </div>
 
-        {/* Password */}
-        <div style={{ marginBottom: mode === 'signup' ? 14 : 20 }}>
-          <label style={labelStyle}>{t('auth.password')}</label>
-          <input
-            data-testid="login-password-input"
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            disabled={submitting}
-            style={inputStyle}
-          />
-        </div>
+        {/* Password — not in forgot mode */}
+        {!isForgot && (
+          <div style={{ marginBottom: mode === 'signup' ? 14 : 20 }}>
+            <label style={labelStyle}>{t('auth.password')}</label>
+            <input
+              data-testid="login-password-input"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              disabled={submitting}
+              style={inputStyle}
+            />
+          </div>
+        )}
 
         {/* Confirm password — signup only */}
         {mode === 'signup' && (
@@ -216,27 +292,54 @@ export default function Login() {
         <button
           data-testid="login-submit-btn"
           onClick={() => void handleSubmit()}
-          disabled={submitDisabled}
-          style={primaryBtnStyle(submitDisabled)}
+          disabled={submitting}
+          style={primaryBtnStyle(submitting)}
         >
           {submitting
             ? t('auth.submitting')
-            : mode === 'signin' ? t('auth.sign_in') : t('auth.signup')}
+            : isForgot
+              ? t('auth.forgot_submit')
+              : mode === 'signin' ? t('auth.sign_in') : t('auth.signup')}
         </button>
 
-        {/* Toggle mode */}
-        <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <button
-            data-testid="login-toggle-mode-btn"
-            onClick={handleToggleMode}
-            disabled={submitting}
-            style={linkBtnStyle}
-          >
-            {mode === 'signin' ? t('auth.no_account_yet') : t('auth.already_have_account')}
-          </button>
+        {/* Forgot password link — signin mode only */}
+        {mode === 'signin' && (
+          <div style={{ textAlign: 'center', marginTop: 10 }}>
+            <button
+              data-testid="forgot-password-link"
+              onClick={handleGoForgot}
+              disabled={submitting}
+              style={linkBtnStyle}
+            >
+              {t('auth.forgot_password_link')}
+            </button>
+          </div>
+        )}
+
+        {/* Toggle mode / back */}
+        <div style={{ textAlign: 'center', marginTop: isForgot ? 10 : 14 }}>
+          {isForgot ? (
+            <button
+              data-testid="forgot-back-link"
+              onClick={handleBackToSignin}
+              disabled={submitting}
+              style={linkBtnStyle}
+            >
+              {t('auth.back_to_signin')}
+            </button>
+          ) : (
+            <button
+              data-testid="login-toggle-mode-btn"
+              onClick={handleToggleMode}
+              disabled={submitting}
+              style={linkBtnStyle}
+            >
+              {mode === 'signin' ? t('auth.no_account_yet') : t('auth.already_have_account')}
+            </button>
+          )}
         </div>
 
-        {/* Back */}
+        {/* Back to home */}
         <div style={{ textAlign: 'center', marginTop: 10 }}>
           <button
             data-testid="login-back-btn"
