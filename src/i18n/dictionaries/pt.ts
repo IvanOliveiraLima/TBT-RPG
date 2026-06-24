@@ -70,6 +70,8 @@ const pt: Record<keyof typeof en, string> = {
   'auth.error_password_too_short': 'Senha deve ter ao menos 6 caracteres.',
   'auth.error_passwords_do_not_match': 'As senhas não coincidem.',
   'auth.error_unknown': 'Ocorreu um erro inesperado.',
+  'auth.email_confirmed_title': 'E-mail confirmado!',
+  'auth.email_confirmed_message': 'Sua conta está ativa. Bem-vindo!',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',
