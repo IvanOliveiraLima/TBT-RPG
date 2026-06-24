@@ -68,6 +68,8 @@ const en = {
   'auth.error_password_too_short': 'Password must be at least 6 characters.',
   'auth.error_passwords_do_not_match': 'Passwords do not match.',
   'auth.error_unknown': 'An unexpected error occurred.',
+  'auth.email_confirmed_title': 'Email confirmed!',
+  'auth.email_confirmed_message': 'Your account is active. Welcome!',
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',

@@ -10,6 +10,8 @@ interface AuthState {
   user:    User | null
   session: Session | null
   loading: boolean
+  /** Transient — set on boot from URL hash, cleared when consumed. */
+  authCallbackType: string | null
 
   initAuth:   () => Promise<void>
   signIn:     (email: string, password: string) => Promise<void>
@@ -20,9 +22,10 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user:    null,
-  session: null,
-  loading: true,
+  user:             null,
+  session:          null,
+  loading:          true,
+  authCallbackType: null,
 
   initAuth: async () => {
     if (!supabase) {
@@ -57,9 +60,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       return { status: 'error', code: 'not_configured' }
     }
 
+    const emailRedirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: { emailRedirectTo },
     })
 
     if (error) {
