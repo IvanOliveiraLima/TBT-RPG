@@ -168,10 +168,11 @@ const en = {
   'attributes.section_title': 'Attributes',
 
   // Hero card
-  'hero.inspired_badge': 'Inspired',
-  'hero.name_label':     'Name',
-  'hero.level_label':    'Level',
-  'hero.xp_label':       'XP',
+  'hero.inspired_badge':      'Inspired',
+  'hero.name_label':          'Name',
+  'hero.level_label':         'Level',
+  'hero.total_level_label':   'Total Level',
+  'hero.xp_label':            'XP',
 
   // Combat stats strip labels
   'combat.ac': 'AC',
@@ -404,6 +405,7 @@ const en = {
   'identity.alignment_unselected':    'Select alignment…',
   'identity.alignment_custom_label':  'Custom: {value}',
   'identity.classes_label':           'Classes',
+  'identity.class_level_label':       'Level',
   'identity.class_name_placeholder':  'Class name',
   'identity.add_class_button':        '+ Add class',
   'identity.class_default_name':      'New class',

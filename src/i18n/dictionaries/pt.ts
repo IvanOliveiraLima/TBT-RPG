@@ -170,10 +170,11 @@ const pt: Record<keyof typeof en, string> = {
   'attributes.section_title': 'Atributos',
 
   // Hero card
-  'hero.inspired_badge': 'Inspirado',
-  'hero.name_label':     'Nome',
-  'hero.level_label':    'Nível',
-  'hero.xp_label':       'XP',
+  'hero.inspired_badge':      'Inspirado',
+  'hero.name_label':          'Nome',
+  'hero.level_label':         'Nível',
+  'hero.total_level_label':   'Nível Total',
+  'hero.xp_label':            'XP',
 
   // Combat stats strip labels
   'combat.ac': 'CA',
@@ -406,6 +407,7 @@ const pt: Record<keyof typeof en, string> = {
   'identity.alignment_unselected':    'Selecione um alinhamento…',
   'identity.alignment_custom_label':  'Customizado: {value}',
   'identity.classes_label':           'Classes',
+  'identity.class_level_label':       'Nível',
   'identity.class_name_placeholder':  'Nome da classe',
   'identity.add_class_button':        '+ Adicionar classe',
   'identity.class_default_name':      'Nova classe',

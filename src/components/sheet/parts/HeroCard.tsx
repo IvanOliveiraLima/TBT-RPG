@@ -208,7 +208,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
                 }}
               >
                 <div>
-                  <span style={LABEL_STYLE}>{t('hero.level_label')}</span>
+                  <span style={LABEL_STYLE}>{t('hero.total_level_label')}</span>
                   <span
                     data-testid="hero-level"
                     style={{

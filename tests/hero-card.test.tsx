@@ -160,14 +160,14 @@ describe('HeroCard — editable mode', () => {
     expect(screen.getByText('Name')).toBeDefined()
   })
 
-  it('shows level label in PT', () => {
+  it('shows total level label in PT', () => {
     renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'pt')
-    expect(screen.getByText('Nível')).toBeDefined()
+    expect(screen.getByText('Nível Total')).toBeDefined()
   })
 
-  it('shows level label in EN', () => {
+  it('shows total level label in EN', () => {
     renderWithI18n(<HeroCard character={BASE} onUpdate={vi.fn()} />, 'en')
-    expect(screen.getAllByText('Level').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('Total Level')).toBeDefined()
   })
 
   it('shows XP label in both PT and EN', () => {

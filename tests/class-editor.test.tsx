@@ -249,6 +249,33 @@ describe('ClassEditor', () => {
   })
 })
 
+describe('ClassEditor — column header', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('renders the level column header in PT', () => {
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('class-level-header')).toBeDefined()
+    expect(screen.getByText('Nível')).toBeDefined()
+  })
+
+  it('renders the level column header in EN', () => {
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('class-level-header')).toBeDefined()
+    expect(screen.getByText('Level')).toBeDefined()
+  })
+
+  it('header is aria-hidden (decorative)', () => {
+    const { container } = renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const header = container.querySelector('[data-testid="class-level-header"]') as HTMLElement
+    expect(header.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('header is always visible regardless of number of classes', () => {
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('class-level-header')).toBeDefined()
+  })
+})
+
 describe('ClassEditor — layout constraints', () => {
   beforeEach(() => { localStorage.clear() })
 
