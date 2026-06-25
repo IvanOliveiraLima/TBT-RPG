@@ -7,6 +7,14 @@ import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { getHitDie } from '@/domain/classes'
 
+const COLUMN_LABEL: React.CSSProperties = {
+  fontSize: 9,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 1,
+  color: '#7A7788',
+}
+
 const CLASS_NAME_INPUT: React.CSSProperties = {
   background: 'transparent',
   border: '1px solid transparent',
@@ -113,6 +121,17 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
 
   return (
     <div data-testid="class-editor">
+      <div
+        style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}
+        aria-hidden="true"
+        data-testid="class-level-header"
+      >
+        <span style={{ flex: '1 1 0', minWidth: 0 }} />
+        <span style={{ ...COLUMN_LABEL, width: 64, textAlign: 'center' }}>
+          {t('identity.class_level_label')}
+        </span>
+        <span style={{ width: 28, flexShrink: 0 }} />
+      </div>
       {character.classes.map((cls, i) => (
         <div
           key={i}
