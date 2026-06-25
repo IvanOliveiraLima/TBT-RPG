@@ -665,6 +665,23 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - CharSelect: badge "v2 · Preview" removed; empty state → "Nenhum personagem ainda. Vamos começar?"; v1 footer link removed
 - Test count: 1363 → 1200 (removed adapter.test.ts: 1097 lines, migration.test.ts: 148 lines, attack-helpers.test.ts: 167 lines)
 
+### Auth email confirmation + SPA fallback (COMPLETED — PR #140)
+- 404.html (spa-github-pages, `pathSegmentsToKeep=1`) + snippet de decode no `index.html`.
+- `emailRedirectTo` derivado de origin+BASE_URL; Site URL do Supabase corrigido pro subpath `/TBT-RPG/`.
+- Banner verde de confirmação na CharSelect; captura genérica de `type` no boot.
+- Fecha o 404 de confirmação de email + hard refresh + deep links `/join/CODE`.
+
+### Auth forgot password + recovery reset (COMPLETED — PR #142)
+- Modo `forgot` no Login (mensagem neutra anti-enumeração); página full-screen `ResetPassword` gated
+  por `authCallbackType === 'recovery'`; ações `requestPasswordReset` / `updatePassword`.
+- `DismissibleBanner` reutilizável (tone success/error, auto-dismiss 10s, action button com stopPropagation).
+- Hotfix incluído: `src/auth-callback.ts` captura o hash ANTES do `createClient()` (que consome o hash no
+  import-time); banner âmbar acionável pra link expirado/usado (`otp_expired`) + deep link `?mode=forgot`.
+
+### Hit die PT-BR localization (COMPLETED — PR #144)
+- `getHitDie`/`CLASS_HIT_DIE` por nomes EN + PT-BR (PHB-PT), case- e accent-insensitive (NFD strip).
+- Forward-only; `db.ts` intocado. Resolve a OQ de produção de dados de vida.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1361,6 +1378,8 @@ function buildInviteLink(): string {
 | Copy link primary, copy code secondary | Camp.5 hotfix | Link is more useful now with deep link support |
 | Invite URL uses import.meta.env.BASE_URL | Camp.5 hotfix | Works in dev (/) and prod (/TBT-RPG/) |
 | copiedTarget discriminator isolates copy feedback | Camp.5 hotfix | Single state prevents cross-contamination between 2 copy buttons |
+| **Auth redirects no GitHub Pages:** o Site URL do Supabase DEVE incluir o subpath (`/TBT-RPG/`), não só o apex — senão o redirect de confirmação/recovery cai no apex e dá 404. `emailRedirectTo`/`redirectTo` derivam sempre de `window.location.origin + import.meta.env.BASE_URL`. | PR #140 | Afeta qualquer fluxo auth com redirect (confirmação, recovery) |
+| **Captura de auth callback:** `createClient()` consome/limpa o hash da URL no import-time (durante a avaliação do módulo). Qualquer leitura de `type`/`error` do hash precisa rodar num módulo que **não** importe o cliente Supabase e seja importado **antes** de tudo no `main.tsx` (`src/auth-callback.ts`). Ler o hash depois do import do store/App é tarde demais. | PR #142 hotfix | Afeta qualquer fluxo que use hash-based tokens do Supabase |
 
 ---
 
@@ -1520,60 +1539,19 @@ New from Auth signup + Camp.1-5:
 
 New from production feedback (observed bugs):
 
-- **OQ — Email confirmation link returns 404 on GitHub Pages.** [PRIORIDADE ALTA]
+- ~~**OQ — Email confirmation link returns 404 on GitHub Pages.** [PRIORIDADE ALTA]~~
+  *Resolved (PR #140).* 404.html SPA fallback (técnica spa-github-pages, `pathSegmentsToKeep=1`) +
+  snippet de decode no `index.html` rodando antes do bundle; `emailRedirectTo` derivado de
+  `window.location.origin + import.meta.env.BASE_URL`; **Site URL do Supabase corrigido** pra incluir o
+  subpath `/TBT-RPG/` (estava no apex → caía no 404). Resolve junto a OQ irmã "hard refresh SPA" e os
+  deep links `/join/CODE` compartilháveis. BrowserRouter mantido (HashRouter conflita com os tokens do
+  fluxo implícito do Supabase, que também vêm no hash).
 
-  **Sintoma observado:** Usuários relatam que após cadastro recebem email de confirmação
-  normalmente. Ao clicar no link de confirmação, GitHub Pages retorna 404. O cadastro foi
-  realizado com sucesso — abrindo o app novamente, conseguem fazer login. Apenas a página
-  de confirmação dá erro.
-
-  **Causa raiz provável:** Mesma classe da OQ "hard refresh SPA em GitHub Pages".
-  Supabase Auth gera URL com path/hash que o GitHub Pages tenta servir como arquivo
-  estático, falhando. Como BrowserRouter é usado, qualquer rota direta diferente da raiz
-  retorna 404 no GitHub Pages.
-
-  **Soluções conhecidas (avaliar trade-offs ao tratar):**
-  - **404.html duplicado** com script de redirect (técnica clássica spa-github-pages)
-  - **HashRouter** em vez de BrowserRouter (URLs ficam `/#/path` — feio mas robusto)
-  - **Configurar redirect URL no Supabase Auth** pra rota que o GitHub Pages reconhece
-  - **Migrar hosting** pra Cloudflare Pages, Vercel, etc. (resolve definitivamente,
-    elimina a OQ mãe também)
-
-  **Impacto:** Primeira impressão ruim pra novos usuários. Não bloqueia (workaround
-  natural existe — abrir app novamente).
-
-  **Relação:** Ligação direta com a OQ "Hard refresh SPA em GitHub Pages" já existente.
-  Provavelmente mesma sub-fase resolve as duas.
-
-  **Próximo passo:** sub-fase dedicada pra avaliar soluções + escolher caminho.
-
-- **OQ — Dados de vida (d6/d8/d10/d12) não reconhecem nomes de classe em PT-BR.**
-  [PRIORIDADE MÉDIA]
-
-  **Sintoma observado:** Quando o usuário digita nome de classe em inglês
-  (Cleric, Fighter, Wizard, etc.), o sistema aplica corretamente o dado de vida
-  (d8 para Cleric, d10 para Fighter, d6 para Wizard). Quando digita em português
-  (Clérigo, Guerreiro, Mago), o sistema aplica d8 como padrão para qualquer classe.
-
-  **Causa raiz provável:** Adapter v2 tem mapa de classes → hit die hardcoded em
-  inglês. Sem fallback para nomes em PT-BR. Dado que a app é primariamente em PT
-  e que a geração via IA também gera nomes em PT-BR (Clérigo, Mago, etc.),
-  o suporte a PT-BR é necessário.
-
-  **Soluções possíveis:**
-  - **Mapa expandido** com chaves em EN e PT-BR para cada classe
-  - **Função de normalização** que tenta lookup EN primeiro, depois PT-BR
-  - **Lista canônica PT-BR** (app é primariamente PT, EN como sinônimo)
-  - **Lookup case-insensitive** + alias map
-
-  **Classes a cobrir (12 classes oficiais D&D 5e):**
-  Barbarian → Bárbaro (d12), Bard → Bardo (d8), Cleric → Clérigo (d8),
-  Druid → Druida (d8), Fighter → Guerreiro (d10), Monk → Monge (d8),
-  Paladin → Paladino (d10), Ranger → Patrulheiro (d10), Rogue → Ladino (d8),
-  Sorcerer → Feiticeiro (d6), Warlock → Bruxo (d8), Wizard → Mago (d6).
-
-  **Próximo passo:** sub-fase dedicada pra escolher pattern + implementar + testar
-  com geração IA e entrada manual.
+- ~~**OQ — Dados de vida (d6/d8/d10/d12) não reconhecem nomes de classe em PT-BR.** [PRIORIDADE MÉDIA]~~
+  *Resolved (PR #144).* `getHitDie`/`CLASS_HIT_DIE` agora indexados por nomes EN **e** PT-BR (PHB-PT),
+  com normalização case- **e** accent-insensitive (`normalize('NFD')` + strip de diacríticos). 13 classes
+  (12 PHB + Artificer→Artífice). **Forward-only**: personagens já salvos não são reescritos — corrigem ao
+  reeditar a classe (o `ClassEditor` recalcula via `getHitDie`) ou em nova geração. `db.ts` intocado.
 
 - **OQ — Bloco de classe não tem label "Nível" no input do level individual.**
   [PRIORIDADE BAIXA]

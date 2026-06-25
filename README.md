@@ -48,6 +48,8 @@ PWA instalável.
 **Sincronização (opcional):**
 
 - **Login com email/senha** via Supabase Auth — criar conta integrada no fluxo de login
+- **Recuperação de senha** — fluxo "Esqueci minha senha" com email de redefinição e tela dedicada de nova senha
+- **Confirmação de email** — o link de confirmação aterrissa no app sem erro (SPA fallback no GitHub Pages)
 - **Upload reactive** — edições sobem pra cloud 15s após (debounced)
 - **Upload periodic** — background a cada 30s pra garantir consistência
 - **Download** — chars da cloud baixam pro IndexedDB local no login + periodic
@@ -257,6 +259,7 @@ A sincronização é completamente opcional — o app funciona 100% offline sem 
 - Na tela "Meus Personagens", role até o rodapé e clique em **Criar conta** ou **Entrar**
 - Informe email e senha
 - Para novas contas, confirme o email recebido na caixa de entrada
+- Esqueceu a senha? Toque em "Esqueci minha senha" na tela de login — você recebe um link por email para definir uma nova
 
 #### Comportamento do sync
 
