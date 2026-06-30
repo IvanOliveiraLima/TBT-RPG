@@ -57,6 +57,8 @@ PWA instalável.
 - **Imagens** — upload/download eager via Supabase Storage (base64 ↔ blob)
 - **Tombstones** — deleções propagam entre devices (com limitação conhecida)
 - **Auth status badge** — indicador visual de Conectado/Entrar + status de sync
+- **Excluir conta** — remoção permanente da conta, personagens e campanhas criadas, com confirmação por e-mail
+- **Mostrar/ocultar senha** no login e submissão com a tecla Enter
 
 **Outras funcionalidades:**
 
