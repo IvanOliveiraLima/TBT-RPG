@@ -20,6 +20,7 @@ import { ImportSuccessModal } from '@/components/import-export/ImportSuccessModa
 import { ImportErrorModal } from '@/components/import-export/ImportErrorModal'
 import { CharCardVisual } from '@/components/character/CharCardVisual'
 import { DismissibleBanner } from '@/components/DismissibleBanner'
+import { DeleteAccountModal } from '@/components/account/DeleteAccountModal'
 import {
   buildExportBlob,
   triggerDownload,
@@ -367,35 +368,61 @@ function AuthStrip() {
   const navigate                   = useNavigate()
   const { user, loading, signOut } = useAuthStore()
   const { t }                      = useTranslation()
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
 
   if (loading) return null
 
   if (user) {
     return (
-      <div style={{
-        display: 'flex', gap: 8, alignItems: 'center',
-        marginTop: 14, paddingTop: 14,
-        borderTop: `1px solid ${T.borderSubtle}`,
-        fontSize: 12, color: T.textMuted,
-      }}>
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {user.email}
-        </span>
-        <button
-          onClick={signOut}
-          style={{
-            background: 'transparent',
-            border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 6,
-            padding: '5px 10px',
-            fontSize: 11, fontWeight: 600,
-            color: T.textTertiary,
-            cursor: 'pointer',
-          }}
-        >
-          {t('auth.sign_out')}
-        </button>
-      </div>
+      <>
+        <div style={{
+          display: 'flex', gap: 8, alignItems: 'center',
+          marginTop: 14, paddingTop: 14,
+          borderTop: `1px solid ${T.borderSubtle}`,
+          fontSize: 12, color: T.textMuted,
+        }}>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user.email}
+          </span>
+          <button
+            onClick={signOut}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${T.borderSubtle}`,
+              borderRadius: 6,
+              padding: '5px 10px',
+              fontSize: 11, fontWeight: 600,
+              color: T.textTertiary,
+              cursor: 'pointer',
+            }}
+          >
+            {t('auth.sign_out')}
+          </button>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <button
+            data-testid="delete-account-link"
+            onClick={() => setDeleteModalOpen(true)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              fontSize: 11,
+              color: 'rgba(226,75,74,0.7)',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {t('account.delete_link')}
+          </button>
+        </div>
+        {deleteModalOpen && (
+          <DeleteAccountModal
+            userEmail={user.email ?? ''}
+            onClose={() => setDeleteModalOpen(false)}
+          />
+        )}
+      </>
     )
   }
 

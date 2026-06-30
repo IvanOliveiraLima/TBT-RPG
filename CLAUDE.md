@@ -682,6 +682,16 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - `getHitDie`/`CLASS_HIT_DIE` por nomes EN + PT-BR (PHB-PT), case- e accent-insensitive (NFD strip).
 - Forward-only; `db.ts` intocado. Resolve a OQ de produção de dados de vida.
 
+### Class level label + total-level differentiation (COMPLETED — PR #147)
+- Header de coluna "NÍVEL" sobre o input de nível por classe (`ClassEditor`, `aria-hidden`).
+- HeroCard total → `hero.total_level_label` ("Nível Total"); `LoreHero` mantém `hero.level_label`.
+
+### Account deletion + login UX (COMPLETED — PR #149)
+- Exclusão de conta orquestrada (campanhas → storage → cloud chars → IndexedDB → RPC → signOut),
+  modal com confirmação por e-mail, função SQL `delete_own_account` (SECURITY DEFINER, `auth.uid()`).
+- `PasswordInput` reutilizável (mostrar/ocultar senha) no Login e ResetPassword.
+- Submit-on-Enter via `<form onSubmit>` com `preventDefault` (botões secundários `type="button"`).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1532,9 +1542,9 @@ New from Auth signup + Camp.1-5:
 - **OQ — Realtime via Supabase Channels.** Upgrade do polling 15s pra subscribe em mudanças de chars vinculados. Deferred.
 - **OQ — QR code do convite.** Geração visual de QR code com o link de convite. Deferred.
 - **OQ — Promote player to master.** Multi-master support. Não modelado.
-- **OQ — Password reset / forgot password.** Fluxo de recuperação de senha não implementado.
+- ~~**OQ — Password reset / forgot password.**~~ *Resolved (PR #142).* Modo `forgot` no Login (mensagem neutra anti-enumeração) + página full-screen `ResetPassword` gated por `authCallbackType === 'recovery'` + tratamento de link expirado/usado (`otp_expired`) com banner âmbar e deep link `?mode=forgot`.
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
-- **OQ — Account deletion via UI.** Não implementado.
+- ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.
 - **OQ — Re-send confirmation email.** Não implementado.
 
 New from production feedback (observed bugs):
@@ -1553,27 +1563,10 @@ New from production feedback (observed bugs):
   (12 PHB + Artificer→Artífice). **Forward-only**: personagens já salvos não são reescritos — corrigem ao
   reeditar a classe (o `ClassEditor` recalcula via `getHitDie`) ou em nova geração. `db.ts` intocado.
 
-- **OQ — Bloco de classe não tem label "Nível" no input do level individual.**
-  [PRIORIDADE BAIXA]
-
-  **Sintoma observado:** No header principal da ficha, "NÍVEL" é label claro para o
-  nível total (soma de todas classes). Mas dentro do bloco de Classes, o input de
-  nível da classe individual aparece como número solto à direita, sem label.
-  Em multiclass (Clérigo 5 + Mago 3), fica especialmente confuso — dois números
-  aparecem sem contexto visual.
-
-  **Causa raiz:** Decisão de UX original — número visualmente próximo ao nome da
-  classe pareceu suficiente. Teste com usuários reais mostrou que primeira leitura
-  confunde.
-
-  **Soluções possíveis:**
-  - **Label pequeno "NÍVEL"** acima de cada input de nível de classe
-  - **Placeholder** dentro do input ("Nível")
-  - **Tooltip** ao hover no input
-  - **Ícone** que sugira "level" (estrela, badge, etc.)
-
-  **Próximo passo:** sub-fase visual rápida — escolher 1 das soluções e aplicar.
-  Trabalho de ~30min, inclui ajuste responsivo.
+- ~~**OQ — Bloco de classe não tem label "Nível" no input do level individual.** [PRIORIDADE BAIXA]~~
+  *Resolved (PR #147).* Header de coluna "NÍVEL" sobre o input de nível por classe (`ClassEditor`,
+  `LABEL_STYLE`, `aria-hidden`); o nível total no `HeroCard` passou a "Nível Total"
+  (`hero.total_level_label`) pra diferenciar. `LoreHero` mantém "Nível {n}" via `hero.level_label`.
 
 ---
 
