@@ -89,6 +89,18 @@ const pt: Record<keyof typeof en, string> = {
   'auth.link_error_title': 'Link expirado',
   'auth.link_error_message': 'Este link de recuperação expirou ou já foi usado.',
   'auth.link_error_action': 'Solicitar novo link',
+  'auth.password_show': 'Mostrar senha',
+  'auth.password_hide': 'Ocultar senha',
+
+  // Account management
+  'account.delete_link':          'Excluir conta',
+  'account.delete_title':         'Excluir conta',
+  'account.delete_warning':       'Isto apaga permanentemente sua conta, seus personagens e as campanhas que você criou. Não há como desfazer.',
+  'account.delete_confirm_label': 'Digite seu e-mail para confirmar',
+  'account.delete_button':        'Excluir conta permanentemente',
+  'account.delete_cancel':        'Cancelar',
+  'account.delete_in_progress':   'Excluindo…',
+  'account.delete_error':         'Não foi possível excluir a conta. Tente novamente.',
 
   // CharSelect
   'charselect.hero_line1': 'Sua ficha,',

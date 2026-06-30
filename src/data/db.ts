@@ -665,6 +665,22 @@ export async function removeTombstone(id: string): Promise<void> {
 }
 
 /**
+ * Clears all local character data (characters + tombstones) in a single transaction.
+ * Used during account deletion to wipe local state before the remote account is removed.
+ */
+export async function clearAllLocalData(): Promise<void> {
+  const db = await openV2()
+  try {
+    const tx = db.transaction([V2_STORE, TOMBSTONE_STORE], 'readwrite')
+    await tx.objectStore(V2_STORE).clear()
+    await tx.objectStore(TOMBSTONE_STORE).clear()
+    await tx.done
+  } finally {
+    db.close()
+  }
+}
+
+/**
  * Store a character exactly as-is, without updating updatedAt.
  * Used by the sync service when downloading from the cloud to preserve
  * the cloud timestamp for LWW conflict resolution.

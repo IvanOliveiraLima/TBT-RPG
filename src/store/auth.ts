@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabase, signIn as supaSignIn, signOut as supaSignOut, type User, type Session } from '@/lib/supabase'
+import { deleteAccountService } from '@/services/delete-account'
 
 export type SignUpResult =
   | { status: 'signed_in' }
@@ -26,6 +27,7 @@ interface AuthState {
   signOut:              () => Promise<void>
   requestPasswordReset: (email: string)       => Promise<RequestResetResult>
   updatePassword:       (newPassword: string) => Promise<UpdatePasswordResult>
+  deleteAccount: () => Promise<void>
   /** Placeholder — Supabase OAuth not wired in Phase A */
   signInWithGoogle: () => Promise<void>
 }
@@ -126,6 +128,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
     set({ authCallbackType: null, passwordResetSuccess: true })
     return { status: 'updated' }
+  },
+
+  deleteAccount: async () => {
+    await deleteAccountService()
+    // signOut is called inside deleteAccountService; onAuthStateChange propagates SIGNED_OUT
   },
 
   signInWithGoogle: async () => {
