@@ -87,6 +87,18 @@ const en = {
   'auth.link_error_title': 'Link expired',
   'auth.link_error_message': 'This recovery link has expired or was already used.',
   'auth.link_error_action': 'Request a new link',
+  'auth.password_show': 'Show password',
+  'auth.password_hide': 'Hide password',
+
+  // Account management
+  'account.delete_link':          'Delete account',
+  'account.delete_title':         'Delete account',
+  'account.delete_warning':       'This permanently deletes your account, characters, and the campaigns you created. This cannot be undone.',
+  'account.delete_confirm_label': 'Type your email to confirm',
+  'account.delete_button':        'Delete account permanently',
+  'account.delete_cancel':        'Cancel',
+  'account.delete_in_progress':   'Deleting…',
+  'account.delete_error':         "Couldn't delete the account. Try again.",
 
   // CharSelect
   'charselect.hero_line1': 'Your sheet,',

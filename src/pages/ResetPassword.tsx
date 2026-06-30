@@ -4,6 +4,7 @@ import { useTranslation } from '@/i18n'
 import {
   pageStyle, cardStyle, labelStyle, inputStyle, linkBtnStyle, primaryBtnStyle,
 } from './auth-styles'
+import { PasswordInput } from '@/components/primitives/PasswordInput'
 
 export default function ResetPassword() {
   const { t } = useTranslation()
@@ -46,7 +47,11 @@ export default function ResetPassword() {
 
   return (
     <div style={pageStyle}>
-      <div style={cardStyle}>
+      <form
+        style={cardStyle}
+        noValidate
+        onSubmit={e => { e.preventDefault(); void handleSubmit() }}
+      >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#F4EFE0', letterSpacing: '3px', marginBottom: 6 }}>
@@ -60,28 +65,26 @@ export default function ResetPassword() {
         {/* New password */}
         <div style={{ marginBottom: 14 }}>
           <label style={labelStyle}>{t('auth.reset_new_password')}</label>
-          <input
+          <PasswordInput
             data-testid="reset-new-password-input"
-            type="password"
             value={newPassword}
             onChange={e => setNewPassword(e.target.value)}
             autoComplete="new-password"
             disabled={submitting}
-            style={inputStyle}
+            inputStyle={inputStyle}
           />
         </div>
 
         {/* Confirm password */}
         <div style={{ marginBottom: 20 }}>
           <label style={labelStyle}>{t('auth.reset_confirm_password')}</label>
-          <input
+          <PasswordInput
             data-testid="reset-confirm-password-input"
-            type="password"
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             autoComplete="new-password"
             disabled={submitting}
-            style={inputStyle}
+            inputStyle={inputStyle}
           />
         </div>
 
@@ -103,8 +106,8 @@ export default function ResetPassword() {
 
         {/* Submit */}
         <button
+          type="submit"
           data-testid="reset-submit-btn"
-          onClick={() => void handleSubmit()}
           disabled={submitting}
           style={primaryBtnStyle(submitting)}
         >
@@ -114,6 +117,7 @@ export default function ResetPassword() {
         {/* Sign out escape */}
         <div style={{ textAlign: 'center', marginTop: 14 }}>
           <button
+            type="button"
             data-testid="reset-signout-btn"
             onClick={() => void handleSignOut()}
             disabled={submitting}
@@ -122,7 +126,7 @@ export default function ResetPassword() {
             {t('auth.reset_signout')}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

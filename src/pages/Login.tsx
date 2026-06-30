@@ -5,6 +5,7 @@ import { useTranslation } from '@/i18n'
 import {
   pageStyle, cardStyle, labelStyle, inputStyle, linkBtnStyle, primaryBtnStyle, isValidEmail,
 } from './auth-styles'
+import { PasswordInput } from '@/components/primitives/PasswordInput'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -162,6 +163,7 @@ export default function Login() {
           </div>
 
           <button
+            type="button"
             data-testid="back-to-signin-btn"
             onClick={handleBackToSignin}
             style={primaryBtnStyle(false)}
@@ -200,6 +202,7 @@ export default function Login() {
           </div>
 
           <button
+            type="button"
             data-testid="forgot-back-to-signin-btn"
             onClick={handleBackToSignin}
             style={primaryBtnStyle(false)}
@@ -217,7 +220,11 @@ export default function Login() {
 
   return (
     <div style={pageStyle}>
-      <div style={cardStyle}>
+      <form
+        style={cardStyle}
+        noValidate
+        onSubmit={e => { e.preventDefault(); void handleSubmit() }}
+      >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 20, fontWeight: 700, color: '#F4EFE0', letterSpacing: '3px', marginBottom: 6 }}>
@@ -248,14 +255,13 @@ export default function Login() {
         {!isForgot && (
           <div style={{ marginBottom: mode === 'signup' ? 14 : 20 }}>
             <label style={labelStyle}>{t('auth.password')}</label>
-            <input
+            <PasswordInput
               data-testid="login-password-input"
-              type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               disabled={submitting}
-              style={inputStyle}
+              inputStyle={inputStyle}
             />
           </div>
         )}
@@ -264,14 +270,13 @@ export default function Login() {
         {mode === 'signup' && (
           <div style={{ marginBottom: 20 }}>
             <label style={labelStyle}>{t('auth.password_confirm')}</label>
-            <input
+            <PasswordInput
               data-testid="login-password-confirm-input"
-              type="password"
               value={passwordConfirm}
               onChange={e => setPasswordConfirm(e.target.value)}
               autoComplete="new-password"
               disabled={submitting}
-              style={inputStyle}
+              inputStyle={inputStyle}
             />
           </div>
         )}
@@ -294,8 +299,8 @@ export default function Login() {
 
         {/* Submit */}
         <button
+          type="submit"
           data-testid="login-submit-btn"
-          onClick={() => void handleSubmit()}
           disabled={submitting}
           style={primaryBtnStyle(submitting)}
         >
@@ -310,6 +315,7 @@ export default function Login() {
         {mode === 'signin' && (
           <div style={{ textAlign: 'center', marginTop: 10 }}>
             <button
+              type="button"
               data-testid="forgot-password-link"
               onClick={handleGoForgot}
               disabled={submitting}
@@ -324,6 +330,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginTop: isForgot ? 10 : 14 }}>
           {isForgot ? (
             <button
+              type="button"
               data-testid="forgot-back-link"
               onClick={handleBackToSignin}
               disabled={submitting}
@@ -333,6 +340,7 @@ export default function Login() {
             </button>
           ) : (
             <button
+              type="button"
               data-testid="login-toggle-mode-btn"
               onClick={handleToggleMode}
               disabled={submitting}
@@ -346,6 +354,7 @@ export default function Login() {
         {/* Back to home */}
         <div style={{ textAlign: 'center', marginTop: 10 }}>
           <button
+            type="button"
             data-testid="login-back-btn"
             onClick={() => navigate('/')}
             style={linkBtnStyle}
@@ -353,7 +362,7 @@ export default function Login() {
             {t('common.back')}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
