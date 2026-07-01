@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 const BUCKET = 'campaign-maps'
 const MAX_BYTES = 10 * 1024 * 1024
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+const MAX_MAPS_PER_CAMPAIGN = 20
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,14 @@ export async function uploadCampaignMap(
   }
   if (file.size > MAX_BYTES) {
     throw Object.assign(new Error('File too large'), { code: 'too_large' })
+  }
+
+  const { count } = await supabase
+    .from('campaign_maps')
+    .select('id', { count: 'exact', head: true })
+    .eq('campaign_id', campaignId)
+  if ((count ?? 0) >= MAX_MAPS_PER_CAMPAIGN) {
+    throw Object.assign(new Error('Map limit reached'), { code: 'quota_exceeded' })
   }
 
   const { width, height } = await measureImage(file)
