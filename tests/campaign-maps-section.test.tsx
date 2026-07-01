@@ -1,8 +1,8 @@
 /**
  * CampaignMapsSection — owner vs member permissions and basic interactions.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import type { CampaignMap } from '@/services/campaign-maps'
@@ -184,5 +184,57 @@ describe('CampaignMapsSection — owner', () => {
     fireEvent.change(fileInput, { target: { files: [file] } })
     await waitFor(() => expect(screen.getByTestId('map-upload-error')).toBeDefined())
     expect(mockUploadCampaignMap).not.toHaveBeenCalled()
+  })
+
+  it('shows quota error message when upload rejects with quota_exceeded', async () => {
+    mockUploadCampaignMap.mockRejectedValue(Object.assign(new Error('quota'), { code: 'quota_exceeded' }))
+    renderSection(true)
+    await waitFor(() => screen.getByTestId('add-map-label'))
+    const fileInput = screen.getByTestId('map-file-input') as HTMLInputElement
+    const file = new File([new Uint8Array(10)], 'map.png', { type: 'image/png' })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    await waitFor(() => expect(screen.getByTestId('map-upload-error').textContent).toContain('Map limit reached'))
+  })
+
+  it('shows quota error in PT', async () => {
+    mockUploadCampaignMap.mockRejectedValue(Object.assign(new Error('quota'), { code: 'quota_exceeded' }))
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner />, 'pt')
+    await waitFor(() => screen.getByTestId('add-map-label'))
+    const fileInput = screen.getByTestId('map-file-input') as HTMLInputElement
+    const file = new File([new Uint8Array(10)], 'map.png', { type: 'image/png' })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    await waitFor(() => expect(screen.getByTestId('map-upload-error').textContent).toContain('Limite de mapas'))
+  })
+})
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+
+describe('CampaignMapsSection — member polling', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    mockListCampaignMaps.mockResolvedValue([MAP_1])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('polls listCampaignMaps every 15s for member', async () => {
+    renderSection(false)
+    await act(async () => { await Promise.resolve() }) // flush initial fetch
+    const callsAfterMount = mockListCampaignMaps.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListCampaignMaps.mock.calls.length).toBe(callsAfterMount + 1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListCampaignMaps.mock.calls.length).toBe(callsAfterMount + 2)
+  })
+
+  it('does NOT poll for owner', async () => {
+    renderSection(true)
+    await act(async () => { await Promise.resolve() })
+    const callsAfterMount = mockListCampaignMaps.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListCampaignMaps.mock.calls.length).toBe(callsAfterMount)
   })
 })

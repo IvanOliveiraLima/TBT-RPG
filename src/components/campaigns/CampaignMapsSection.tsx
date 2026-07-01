@@ -31,6 +31,8 @@ const T = {
   serif:         "'Cinzel', Georgia, serif",
 } as const
 
+const MAP_POLL_MS = 15_000
+
 const SECTION_HEADER: React.CSSProperties = {
   fontFamily: T.serif, fontSize: 11, fontWeight: 600,
   letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted,
@@ -68,6 +70,15 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
     listCampaignMaps(campaignId).then(setMaps).catch(() => setMaps([]))
   }, [campaignId])
 
+  // Poll maps list every 15s for non-owners (members see additions without reopening)
+  useEffect(() => {
+    if (isOwner) return
+    const id = setInterval(() => {
+      listCampaignMaps(campaignId).then(setMaps).catch(() => {})
+    }, MAP_POLL_MS)
+    return () => clearInterval(id)
+  }, [campaignId, isOwner])
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -92,8 +103,15 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
       setMaps(prev => [...prev, newMap])
       setUpload({ name: '', uploading: false, error: null })
       if (fileInputRef.current) fileInputRef.current.value = ''
-    } catch {
-      setUpload(u => ({ ...u, uploading: false, error: t('campaign_maps.upload_error_type') }))
+    } catch (err) {
+      const code = (err as { code?: string })?.code
+      setUpload(u => ({
+        ...u,
+        uploading: false,
+        error: code === 'quota_exceeded'
+          ? t('campaign_maps.upload_error_quota')
+          : t('campaign_maps.upload_error_type'),
+      }))
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }

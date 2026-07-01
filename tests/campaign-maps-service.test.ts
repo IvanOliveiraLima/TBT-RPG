@@ -14,6 +14,7 @@ import type { CampaignMap } from '@/services/campaign-maps'
 // ── Mock supabase ─────────────────────────────────────────────────────────────
 
 const mockSelect = vi.fn()
+const mockCount = vi.fn()
 const mockInsert = vi.fn()
 const mockDelete = vi.fn()
 const mockUpload = vi.fn()
@@ -25,11 +26,16 @@ vi.mock('@/lib/supabase', () => ({
     from: (table: string) => {
       void table
       return {
-        select: () => ({
-          eq: () => ({
-            order: () => mockSelect(),
-          }),
-        }),
+        select: (_cols?: unknown, opts?: { count?: string; head?: boolean }) => {
+          if (opts?.count === 'exact') {
+            return { eq: () => mockCount() }
+          }
+          return {
+            eq: () => ({
+              order: () => mockSelect(),
+            }),
+          }
+        },
         insert: (data: unknown) => ({
           select: () => ({
             single: () => mockInsert(data),
@@ -128,7 +134,10 @@ describe('listCampaignMaps', () => {
 })
 
 describe('uploadCampaignMap', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCount.mockResolvedValue({ count: 0 }) // well within quota by default
+  })
 
   it('throws with code invalid_type for non-image MIME', async () => {
     const file = makeFakeFile('application/pdf')
@@ -174,6 +183,22 @@ describe('uploadCampaignMap', () => {
     const file = makeFakeFile('image/png')
     const result = await uploadCampaignMap(CAMPAIGN_ID, file, 'Dungeon Level 1')
     expect(result).toMatchObject({ campaignId: CAMPAIGN_ID, name: 'Dungeon Level 1', width: 1024, height: 768 })
+  })
+
+  it('throws with code quota_exceeded when campaign has 20 maps', async () => {
+    mockCount.mockResolvedValue({ count: 20 })
+    const file = makeFakeFile('image/png')
+    await expect(uploadCampaignMap(CAMPAIGN_ID, file, 'Map 21')).rejects.toMatchObject({ code: 'quota_exceeded' })
+    expect(mockUpload).not.toHaveBeenCalled()
+  })
+
+  it('allows upload when count is exactly 19 (one below limit)', async () => {
+    mockCount.mockResolvedValue({ count: 19 })
+    mockUpload.mockResolvedValue({ error: null })
+    mockInsert.mockResolvedValue({ data: DB_ROW, error: null })
+    const file = makeFakeFile('image/png')
+    await expect(uploadCampaignMap(CAMPAIGN_ID, file, 'Map 20')).resolves.toBeDefined()
+    expect(mockUpload).toHaveBeenCalled()
   })
 })
 

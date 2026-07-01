@@ -12,7 +12,7 @@
  *
  * react-leaflet and leaflet are mocked (jsdom can't run Leaflet canvas).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
@@ -263,5 +263,39 @@ describe('CampaignMapViewer — markers (owner view)', () => {
     const pendingEl = markerEls[markerEls.length - 1]
     expect(pendingEl.getAttribute('data-lat')).toBe('300')
     expect(pendingEl.getAttribute('data-lng')).toBe('400')
+  })
+})
+
+// ── Polling ───────────────────────────────────────────────────────────────────
+
+describe('CampaignMapViewer — marker polling', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedClickHandler = null
+    vi.useFakeTimers()
+    mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
+    mockListMapMarkers.mockResolvedValue([MARKER_1])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('polls listMapMarkers every 15s for member', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
+    await act(async () => { await Promise.resolve() }) // flush initial fetch
+    const callsAfterMount = mockListMapMarkers.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListMapMarkers.mock.calls.length).toBe(callsAfterMount + 1)
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListMapMarkers.mock.calls.length).toBe(callsAfterMount + 2)
+  })
+
+  it('does NOT poll markers for owner', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await act(async () => { await Promise.resolve() })
+    const callsAfterMount = mockListMapMarkers.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
+    expect(mockListMapMarkers.mock.calls.length).toBe(callsAfterMount)
   })
 })
