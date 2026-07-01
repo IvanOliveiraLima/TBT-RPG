@@ -236,7 +236,6 @@ export function FeaturesList({ character, onUpdate }: FeaturesListProps) {
         const merged = { ...f, ...partial }
         // Clear usesLeft/usesMax when type changes away from 'active'
         if (partial.type && partial.type !== 'active') {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { usesLeft: _l, usesMax: _m, ...cleaned } = merged
           return cleaned as Feature
         }

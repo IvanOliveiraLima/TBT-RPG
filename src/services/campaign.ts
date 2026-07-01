@@ -76,6 +76,18 @@ export async function getCampaign(id: string): Promise<Campaign | null> {
 export async function deleteCampaign(id: string): Promise<void> {
   if (!supabase) throw new CampaignServiceError('not_authenticated')
 
+  // Best-effort: remove map images from storage BEFORE deleting the campaign row
+  // (while is_campaign_owner RLS still passes). With ≤20 maps per campaign a single
+  // list() call (default 100 limit) covers the folder — no pagination needed.
+  try {
+    const { data: files } = await supabase.storage.from('campaign-maps').list(id)
+    if (files && files.length > 0) {
+      await supabase.storage.from('campaign-maps').remove(files.map(f => `${id}/${f.name}`))
+    }
+  } catch (e) {
+    console.error('[campaign] map storage cleanup failed (best-effort)', e)
+  }
+
   const { error } = await supabase
     .from('campaigns')
     .delete()

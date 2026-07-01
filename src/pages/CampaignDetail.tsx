@@ -15,6 +15,7 @@ import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCa
 import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
 import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModal'
 import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
+import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
@@ -348,6 +349,11 @@ export default function CampaignDetail() {
             }}
             onCancel={() => setLinkModalOpen(false)}
           />
+        )}
+
+        {/* Maps section */}
+        {id && (
+          <CampaignMapsSection campaignId={id} isOwner={isOwner} />
         )}
       </div>
 
