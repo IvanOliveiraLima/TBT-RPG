@@ -44,6 +44,7 @@ PWA instalável.
 - **Excluir campanha** — Apenas o mestre; cascade remove todos os membros e vinculações
 - **Mestre remove jogador** — Mestre pode remover qualquer jogador da campanha
 - **Nome de exibição editável** — Cada user define um nome visível pros membros das suas campanhas
+- **Mapas de campanha** — Mestre sobe mapas (imagem) e adiciona marcadores com rótulo; membros visualizam com pan/zoom (react-leaflet)
 
 **Sincronização (opcional):**
 
