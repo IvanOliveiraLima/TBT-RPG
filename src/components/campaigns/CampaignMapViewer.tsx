@@ -28,6 +28,8 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
+const MAP_POLL_MS = 15_000
+
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
   '<path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>' +
@@ -71,6 +73,18 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       .catch(() => {})
     return () => { cancelled = true }
   }, [map.id])
+
+  // Poll markers every 15s for non-owners (members see additions without reopening)
+  useEffect(() => {
+    if (isOwner) return
+    let cancelled = false
+    const id = setInterval(() => {
+      listMapMarkers(map.id)
+        .then(ms => { if (!cancelled) setMarkers(ms) })
+        .catch(() => {})
+    }, MAP_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.id, isOwner])
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -203,7 +217,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                       placeholder={t('campaign_maps.marker_label_placeholder')}
                       style={{
                         width: '100%', marginBottom: 6, padding: '3px 6px',
-                        borderRadius: 4, boxSizing: 'border-box',
+                        borderRadius: 4, boxSizing: 'border-box', fontSize: 16,
                       }}
                     />
                     <div style={{ display: 'flex', gap: 4 }}>
@@ -211,7 +225,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                         type="button"
                         data-testid={`marker-save-btn-${m.id}`}
                         onClick={() => void handleRenameMarker(m.id)}
-                        style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}
+                        style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
                       >
                         {t('campaign_maps.marker_rename')}
                       </button>
@@ -219,7 +233,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                         type="button"
                         data-testid={`marker-cancel-rename-${m.id}`}
                         onClick={() => setEditingId(null)}
-                        style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}
+                        style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
                       >
                         {t('campaign_maps.marker_cancel')}
                       </button>
@@ -239,7 +253,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                           type="button"
                           data-testid={`marker-rename-${m.id}`}
                           onClick={() => { setEditingId(m.id); setEditingLabel(m.label) }}
-                          style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}
+                          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
                         >
                           {t('campaign_maps.marker_rename')}
                         </button>
@@ -247,7 +261,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                           type="button"
                           data-testid={`marker-remove-${m.id}`}
                           onClick={() => void handleDeleteMarker(m.id)}
-                          style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12, color: T.danger }}
+                          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: T.danger }}
                         >
                           {t('campaign_maps.marker_remove')}
                         </button>
@@ -272,7 +286,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                   placeholder={t('campaign_maps.marker_label_placeholder')}
                   style={{
                     width: '100%', marginBottom: 6, padding: '3px 6px',
-                    borderRadius: 4, boxSizing: 'border-box',
+                    borderRadius: 4, boxSizing: 'border-box', fontSize: 16,
                   }}
                 />
                 <div style={{ display: 'flex', gap: 4 }}>
@@ -281,7 +295,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                     data-testid="pending-add-btn"
                     onClick={() => void handleAddMarker()}
                     disabled={savingPending}
-                    style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}
+                    style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
                   >
                     {t('campaign_maps.marker_save')}
                   </button>
@@ -289,7 +303,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
                     type="button"
                     data-testid="pending-cancel-btn"
                     onClick={() => setPendingLatLng(null)}
-                    style={{ flex: 1, padding: '3px 0', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}
+                    style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
                   >
                     {t('campaign_maps.marker_cancel')}
                   </button>
