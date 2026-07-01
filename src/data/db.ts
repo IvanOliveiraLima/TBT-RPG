@@ -204,7 +204,6 @@ function openV2() {
             char.attacks = (char.attacks as Array<Record<string, unknown>>).map((a) => {
               const bonusStr = String(a.bonus ?? '')
               const baseStat = String(a.baseStat ?? '')
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const { baseStat: _bs, rollType: _rt, proficient: _p, bonus: _b, ...rest } = a
               return {
                 ...rest,
