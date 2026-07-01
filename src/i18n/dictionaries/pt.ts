@@ -674,6 +674,13 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.upload_error_size': 'Imagem muito grande (máx. 10 MB).',
   'campaign_maps.loading':          'Carregando mapa…',
   'campaign_maps.remove_confirm':   'Remover este mapa?',
+  'campaign_maps.marker_add_hint':          'Clique no mapa para adicionar um marcador',
+  'campaign_maps.marker_label_placeholder': 'Rótulo do marcador',
+  'campaign_maps.marker_save':              'Adicionar',
+  'campaign_maps.marker_cancel':            'Cancelar',
+  'campaign_maps.marker_rename':            'Renomear',
+  'campaign_maps.marker_remove':            'Remover',
+  'campaign_maps.marker_empty_label':       '(sem rótulo)',
 
   // Link character modal
   'link_character.title':               'Vincular personagem',
