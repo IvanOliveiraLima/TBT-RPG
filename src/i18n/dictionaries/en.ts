@@ -661,6 +661,16 @@ const en = {
   'campaign_chars.unlink_failed':       'Could not unlink. Please try again.',
   'campaign_chars.full_view_coming_soon': 'Full character view coming soon.',
 
+  // Campaign maps section
+  'campaign_maps.section_title':    'Maps',
+  'campaign_maps.add':              'Add map',
+  'campaign_maps.name_label':       'Map name',
+  'campaign_maps.empty':            'No maps yet.',
+  'campaign_maps.upload_error_type': 'Use a PNG, JPG or WebP image.',
+  'campaign_maps.upload_error_size': 'Image is too large (max 10 MB).',
+  'campaign_maps.loading':          'Loading map…',
+  'campaign_maps.remove_confirm':   'Remove this map?',
+
   // Link character modal
   'link_character.title':               'Link a character',
   'link_character.description':         'Select one of your characters to link to this campaign.',

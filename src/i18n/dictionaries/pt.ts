@@ -665,6 +665,16 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_chars.unlink_failed':       'Não foi possível desvincular. Tente novamente.',
   'campaign_chars.full_view_coming_soon': 'Visualização completa em breve.',
 
+  // Campaign maps section
+  'campaign_maps.section_title':    'Mapas',
+  'campaign_maps.add':              'Adicionar mapa',
+  'campaign_maps.name_label':       'Nome do mapa',
+  'campaign_maps.empty':            'Nenhum mapa ainda.',
+  'campaign_maps.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
+  'campaign_maps.upload_error_size': 'Imagem muito grande (máx. 10 MB).',
+  'campaign_maps.loading':          'Carregando mapa…',
+  'campaign_maps.remove_confirm':   'Remover este mapa?',
+
   // Link character modal
   'link_character.title':               'Vincular personagem',
   'link_character.description':         'Selecione um de seus personagens para vincular a esta campanha.',
