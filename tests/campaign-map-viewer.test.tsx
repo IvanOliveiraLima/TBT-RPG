@@ -24,6 +24,9 @@ vi.mock('react-leaflet', () => ({
     capturedImageOverlayProps.push({ url: props.url, bounds: props.bounds })
     return <div data-testid="image-overlay" data-url={props.url} />
   },
+  Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Popup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  useMapEvents: () => null,
 }))
 
 // ── Mock leaflet ──────────────────────────────────────────────────────────────
@@ -32,6 +35,7 @@ vi.mock('leaflet', () => ({
   default: {
     CRS: { Simple: 'Simple' },
     latLngBounds: (corners: unknown) => ({ corners, isBounds: true }),
+    divIcon: (opts: unknown) => ({ ...(opts as object), _isIcon: true }),
   },
 }))
 
@@ -45,6 +49,15 @@ const mockGetSignedUrl = vi.fn()
 
 vi.mock('@/services/campaign-maps', () => ({
   getCampaignMapSignedUrl: (path: string) => mockGetSignedUrl(path),
+}))
+
+// ── Mock campaign-map-markers service (component now fetches markers) ─────────
+
+vi.mock('@/services/campaign-map-markers', () => ({
+  listMapMarkers:       () => Promise.resolve([]),
+  createMapMarker:      () => Promise.resolve({}),
+  updateMapMarkerLabel: () => Promise.resolve(),
+  deleteMapMarker:      () => Promise.resolve(),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
