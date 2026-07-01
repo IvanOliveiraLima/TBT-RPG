@@ -327,7 +327,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             </div>
 
             {/* Viewer — key ensures remount on map switch so state resets cleanly */}
-            <CampaignMapViewer key={viewerMap.id} map={viewerMap} />
+            <CampaignMapViewer key={viewerMap.id} map={viewerMap} isOwner={isOwner} />
           </div>
         </div>
       )}

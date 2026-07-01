@@ -670,6 +670,13 @@ const en = {
   'campaign_maps.upload_error_size': 'Image is too large (max 10 MB).',
   'campaign_maps.loading':          'Loading map…',
   'campaign_maps.remove_confirm':   'Remove this map?',
+  'campaign_maps.marker_add_hint':          'Click the map to add a marker',
+  'campaign_maps.marker_label_placeholder': 'Marker label',
+  'campaign_maps.marker_save':              'Add',
+  'campaign_maps.marker_cancel':            'Cancel',
+  'campaign_maps.marker_rename':            'Rename',
+  'campaign_maps.marker_remove':            'Remove',
+  'campaign_maps.marker_empty_label':       '(no label)',
 
   // Link character modal
   'link_character.title':               'Link a character',
