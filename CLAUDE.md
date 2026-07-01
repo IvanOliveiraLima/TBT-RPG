@@ -692,6 +692,26 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - `PasswordInput` reutilizável (mostrar/ocultar senha) no Login e ResetPassword.
 - Submit-on-Enter via `<form onSubmit>` com `preventDefault` (botões secundários `type="button"`).
 
+### Campaign maps — foundation + viewer (COMPLETED — PR #152)
+- Tabela `campaign_maps` + RLS por membership via helpers SECURITY DEFINER
+  (`is_campaign_member`/`is_campaign_owner`); bucket privado `campaign-maps` com RLS de storage que
+  extrai o campaign_id do 1º segmento do path (`{campaignId}/{mapId}.{ext}`).
+- Service (upload com dimensões medidas no browser, list, delete, signed URL 1h); viewer react-leaflet v5
+  `CRS.Simple` + `ImageOverlay`; seção "Mapas" na CampaignDetail (dono sobe/remove, membro vê).
+  Storage-only (sem cópia offline).
+
+### Campaign maps — markers (COMPLETED — PR #153)
+- Tabela `campaign_map_markers` (FK `map_id → campaign_maps ON DELETE CASCADE`) + RLS via helpers
+  `is_map_member`/`is_map_owner` (resolvem a campanha pelo mapa).
+- Coords em pixel (x=lng, y=lat no `CRS.Simple`), render em `[y,x]`; `L.divIcon` SVG (contorna o ícone
+  default do Leaflet no bundler); click-to-add + popup rename/remove pro dono, leitura pro membro.
+  Label-only.
+
+### Campaign maps — polish (COMPLETED — PR #154)
+- Limpeza de storage no `deleteCampaign` ANTES de apagar a linha (RLS ainda válida), best-effort —
+  herdada pelo `delete-account`; cota de ≤20 mapas por campanha no upload; polling 15s **só pra membro**
+  (lista na section + marcadores no viewer); ajustes mobile (inputs `fontSize:16`). Fecha a v1 de mapas.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1390,6 +1410,9 @@ function buildInviteLink(): string {
 | copiedTarget discriminator isolates copy feedback | Camp.5 hotfix | Single state prevents cross-contamination between 2 copy buttons |
 | **Auth redirects no GitHub Pages:** o Site URL do Supabase DEVE incluir o subpath (`/TBT-RPG/`), não só o apex — senão o redirect de confirmação/recovery cai no apex e dá 404. `emailRedirectTo`/`redirectTo` derivam sempre de `window.location.origin + import.meta.env.BASE_URL`. | PR #140 | Afeta qualquer fluxo auth com redirect (confirmação, recovery) |
 | **Captura de auth callback:** `createClient()` consome/limpa o hash da URL no import-time (durante a avaliação do módulo). Qualquer leitura de `type`/`error` do hash precisa rodar num módulo que **não** importe o cliente Supabase e seja importado **antes** de tudo no `main.tsx` (`src/auth-callback.ts`). Ler o hash depois do import do store/App é tarde demais. | PR #142 hotfix | Afeta qualquer fluxo que use hash-based tokens do Supabase |
+| **Mapas — RLS por membership:** tabela e storage usam helpers SECURITY DEFINER (`is_campaign_member/owner`, `is_map_member/owner`) — dono escreve, membro lê. Path `{campaignId}/{mapId}.{ext}`; o 1º segmento carrega o campaign_id pras policies de storage. | PR #152/#153 | Qualquer recurso novo escopado por campanha/mapa reusa esses helpers |
+| **Mapas — limpeza de storage:** deletar campanha/mapa NÃO cascateia o storage. `deleteCampaign` remove os objetos sob `{campaignId}/` ANTES de apagar a linha (senão a RLS `is_campaign_owner` já falha). | PR #154 | Delete de recurso com arquivos precisa limpar storage explicitamente, na ordem certa |
+| **Mapas — Leaflet:** react-leaflet v5 (Hippocratic 2.1; Leaflet core BSD-2), `CRS.Simple`, CSS importado; usar `L.divIcon` (o ícone default quebra no bundler). Coords em pixel: x=lng, y=lat; render em `[y,x]`. | PR #152/#153 | Trabalho futuro no viewer (tokens/grid) herda essas restrições |
 
 ---
 
