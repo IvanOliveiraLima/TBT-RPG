@@ -6,6 +6,8 @@ let mockSupabaseConfigured = false
 let mockSession: { user: { id: string } } | null = null
 
 const mockFrom = vi.fn()
+const mockStorageList = vi.fn()
+const mockStorageRemove = vi.fn()
 
 vi.mock('@/lib/supabase', () => ({
   get supabase() { return mockSupabaseConfigured ? mockClient : null },
@@ -18,6 +20,12 @@ const mockClient = {
     ),
   },
   from: (...args: unknown[]) => mockFrom(...args),
+  storage: {
+    from: (_bucket: string) => ({
+      list: (prefix: string) => mockStorageList(prefix),
+      remove: (paths: string[]) => mockStorageRemove(paths),
+    }),
+  },
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -246,27 +254,47 @@ describe('getCampaign', () => {
 describe('deleteCampaign', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
+  function setupDelete(error: unknown = null) {
+    setupAuth()
+    const deleteMock = { eq: vi.fn().mockResolvedValue({ error }) }
+    mockFrom.mockReturnValue({ delete: vi.fn().mockReturnValue(deleteMock) })
+    mockStorageList.mockResolvedValue({ data: [] })
+    mockStorageRemove.mockResolvedValue({ error: null })
+  }
+
   it('throws when supabase is null', async () => {
     resetAuth()
     await expect(deleteCampaign('c1')).rejects.toMatchObject({ code: 'not_authenticated' })
   })
 
   it('throws CampaignServiceError("delete_failed") on supabase error', async () => {
-    setupAuth()
-    const eqChain = { delete: vi.fn().mockResolvedValue({ data: null, error: { message: 'fail' } }) }
-    // Campaign service does: from('campaigns').delete().eq('id', id)
-    const deleteMock = { eq: vi.fn().mockResolvedValue({ error: { message: 'fail' } }) }
-    mockFrom.mockReturnValue({ delete: vi.fn().mockReturnValue(deleteMock) })
-
+    setupDelete({ message: 'fail' })
     await expect(deleteCampaign('c1')).rejects.toMatchObject({ code: 'delete_failed' })
-    void eqChain
   })
 
   it('resolves on success', async () => {
-    setupAuth()
-    const deleteMock = { eq: vi.fn().mockResolvedValue({ error: null }) }
-    mockFrom.mockReturnValue({ delete: vi.fn().mockReturnValue(deleteMock) })
+    setupDelete(null)
+    await expect(deleteCampaign('c1')).resolves.toBeUndefined()
+  })
 
+  it('lists and removes map files from storage before deleting the campaign', async () => {
+    setupDelete(null)
+    mockStorageList.mockResolvedValue({ data: [{ name: 'map-1.png' }, { name: 'map-2.png' }] })
+    await deleteCampaign('c1')
+    expect(mockStorageList).toHaveBeenCalledWith('c1')
+    expect(mockStorageRemove).toHaveBeenCalledWith(['c1/map-1.png', 'c1/map-2.png'])
+  })
+
+  it('skips storage remove when folder is empty', async () => {
+    setupDelete(null)
+    mockStorageList.mockResolvedValue({ data: [] })
+    await deleteCampaign('c1')
+    expect(mockStorageRemove).not.toHaveBeenCalled()
+  })
+
+  it('still deletes campaign even if storage cleanup throws', async () => {
+    setupDelete(null)
+    mockStorageList.mockRejectedValue(new Error('storage error'))
     await expect(deleteCampaign('c1')).resolves.toBeUndefined()
   })
 })
