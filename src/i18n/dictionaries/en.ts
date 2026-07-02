@@ -686,6 +686,12 @@ const en = {
   'campaign_maps.grid_color':     'Grid color',
   'campaign_maps.grid_save':      'Save grid',
   'campaign_maps.grid_collapse':  'Collapse',
+  'campaign_maps.token_add':    'Add token',
+  'campaign_maps.token_label':  'Token label',
+  'campaign_maps.token_color':  'Token color',
+  'campaign_maps.token_size':   'Size (cells)',
+  'campaign_maps.token_save':   'Save',
+  'campaign_maps.token_remove': 'Remove',
 
   // Link character modal
   'link_character.title':               'Link a character',

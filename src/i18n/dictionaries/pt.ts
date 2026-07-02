@@ -690,6 +690,12 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.grid_color':     'Cor da grade',
   'campaign_maps.grid_save':      'Salvar grade',
   'campaign_maps.grid_collapse':  'Recolher',
+  'campaign_maps.token_add':    'Adicionar token',
+  'campaign_maps.token_label':  'Rótulo do token',
+  'campaign_maps.token_color':  'Cor do token',
+  'campaign_maps.token_size':   'Tamanho (células)',
+  'campaign_maps.token_save':   'Salvar',
+  'campaign_maps.token_remove': 'Remover',
 
   // Link character modal
   'link_character.title':               'Vincular personagem',
