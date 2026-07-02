@@ -1,7 +1,8 @@
 /**
- * CampaignMapViewer — Leaflet CRS.Simple image viewer with pan/zoom and map markers.
+ * CampaignMapViewer — Leaflet CRS.Simple image viewer with pan/zoom, map markers, and tokens.
  * Shows a signed URL of a campaign map image inside a full-bounds ImageOverlay.
- * Owner can add, rename and remove markers; members can view markers and labels.
+ * Owner can add/rename/remove markers (click-to-add), place/drag/edit/remove tokens (button add).
+ * Members see markers and tokens (read-only); tokens update via 5 s polling.
  * Meant to be rendered inside a modal that defines the container height.
  */
 
@@ -20,6 +21,14 @@ import {
   deleteMapMarker,
 } from '@/services/campaign-map-markers'
 import type { CampaignMapMarker } from '@/services/campaign-map-markers'
+import {
+  listMapTokens,
+  createMapToken,
+  updateMapToken,
+  deleteMapToken,
+} from '@/services/campaign-map-tokens'
+import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
+import { snapToGrid } from '@/utils/snap-to-grid'
 
 const T = {
   bg:          '#15121C',
@@ -29,7 +38,8 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
-const MAP_POLL_MS = 15_000
+const MAP_POLL_MS   = 15_000
+const TOKEN_POLL_MS = 5_000
 
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
@@ -37,10 +47,96 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
+// Module-level icon cache — icons are keyed by (color, size, gridSize) and are stateless
+const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
+
+function getTokenIcon(color: string, size: number, gridSize: number | null): L.DivIcon {
+  const key = `${color}-${size}-${gridSize ?? 'null'}`
+  if (!TOKEN_ICON_CACHE.has(key)) {
+    const d = size * (gridSize ?? 32)
+    TOKEN_ICON_CACHE.set(key, L.divIcon({
+      className: 'tbt-token',
+      html: `<div style="width:${d}px;height:${d}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-sizing:border-box;"></div>`,
+      iconSize: [d, d],
+      iconAnchor: [d / 2, d / 2],
+      popupAnchor: [0, -d / 2],
+    }))
+  }
+  return TOKEN_ICON_CACHE.get(key)!
+}
+
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
   useMapEvents({ click: e => onMapClick(e.latlng) })
   return null
+}
+
+// Inner component — owner popup for editing a token's label, color, and size
+function TokenPopupContent({
+  token,
+  onSave,
+  onRemove,
+}: {
+  token: CampaignMapToken
+  onSave: (id: string, patch: TokenPatch) => void
+  onRemove: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const [label, setLabel] = useState(token.label)
+  const [color, setColor] = useState(token.color)
+  const [size, setSize] = useState(token.size)
+
+  return (
+    <div data-testid={`token-popup-${token.id}`} style={{ fontFamily: T.sans, minWidth: 140 }}>
+      <input
+        data-testid={`token-label-input-${token.id}`}
+        value={label}
+        onChange={e => setLabel(e.target.value)}
+        placeholder={t('campaign_maps.token_label')}
+        style={{
+          width: '100%', marginBottom: 6, padding: '3px 6px',
+          borderRadius: 4, boxSizing: 'border-box', fontSize: 16,
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+        <input
+          type="color"
+          data-testid={`token-color-input-${token.id}`}
+          value={color}
+          onChange={e => setColor(e.target.value)}
+          style={{ width: 36, height: 30, cursor: 'pointer', borderRadius: 4, border: 'none', padding: 0 }}
+        />
+        <select
+          data-testid={`token-size-select-${token.id}`}
+          value={size}
+          onChange={e => setSize(Number(e.target.value))}
+          style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
+        >
+          {[1, 2, 3, 4, 5].map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button
+          type="button"
+          data-testid={`token-save-${token.id}`}
+          onClick={() => onSave(token.id, { label, color, size })}
+          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
+        >
+          {t('campaign_maps.token_save')}
+        </button>
+        <button
+          type="button"
+          data-testid={`token-remove-${token.id}`}
+          onClick={() => onRemove(token.id)}
+          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: T.danger }}
+        >
+          {t('campaign_maps.token_remove')}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 interface Props {
@@ -67,6 +163,7 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
   const [markers, setMarkers] = useState<CampaignMapMarker[]>([])
+  const [tokens, setTokens] = useState<CampaignMapToken[]>([])
   const [pendingLatLng, setPendingLatLng] = useState<L.LatLng | null>(null)
   const [pendingLabel, setPendingLabel] = useState('')
   const [savingPending, setSavingPending] = useState(false)
@@ -98,7 +195,7 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
     return () => { cancelled = true }
   }, [map.id])
 
-  // Poll markers every 15s for non-owners (members see additions without reopening)
+  // Poll markers every 15 s for non-owners (members see additions without reopening)
   useEffect(() => {
     if (isOwner) return
     let cancelled = false
@@ -107,6 +204,27 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
         .then(ms => { if (!cancelled) setMarkers(ms) })
         .catch(() => {})
     }, MAP_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.id, isOwner])
+
+  // Fetch tokens on mount
+  useEffect(() => {
+    let cancelled = false
+    listMapTokens(map.id)
+      .then(ts => { if (!cancelled) setTokens(ts) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.id])
+
+  // Poll tokens every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner) return
+    let cancelled = false
+    const id = setInterval(() => {
+      listMapTokens(map.id)
+        .then(ts => { if (!cancelled) setTokens(ts) })
+        .catch(() => {})
+    }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
   }, [map.id, isOwner])
 
@@ -137,6 +255,36 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
     iconAnchor: [11, 22],
     popupAnchor: [0, -20],
   }), [])
+
+  async function handleAddToken() {
+    const cx = map.width / 2
+    const cy = map.height / 2
+    const snapped = snapToGrid(cx, cy, 1, localGrid)
+    try {
+      const token = await createMapToken(map.id, snapped.x, snapped.y)
+      setTokens(prev => [...prev, token])
+    } catch {
+      // best-effort
+    }
+  }
+
+  async function handleSaveToken(id: string, patch: TokenPatch) {
+    try {
+      await updateMapToken(id, patch)
+      setTokens(prev => prev.map(tok => tok.id === id ? { ...tok, ...patch } : tok))
+    } catch {
+      // noop — keep popup open so user can retry
+    }
+  }
+
+  async function handleRemoveToken(id: string) {
+    try {
+      await deleteMapToken(id)
+      setTokens(prev => prev.filter(tok => tok.id !== id))
+    } catch {
+      // noop
+    }
+  }
 
   async function handleAddMarker() {
     if (!pendingLatLng) return
@@ -218,42 +366,45 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
       data-testid="campaign-map-viewer"
       style={{ height: '70vh', width: '100%', position: 'relative' }}
     >
-      {/* ── Grid toggle button — collapsed (owner only) ──────────────── */}
-      {isOwner && !panelOpen && (
-        <button
-          type="button"
-          data-testid="grid-panel-toggle"
-          onClick={() => setPanelOpen(true)}
-          aria-label={t('campaign_maps.grid_title')}
+      {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
+      {isOwner && (
+        <div
           style={{
             position: 'absolute', top: 8, right: 8, zIndex: 1000,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-            background: 'rgba(21,18,28,0.85)', color: T.textMuted,
-            border: '1px solid rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
           }}
         >
-          ⊞ {t('campaign_maps.grid_title')}
-        </button>
-      )}
-
-      {/* ── Grid config panel — expanded (owner only) ─────────────────── */}
-      {isOwner && panelOpen && (
-        <div
-          data-testid="grid-config-panel"
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            zIndex: 1000,
-            background: 'rgba(21, 18, 28, 0.92)',
-            border: '1px solid #2A2537',
-            borderRadius: 10,
-            padding: '10px 12px',
-            fontFamily: T.sans,
-            display: 'flex', flexDirection: 'column', gap: 8,
-            width: 260,
-          }}
-        >
+          {/* Grid: collapsed toggle button OR expanded panel */}
+          {!panelOpen && (
+            <button
+              type="button"
+              data-testid="grid-panel-toggle"
+              onClick={() => setPanelOpen(true)}
+              aria-label={t('campaign_maps.grid_title')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ⊞ {t('campaign_maps.grid_title')}
+            </button>
+          )}
+          {panelOpen && (
+            <div
+              data-testid="grid-config-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 260,
+              }}
+            >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
               {t('campaign_maps.grid_title')}
@@ -344,6 +495,24 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
             }}
           >
             {t('campaign_maps.grid_save')}
+          </button>
+        </div>
+          )}
+
+          {/* Add token (always below grid control) */}
+          <button
+            type="button"
+            data-testid="token-add-btn"
+            onClick={() => void handleAddToken()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+              border: '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            + {t('campaign_maps.token_add')}
           </button>
         </div>
       )}
@@ -514,6 +683,42 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
             </Popup>
           </Marker>
         )}
+
+        {/* Tokens — colored disc + label; owner can drag (snap) and edit/remove */}
+        {tokens.map(tok => (
+          <Marker
+            key={tok.id}
+            position={[tok.y, tok.x]}
+            icon={getTokenIcon(tok.color, tok.size, localGrid.size)}
+            draggable={isOwner}
+            {...(isOwner ? {
+              eventHandlers: {
+                dragend(e: L.DragEndEvent) {
+                  const latlng = (e.target as L.Marker).getLatLng()
+                  const snapped = snapToGrid(latlng.lng, latlng.lat, tok.size, localGrid)
+                  setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, x: snapped.x, y: snapped.y } : tk))
+                  void updateMapToken(tok.id, { x: snapped.x, y: snapped.y }).catch(() => {})
+                },
+              },
+            } : {})}
+          >
+            <Popup>
+              {isOwner ? (
+                <TokenPopupContent
+                  token={tok}
+                  onSave={(id, patch) => void handleSaveToken(id, patch)}
+                  onRemove={id => void handleRemoveToken(id)}
+                />
+              ) : (
+                <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
+                  <span data-testid={`token-label-${tok.id}`}>
+                    {tok.label || t('campaign_maps.marker_empty_label')}
+                  </span>
+                </div>
+              )}
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   )
