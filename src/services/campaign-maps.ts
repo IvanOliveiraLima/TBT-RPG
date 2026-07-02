@@ -15,6 +15,19 @@ export interface CampaignMap {
   width: number
   height: number
   createdAt: number
+  gridEnabled: boolean
+  gridSize: number | null
+  gridOffsetX: number
+  gridOffsetY: number
+  gridColor: string
+}
+
+export interface GridConfig {
+  enabled: boolean
+  size: number | null
+  offsetX: number
+  offsetY: number
+  color: string
 }
 
 type Row = {
@@ -25,6 +38,11 @@ type Row = {
   width: number
   height: number
   created_at: string
+  grid_enabled: boolean
+  grid_size: number | null
+  grid_offset_x: number
+  grid_offset_y: number
+  grid_color: string
 }
 
 function toMap(row: Row): CampaignMap {
@@ -36,6 +54,11 @@ function toMap(row: Row): CampaignMap {
     width: row.width,
     height: row.height,
     createdAt: new Date(row.created_at).getTime(),
+    gridEnabled: row.grid_enabled ?? false,
+    gridSize: row.grid_size ?? null,
+    gridOffsetX: row.grid_offset_x ?? 0,
+    gridOffsetY: row.grid_offset_y ?? 0,
+    gridColor: row.grid_color ?? '#5DCAA5',
   }
 }
 
@@ -130,6 +153,24 @@ export async function deleteCampaignMap(map: CampaignMap): Promise<void> {
   await supabase.storage.from(BUCKET).remove([map.imagePath]).catch(() => undefined)
   const { error } = await supabase.from('campaign_maps').delete().eq('id', map.id)
   if (error) throw error
+}
+
+export async function updateCampaignMapGrid(mapId: string, grid: GridConfig): Promise<void> {
+  if (!supabase) throw new Error('not_authenticated')
+  const { error } = await supabase
+    .from('campaign_maps')
+    .update({
+      grid_enabled: grid.enabled,
+      grid_size: grid.size,
+      grid_offset_x: grid.offsetX,
+      grid_offset_y: grid.offsetY,
+      grid_color: grid.color,
+    })
+    .eq('id', mapId)
+  if (error) {
+    console.error('[maps] updateCampaignMapGrid', error)
+    throw error
+  }
 }
 
 export async function getCampaignMapSignedUrl(imagePath: string): Promise<string> {

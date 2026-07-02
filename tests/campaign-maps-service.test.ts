@@ -8,8 +8,9 @@ import {
   uploadCampaignMap,
   deleteCampaignMap,
   getCampaignMapSignedUrl,
+  updateCampaignMapGrid,
 } from '@/services/campaign-maps'
-import type { CampaignMap } from '@/services/campaign-maps'
+import type { CampaignMap, GridConfig } from '@/services/campaign-maps'
 
 // ── Mock supabase ─────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ const mockSelect = vi.fn()
 const mockCount = vi.fn()
 const mockInsert = vi.fn()
 const mockDelete = vi.fn()
+const mockUpdate = vi.fn()
 const mockUpload = vi.fn()
 const mockRemove = vi.fn()
 const mockCreateSignedUrl = vi.fn()
@@ -43,6 +45,9 @@ vi.mock('@/lib/supabase', () => ({
         }),
         delete: () => ({
           eq: (_col: string, id: string) => mockDelete(id),
+        }),
+        update: (data: unknown) => ({
+          eq: (_col: string, id: string) => mockUpdate(id, data),
         }),
       }
     },
@@ -98,6 +103,11 @@ const DB_ROW = {
   width: 1024,
   height: 768,
   created_at: '2026-01-01T00:00:00Z',
+  grid_enabled: false,
+  grid_size: null,
+  grid_offset_x: 0,
+  grid_offset_y: 0,
+  grid_color: '#5DCAA5',
 }
 
 const EXPECTED_MAP: CampaignMap = {
@@ -108,6 +118,11 @@ const EXPECTED_MAP: CampaignMap = {
   width: 1024,
   height: 768,
   createdAt: new Date('2026-01-01T00:00:00Z').getTime(),
+  gridEnabled: false,
+  gridSize: null,
+  gridOffsetX: 0,
+  gridOffsetY: 0,
+  gridColor: '#5DCAA5',
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -232,5 +247,31 @@ describe('getCampaignMapSignedUrl', () => {
   it('throws when error returned', async () => {
     mockCreateSignedUrl.mockResolvedValue({ data: null, error: { message: 'not found' } })
     await expect(getCampaignMapSignedUrl('bad/path.png')).rejects.toBeDefined()
+  })
+})
+
+describe('updateCampaignMapGrid', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  const GRID: GridConfig = {
+    enabled: true, size: 40, offsetX: 5, offsetY: 3, color: '#FF0000',
+  }
+
+  it('calls update with snake_case grid fields and eq on map id', async () => {
+    mockUpdate.mockResolvedValue({ error: null })
+    await updateCampaignMapGrid('map-1', GRID)
+    expect(mockUpdate).toHaveBeenCalledWith('map-1', {
+      grid_enabled: true,
+      grid_size: 40,
+      grid_offset_x: 5,
+      grid_offset_y: 3,
+      grid_color: '#FF0000',
+    })
+  })
+
+  it('throws when Supabase returns an error', async () => {
+    mockUpdate.mockResolvedValue({ error: { message: 'update failed' } })
+    const grid: GridConfig = { enabled: false, size: null, offsetX: 0, offsetY: 0, color: '#5DCAA5' }
+    await expect(updateCampaignMapGrid('map-1', grid)).rejects.toBeDefined()
   })
 })
