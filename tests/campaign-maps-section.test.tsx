@@ -35,11 +35,13 @@ const CAMPAIGN_ID = 'camp-1'
 const MAP_1: CampaignMap = {
   id: 'map-1', campaignId: CAMPAIGN_ID, name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 1024, height: 768, createdAt: 0,
+  gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
 }
 
 const MAP_2: CampaignMap = {
   id: 'map-2', campaignId: CAMPAIGN_ID, name: 'World Map',
   imagePath: 'camp-1/map-2.png', width: 2048, height: 1024, createdAt: 1,
+  gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
 }
 
 function renderSection(isOwner = false) {

@@ -29,6 +29,7 @@ vi.mock('react-leaflet', () => ({
     <div data-testid="map-container">{children}</div>
   ),
   ImageOverlay: () => null,
+  SVGOverlay: () => null,
   Marker: ({ position, children }: { position: [number, number]; children?: React.ReactNode }) => (
     <div data-testid="marker" data-lat={position[0]} data-lng={position[1]}>{children}</div>
   ),
@@ -59,6 +60,7 @@ const mockGetSignedUrl = vi.fn()
 
 vi.mock('@/services/campaign-maps', () => ({
   getCampaignMapSignedUrl: (path: string) => mockGetSignedUrl(path),
+  updateCampaignMapGrid: vi.fn().mockResolvedValue(undefined),
 }))
 
 // ── Mock campaign-map-markers service ─────────────────────────────────────────
@@ -80,6 +82,7 @@ vi.mock('@/services/campaign-map-markers', () => ({
 const MAP: CampaignMap = {
   id: 'map-1', campaignId: 'camp-1', name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 2048, height: 1024, createdAt: 0,
+  gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
 }
 
 const MARKER_1 = { id: 'mk-1', mapId: 'map-1', x: 400, y: 300, label: 'Boss Chamber', createdAt: 0 }
