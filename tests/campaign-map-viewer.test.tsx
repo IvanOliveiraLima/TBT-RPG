@@ -187,31 +187,61 @@ describe('CampaignMapViewer — grid config panel', () => {
     mockUpdateCampaignMapGrid.mockResolvedValue(undefined)
   })
 
-  it('shows grid config panel for owner (EN)', async () => {
+  it('shows collapsed toggle button for owner (not full panel)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => expect(screen.getByTestId('grid-panel-toggle')).toBeDefined())
+    expect(screen.queryByTestId('grid-config-panel')).toBeNull()
+  })
+
+  it('toggle button label contains grid title (EN)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => expect(screen.getByTestId('grid-panel-toggle').textContent).toContain('Grid'))
+  })
+
+  it('toggle button label contains grid title (PT)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    await waitFor(() => expect(screen.getByTestId('grid-panel-toggle').textContent).toContain('Grade'))
+  })
+
+  it('clicking toggle button opens the config panel (EN)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-config-panel')).toBeDefined())
     expect(screen.getByTestId('grid-config-panel').textContent).toContain('Grid')
   })
 
-  it('shows grid config panel in PT', async () => {
+  it('clicking toggle button opens the config panel (PT)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-config-panel')).toBeDefined())
     expect(screen.getByTestId('grid-config-panel').textContent).toContain('Grade')
   })
 
-  it('does NOT show grid config panel for member', async () => {
+  it('collapse button (×) hides the panel', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
+    await waitFor(() => expect(screen.getByTestId('grid-collapse-btn')).toBeDefined())
+    screen.getByTestId('grid-collapse-btn').click()
+    await waitFor(() => expect(screen.queryByTestId('grid-config-panel')).toBeNull())
+    expect(screen.getByTestId('grid-panel-toggle')).toBeDefined()
+  })
+
+  it('does NOT show toggle or panel for member', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
     await waitFor(() => expect(screen.getByTestId('campaign-map-viewer')).toBeDefined())
+    expect(screen.queryByTestId('grid-panel-toggle')).toBeNull()
     expect(screen.queryByTestId('grid-config-panel')).toBeNull()
   })
 
-  it('save grid button calls updateCampaignMapGrid with current localGrid', async () => {
+  it('save grid button calls updateCampaignMapGrid and collapses panel', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
     screen.getByTestId('grid-save-btn').click()
     await waitFor(() => expect(mockUpdateCampaignMapGrid).toHaveBeenCalledWith(
       MAP_WITH_GRID.id,
       expect.objectContaining({ enabled: true, size: 40, color: '#FF0000' }),
     ))
+    await waitFor(() => expect(screen.queryByTestId('grid-config-panel')).toBeNull())
   })
 })

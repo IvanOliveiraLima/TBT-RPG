@@ -685,6 +685,7 @@ const en = {
   'campaign_maps.grid_offset_y':  'Offset Y',
   'campaign_maps.grid_color':     'Grid color',
   'campaign_maps.grid_save':      'Save grid',
+  'campaign_maps.grid_collapse':  'Collapse',
 
   // Link character modal
   'link_character.title':               'Link a character',

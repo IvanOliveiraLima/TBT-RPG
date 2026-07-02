@@ -79,6 +79,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     color: map.gridColor,
   })
   const [savingGrid, setSavingGrid] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -165,6 +166,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     setSavingGrid(true)
     try {
       await updateCampaignMapGrid(map.id, localGrid)
+      setPanelOpen(false)
     } catch {
       // best-effort: local state still valid, user can retry
     } finally {
@@ -214,8 +216,28 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       data-testid="campaign-map-viewer"
       style={{ height: '70vh', width: '100%', position: 'relative' }}
     >
-      {/* ── Grid config panel (owner only) ───────────────────────────── */}
-      {isOwner && (
+      {/* ── Grid toggle button — collapsed (owner only) ──────────────── */}
+      {isOwner && !panelOpen && (
+        <button
+          type="button"
+          data-testid="grid-panel-toggle"
+          onClick={() => setPanelOpen(true)}
+          aria-label={t('campaign_maps.grid_title')}
+          style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 1000,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+            background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+            border: '1px solid rgba(255,255,255,0.12)',
+            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+          }}
+        >
+          ⊞ {t('campaign_maps.grid_title')}
+        </button>
+      )}
+
+      {/* ── Grid config panel — expanded (owner only) ─────────────────── */}
+      {isOwner && panelOpen && (
         <div
           data-testid="grid-config-panel"
           style={{
@@ -227,11 +249,20 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
             padding: '10px 12px',
             fontFamily: T.sans,
             display: 'flex', flexDirection: 'column', gap: 8,
-            minWidth: 180,
+            width: 260,
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-            {t('campaign_maps.grid_title')}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('campaign_maps.grid_title')}
+            </span>
+            <button
+              type="button"
+              data-testid="grid-collapse-btn"
+              onClick={() => setPanelOpen(false)}
+              aria-label={t('campaign_maps.grid_collapse')}
+              style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
+            >×</button>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
             <input
