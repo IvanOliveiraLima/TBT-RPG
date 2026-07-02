@@ -112,9 +112,9 @@ function TokenPopupContent({
           onChange={e => setSize(Number(e.target.value))}
           style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
         >
-          <option value={1}>1</option>
-          <option value={2}>2</option>
-          <option value={3}>3</option>
+          {[1, 2, 3, 4, 5].map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
         </select>
       </div>
       <div style={{ display: 'flex', gap: 4 }}>
@@ -366,61 +366,45 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
       data-testid="campaign-map-viewer"
       style={{ height: '70vh', width: '100%', position: 'relative' }}
     >
-      {/* ── Add token button — owner only ─────────────────────────────── */}
+      {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
       {isOwner && (
-        <button
-          type="button"
-          data-testid="token-add-btn"
-          onClick={() => void handleAddToken()}
-          style={{
-            position: 'absolute', top: 8, left: 8, zIndex: 1000,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-            background: 'rgba(21,18,28,0.85)', color: T.textMuted,
-            border: '1px solid rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
-          }}
-        >
-          + {t('campaign_maps.token_add')}
-        </button>
-      )}
-
-      {/* ── Grid toggle button — collapsed (owner only) ──────────────── */}
-      {isOwner && !panelOpen && (
-        <button
-          type="button"
-          data-testid="grid-panel-toggle"
-          onClick={() => setPanelOpen(true)}
-          aria-label={t('campaign_maps.grid_title')}
+        <div
           style={{
             position: 'absolute', top: 8, right: 8, zIndex: 1000,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-            background: 'rgba(21,18,28,0.85)', color: T.textMuted,
-            border: '1px solid rgba(255,255,255,0.12)',
-            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
           }}
         >
-          ⊞ {t('campaign_maps.grid_title')}
-        </button>
-      )}
-
-      {/* ── Grid config panel — expanded (owner only) ─────────────────── */}
-      {isOwner && panelOpen && (
-        <div
-          data-testid="grid-config-panel"
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            zIndex: 1000,
-            background: 'rgba(21, 18, 28, 0.92)',
-            border: '1px solid #2A2537',
-            borderRadius: 10,
-            padding: '10px 12px',
-            fontFamily: T.sans,
-            display: 'flex', flexDirection: 'column', gap: 8,
-            width: 260,
-          }}
-        >
+          {/* Grid: collapsed toggle button OR expanded panel */}
+          {!panelOpen && (
+            <button
+              type="button"
+              data-testid="grid-panel-toggle"
+              onClick={() => setPanelOpen(true)}
+              aria-label={t('campaign_maps.grid_title')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ⊞ {t('campaign_maps.grid_title')}
+            </button>
+          )}
+          {panelOpen && (
+            <div
+              data-testid="grid-config-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 260,
+              }}
+            >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
               {t('campaign_maps.grid_title')}
@@ -511,6 +495,24 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
             }}
           >
             {t('campaign_maps.grid_save')}
+          </button>
+        </div>
+          )}
+
+          {/* Add token (always below grid control) */}
+          <button
+            type="button"
+            data-testid="token-add-btn"
+            onClick={() => void handleAddToken()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+              border: '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            + {t('campaign_maps.token_add')}
           </button>
         </div>
       )}
