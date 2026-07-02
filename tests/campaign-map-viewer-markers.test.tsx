@@ -77,6 +77,15 @@ vi.mock('@/services/campaign-map-markers', () => ({
   deleteMapMarker:      (...args: unknown[]) => mockDeleteMapMarker(...args),
 }))
 
+// ── Mock campaign-map-tokens service ──────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-tokens', () => ({
+  listMapTokens:  () => Promise.resolve([]),
+  createMapToken: () => Promise.resolve({}),
+  updateMapToken: () => Promise.resolve(),
+  deleteMapToken: () => Promise.resolve(),
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MAP: CampaignMap = {
