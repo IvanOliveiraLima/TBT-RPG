@@ -678,6 +678,13 @@ const en = {
   'campaign_maps.marker_rename':            'Rename',
   'campaign_maps.marker_remove':            'Remove',
   'campaign_maps.marker_empty_label':       '(no label)',
+  'campaign_maps.grid_title':     'Grid',
+  'campaign_maps.grid_enable':    'Show grid',
+  'campaign_maps.grid_cell_size': 'Cell size (px)',
+  'campaign_maps.grid_offset_x':  'Offset X',
+  'campaign_maps.grid_offset_y':  'Offset Y',
+  'campaign_maps.grid_color':     'Grid color',
+  'campaign_maps.grid_save':      'Save grid',
 
   // Link character modal
   'link_character.title':               'Link a character',

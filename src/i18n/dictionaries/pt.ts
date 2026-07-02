@@ -682,6 +682,13 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.marker_rename':            'Renomear',
   'campaign_maps.marker_remove':            'Remover',
   'campaign_maps.marker_empty_label':       '(sem rótulo)',
+  'campaign_maps.grid_title':     'Grade',
+  'campaign_maps.grid_enable':    'Mostrar grade',
+  'campaign_maps.grid_cell_size': 'Tamanho da célula (px)',
+  'campaign_maps.grid_offset_x':  'Offset X',
+  'campaign_maps.grid_offset_y':  'Offset Y',
+  'campaign_maps.grid_color':     'Cor da grade',
+  'campaign_maps.grid_save':      'Salvar grade',
 
   // Link character modal
   'link_character.title':               'Vincular personagem',
