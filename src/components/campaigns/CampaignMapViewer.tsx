@@ -6,12 +6,13 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
-import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet'
+import type React from 'react'
+import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents, SVGOverlay } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTranslation } from '@/i18n'
-import { getCampaignMapSignedUrl } from '@/services/campaign-maps'
-import type { CampaignMap } from '@/services/campaign-maps'
+import { getCampaignMapSignedUrl, updateCampaignMapGrid } from '@/services/campaign-maps'
+import type { CampaignMap, GridConfig } from '@/services/campaign-maps'
 import {
   listMapMarkers,
   createMapMarker,
@@ -47,6 +48,19 @@ interface Props {
   isOwner?: boolean
 }
 
+const GRID_INPUT: React.CSSProperties = {
+  background: '#1B1725',
+  border: '1px solid #2A2537',
+  borderRadius: 6,
+  padding: '4px 8px',
+  color: '#F4EFE0',
+  fontFamily: "'Inter', system-ui, sans-serif",
+  width: '100%',
+  boxSizing: 'border-box',
+  outline: 'none',
+  fontSize: 16,
+}
+
 export function CampaignMapViewer({ map, isOwner = false }: Props) {
   const { t } = useTranslation()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
@@ -57,6 +71,14 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
   const [savingPending, setSavingPending] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingLabel, setEditingLabel] = useState('')
+  const [localGrid, setLocalGrid] = useState<GridConfig>({
+    enabled: map.gridEnabled,
+    size: map.gridSize,
+    offsetX: map.gridOffsetX,
+    offsetY: map.gridOffsetY,
+    color: map.gridColor,
+  })
+  const [savingGrid, setSavingGrid] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -91,6 +113,21 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     [map.height, map.width],
   )
 
+  const gridLines = useMemo(() => {
+    if (!localGrid.enabled || !localGrid.size || localGrid.size <= 0) return null
+    const { size, offsetX, offsetY } = localGrid
+    const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+    const startX = ((offsetX % size) + size) % size
+    for (let x = startX; x <= map.width; x += size) {
+      lines.push({ x1: x, y1: 0, x2: x, y2: map.height })
+    }
+    const startY = ((offsetY % size) + size) % size
+    for (let y = startY; y <= map.height; y += size) {
+      lines.push({ x1: 0, y1: y, x2: map.width, y2: y })
+    }
+    return lines
+  }, [localGrid, map.width, map.height])
+
   const pinIcon = useMemo(() => L.divIcon({
     className: 'tbt-map-pin',
     html: PIN_ICON_HTML,
@@ -121,6 +158,17 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       setEditingId(null)
     } catch {
       // noop — keep editing open
+    }
+  }
+
+  async function handleSaveGrid() {
+    setSavingGrid(true)
+    try {
+      await updateCampaignMapGrid(map.id, localGrid)
+    } catch {
+      // best-effort: local state still valid, user can retry
+    } finally {
+      setSavingGrid(false)
     }
   }
 
@@ -166,6 +214,107 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       data-testid="campaign-map-viewer"
       style={{ height: '70vh', width: '100%', position: 'relative' }}
     >
+      {/* ── Grid config panel (owner only) ───────────────────────────── */}
+      {isOwner && (
+        <div
+          data-testid="grid-config-panel"
+          style={{
+            position: 'absolute', top: 8, right: 8,
+            zIndex: 1000,
+            background: 'rgba(21, 18, 28, 0.92)',
+            border: '1px solid #2A2537',
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontFamily: T.sans,
+            display: 'flex', flexDirection: 'column', gap: 8,
+            minWidth: 180,
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+            {t('campaign_maps.grid_title')}
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              data-testid="grid-enable-toggle"
+              checked={localGrid.enabled}
+              onChange={e => setLocalGrid(g => ({ ...g, enabled: e.target.checked }))}
+            />
+            {t('campaign_maps.grid_enable')}
+          </label>
+          {localGrid.enabled && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_cell_size')}</label>
+                <input
+                  type="number"
+                  data-testid="grid-size-input"
+                  value={localGrid.size ?? ''}
+                  min={4}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value)
+                    setLocalGrid(g => ({ ...g, size: isNaN(v) ? null : v }))
+                  }}
+                  style={GRID_INPUT}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_x')}</label>
+                  <input
+                    type="number"
+                    data-testid="grid-offset-x-input"
+                    value={localGrid.offsetX}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value)
+                      setLocalGrid(g => ({ ...g, offsetX: isNaN(v) ? 0 : v }))
+                    }}
+                    style={GRID_INPUT}
+                  />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_y')}</label>
+                  <input
+                    type="number"
+                    data-testid="grid-offset-y-input"
+                    value={localGrid.offsetY}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value)
+                      setLocalGrid(g => ({ ...g, offsetY: isNaN(v) ? 0 : v }))
+                    }}
+                    style={GRID_INPUT}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_color')}</label>
+                <input
+                  type="color"
+                  data-testid="grid-color-input"
+                  value={localGrid.color}
+                  onChange={e => setLocalGrid(g => ({ ...g, color: e.target.value }))}
+                  style={{ height: 30, width: '100%', cursor: 'pointer', borderRadius: 4, border: 'none' }}
+                />
+              </div>
+            </>
+          )}
+          <button
+            type="button"
+            data-testid="grid-save-btn"
+            onClick={() => void handleSaveGrid()}
+            disabled={savingGrid}
+            style={{
+              background: '#5B3FA8', border: 'none', borderRadius: 8,
+              padding: '6px 0', color: T.textPrimary, fontFamily: T.sans,
+              fontSize: 12, fontWeight: 600, cursor: savingGrid ? 'default' : 'pointer',
+              opacity: savingGrid ? 0.6 : 1,
+            }}
+          >
+            {t('campaign_maps.grid_save')}
+          </button>
+        </div>
+      )}
+
       {isOwner && (
         <div
           data-testid="marker-add-hint"
@@ -190,6 +339,26 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
         attributionControl={false}
       >
         <ImageOverlay url={signedUrl} bounds={bounds} />
+
+        {/* Square grid overlay — pointer-events:none so it never blocks pan/markers */}
+        {gridLines && (
+          <SVGOverlay
+            bounds={bounds}
+            attributes={{ viewBox: `0 0 ${map.width} ${map.height}`, style: 'pointer-events: none' }}
+          >
+            {gridLines.map((line, i) => (
+              <line
+                key={i}
+                x1={line.x1} y1={line.y1}
+                x2={line.x2} y2={line.y2}
+                stroke={localGrid.color}
+                strokeOpacity={0.5}
+                vectorEffect="non-scaling-stroke"
+                strokeWidth={1}
+              />
+            ))}
+          </SVGOverlay>
+        )}
 
         {isOwner && (
           <MapClickHandler
