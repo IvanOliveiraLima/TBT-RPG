@@ -244,4 +244,27 @@ describe('CampaignMapViewer — grid config panel', () => {
     ))
     await waitFor(() => expect(screen.queryByTestId('grid-config-panel')).toBeNull())
   })
+
+  it('calls onGridSaved callback with mapId and current grid after save', async () => {
+    const onGridSaved = vi.fn()
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner onGridSaved={onGridSaved} />, 'en')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
+    await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
+    screen.getByTestId('grid-save-btn').click()
+    await waitFor(() => expect(onGridSaved).toHaveBeenCalledWith(
+      MAP_WITH_GRID.id,
+      expect.objectContaining({ enabled: true, size: 40, offsetX: 5, offsetY: 3, color: '#FF0000' }),
+    ))
+  })
+
+  it('does NOT call onGridSaved when updateCampaignMapGrid fails', async () => {
+    mockUpdateCampaignMapGrid.mockRejectedValue(new Error('network'))
+    const onGridSaved = vi.fn()
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner onGridSaved={onGridSaved} />, 'en')
+    await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
+    await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
+    screen.getByTestId('grid-save-btn').click()
+    await waitFor(() => expect(mockUpdateCampaignMapGrid).toHaveBeenCalled())
+    expect(onGridSaved).not.toHaveBeenCalled()
+  })
 })

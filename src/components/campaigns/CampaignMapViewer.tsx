@@ -46,6 +46,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => voi
 interface Props {
   map: CampaignMap
   isOwner?: boolean
+  onGridSaved?: (mapId: string, grid: GridConfig) => void
 }
 
 const GRID_INPUT: React.CSSProperties = {
@@ -61,7 +62,7 @@ const GRID_INPUT: React.CSSProperties = {
   fontSize: 16,
 }
 
-export function CampaignMapViewer({ map, isOwner = false }: Props) {
+export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) {
   const { t } = useTranslation()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -166,6 +167,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     setSavingGrid(true)
     try {
       await updateCampaignMapGrid(map.id, localGrid)
+      onGridSaved?.(map.id, localGrid)
       setPanelOpen(false)
     } catch {
       // best-effort: local state still valid, user can retry

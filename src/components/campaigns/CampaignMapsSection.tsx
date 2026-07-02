@@ -345,7 +345,22 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             </div>
 
             {/* Viewer — key ensures remount on map switch so state resets cleanly */}
-            <CampaignMapViewer key={viewerMap.id} map={viewerMap} isOwner={isOwner} />
+            <CampaignMapViewer
+              key={viewerMap.id}
+              map={viewerMap}
+              isOwner={isOwner}
+              onGridSaved={(id, grid) => {
+                const patch = {
+                  gridEnabled: grid.enabled,
+                  gridSize: grid.size,
+                  gridOffsetX: grid.offsetX,
+                  gridOffsetY: grid.offsetY,
+                  gridColor: grid.color,
+                }
+                setMaps(prev => prev.map(m => (m.id === id ? { ...m, ...patch } : m)))
+                setViewerMap(prev => (prev && prev.id === id ? { ...prev, ...patch } : prev))
+              }}
+            />
           </div>
         </div>
       )}
