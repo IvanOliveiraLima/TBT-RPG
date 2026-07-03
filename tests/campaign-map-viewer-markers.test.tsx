@@ -36,8 +36,18 @@ vi.mock('react-leaflet', () => ({
   Popup: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popup">{children}</div>
   ),
+  useMap: () => ({
+    dragging: { enable: () => undefined, disable: () => undefined },
+    getContainer: () => ({
+      style: { cursor: '' as string, touchAction: '' as string },
+      setPointerCapture: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }),
+    mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+  }),
   useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
-    capturedClickHandler = handlers.click ?? null
+    if (handlers.click !== undefined) capturedClickHandler = handlers.click
     return null
   },
 }))
@@ -84,6 +94,13 @@ vi.mock('@/services/campaign-map-tokens', () => ({
   createMapToken: () => Promise.resolve({}),
   updateMapToken: () => Promise.resolve(),
   deleteMapToken: () => Promise.resolve(),
+}))
+
+// ── Mock campaign-map-fog service ─────────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-fog', () => ({
+  getMapFog:  () => Promise.resolve({ mapId: 'map-1', enabled: false, revealed: [], updatedAt: 0 }),
+  saveMapFog: () => Promise.resolve(),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
