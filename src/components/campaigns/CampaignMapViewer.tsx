@@ -29,6 +29,7 @@ import {
 } from '@/services/campaign-map-tokens'
 import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
 import { snapToGrid } from '@/utils/snap-to-grid'
+import { tokenDiameterPx } from '@/utils/token-size'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
 import type { CampaignMapFog } from '@/services/campaign-map-fog'
 import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
@@ -51,27 +52,49 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
-// Module-level icon cache — icons are keyed by (color, size, gridSize) and are stateless
+// Module-level icon cache — keyed by (color, diameter-in-px) so zoom changes produce new entries
 const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
 
-function getTokenIcon(color: string, size: number, gridSize: number | null): L.DivIcon {
-  const key = `${color}-${size}-${gridSize ?? 'null'}`
-  if (!TOKEN_ICON_CACHE.has(key)) {
-    const d = size * (gridSize ?? 32)
-    TOKEN_ICON_CACHE.set(key, L.divIcon({
-      className: 'tbt-token',
-      html: `<div style="width:${d}px;height:${d}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-sizing:border-box;"></div>`,
-      iconSize: [d, d],
-      iconAnchor: [d / 2, d / 2],
-      popupAnchor: [0, -d / 2],
-    }))
-  }
-  return TOKEN_ICON_CACHE.get(key)!
+function getTokenIcon(
+  color: string,
+  sizeCells: number,
+  cellImageUnits: number | null,
+  pxPerUnit: number,
+): L.DivIcon {
+  const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
+  const key = `${color}-${d}`
+  const cached = TOKEN_ICON_CACHE.get(key)
+  if (cached) return cached
+  const icon = L.divIcon({
+    className: 'tbt-token',
+    html: `<div style="width:${d}px;height:${d}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-sizing:border-box;"></div>`,
+    iconSize: [d, d],
+    iconAnchor: [d / 2, d / 2],
+    popupAnchor: [0, -d / 2],
+  })
+  TOKEN_ICON_CACHE.set(key, icon)
+  return icon
 }
 
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
   useMapEvents({ click: e => onMapClick(e.latlng) })
+  return null
+}
+
+// Inner component — tracks px-per-image-unit scale, updating on zoomend
+function ZoomScaleTracker({ onScale }: { onScale: (pxPerUnit: number) => void }) {
+  const map = useMap()
+  useEffect(() => {
+    const update = () => {
+      const a = map.latLngToLayerPoint([0, 0])
+      const b = map.latLngToLayerPoint([0, 1]) // +1 lng = +1 image unit in x
+      onScale(Math.abs(b.x - a.x))
+    }
+    update() // initial
+    map.on('zoomend', update)
+    return () => { map.off('zoomend', update) }
+  }, [map, onScale])
   return null
 }
 
@@ -250,6 +273,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [fog, setFog] = useState<CampaignMapFog>({ mapId: map.id, enabled: false, revealed: [], updatedAt: 0 })
   const [fogMode, setFogMode] = useState(false)
   const [brush, setBrush] = useState<'reveal' | 'hide'>('reveal')
+  const [pxPerUnit, setPxPerUnit] = useState(1)
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -818,6 +842,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         attributionControl={false}
       >
         <InvalidateOnChange dep={expanded} />
+        <ZoomScaleTracker onScale={setPxPerUnit} />
         <ImageOverlay url={signedUrl} bounds={bounds} />
 
         {/* Square grid overlay — pointer-events:none so it never blocks pan/markers */}
@@ -1005,7 +1030,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           <Marker
             key={tok.id}
             position={[tok.y, tok.x]}
-            icon={getTokenIcon(tok.color, tok.size, localGrid.size)}
+            icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit)}
             draggable={isOwner}
             {...(isOwner ? {
               eventHandlers: {

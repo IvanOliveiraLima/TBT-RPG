@@ -25,6 +25,28 @@ import type { CampaignMapToken } from '@/services/campaign-map-tokens'
 // Key: "lat,lng" string from the marker position, value: the dragend handler
 const capturedDragHandlers = new Map<string, (e: unknown) => void>()
 
+// ── Stable leaflet map for ZoomScaleTracker ───────────────────────────────────
+
+let mockLatLngScale = 1
+const capturedZoomHandlers: Array<() => void> = []
+
+const mockLeafletMap = {
+  dragging: { enable: vi.fn(), disable: vi.fn() },
+  getContainer: () => ({
+    style: { cursor: '' as string, touchAction: '' as string },
+    setPointerCapture: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
+  mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+  invalidateSize: vi.fn(),
+  latLngToLayerPoint: vi.fn(([_lat, lng]: [number, number]) => ({ x: lng * mockLatLngScale, y: 0 })),
+  on: vi.fn((event: string, handler: () => void) => {
+    if (event === 'zoomend') capturedZoomHandlers.push(handler)
+  }),
+  off: vi.fn(),
+}
+
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
 vi.mock('react-leaflet', () => ({
@@ -62,17 +84,7 @@ vi.mock('react-leaflet', () => ({
   Popup: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popup">{children}</div>
   ),
-  useMap: () => ({
-    dragging: { enable: () => undefined, disable: () => undefined },
-    getContainer: () => ({
-      style: { cursor: '' as string, touchAction: '' as string },
-      setPointerCapture: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }),
-    mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
-    invalidateSize: () => {},
-  }),
+  useMap: () => mockLeafletMap,
   useMapEvents: () => null,
 }))
 
@@ -151,6 +163,8 @@ describe('CampaignMapViewer — tokens (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1, TOKEN_2])
   })
@@ -206,6 +220,8 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1])
     mockUpdateMapToken.mockResolvedValue(undefined)
@@ -297,6 +313,8 @@ describe('CampaignMapViewer — token polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     vi.useFakeTimers()
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1])
@@ -360,5 +378,42 @@ describe('snapToGrid', () => {
   it('snaps size-3 token to 3-cell span center', () => {
     // Span-3 centers: 75, 125... (size=50, offset=0)
     expect(snapToGrid(80, 80, 3, GRID)).toEqual({ x: 75, y: 75 })
+  })
+})
+
+// ── ZoomScaleTracker ──────────────────────────────────────────────────────────
+
+describe('ZoomScaleTracker — zoom scale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
+    mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
+    mockListMapTokens.mockResolvedValue([])
+  })
+
+  it('registers a zoomend listener on mount', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function))
+  })
+
+  it('calls latLngToLayerPoint([0,0]) and ([0,1]) after zoomend', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    mockLeafletMap.latLngToLayerPoint.mockClear()
+
+    // Simulate a zoom event
+    act(() => { capturedZoomHandlers.forEach(h => h()) })
+
+    expect(mockLeafletMap.latLngToLayerPoint).toHaveBeenCalledWith([0, 0])
+    expect(mockLeafletMap.latLngToLayerPoint).toHaveBeenCalledWith([0, 1])
+  })
+
+  it('renders without error when expanded=true (ZoomScaleTracker + InvalidateOnChange coexist)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} expanded />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(screen.getByTestId('campaign-map-viewer')).toBeDefined()
   })
 })
