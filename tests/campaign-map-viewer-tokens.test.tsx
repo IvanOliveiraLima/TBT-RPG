@@ -109,6 +109,13 @@ vi.mock('@/services/campaign-map-tokens', () => ({
   deleteMapToken: (...args: unknown[]) => mockDeleteMapToken(...args),
 }))
 
+// ── Mock campaign-map-fog service ─────────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-fog', () => ({
+  getMapFog:  () => Promise.resolve({ mapId: 'map-1', enabled: false, revealed: [], updatedAt: 0 }),
+  saveMapFog: () => Promise.resolve(),
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MAP: CampaignMap = {
