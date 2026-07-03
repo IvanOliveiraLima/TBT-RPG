@@ -26,6 +26,9 @@ import {
   createMapToken,
   updateMapToken,
   deleteMapToken,
+  uploadTokenImage,
+  getTokenImageSignedUrl,
+  removeTokenImage,
 } from '@/services/campaign-map-tokens'
 import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
 import { snapToGrid } from '@/utils/snap-to-grid'
@@ -52,7 +55,7 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
-// Module-level icon cache — keyed by (color, diameter-in-px) so zoom changes produce new entries
+// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px)
 const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
 
 function getTokenIcon(
@@ -60,14 +63,22 @@ function getTokenIcon(
   sizeCells: number,
   cellImageUnits: number | null,
   pxPerUnit: number,
+  imageUrl?: string | null,
 ): L.DivIcon {
   const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
-  const key = `${color}-${d}`
+  const key = `${imageUrl ?? color}-${d}`
   const cached = TOKEN_ICON_CACHE.get(key)
   if (cached) return cached
+  const ring = 2
+  const inner = imageUrl
+    ? `background-image:url('${imageUrl}');background-size:cover;background-position:center;`
+    : `background:${color};`
+  const border = imageUrl
+    ? `border:${ring}px solid ${color};`
+    : `border:${ring}px solid rgba(255,255,255,0.7);`
   const icon = L.divIcon({
     className: 'tbt-token',
-    html: `<div style="width:${d}px;height:${d}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-sizing:border-box;"></div>`,
+    html: `<div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box;"></div>`,
     iconSize: [d, d],
     iconAnchor: [d / 2, d / 2],
     popupAnchor: [0, -d / 2],
@@ -153,20 +164,33 @@ function FogInteraction({
   return null
 }
 
-// Inner component — owner popup for editing a token's label, color, and size
+// Inner component — owner popup for editing a token's label, color, size, and image
 function TokenPopupContent({
   token,
   onSave,
   onRemove,
+  onUploadImage,
+  onRemoveImage,
 }: {
   token: CampaignMapToken
   onSave: (id: string, patch: TokenPatch) => void
   onRemove: (id: string) => void
+  onUploadImage: (tokenId: string, file: File) => void
+  onRemoveImage: (tokenId: string, imagePath: string) => void
 }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(token.label)
   const [color, setColor] = useState(token.color)
   const [size, setSize] = useState(token.size)
+  const [imageError, setImageError] = useState<string | null>(null)
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageError(null)
+    onUploadImage(token.id, file)
+    e.target.value = ''
+  }
 
   return (
     <div data-testid={`token-popup-${token.id}`} style={{ fontFamily: T.sans, minWidth: 140 }}>
@@ -198,6 +222,36 @@ function TokenPopupContent({
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
+      </div>
+      <div style={{ marginBottom: 6 }}>
+        <label
+          data-testid={`token-image-upload-label-${token.id}`}
+          style={{ display: 'block', fontSize: 12, marginBottom: 4, cursor: 'pointer', color: T.textMuted }}
+        >
+          {t('campaign_maps.token_image_upload')}
+          <input
+            type="file"
+            data-testid={`token-image-input-${token.id}`}
+            accept="image/png,image/jpeg,image/webp"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+        </label>
+        {token.imagePath && (
+          <button
+            type="button"
+            data-testid={`token-image-remove-${token.id}`}
+            onClick={() => { setImageError(null); onRemoveImage(token.id, token.imagePath!) }}
+            style={{ fontSize: 12, padding: '2px 6px', borderRadius: 4, cursor: 'pointer', color: T.danger, background: 'none', border: `1px solid ${T.danger}` }}
+          >
+            {t('campaign_maps.token_image_remove')}
+          </button>
+        )}
+        {imageError && (
+          <div data-testid={`token-image-error-${token.id}`} style={{ fontSize: 11, color: T.danger, marginTop: 4 }}>
+            {imageError}
+          </div>
+        )}
       </div>
       <div style={{ display: 'flex', gap: 4 }}>
         <button
@@ -274,6 +328,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [fogMode, setFogMode] = useState(false)
   const [brush, setBrush] = useState<'reveal' | 'hide'>('reveal')
   const [pxPerUnit, setPxPerUnit] = useState(1)
+  // Signed URLs for token images keyed by imagePath (path is stable until replaced)
+  const [tokenImageUrlsByPath, setTokenImageUrlsByPath] = useState<Record<string, string>>({})
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -328,6 +384,27 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
   }, [map.id, isOwner])
+
+  // Resolve signed URLs for tokens that have an image; dedup by path
+  useEffect(() => {
+    const paths = [...new Set(tokens.map(t => t.imagePath).filter((p): p is string => !!p))]
+    const missing = paths.filter(p => !tokenImageUrlsByPath[p])
+    if (missing.length === 0) return
+    let cancelled = false
+    Promise.all(
+      missing.map(path =>
+        getTokenImageSignedUrl(path)
+          .then(url => ({ path, url }))
+          .catch(() => null),
+      ),
+    ).then(results => {
+      if (cancelled) return
+      const next: Record<string, string> = {}
+      results.forEach(r => { if (r) next[r.path] = r.url })
+      if (Object.keys(next).length > 0) setTokenImageUrlsByPath(prev => ({ ...prev, ...next }))
+    })
+    return () => { cancelled = true }
+  }, [tokens]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch fog on mount
   useEffect(() => {
@@ -430,9 +507,49 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   }
 
   async function handleRemoveToken(id: string) {
+    const tok = tokens.find(t => t.id === id)
+    if (!tok) return
     try {
-      await deleteMapToken(id)
-      setTokens(prev => prev.filter(tok => tok.id !== id))
+      await deleteMapToken(tok)
+      setTokens(prev => prev.filter(t => t.id !== id))
+      if (tok.imagePath) {
+        setTokenImageUrlsByPath(prev => {
+          const next = { ...prev }
+          delete next[tok.imagePath!]
+          return next
+        })
+      }
+    } catch {
+      // noop
+    }
+  }
+
+  async function handleUploadTokenImage(tokenId: string, file: File) {
+    try {
+      const path = await uploadTokenImage(map.campaignId, tokenId, file)
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path } : t))
+      // Evict old signed URL so the new path gets fetched
+      setTokenImageUrlsByPath(prev => {
+        const oldToken = tokens.find(t => t.id === tokenId)
+        if (!oldToken?.imagePath) return prev
+        const next = { ...prev }
+        delete next[oldToken.imagePath]
+        return next
+      })
+    } catch {
+      // noop — popup keeps open
+    }
+  }
+
+  async function handleRemoveTokenImage(tokenId: string, imagePath: string) {
+    try {
+      await removeTokenImage(tokenId, imagePath)
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: null } : t))
+      setTokenImageUrlsByPath(prev => {
+        const next = { ...prev }
+        delete next[imagePath]
+        return next
+      })
     } catch {
       // noop
     }
@@ -1035,41 +1152,46 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </Marker>
         )}
 
-        {/* Tokens — colored disc + label; owner can drag (snap) and edit/remove */}
-        {tokens.filter(tok => !isTokenHiddenForViewer(tok)).map(tok => (
-          <Marker
-            key={tok.id}
-            position={[tok.y, tok.x]}
-            icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit)}
-            draggable={isOwner}
-            {...(isOwner ? {
-              eventHandlers: {
-                dragend(e: L.DragEndEvent) {
-                  const latlng = (e.target as L.Marker).getLatLng()
-                  const snapped = snapToGrid(latlng.lng, latlng.lat, tok.size, localGrid)
-                  setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, x: snapped.x, y: snapped.y } : tk))
-                  void updateMapToken(tok.id, { x: snapped.x, y: snapped.y }).catch(() => {})
+        {/* Tokens — disc (or circular image) + label; owner can drag (snap) and edit/remove */}
+        {tokens.filter(tok => !isTokenHiddenForViewer(tok)).map(tok => {
+          const imageUrl = tok.imagePath ? (tokenImageUrlsByPath[tok.imagePath] ?? null) : null
+          return (
+            <Marker
+              key={tok.id}
+              position={[tok.y, tok.x]}
+              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl)}
+              draggable={isOwner}
+              {...(isOwner ? {
+                eventHandlers: {
+                  dragend(e: L.DragEndEvent) {
+                    const latlng = (e.target as L.Marker).getLatLng()
+                    const snapped = snapToGrid(latlng.lng, latlng.lat, tok.size, localGrid)
+                    setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, x: snapped.x, y: snapped.y } : tk))
+                    void updateMapToken(tok.id, { x: snapped.x, y: snapped.y }).catch(() => {})
+                  },
                 },
-              },
-            } : {})}
-          >
-            <Popup>
-              {isOwner ? (
-                <TokenPopupContent
-                  token={tok}
-                  onSave={(id, patch) => void handleSaveToken(id, patch)}
-                  onRemove={id => void handleRemoveToken(id)}
-                />
-              ) : (
-                <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
-                  <span data-testid={`token-label-${tok.id}`}>
-                    {tok.label || t('campaign_maps.marker_empty_label')}
-                  </span>
-                </div>
-              )}
-            </Popup>
-          </Marker>
-        ))}
+              } : {})}
+            >
+              <Popup>
+                {isOwner ? (
+                  <TokenPopupContent
+                    token={tok}
+                    onSave={(id, patch) => void handleSaveToken(id, patch)}
+                    onRemove={id => void handleRemoveToken(id)}
+                    onUploadImage={(tokenId, file) => void handleUploadTokenImage(tokenId, file)}
+                    onRemoveImage={(tokenId, imagePath) => void handleRemoveTokenImage(tokenId, imagePath)}
+                  />
+                ) : (
+                  <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
+                    <span data-testid={`token-label-${tok.id}`}>
+                      {tok.label || t('campaign_maps.marker_empty_label')}
+                    </span>
+                  </div>
+                )}
+              </Popup>
+            </Marker>
+          )
+        })}
       </MapContainer>
     </div>
   )

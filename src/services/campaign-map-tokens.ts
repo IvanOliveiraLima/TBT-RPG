@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { BUCKET, MAX_BYTES, ALLOWED_TYPES } from '@/services/campaign-maps'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -10,10 +11,11 @@ export interface CampaignMapToken {
   label: string
   color: string
   size: number
+  imagePath: string | null
   createdAt: number
 }
 
-export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size'>>
+export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size' | 'imagePath'>>
 
 type Row = {
   id: string
@@ -23,6 +25,7 @@ type Row = {
   label: string
   color: string
   size: number
+  image_path: string | null
   created_at: string
 }
 
@@ -35,8 +38,15 @@ function toToken(row: Row): CampaignMapToken {
     label: row.label,
     color: row.color,
     size: row.size,
+    imagePath: row.image_path ?? null,
     createdAt: new Date(row.created_at).getTime(),
   }
+}
+
+function extFromMimeType(mimeType: string): string {
+  if (mimeType === 'image/png') return 'png'
+  if (mimeType === 'image/webp') return 'webp'
+  return 'jpg'
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
@@ -83,6 +93,7 @@ export async function updateMapToken(id: string, patch: TokenPatch): Promise<voi
   if (patch.label !== undefined) update.label = patch.label
   if (patch.color !== undefined) update.color = patch.color
   if (patch.size !== undefined) update.size = patch.size
+  if (patch.imagePath !== undefined) update.image_path = patch.imagePath
   const { error } = await supabase
     .from('campaign_map_tokens')
     .update(update)
@@ -90,11 +101,51 @@ export async function updateMapToken(id: string, patch: TokenPatch): Promise<voi
   if (error) throw error
 }
 
-export async function deleteMapToken(id: string): Promise<void> {
+export async function deleteMapToken(token: CampaignMapToken): Promise<void> {
   if (!supabase) return
+  if (token.imagePath) {
+    await supabase.storage.from(BUCKET).remove([token.imagePath]).catch(() => undefined)
+  }
   const { error } = await supabase
     .from('campaign_map_tokens')
     .delete()
-    .eq('id', id)
+    .eq('id', token.id)
   if (error) throw error
+}
+
+export async function uploadTokenImage(
+  campaignId: string,
+  tokenId: string,
+  file: File,
+): Promise<string> {
+  if (!supabase) throw new Error('not_authenticated')
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw Object.assign(new Error('Invalid file type'), { code: 'upload_error_type' })
+  }
+  if (file.size > MAX_BYTES) {
+    throw Object.assign(new Error('File too large'), { code: 'upload_error_size' })
+  }
+  const ext = extFromMimeType(file.type)
+  const path = `${campaignId}/tokens/${tokenId}.${ext}`
+  const { error: uploadError } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: true })
+  if (uploadError) throw uploadError
+  await updateMapToken(tokenId, { imagePath: path })
+  return path
+}
+
+export async function getTokenImageSignedUrl(imagePath: string): Promise<string> {
+  if (!supabase) throw new Error('not_authenticated')
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(imagePath, 3600)
+  if (error || !data?.signedUrl) throw error ?? new Error('No signed URL returned')
+  return data.signedUrl
+}
+
+export async function removeTokenImage(tokenId: string, imagePath: string): Promise<void> {
+  if (!supabase) return
+  await supabase.storage.from(BUCKET).remove([imagePath]).catch(() => undefined)
+  await updateMapToken(tokenId, { imagePath: null })
 }
