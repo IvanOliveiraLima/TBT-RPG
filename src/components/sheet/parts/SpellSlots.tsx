@@ -11,6 +11,7 @@ import type { Character } from '@/domain/character'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
 import { Pip } from '../ui/Pip'
+import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { useTranslation } from '@/i18n'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
@@ -264,6 +265,16 @@ function SlotRow({ level, slot, onCurrentChange, onMaxChange }: SlotRowProps) {
             textAlign:     'center',
             padding:       '2px 4px',
           }}
+        />
+      )}
+
+      {/* Remove level button — solves mobile: no number input spinners on touch */}
+      {onMaxChange && (
+        <ConfirmableRemoveButton
+          onConfirm={() => onMaxChange(0)}
+          ariaLabel={t('spell_slots.remove_level', { level })}
+          testId={`slot-remove-${level}`}
+          size="sm"
         />
       )}
     </div>
