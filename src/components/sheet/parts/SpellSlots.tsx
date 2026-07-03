@@ -266,6 +266,30 @@ function SlotRow({ level, slot, onCurrentChange, onMaxChange }: SlotRowProps) {
           }}
         />
       )}
+
+      {/* Remove level button — solves mobile: no number input spinners on touch */}
+      {onMaxChange && (
+        <button
+          type="button"
+          onClick={() => onMaxChange(0)}
+          aria-label={t('spell_slots.remove_level', { level })}
+          title={t('spell_slots.remove_level', { level })}
+          data-testid={`slot-remove-${level}`}
+          style={{
+            background:    'transparent',
+            border:        'none',
+            color:         T.textMuted,
+            cursor:        'pointer',
+            fontSize:      16,
+            lineHeight:    1,
+            padding:       '2px 4px',
+            display:       'inline-flex',
+            alignItems:    'center',
+          }}
+        >
+          ×
+        </button>
+      )}
     </div>
   )
 }

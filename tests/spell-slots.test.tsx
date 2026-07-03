@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import type { Character } from '@/domain/character'
 import { SpellSlots } from '@/components/sheet/parts/SpellSlots'
 import { renderWithI18n } from './helpers/render'
@@ -188,4 +188,47 @@ describe('SpellSlots', () => {
     const select = screen.getByTestId('add-slot-level')
     expect((select as HTMLElement).classList.contains('dark-select')).toBe(true)
   })
+
+  // ── Remove level button ───────────────────────────────────────────
+
+  it('shows remove button for each active level in editable mode', () => {
+    renderWithI18n(<SpellSlots character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('slot-remove-1')).toBeDefined()
+    expect(screen.getByTestId('slot-remove-2')).toBeDefined()
+    expect(screen.getByTestId('slot-remove-3')).toBeDefined()
+  })
+
+  it('does NOT show remove button in read-only mode', () => {
+    renderWithI18n(<SpellSlots character={BASE} />, 'en')
+    expect(screen.queryByTestId('slot-remove-1')).toBeNull()
+  })
+
+  it('remove button calls onUpdate removing the level (sets max to 0)', () => {
+    const onUpdate = vi.fn()
+    const c = { ...BASE, spellSlots: { '1': { current: 2, max: 4 }, '2': { current: 1, max: 2 } } }
+    renderWithI18n(<SpellSlots character={c} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('slot-remove-1'))
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ spellSlots: { '2': { current: 1, max: 2 } } }),
+    )
+  })
+
+  it('remove button removes the last level leaving empty slots', () => {
+    const onUpdate = vi.fn()
+    const c = { ...BASE, spellSlots: { '3': { current: 0, max: 1 } } }
+    renderWithI18n(<SpellSlots character={c} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('slot-remove-3'))
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ spellSlots: {} }))
+  })
+
+  it('remove button aria-label contains level (EN)', () => {
+    renderWithI18n(<SpellSlots character={BASE} onUpdate={vi.fn()} />, 'en')
+    expect(screen.getByTestId('slot-remove-2').getAttribute('aria-label')).toBe('Remove level 2')
+  })
+
+  it('remove button aria-label contains level (PT)', () => {
+    renderWithI18n(<SpellSlots character={BASE} onUpdate={vi.fn()} />, 'pt')
+    expect(screen.getByTestId('slot-remove-2').getAttribute('aria-label')).toBe('Remover nível 2')
+  })
+
 })
