@@ -693,6 +693,16 @@ const en = {
   'campaign_maps.token_save':   'Save',
   'campaign_maps.token_remove': 'Remove',
 
+  'campaign_maps.fog_title':         'Fog',
+  'campaign_maps.fog_enable':        'Enable fog',
+  'campaign_maps.fog_brush_reveal':  'Reveal',
+  'campaign_maps.fog_brush_hide':    'Hide',
+  'campaign_maps.fog_reveal_all':    'Reveal all',
+  'campaign_maps.fog_hide_all':      'Hide all',
+  'campaign_maps.fog_requires_grid': 'Enable the grid first',
+  'campaign_maps.fog_paint_hint':    'Click cells to reveal/hide',
+  'campaign_maps.fog_done':          'Done',
+
   // Link character modal
   'link_character.title':               'Link a character',
   'link_character.description':         'Select one of your characters to link to this campaign.',

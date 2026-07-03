@@ -697,6 +697,16 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.token_save':   'Salvar',
   'campaign_maps.token_remove': 'Remover',
 
+  'campaign_maps.fog_title':         'Névoa',
+  'campaign_maps.fog_enable':        'Ativar névoa',
+  'campaign_maps.fog_brush_reveal':  'Revelar',
+  'campaign_maps.fog_brush_hide':    'Ocultar',
+  'campaign_maps.fog_reveal_all':    'Revelar tudo',
+  'campaign_maps.fog_hide_all':      'Ocultar tudo',
+  'campaign_maps.fog_requires_grid': 'Ative a grade primeiro',
+  'campaign_maps.fog_paint_hint':    'Clique nas células para revelar/ocultar',
+  'campaign_maps.fog_done':          'Concluir',
+
   // Link character modal
   'link_character.title':               'Vincular personagem',
   'link_character.description':         'Selecione um de seus personagens para vincular a esta campanha.',
