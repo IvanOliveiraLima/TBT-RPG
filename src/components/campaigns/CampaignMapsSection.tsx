@@ -61,6 +61,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
   const { t } = useTranslation()
   const [maps, setMaps] = useState<CampaignMap[]>([])
   const [viewerMap, setViewerMap] = useState<CampaignMap | null>(null)
+  const [expanded, setExpanded] = useState(false)
   const [upload, setUpload] = useState<UploadState>({ name: '', uploading: false, error: null })
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
@@ -316,8 +317,9 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
               border: `1px solid ${T.borderDefault}`,
               borderRadius: 16,
               overflow: 'hidden',
-              maxWidth: 1100,
-              width: '100%',
+              ...(expanded
+                ? { maxWidth: 'none', width: '96vw', height: '94vh' }
+                : { maxWidth: 1100, width: '100%' }),
               margin: '0 auto',
               display: 'flex', flexDirection: 'column',
             }}
@@ -327,21 +329,42 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '14px 18px',
               borderBottom: `1px solid ${T.borderSubtle}`,
+              flexShrink: 0,
             }}>
               <span style={{ fontFamily: T.sans, fontSize: 14, fontWeight: 600, color: T.textPrimary }}>
                 {viewerMap.name}
               </span>
-              <button
-                type="button"
-                onClick={() => setViewerMap(null)}
-                data-testid="close-map-viewer"
-                style={{
-                  background: 'transparent', border: 'none',
-                  color: T.textMuted, fontSize: 18, cursor: 'pointer', padding: '2px 6px',
-                }}
-              >
-                ✕
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setExpanded(v => !v)}
+                  data-testid="expand-map-viewer"
+                  aria-label={t(expanded ? 'campaign_maps.restore' : 'campaign_maps.expand')}
+                  title={t(expanded ? 'campaign_maps.restore' : 'campaign_maps.expand')}
+                  style={{
+                    background: 'transparent', border: 'none',
+                    color: T.textMuted, cursor: 'pointer', padding: '2px 6px',
+                    display: 'flex', alignItems: 'center',
+                  }}
+                >
+                  {expanded ? (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setViewerMap(null); setExpanded(false) }}
+                  data-testid="close-map-viewer"
+                  style={{
+                    background: 'transparent', border: 'none',
+                    color: T.textMuted, fontSize: 18, cursor: 'pointer', padding: '2px 6px',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Viewer — key ensures remount on map switch so state resets cleanly */}
@@ -349,6 +372,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
               key={viewerMap.id}
               map={viewerMap}
               isOwner={isOwner}
+              expanded={expanded}
               onGridSaved={(id, grid) => {
                 const patch = {
                   gridEnabled: grid.enabled,
