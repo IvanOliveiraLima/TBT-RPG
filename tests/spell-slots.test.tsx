@@ -203,20 +203,32 @@ describe('SpellSlots', () => {
     expect(screen.queryByTestId('slot-remove-1')).toBeNull()
   })
 
-  it('remove button calls onUpdate removing the level (sets max to 0)', () => {
+  it('first click on remove enters confirming state (does not remove yet)', () => {
+    const onUpdate = vi.fn()
+    const c = { ...BASE, spellSlots: { '1': { current: 2, max: 4 } } }
+    renderWithI18n(<SpellSlots character={c} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('slot-remove-1'))
+    expect(onUpdate).not.toHaveBeenCalled()
+    // button now shows confirming state
+    expect(screen.getByTestId('slot-remove-1').getAttribute('data-confirming')).toBe('true')
+  })
+
+  it('second click (confirm) calls onUpdate removing the level', () => {
     const onUpdate = vi.fn()
     const c = { ...BASE, spellSlots: { '1': { current: 2, max: 4 }, '2': { current: 1, max: 2 } } }
     renderWithI18n(<SpellSlots character={c} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('slot-remove-1'))
     fireEvent.click(screen.getByTestId('slot-remove-1'))
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ spellSlots: { '2': { current: 1, max: 2 } } }),
     )
   })
 
-  it('remove button removes the last level leaving empty slots', () => {
+  it('second click removes the last level leaving empty slots', () => {
     const onUpdate = vi.fn()
     const c = { ...BASE, spellSlots: { '3': { current: 0, max: 1 } } }
     renderWithI18n(<SpellSlots character={c} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByTestId('slot-remove-3'))
     fireEvent.click(screen.getByTestId('slot-remove-3'))
     expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ spellSlots: {} }))
   })
