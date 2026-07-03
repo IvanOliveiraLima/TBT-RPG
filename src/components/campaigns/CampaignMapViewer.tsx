@@ -1,17 +1,19 @@
 /**
- * CampaignMapViewer — Leaflet CRS.Simple image viewer with pan/zoom and map markers.
+ * CampaignMapViewer — Leaflet CRS.Simple image viewer with pan/zoom, map markers, and tokens.
  * Shows a signed URL of a campaign map image inside a full-bounds ImageOverlay.
- * Owner can add, rename and remove markers; members can view markers and labels.
+ * Owner can add/rename/remove markers (click-to-add), place/drag/edit/remove tokens (button add).
+ * Members see markers and tokens (read-only); tokens update via 5 s polling.
  * Meant to be rendered inside a modal that defines the container height.
  */
 
-import { useEffect, useState, useMemo } from 'react'
-import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
+import type React from 'react'
+import { MapContainer, ImageOverlay, Marker, Popup, useMap, useMapEvents, SVGOverlay } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTranslation } from '@/i18n'
-import { getCampaignMapSignedUrl } from '@/services/campaign-maps'
-import type { CampaignMap } from '@/services/campaign-maps'
+import { getCampaignMapSignedUrl, updateCampaignMapGrid } from '@/services/campaign-maps'
+import type { CampaignMap, GridConfig } from '@/services/campaign-maps'
 import {
   listMapMarkers,
   createMapMarker,
@@ -19,6 +21,17 @@ import {
   deleteMapMarker,
 } from '@/services/campaign-map-markers'
 import type { CampaignMapMarker } from '@/services/campaign-map-markers'
+import {
+  listMapTokens,
+  createMapToken,
+  updateMapToken,
+  deleteMapToken,
+} from '@/services/campaign-map-tokens'
+import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
+import { snapToGrid } from '@/utils/snap-to-grid'
+import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
+import type { CampaignMapFog } from '@/services/campaign-map-fog'
+import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
 
 const T = {
   bg:          '#15121C',
@@ -28,7 +41,9 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
-const MAP_POLL_MS = 15_000
+const MAP_POLL_MS   = 15_000
+const TOKEN_POLL_MS = 5_000
+const FOG_POLL_MS   = 5_000
 
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
@@ -36,27 +51,200 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
+// Module-level icon cache — icons are keyed by (color, size, gridSize) and are stateless
+const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
+
+function getTokenIcon(color: string, size: number, gridSize: number | null): L.DivIcon {
+  const key = `${color}-${size}-${gridSize ?? 'null'}`
+  if (!TOKEN_ICON_CACHE.has(key)) {
+    const d = size * (gridSize ?? 32)
+    TOKEN_ICON_CACHE.set(key, L.divIcon({
+      className: 'tbt-token',
+      html: `<div style="width:${d}px;height:${d}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.7);box-sizing:border-box;"></div>`,
+      iconSize: [d, d],
+      iconAnchor: [d / 2, d / 2],
+      popupAnchor: [0, -d / 2],
+    }))
+  }
+  return TOKEN_ICON_CACHE.get(key)!
+}
+
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
   useMapEvents({ click: e => onMapClick(e.latlng) })
   return null
 }
 
+// Inner component — handles fog painting via drag; disables pan and sets crosshair cursor in fogMode.
+// Uses native Pointer Events (pointerdown/pointermove/pointerup) on the map container so drag-paint
+// works on touch devices as well as mouse (useMapEvents mousemove doesn't fire on touch).
+function FogInteraction({
+  fogMode,
+  onPaint,
+  onCommit,
+}: {
+  fogMode: boolean
+  onPaint: (latlng: L.LatLng) => void
+  onCommit: () => void
+}) {
+  const leafletMap = useMap()
+
+  useEffect(() => {
+    const container = leafletMap.getContainer()
+    if (!fogMode) {
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+      return
+    }
+    leafletMap.dragging.disable()
+    container.style.cursor = 'crosshair'
+    container.style.touchAction = 'none'
+    let painting = false
+    const down = (e: Event) => {
+      const pe = e as PointerEvent
+      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      painting = true
+      try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
+      onPaint(leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent))
+    }
+    const move = (e: Event) => {
+      if (painting) onPaint(leafletMap.mouseEventToLatLng(e as unknown as MouseEvent))
+    }
+    const end = () => { if (painting) { painting = false; onCommit() } }
+    container.addEventListener('pointerdown', down)
+    container.addEventListener('pointermove', move)
+    container.addEventListener('pointerup', end)
+    container.addEventListener('pointercancel', end)
+    return () => {
+      container.removeEventListener('pointerdown', down)
+      container.removeEventListener('pointermove', move)
+      container.removeEventListener('pointerup', end)
+      container.removeEventListener('pointercancel', end)
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+    }
+  }, [fogMode, leafletMap, onPaint, onCommit])
+
+  return null
+}
+
+// Inner component — owner popup for editing a token's label, color, and size
+function TokenPopupContent({
+  token,
+  onSave,
+  onRemove,
+}: {
+  token: CampaignMapToken
+  onSave: (id: string, patch: TokenPatch) => void
+  onRemove: (id: string) => void
+}) {
+  const { t } = useTranslation()
+  const [label, setLabel] = useState(token.label)
+  const [color, setColor] = useState(token.color)
+  const [size, setSize] = useState(token.size)
+
+  return (
+    <div data-testid={`token-popup-${token.id}`} style={{ fontFamily: T.sans, minWidth: 140 }}>
+      <input
+        data-testid={`token-label-input-${token.id}`}
+        value={label}
+        onChange={e => setLabel(e.target.value)}
+        placeholder={t('campaign_maps.token_label')}
+        style={{
+          width: '100%', marginBottom: 6, padding: '3px 6px',
+          borderRadius: 4, boxSizing: 'border-box', fontSize: 16,
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
+        <input
+          type="color"
+          data-testid={`token-color-input-${token.id}`}
+          value={color}
+          onChange={e => setColor(e.target.value)}
+          style={{ width: 36, height: 30, cursor: 'pointer', borderRadius: 4, border: 'none', padding: 0 }}
+        />
+        <select
+          data-testid={`token-size-select-${token.id}`}
+          value={size}
+          onChange={e => setSize(Number(e.target.value))}
+          style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
+        >
+          {[1, 2, 3, 4, 5].map(n => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button
+          type="button"
+          data-testid={`token-save-${token.id}`}
+          onClick={() => onSave(token.id, { label, color, size })}
+          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
+        >
+          {t('campaign_maps.token_save')}
+        </button>
+        <button
+          type="button"
+          data-testid={`token-remove-${token.id}`}
+          onClick={() => onRemove(token.id)}
+          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: T.danger }}
+        >
+          {t('campaign_maps.token_remove')}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   map: CampaignMap
   isOwner?: boolean
+  onGridSaved?: (mapId: string, grid: GridConfig) => void
 }
 
-export function CampaignMapViewer({ map, isOwner = false }: Props) {
+const GRID_INPUT: React.CSSProperties = {
+  background: '#1B1725',
+  border: '1px solid #2A2537',
+  borderRadius: 6,
+  padding: '4px 8px',
+  color: '#F4EFE0',
+  fontFamily: "'Inter', system-ui, sans-serif",
+  width: '100%',
+  boxSizing: 'border-box',
+  outline: 'none',
+  fontSize: 16,
+}
+
+export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) {
   const { t } = useTranslation()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
   const [markers, setMarkers] = useState<CampaignMapMarker[]>([])
+  const [tokens, setTokens] = useState<CampaignMapToken[]>([])
   const [pendingLatLng, setPendingLatLng] = useState<L.LatLng | null>(null)
   const [pendingLabel, setPendingLabel] = useState('')
   const [savingPending, setSavingPending] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingLabel, setEditingLabel] = useState('')
+  const [localGrid, setLocalGrid] = useState<GridConfig>({
+    enabled: map.gridEnabled,
+    size: map.gridSize,
+    offsetX: map.gridOffsetX,
+    offsetY: map.gridOffsetY,
+    color: map.gridColor,
+  })
+  const [savingGrid, setSavingGrid] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [fog, setFog] = useState<CampaignMapFog>({ mapId: map.id, enabled: false, revealed: [], updatedAt: 0 })
+  const [fogMode, setFogMode] = useState(false)
+  const [brush, setBrush] = useState<'reveal' | 'hide'>('reveal')
+  // Ref kept in sync so drag-paint commit always reads the latest fog state
+  const fogRef = useRef(fog)
+  useEffect(() => { fogRef.current = fog }, [fog])
+  // Tracks the last painted cell key so drag-paint skips redundant setFog calls for the same cell
+  const lastPaintedCellRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -74,7 +262,7 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     return () => { cancelled = true }
   }, [map.id])
 
-  // Poll markers every 15s for non-owners (members see additions without reopening)
+  // Poll markers every 15 s for non-owners (members see additions without reopening)
   useEffect(() => {
     if (isOwner) return
     let cancelled = false
@@ -86,10 +274,87 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     return () => { cancelled = true; clearInterval(id) }
   }, [map.id, isOwner])
 
+  // Fetch tokens on mount
+  useEffect(() => {
+    let cancelled = false
+    listMapTokens(map.id)
+      .then(ts => { if (!cancelled) setTokens(ts) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.id])
+
+  // Poll tokens every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner) return
+    let cancelled = false
+    const id = setInterval(() => {
+      listMapTokens(map.id)
+        .then(ts => { if (!cancelled) setTokens(ts) })
+        .catch(() => {})
+    }, TOKEN_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.id, isOwner])
+
+  // Fetch fog on mount
+  useEffect(() => {
+    let cancelled = false
+    getMapFog(map.id)
+      .then(f => { if (!cancelled) setFog(f) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.id])
+
+  // Poll fog every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner) return
+    let cancelled = false
+    const id = setInterval(() => {
+      getMapFog(map.id)
+        .then(f => { if (!cancelled) setFog(f) })
+        .catch(() => {})
+    }, FOG_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.id, isOwner])
+
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
     [map.height, map.width],
   )
+
+  const gridLines = useMemo(() => {
+    if (!localGrid.enabled || !localGrid.size || localGrid.size <= 0) return null
+    const { size, offsetX, offsetY } = localGrid
+    const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+    const startX = ((offsetX % size) + size) % size
+    for (let x = startX; x <= map.width; x += size) {
+      lines.push({ x1: x, y1: 0, x2: x, y2: map.height })
+    }
+    const startY = ((offsetY % size) + size) % size
+    for (let y = startY; y <= map.height; y += size) {
+      lines.push({ x1: 0, y1: y, x2: map.width, y2: y })
+    }
+    return lines
+  }, [localGrid, map.width, map.height])
+
+  const fogRevealedRects = useMemo(() => {
+    if (!localGrid.size) return []
+    const s = localGrid.size
+    return fog.revealed.map(key => {
+      const parts = key.split(',')
+      const col = Number(parts[0])
+      const row = Number(parts[1])
+      return (
+        <rect
+          key={key}
+          x={localGrid.offsetX + col * s}
+          y={localGrid.offsetY + row * s}
+          width={s}
+          height={s}
+          fill="black"
+        />
+      )
+    })
+  }, [fog.revealed, localGrid.size, localGrid.offsetX, localGrid.offsetY])
 
   const pinIcon = useMemo(() => L.divIcon({
     className: 'tbt-map-pin',
@@ -98,6 +363,36 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
     iconAnchor: [11, 22],
     popupAnchor: [0, -20],
   }), [])
+
+  async function handleAddToken() {
+    const cx = map.width / 2
+    const cy = map.height / 2
+    const snapped = snapToGrid(cx, cy, 1, localGrid)
+    try {
+      const token = await createMapToken(map.id, snapped.x, snapped.y)
+      setTokens(prev => [...prev, token])
+    } catch {
+      // best-effort
+    }
+  }
+
+  async function handleSaveToken(id: string, patch: TokenPatch) {
+    try {
+      await updateMapToken(id, patch)
+      setTokens(prev => prev.map(tok => tok.id === id ? { ...tok, ...patch } : tok))
+    } catch {
+      // noop — keep popup open so user can retry
+    }
+  }
+
+  async function handleRemoveToken(id: string) {
+    try {
+      await deleteMapToken(id)
+      setTokens(prev => prev.filter(tok => tok.id !== id))
+    } catch {
+      // noop
+    }
+  }
 
   async function handleAddMarker() {
     if (!pendingLatLng) return
@@ -123,6 +418,63 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       // noop — keep editing open
     }
   }
+
+  async function handleSaveGrid() {
+    setSavingGrid(true)
+    try {
+      await updateCampaignMapGrid(map.id, localGrid)
+      onGridSaved?.(map.id, localGrid)
+      setPanelOpen(false)
+    } catch {
+      // best-effort: local state still valid, user can retry
+    } finally {
+      setSavingGrid(false)
+    }
+  }
+
+  function handleToggleFogEnabled() {
+    const next = { ...fog, enabled: !fog.enabled }
+    setFog(next)
+    void saveMapFog(map.id, { enabled: next.enabled, revealed: next.revealed }).catch(() => {})
+  }
+
+  function handleRevealAll() {
+    const all = allCells(map.width, map.height, localGrid)
+    const next = { ...fog, revealed: all }
+    setFog(next)
+    void saveMapFog(map.id, { enabled: next.enabled, revealed: all }).catch(() => {})
+  }
+
+  function handleHideAll() {
+    const next = { ...fog, revealed: [] }
+    setFog(next)
+    void saveMapFog(map.id, { enabled: next.enabled, revealed: [] }).catch(() => {})
+  }
+
+  // Fog drag-paint helpers — onPaint updates local state, onCommit persists once on pointerup.
+  // Wrapped in useCallback so FogInteraction's useEffect dep array stays stable across renders.
+  const handleFogPaint = useCallback((latlng: L.LatLng) => {
+    // CRS.Simple: lat=0 at bottom, viewBox y=0 at top → flip Y before cell lookup
+    const cell = pointToCell(latlng.lng, map.height - latlng.lat, localGrid)
+    if (!cell) return
+    const key = cellKey(cell.col, cell.row)
+    if (key === lastPaintedCellRef.current) return  // skip same cell during drag
+    lastPaintedCellRef.current = key
+    setFog(prev => {
+      const revealed = brush === 'reveal'
+        ? Array.from(new Set([...prev.revealed, key]))
+        : prev.revealed.filter(k => k !== key)
+      const next = { ...prev, revealed }
+      fogRef.current = next  // keep ref in sync for handleFogCommit
+      return next
+    })
+  }, [map.height, localGrid, brush])
+
+  const handleFogCommit = useCallback(() => {
+    lastPaintedCellRef.current = null
+    const current = fogRef.current
+    void saveMapFog(map.id, { enabled: current.enabled, revealed: current.revealed }).catch(() => {})
+  }, [map.id])
 
   async function handleDeleteMarker(id: string) {
     try {
@@ -166,6 +518,268 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       data-testid="campaign-map-viewer"
       style={{ height: '70vh', width: '100%', position: 'relative' }}
     >
+      {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
+      {isOwner && (
+        <div
+          style={{
+            position: 'absolute', top: 8, right: 8, zIndex: 1000,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
+          }}
+        >
+          {/* Grid: collapsed toggle button OR expanded panel */}
+          {!panelOpen && (
+            <button
+              type="button"
+              data-testid="grid-panel-toggle"
+              onClick={() => setPanelOpen(true)}
+              aria-label={t('campaign_maps.grid_title')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ⊞ {t('campaign_maps.grid_title')}
+            </button>
+          )}
+          {panelOpen && (
+            <div
+              data-testid="grid-config-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 260,
+              }}
+            >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('campaign_maps.grid_title')}
+            </span>
+            <button
+              type="button"
+              data-testid="grid-collapse-btn"
+              onClick={() => setPanelOpen(false)}
+              aria-label={t('campaign_maps.grid_collapse')}
+              style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
+            >×</button>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              data-testid="grid-enable-toggle"
+              checked={localGrid.enabled}
+              onChange={e => setLocalGrid(g => ({ ...g, enabled: e.target.checked }))}
+            />
+            {t('campaign_maps.grid_enable')}
+          </label>
+          {localGrid.enabled && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_cell_size')}</label>
+                <input
+                  type="number"
+                  data-testid="grid-size-input"
+                  value={localGrid.size ?? ''}
+                  min={4}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value)
+                    setLocalGrid(g => ({ ...g, size: isNaN(v) ? null : v }))
+                  }}
+                  style={GRID_INPUT}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_x')}</label>
+                  <input
+                    type="number"
+                    data-testid="grid-offset-x-input"
+                    value={localGrid.offsetX}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value)
+                      setLocalGrid(g => ({ ...g, offsetX: isNaN(v) ? 0 : v }))
+                    }}
+                    style={GRID_INPUT}
+                  />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_y')}</label>
+                  <input
+                    type="number"
+                    data-testid="grid-offset-y-input"
+                    value={localGrid.offsetY}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value)
+                      setLocalGrid(g => ({ ...g, offsetY: isNaN(v) ? 0 : v }))
+                    }}
+                    style={GRID_INPUT}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_color')}</label>
+                <input
+                  type="color"
+                  data-testid="grid-color-input"
+                  value={localGrid.color}
+                  onChange={e => setLocalGrid(g => ({ ...g, color: e.target.value }))}
+                  style={{ height: 30, width: '100%', cursor: 'pointer', borderRadius: 4, border: 'none' }}
+                />
+              </div>
+            </>
+          )}
+          <button
+            type="button"
+            data-testid="grid-save-btn"
+            onClick={() => void handleSaveGrid()}
+            disabled={savingGrid}
+            style={{
+              background: '#5B3FA8', border: 'none', borderRadius: 8,
+              padding: '6px 0', color: T.textPrimary, fontFamily: T.sans,
+              fontSize: 12, fontWeight: 600, cursor: savingGrid ? 'default' : 'pointer',
+              opacity: savingGrid ? 0.6 : 1,
+            }}
+          >
+            {t('campaign_maps.grid_save')}
+          </button>
+        </div>
+          )}
+
+          {/* Add token (always below grid control) */}
+          <button
+            type="button"
+            data-testid="token-add-btn"
+            onClick={() => void handleAddToken()}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+              border: '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            + {t('campaign_maps.token_add')}
+          </button>
+
+          {/* Fog panel or toggle */}
+          {!fogMode && (
+            <button
+              type="button"
+              data-testid="fog-panel-toggle"
+              onClick={() => setFogMode(true)}
+              disabled={!localGrid.enabled}
+              {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
+              aria-label={t('campaign_maps.fog_title')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8,
+                cursor: !localGrid.enabled ? 'not-allowed' : 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+                opacity: !localGrid.enabled ? 0.5 : 1,
+              }}
+            >
+              ◎ {t('campaign_maps.fog_title')}
+            </button>
+          )}
+          {fogMode && (
+            <div
+              data-testid="fog-config-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 220,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                  {t('campaign_maps.fog_title')}
+                </span>
+                <button
+                  type="button"
+                  data-testid="fog-done-btn"
+                  onClick={() => setFogMode(false)}
+                  style={{ background: 'transparent', border: 'none', color: T.textPrimary, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: T.sans }}
+                >
+                  {t('campaign_maps.fog_done')}
+                </button>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  data-testid="fog-enable-toggle"
+                  checked={fog.enabled}
+                  onChange={() => handleToggleFogEnabled()}
+                />
+                {t('campaign_maps.fog_enable')}
+              </label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  data-testid="fog-brush-reveal"
+                  onClick={() => setBrush('reveal')}
+                  style={{
+                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
+                    fontFamily: T.sans, fontWeight: 600,
+                    background: brush === 'reveal' ? '#5B3FA8' : 'transparent',
+                    color: brush === 'reveal' ? T.textPrimary : T.textMuted,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  {t('campaign_maps.fog_brush_reveal')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="fog-brush-hide"
+                  onClick={() => setBrush('hide')}
+                  style={{
+                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
+                    fontFamily: T.sans, fontWeight: 600,
+                    background: brush === 'hide' ? '#5B3FA8' : 'transparent',
+                    color: brush === 'hide' ? T.textPrimary : T.textMuted,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  {t('campaign_maps.fog_brush_hide')}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  data-testid="fog-reveal-all"
+                  onClick={() => handleRevealAll()}
+                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+                >
+                  {t('campaign_maps.fog_reveal_all')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="fog-hide-all"
+                  onClick={() => handleHideAll()}
+                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+                >
+                  {t('campaign_maps.fog_hide_all')}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+                {t('campaign_maps.fog_paint_hint')}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {isOwner && (
         <div
           data-testid="marker-add-hint"
@@ -191,12 +805,70 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
       >
         <ImageOverlay url={signedUrl} bounds={bounds} />
 
+        {/* Square grid overlay — pointer-events:none so it never blocks pan/markers */}
+        {gridLines && (
+          <SVGOverlay
+            bounds={bounds}
+            attributes={{ viewBox: `0 0 ${map.width} ${map.height}`, style: 'pointer-events: none' }}
+          >
+            {gridLines.map((line, i) => (
+              <line
+                key={i}
+                x1={line.x1} y1={line.y1}
+                x2={line.x2} y2={line.y2}
+                stroke={localGrid.color}
+                strokeOpacity={0.5}
+                vectorEffect="non-scaling-stroke"
+                strokeWidth={1}
+              />
+            ))}
+          </SVGOverlay>
+        )}
+
+        {/* Fog of war mask — pointer-events:none so it never blocks pan/markers */}
+        {fog.enabled && (
+          <SVGOverlay
+            bounds={bounds}
+            attributes={{
+              viewBox: `0 0 ${map.width} ${map.height}`,
+              style: 'pointer-events: none',
+              'data-testid': 'fog-overlay',
+            }}
+          >
+            <defs>
+              <mask id={`fog-${map.id}`}>
+                <rect x={0} y={0} width={map.width} height={map.height} fill="white" />
+                {fogRevealedRects}
+              </mask>
+            </defs>
+            <rect
+              x={0}
+              y={0}
+              width={map.width}
+              height={map.height}
+              fill="#0a0a0f"
+              fillOpacity={isOwner ? 0.5 : 1}
+              mask={`url(#fog-${map.id})`}
+            />
+          </SVGOverlay>
+        )}
+
         {isOwner && (
           <MapClickHandler
             onMapClick={latlng => {
+              if (fogMode) return  // fog painting handled by FogInteraction (mousedown/mouseup)
               setPendingLatLng(latlng)
               setPendingLabel('')
             }}
+          />
+        )}
+
+        {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
+        {isOwner && (
+          <FogInteraction
+            fogMode={fogMode}
+            onPaint={handleFogPaint}
+            onCommit={handleFogCommit}
           />
         )}
 
@@ -312,6 +984,42 @@ export function CampaignMapViewer({ map, isOwner = false }: Props) {
             </Popup>
           </Marker>
         )}
+
+        {/* Tokens — colored disc + label; owner can drag (snap) and edit/remove */}
+        {tokens.map(tok => (
+          <Marker
+            key={tok.id}
+            position={[tok.y, tok.x]}
+            icon={getTokenIcon(tok.color, tok.size, localGrid.size)}
+            draggable={isOwner}
+            {...(isOwner ? {
+              eventHandlers: {
+                dragend(e: L.DragEndEvent) {
+                  const latlng = (e.target as L.Marker).getLatLng()
+                  const snapped = snapToGrid(latlng.lng, latlng.lat, tok.size, localGrid)
+                  setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, x: snapped.x, y: snapped.y } : tk))
+                  void updateMapToken(tok.id, { x: snapped.x, y: snapped.y }).catch(() => {})
+                },
+              },
+            } : {})}
+          >
+            <Popup>
+              {isOwner ? (
+                <TokenPopupContent
+                  token={tok}
+                  onSave={(id, patch) => void handleSaveToken(id, patch)}
+                  onRemove={id => void handleRemoveToken(id)}
+                />
+              ) : (
+                <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
+                  <span data-testid={`token-label-${tok.id}`}>
+                    {tok.label || t('campaign_maps.marker_empty_label')}
+                  </span>
+                </div>
+              )}
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   )

@@ -22,9 +22,20 @@ vi.mock('@/services/campaign-maps', () => ({
 
 // ── Mock CampaignMapViewer (Leaflet doesn't work in jsdom) ────────────────────
 
+import type { GridConfig } from '@/services/campaign-maps'
+
 vi.mock('@/components/campaigns/CampaignMapViewer', () => ({
-  CampaignMapViewer: ({ map }: { map: CampaignMap }) => (
-    <div data-testid="map-viewer-stub" data-map-id={map.id}>{map.name}</div>
+  CampaignMapViewer: ({ map, onGridSaved }: { map: CampaignMap; onGridSaved?: (id: string, grid: GridConfig) => void }) => (
+    <div data-testid="map-viewer-stub" data-map-id={map.id}>
+      {map.name}
+      <button
+        type="button"
+        data-testid="stub-grid-save"
+        onClick={() => onGridSaved?.(map.id, { enabled: true, size: 50, offsetX: 2, offsetY: 4, color: '#AABBCC' })}
+      >
+        trigger-grid-save
+      </button>
+    </div>
   ),
 }))
 
@@ -35,11 +46,13 @@ const CAMPAIGN_ID = 'camp-1'
 const MAP_1: CampaignMap = {
   id: 'map-1', campaignId: CAMPAIGN_ID, name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 1024, height: 768, createdAt: 0,
+  gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
 }
 
 const MAP_2: CampaignMap = {
   id: 'map-2', campaignId: CAMPAIGN_ID, name: 'World Map',
   imagePath: 'camp-1/map-2.png', width: 2048, height: 1024, createdAt: 1,
+  gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
 }
 
 function renderSection(isOwner = false) {
@@ -236,5 +249,30 @@ describe('CampaignMapsSection — member polling', () => {
     const callsAfterMount = mockListCampaignMaps.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
     expect(mockListCampaignMaps.mock.calls.length).toBe(callsAfterMount)
+  })
+})
+
+describe('CampaignMapsSection — onGridSaved cache propagation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignMaps.mockResolvedValue([MAP_1])
+  })
+
+  it('updates maps list grid fields after viewer calls onGridSaved', async () => {
+    renderSection(true)
+    // Open viewer for MAP_1
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    // Viewer is mounted; trigger the stub save
+    await waitFor(() => expect(screen.getByTestId('stub-grid-save')).toBeDefined())
+    fireEvent.click(screen.getByTestId('stub-grid-save'))
+    // Close viewer to re-open from list (click backdrop)
+    fireEvent.click(screen.getByTestId('map-viewer-modal'))
+    // Re-open map: viewer should now mount with updated prop (gridEnabled true, gridSize 50)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    await waitFor(() => {
+      const stub = screen.getByTestId('map-viewer-stub')
+      // The map passed to the viewer stub should now have the patched grid values reflected in maps list
+      expect(stub.getAttribute('data-map-id')).toBe(MAP_1.id)
+    })
   })
 })

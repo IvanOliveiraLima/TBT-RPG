@@ -712,6 +712,27 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   herdada pelo `delete-account`; cota de ≤20 mapas por campanha no upload; polling 15s **só pra membro**
   (lista na section + marcadores no viewer); ajustes mobile (inputs `fontSize:16`). Fecha a v1 de mapas.
 
+### Tactical maps — grid (COMPLETED — PR #157)
+- Grade quadrada configurável por mapa via COLUNAS em `campaign_maps`
+  (`grid_enabled/size/offset_x/offset_y/color`) — reusa a RLS existente (membro lê a linha do mapa, dono
+  escreve), sem tabela/policy nova.
+- Overlay `SVGOverlay` (viewBox em pixels, `pointer-events:none`, `vector-effect=non-scaling-stroke`);
+  painel de config colapsável do dono com preview ao vivo; propagação otimista do save ao cache da section
+  (dono não tem polling, então precisa refletir a própria edição).
+
+### Tactical maps — tokens (COMPLETED — PR #158)
+- Tabela `campaign_map_tokens` (FK `map_id` cascade) + RLS via `is_map_member`/`is_map_owner`. Disco
+  colorido + rótulo + `size` em células (1–5).
+- Dono adiciona por botão (o clique-no-mapa é do marcador), arrasta com `snapToGrid` (helper puro) ao
+  centro da célula, edita/remove; membro read-only via polling 5s. Toolbar vertical à direita.
+
+### Tactical maps — manual fog (COMPLETED — PR #159)
+- Tabela `campaign_map_fog` (1 linha/mapa, `revealed` jsonb de "col,row") + RLS via `is_map_*`. Fog por
+  célula (exige grid).
+- Máscara SVG única (não N rects), assimétrica: dono `fill-opacity` ~0.5, membro opaco. Modo de edição com
+  Pointer Events (drag-paint desktop + touch, `touch-action:none`, pan travado, cursor crosshair); flip de
+  Y na entrada do clique (`height - lat`); persistência única no `pointerup`. LOS dinâmico fora de escopo.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1413,6 +1434,9 @@ function buildInviteLink(): string {
 | **Mapas — RLS por membership:** tabela e storage usam helpers SECURITY DEFINER (`is_campaign_member/owner`, `is_map_member/owner`) — dono escreve, membro lê. Path `{campaignId}/{mapId}.{ext}`; o 1º segmento carrega o campaign_id pras policies de storage. | PR #152/#153 | Qualquer recurso novo escopado por campanha/mapa reusa esses helpers |
 | **Mapas — limpeza de storage:** deletar campanha/mapa NÃO cascateia o storage. `deleteCampaign` remove os objetos sob `{campaignId}/` ANTES de apagar a linha (senão a RLS `is_campaign_owner` já falha). | PR #154 | Delete de recurso com arquivos precisa limpar storage explicitamente, na ordem certa |
 | **Mapas — Leaflet:** react-leaflet v5 (Hippocratic 2.1; Leaflet core BSD-2), `CRS.Simple`, CSS importado; usar `L.divIcon` (o ícone default quebra no bundler). Coords em pixel: x=lng, y=lat; render em `[y,x]`. | PR #152/#153 | Trabalho futuro no viewer (tokens/grid) herda essas restrições |
+| **Tático — grid em colunas:** a grade é config por mapa em COLUNAS de `campaign_maps` (não tabela nova), reusando a RLS do mapa (membro lê / dono escreve). Overlay `SVGOverlay` com `pointer-events:none`. | PR #157 | Config 1:1 com o mapa vai em colunas + reuso de RLS |
+| **Tático — coordenada de fog (flip Y):** o clique vem do Leaflet (`CRS.Simple`, y para cima) e o render é SVG viewBox (y para baixo); converter a entrada com `height - lat` antes de mapear pra célula. Tokens/marcadores não precisam (posicionados pelo Leaflet). | PR #159 | Qualquer render SVG derivado de clique precisa do flip de Y |
+| **Tático — pintura por gesto:** drag-paint usa Pointer Events nativos no container + `touch-action:none` + `dragging.disable()` (eventos de mouse não cobrem touch). Persistir uma vez no `pointerup`, não por célula. | PR #159 | Interação de arraste no mapa usa pointer events, não mouse |
 
 ---
 
@@ -1569,6 +1593,12 @@ New from Auth signup + Camp.1-5:
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
 - ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.
 - **OQ — Re-send confirmation email.** Não implementado.
+- **OQ — Expandir/fullscreen do viewer de mapa.** O modal é de tamanho fixo; mesmo com zoom pode ficar pequeno. Adicionar botão de expandir/fullscreen. Deferred.
+- **OQ — Imagens nos tokens.** Hoje o token é disco colorido + rótulo; permitir imagem/retrato (upload ou puxado do personagem vinculado). Deferred. *(Tokens são a área de maior trabalho futuro.)*
+- **OQ — Tokens escalam com o zoom.** O `divIcon` tem tamanho fixo em px, então o token muda de tamanho relativo à grade conforme o zoom. Investigar mantê-los proporcionais à célula em qualquer zoom. Deferred.
+- **OQ — Marcador por duplo-clique.** Hoje um clique já cria o marcador pendente (aparece à toa); mudar a criação para duplo-clique. Deferred.
+- **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
+- **OQ — Tokens sob a névoa.** Tokens continuam visíveis mesmo em células cobertas por fog; analisar ocultá-los pros jogadores nas áreas não-reveladas. Deferred.
 
 New from production feedback (observed bugs):
 
