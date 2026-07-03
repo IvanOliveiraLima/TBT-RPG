@@ -38,11 +38,15 @@ vi.mock('react-leaflet', () => ({
   ),
   useMap: () => ({
     dragging: { enable: () => undefined, disable: () => undefined },
-    getContainer: () => ({ style: { cursor: '' } }),
+    getContainer: () => ({
+      style: { cursor: '' as string, touchAction: '' as string },
+      setPointerCapture: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }),
+    mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
   }),
   useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
-    // Only update when this call registers a click handler — FogInteraction calls useMapEvents
-    // with mousedown/mouseup and must not overwrite the click handler captured from MapClickHandler
     if (handlers.click !== undefined) capturedClickHandler = handlers.click
     return null
   },

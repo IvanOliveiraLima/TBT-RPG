@@ -6,7 +6,7 @@
  * Meant to be rendered inside a modal that defines the container height.
  */
 
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import type React from 'react'
 import { MapContainer, ImageOverlay, Marker, Popup, useMap, useMapEvents, SVGOverlay } from 'react-leaflet'
 import L from 'leaflet'
@@ -75,7 +75,9 @@ function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => voi
   return null
 }
 
-// Inner component — handles fog painting via drag; disables pan and sets crosshair cursor in fogMode
+// Inner component — handles fog painting via drag; disables pan and sets crosshair cursor in fogMode.
+// Uses native Pointer Events (pointerdown/pointermove/pointerup) on the map container so drag-paint
+// works on touch devices as well as mouse (useMapEvents mousemove doesn't fire on touch).
 function FogInteraction({
   fogMode,
   onPaint,
@@ -86,27 +88,45 @@ function FogInteraction({
   onCommit: () => void
 }) {
   const leafletMap = useMap()
-  const painting = useRef(false)
 
   useEffect(() => {
-    if (fogMode) {
-      leafletMap.dragging.disable()
-      leafletMap.getContainer().style.cursor = 'crosshair'
-    } else {
+    const container = leafletMap.getContainer()
+    if (!fogMode) {
       leafletMap.dragging.enable()
-      leafletMap.getContainer().style.cursor = ''
+      container.style.cursor = ''
+      container.style.touchAction = ''
+      return
     }
+    leafletMap.dragging.disable()
+    container.style.cursor = 'crosshair'
+    container.style.touchAction = 'none'
+    let painting = false
+    const down = (e: Event) => {
+      const pe = e as PointerEvent
+      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      painting = true
+      try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
+      onPaint(leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent))
+    }
+    const move = (e: Event) => {
+      if (painting) onPaint(leafletMap.mouseEventToLatLng(e as unknown as MouseEvent))
+    }
+    const end = () => { if (painting) { painting = false; onCommit() } }
+    container.addEventListener('pointerdown', down)
+    container.addEventListener('pointermove', move)
+    container.addEventListener('pointerup', end)
+    container.addEventListener('pointercancel', end)
     return () => {
+      container.removeEventListener('pointerdown', down)
+      container.removeEventListener('pointermove', move)
+      container.removeEventListener('pointerup', end)
+      container.removeEventListener('pointercancel', end)
       leafletMap.dragging.enable()
-      leafletMap.getContainer().style.cursor = ''
+      container.style.cursor = ''
+      container.style.touchAction = ''
     }
-  }, [fogMode, leafletMap])
+  }, [fogMode, leafletMap, onPaint, onCommit])
 
-  useMapEvents({
-    mousedown: e => { if (!fogMode) return; painting.current = true; onPaint(e.latlng) },
-    mousemove: e => { if (fogMode && painting.current) onPaint(e.latlng) },
-    mouseup:   () => { if (fogMode && painting.current) { painting.current = false; onCommit() } },
-  })
   return null
 }
 
@@ -223,6 +243,8 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
+  // Tracks the last painted cell key so drag-paint skips redundant setFog calls for the same cell
+  const lastPaintedCellRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -429,12 +451,15 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
     void saveMapFog(map.id, { enabled: next.enabled, revealed: [] }).catch(() => {})
   }
 
-  // Fog drag-paint helpers — onPaint updates local state, onCommit persists once on mouseup
-  function handleFogPaint(latlng: L.LatLng) {
+  // Fog drag-paint helpers — onPaint updates local state, onCommit persists once on pointerup.
+  // Wrapped in useCallback so FogInteraction's useEffect dep array stays stable across renders.
+  const handleFogPaint = useCallback((latlng: L.LatLng) => {
     // CRS.Simple: lat=0 at bottom, viewBox y=0 at top → flip Y before cell lookup
     const cell = pointToCell(latlng.lng, map.height - latlng.lat, localGrid)
     if (!cell) return
     const key = cellKey(cell.col, cell.row)
+    if (key === lastPaintedCellRef.current) return  // skip same cell during drag
+    lastPaintedCellRef.current = key
     setFog(prev => {
       const revealed = brush === 'reveal'
         ? Array.from(new Set([...prev.revealed, key]))
@@ -443,12 +468,13 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
       fogRef.current = next  // keep ref in sync for handleFogCommit
       return next
     })
-  }
+  }, [map.height, localGrid, brush])
 
-  function handleFogCommit() {
+  const handleFogCommit = useCallback(() => {
+    lastPaintedCellRef.current = null
     const current = fogRef.current
     void saveMapFog(map.id, { enabled: current.enabled, revealed: current.revealed }).catch(() => {})
-  }
+  }, [map.id])
 
   async function handleDeleteMarker(id: string) {
     try {

@@ -18,9 +18,48 @@ import type { CampaignMap } from '@/services/campaign-maps'
 // ── Capture useMapEvents handlers ─────────────────────────────────────────────
 
 type FakeLatLng = { lat: number; lng: number }
-let capturedClickHandler:     ((e: { latlng: FakeLatLng }) => void) | null = null
-let capturedMousedownHandler: ((e: { latlng: FakeLatLng }) => void) | null = null
-let capturedMouseupHandler:   (() => void) | null = null
+let capturedClickHandler: ((e: { latlng: FakeLatLng }) => void) | null = null
+
+// ── Container pointer-event capture ──────────────────────────────────────────
+
+let containerHandlers: Record<string, Array<(e: Event) => void>> = {}
+
+const mockContainer = {
+  style: { cursor: '' as string, touchAction: '' as string },
+  setPointerCapture: (_id: number) => {},
+  addEventListener(event: string, handler: (e: Event) => void) {
+    if (!containerHandlers[event]) containerHandlers[event] = []
+    containerHandlers[event].push(handler)
+  },
+  removeEventListener(event: string, handler: (e: Event) => void) {
+    if (containerHandlers[event]) {
+      containerHandlers[event] = containerHandlers[event].filter(h => h !== handler)
+    }
+  },
+}
+
+// Stable leaflet map instance — avoids effect re-runs due to reference churn
+const mockLeafletMap = {
+  dragging: { enable: () => {}, disable: () => {} },
+  getContainer: () => mockContainer,
+  mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+}
+
+function firePointerDown(clientX = 500, clientY = 500) {
+  const handlers = containerHandlers['pointerdown'] ?? []
+  const fakeEvent = {
+    target: document.createElement('div'),
+    pointerId: 1,
+    clientX,
+    clientY,
+  } as unknown as Event
+  handlers.forEach(h => h(fakeEvent))
+}
+
+function firePointerUp() {
+  const handlers = containerHandlers['pointerup'] ?? []
+  handlers.forEach(h => h({} as Event))
+}
 
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
@@ -36,19 +75,9 @@ vi.mock('react-leaflet', () => ({
   ),
   Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Popup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  useMap: () => ({
-    dragging: { enable: () => undefined, disable: () => undefined },
-    getContainer: () => ({ style: { cursor: '' } }),
-  }),
-  useMapEvents: (handlers: {
-    click?:     (e: { latlng: FakeLatLng }) => void
-    mousedown?: (e: { latlng: FakeLatLng }) => void
-    mousemove?: (e: { latlng: FakeLatLng }) => void
-    mouseup?:   () => void
-  }) => {
-    if (handlers.click     !== undefined) capturedClickHandler     = handlers.click
-    if (handlers.mousedown !== undefined) capturedMousedownHandler = handlers.mousedown
-    if (handlers.mouseup   !== undefined) capturedMouseupHandler   = handlers.mouseup
+  useMap: () => mockLeafletMap,
+  useMapEvents: (handlers: { click?: (e: { latlng: FakeLatLng }) => void }) => {
+    if (handlers.click !== undefined) capturedClickHandler = handlers.click
     return null
   },
 }))
@@ -124,8 +153,7 @@ describe('CampaignMapViewer — fog overlay (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
   })
@@ -168,8 +196,7 @@ describe('CampaignMapViewer — fog overlay (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
     mockGetMapFog.mockResolvedValue(FOG_ON)
@@ -190,8 +217,7 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -279,8 +305,7 @@ describe('CampaignMapViewer — fog panel actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -324,31 +349,29 @@ describe('CampaignMapViewer — fog panel actions', () => {
   })
 })
 
-// ── Tests: fog mode routing (mousedown paint → mouseup commit) ────────────────
+// ── Tests: fog mode routing (pointerdown paint → pointerup commit) ────────────
 
 describe('CampaignMapViewer — fog mode routing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
   })
 
-  it('in fogMode, mousedown+mouseup calls saveMapFog once', async () => {
+  it('in fogMode, pointerdown+pointerup calls saveMapFog once', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Enter fog mode
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-config-panel'))
-    // FogInteraction should have registered mousedown/mouseup handlers
-    expect(capturedMousedownHandler).not.toBeNull()
-    expect(capturedMouseupHandler).not.toBeNull()
-    // Simulate drag: mousedown (paint) → mouseup (commit)
-    act(() => { capturedMousedownHandler!({ latlng: { lat: 100, lng: 200 } }) })
-    act(() => { capturedMouseupHandler!() })
+    // FogInteraction registers pointer listeners on the container after fogMode=true
+    await waitFor(() => expect(containerHandlers['pointerdown']).toBeDefined())
+    // Simulate drag: pointerdown (paint) → pointerup (commit)
+    act(() => { firePointerDown() })
+    act(() => { firePointerUp() })
     await waitFor(() => expect(mockSaveMapFog).toHaveBeenCalledTimes(1))
   })
 
@@ -358,7 +381,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
     // Enter fog mode
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-config-panel'))
-    // Fire click — should be ignored (returns early in fogMode)
+    // Fire click — should be ignored (MapClickHandler returns early in fogMode)
     expect(capturedClickHandler).not.toBeNull()
     act(() => { capturedClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
     await new Promise(r => setTimeout(r, 50))
@@ -366,13 +389,12 @@ describe('CampaignMapViewer — fog mode routing', () => {
     expect(screen.queryByTestId('pending-marker')).toBeNull()
   })
 
-  it('outside fogMode, mousedown does NOT call saveMapFog', async () => {
+  it('outside fogMode, pointerdown does NOT call saveMapFog', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
-    // NOT entering fog mode
-    expect(capturedMousedownHandler).not.toBeNull()
-    act(() => { capturedMousedownHandler!({ latlng: { lat: 100, lng: 200 } }) })
-    act(() => { capturedMouseupHandler!() })
+    // NOT entering fog mode — no pointer handlers registered on the container
+    act(() => { firePointerDown() })
+    act(() => { firePointerUp() })
     await new Promise(r => setTimeout(r, 50))
     expect(mockSaveMapFog).not.toHaveBeenCalled()
   })
@@ -394,8 +416,7 @@ describe('CampaignMapViewer — fog polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
-    capturedMousedownHandler = null
-    capturedMouseupHandler = null
+    containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
