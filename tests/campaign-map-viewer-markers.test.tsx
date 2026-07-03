@@ -45,6 +45,7 @@ vi.mock('react-leaflet', () => ({
       removeEventListener: () => {},
     }),
     mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+    invalidateSize: () => {},
   }),
   useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
     if (handlers.click !== undefined) capturedClickHandler = handlers.click

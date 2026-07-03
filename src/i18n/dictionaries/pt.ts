@@ -706,6 +706,8 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.fog_requires_grid': 'Ative a grade primeiro',
   'campaign_maps.fog_paint_hint':    'Clique nas células para revelar/ocultar',
   'campaign_maps.fog_done':          'Concluir',
+  'campaign_maps.expand':            'Expandir',
+  'campaign_maps.restore':           'Restaurar',
 
   // Link character modal
   'link_character.title':               'Vincular personagem',

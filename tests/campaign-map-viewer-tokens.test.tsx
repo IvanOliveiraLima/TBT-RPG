@@ -71,6 +71,7 @@ vi.mock('react-leaflet', () => ({
       removeEventListener: () => {},
     }),
     mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+    invalidateSize: () => {},
   }),
   useMapEvents: () => null,
 }))

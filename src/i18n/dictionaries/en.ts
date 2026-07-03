@@ -702,6 +702,8 @@ const en = {
   'campaign_maps.fog_requires_grid': 'Enable the grid first',
   'campaign_maps.fog_paint_hint':    'Click cells to reveal/hide',
   'campaign_maps.fog_done':          'Done',
+  'campaign_maps.expand':            'Expand',
+  'campaign_maps.restore':           'Restore',
 
   // Link character modal
   'link_character.title':               'Link a character',
