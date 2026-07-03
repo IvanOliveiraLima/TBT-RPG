@@ -25,8 +25,8 @@ vi.mock('@/services/campaign-maps', () => ({
 import type { GridConfig } from '@/services/campaign-maps'
 
 vi.mock('@/components/campaigns/CampaignMapViewer', () => ({
-  CampaignMapViewer: ({ map, onGridSaved }: { map: CampaignMap; onGridSaved?: (id: string, grid: GridConfig) => void }) => (
-    <div data-testid="map-viewer-stub" data-map-id={map.id}>
+  CampaignMapViewer: ({ map, expanded, onGridSaved }: { map: CampaignMap; expanded?: boolean; onGridSaved?: (id: string, grid: GridConfig) => void }) => (
+    <div data-testid="map-viewer-stub" data-map-id={map.id} data-expanded={String(expanded ?? false)}>
       {map.name}
       <button
         type="button"
@@ -249,6 +249,61 @@ describe('CampaignMapsSection — member polling', () => {
     const callsAfterMount = mockListCampaignMaps.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })
     expect(mockListCampaignMaps.mock.calls.length).toBe(callsAfterMount)
+  })
+})
+
+describe('CampaignMapsSection — expand/restore map viewer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignMaps.mockResolvedValue([MAP_1])
+  })
+
+  it('expand button is present when viewer is open', async () => {
+    renderSection(false)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    expect(screen.getByTestId('expand-map-viewer')).toBeDefined()
+  })
+
+  it('clicking expand passes expanded=true to viewer', async () => {
+    renderSection(false)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    fireEvent.click(screen.getByTestId('expand-map-viewer'))
+    await waitFor(() =>
+      expect(screen.getByTestId('map-viewer-stub').getAttribute('data-expanded')).toBe('true')
+    )
+  })
+
+  it('clicking expand again (restore) passes expanded=false to viewer', async () => {
+    renderSection(false)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    fireEvent.click(screen.getByTestId('expand-map-viewer'))
+    fireEvent.click(screen.getByTestId('expand-map-viewer'))
+    await waitFor(() =>
+      expect(screen.getByTestId('map-viewer-stub').getAttribute('data-expanded')).toBe('false')
+    )
+  })
+
+  it('closing the viewer resets expanded so next open starts collapsed', async () => {
+    renderSection(false)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    fireEvent.click(screen.getByTestId('expand-map-viewer'))
+    fireEvent.click(screen.getByTestId('close-map-viewer'))
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    expect(screen.getByTestId('map-viewer-stub').getAttribute('data-expanded')).toBe('false')
+  })
+
+  it('expand button label contains "Expand" in EN', async () => {
+    renderSection(false)
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    const btn = screen.getByTestId('expand-map-viewer')
+    expect(btn.getAttribute('aria-label')).toBe('Expand')
+  })
+
+  it('expand button label contains "Expandir" in PT', async () => {
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={false} />, 'pt')
+    await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
+    const btn = screen.getByTestId('expand-map-viewer')
+    expect(btn.getAttribute('aria-label')).toBe('Expandir')
   })
 })
 

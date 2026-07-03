@@ -6,7 +6,7 @@
  *
  * react-leaflet is mocked (jsdom can't run Leaflet canvas).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
@@ -40,6 +40,7 @@ vi.mock('react-leaflet', () => ({
       removeEventListener: () => {},
     }),
     mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+    invalidateSize: () => {},
   }),
   useMapEvents: () => null,
 }))
@@ -293,4 +294,28 @@ describe('CampaignMapViewer — grid config panel', () => {
     await waitFor(() => expect(mockUpdateCampaignMapGrid).toHaveBeenCalled())
     expect(onGridSaved).not.toHaveBeenCalled()
   })
+})
+
+describe('CampaignMapViewer — InvalidateOnChange (expand)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('renders without error when expanded=true', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} expanded />, 'en')
+    await waitFor(() => expect(screen.getByTestId('map-container')).toBeDefined())
+    expect(screen.getByTestId('campaign-map-viewer')).toBeDefined()
+  })
+
+  it('renders without error when expanded=false (default)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} expanded={false} />, 'en')
+    await waitFor(() => expect(screen.getByTestId('map-container')).toBeDefined())
+    expect(screen.getByTestId('campaign-map-viewer')).toBeDefined()
+  })
+
 })

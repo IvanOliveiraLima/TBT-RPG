@@ -43,6 +43,7 @@ const mockLeafletMap = {
   dragging: { enable: () => {}, disable: () => {} },
   getContainer: () => mockContainer,
   mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+  invalidateSize: () => {},
 }
 
 function firePointerDown(clientX = 500, clientY = 500) {

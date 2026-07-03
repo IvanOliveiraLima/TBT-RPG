@@ -281,6 +281,7 @@ const pt: Record<keyof typeof en, string> = {
   'spell_slots.level_label':   'NÍVEL {level}',
   'spell_slots.count_label':   '{current}/{max}',
   'spell_slots.pip_aria':      'Espaço de nível {level} ({current} de {max} disponíveis)',
+  'spell_slots.remove_level':  'Remover nível {level}',
   'spells.slots_section_title': 'Espaços de Magia',
   'spells.no_slots_hint':       'Nenhum espaço de magia configurado.',
   'spells.add_slot_level':      '+ Adicionar nível',
@@ -706,6 +707,8 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.fog_requires_grid': 'Ative a grade primeiro',
   'campaign_maps.fog_paint_hint':    'Clique nas células para revelar/ocultar',
   'campaign_maps.fog_done':          'Concluir',
+  'campaign_maps.expand':            'Expandir',
+  'campaign_maps.restore':           'Restaurar',
 
   // Link character modal
   'link_character.title':               'Vincular personagem',

@@ -201,7 +201,17 @@ function TokenPopupContent({
 interface Props {
   map: CampaignMap
   isOwner?: boolean
+  expanded?: boolean
   onGridSaved?: (mapId: string, grid: GridConfig) => void
+}
+
+function InvalidateOnChange({ dep }: { dep: unknown }) {
+  const map = useMap()
+  useEffect(() => {
+    const id = setTimeout(() => map.invalidateSize(), 150)
+    return () => clearTimeout(id)
+  }, [dep, map])
+  return null
 }
 
 const GRID_INPUT: React.CSSProperties = {
@@ -217,7 +227,7 @@ const GRID_INPUT: React.CSSProperties = {
   fontSize: 16,
 }
 
-export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) {
+export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGridSaved }: Props) {
   const { t } = useTranslation()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -485,12 +495,15 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
     }
   }
 
+  const viewerHeight = expanded ? '100%' : '70vh'
+
   if (error) {
     return (
       <div
         data-testid="campaign-map-viewer-error"
         style={{
-          height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flex: expanded ? 1 : undefined, minHeight: 0,
+          height: viewerHeight, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: T.bg, color: T.textMuted, fontFamily: T.sans, fontSize: 14,
         }}
       >
@@ -504,7 +517,8 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
       <div
         data-testid="campaign-map-viewer-loading"
         style={{
-          height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flex: expanded ? 1 : undefined, minHeight: 0,
+          height: viewerHeight, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: T.bg, color: T.textMuted, fontFamily: T.sans, fontSize: 14,
         }}
       >
@@ -516,7 +530,7 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
   return (
     <div
       data-testid="campaign-map-viewer"
-      style={{ height: '70vh', width: '100%', position: 'relative' }}
+      style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
     >
       {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
       {isOwner && (
@@ -803,6 +817,7 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
         style={{ height: '100%', width: '100%', background: T.bg }}
         attributionControl={false}
       >
+        <InvalidateOnChange dep={expanded} />
         <ImageOverlay url={signedUrl} bounds={bounds} />
 
         {/* Square grid overlay — pointer-events:none so it never blocks pan/markers */}

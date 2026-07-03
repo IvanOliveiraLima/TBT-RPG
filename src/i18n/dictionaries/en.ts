@@ -279,6 +279,7 @@ const en = {
   'spell_slots.level_label':   'LEVEL {level}',
   'spell_slots.count_label':   '{current}/{max}',
   'spell_slots.pip_aria':      'Level {level} slot ({current} of {max} available)',
+  'spell_slots.remove_level':  'Remove level {level}',
   'spells.slots_section_title': 'Spell Slots',
   'spells.no_slots_hint':       'No spell slots configured.',
   'spells.add_slot_level':      '+ Add level',
@@ -702,6 +703,8 @@ const en = {
   'campaign_maps.fog_requires_grid': 'Enable the grid first',
   'campaign_maps.fog_paint_hint':    'Click cells to reveal/hide',
   'campaign_maps.fog_done':          'Done',
+  'campaign_maps.expand':            'Expand',
+  'campaign_maps.restore':           'Restore',
 
   // Link character modal
   'link_character.title':               'Link a character',
