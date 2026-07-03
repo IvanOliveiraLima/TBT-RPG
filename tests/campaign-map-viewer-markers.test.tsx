@@ -36,8 +36,14 @@ vi.mock('react-leaflet', () => ({
   Popup: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popup">{children}</div>
   ),
+  useMap: () => ({
+    dragging: { enable: () => undefined, disable: () => undefined },
+    getContainer: () => ({ style: { cursor: '' } }),
+  }),
   useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
-    capturedClickHandler = handlers.click ?? null
+    // Only update when this call registers a click handler — FogInteraction calls useMapEvents
+    // with mousedown/mouseup and must not overwrite the click handler captured from MapClickHandler
+    if (handlers.click !== undefined) capturedClickHandler = handlers.click
     return null
   },
 }))

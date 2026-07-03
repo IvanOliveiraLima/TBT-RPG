@@ -15,9 +15,12 @@ import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
 import type { CampaignMap } from '@/services/campaign-maps'
 
-// ── Capture useMapEvents click handler ────────────────────────────────────────
+// ── Capture useMapEvents handlers ─────────────────────────────────────────────
 
-let capturedClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
+type FakeLatLng = { lat: number; lng: number }
+let capturedClickHandler:     ((e: { latlng: FakeLatLng }) => void) | null = null
+let capturedMousedownHandler: ((e: { latlng: FakeLatLng }) => void) | null = null
+let capturedMouseupHandler:   (() => void) | null = null
 
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
@@ -33,8 +36,19 @@ vi.mock('react-leaflet', () => ({
   ),
   Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Popup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
-    capturedClickHandler = handlers.click ?? null
+  useMap: () => ({
+    dragging: { enable: () => undefined, disable: () => undefined },
+    getContainer: () => ({ style: { cursor: '' } }),
+  }),
+  useMapEvents: (handlers: {
+    click?:     (e: { latlng: FakeLatLng }) => void
+    mousedown?: (e: { latlng: FakeLatLng }) => void
+    mousemove?: (e: { latlng: FakeLatLng }) => void
+    mouseup?:   () => void
+  }) => {
+    if (handlers.click     !== undefined) capturedClickHandler     = handlers.click
+    if (handlers.mousedown !== undefined) capturedMousedownHandler = handlers.mousedown
+    if (handlers.mouseup   !== undefined) capturedMouseupHandler   = handlers.mouseup
     return null
   },
 }))
@@ -110,6 +124,8 @@ describe('CampaignMapViewer — fog overlay (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
   })
@@ -152,6 +168,8 @@ describe('CampaignMapViewer — fog overlay (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
     mockGetMapFog.mockResolvedValue(FOG_ON)
@@ -172,6 +190,8 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -259,6 +279,8 @@ describe('CampaignMapViewer — fog panel actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -302,47 +324,66 @@ describe('CampaignMapViewer — fog panel actions', () => {
   })
 })
 
-// ── Tests: fog mode routing of map clicks ─────────────────────────────────────
+// ── Tests: fog mode routing (mousedown paint → mouseup commit) ────────────────
 
 describe('CampaignMapViewer — fog mode routing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)
   })
 
-  it('in fogMode, map click calls saveMapFog (not createMapMarker)', async () => {
-    const mockCreateMapMarker = vi.fn()
-    // Override the marker mock for this test
-    const { createMapMarker } = await import('@/services/campaign-map-markers')
-    vi.mocked(createMapMarker)
-
+  it('in fogMode, mousedown+mouseup calls saveMapFog once', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Enter fog mode
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-config-panel'))
-    // Now fire a map click
-    expect(capturedClickHandler).not.toBeNull()
-    act(() => {
-      capturedClickHandler!({ latlng: { lat: 0, lng: 0 } })
-    })
-    await waitFor(() => expect(mockSaveMapFog).toHaveBeenCalled())
-    expect(mockCreateMapMarker).not.toHaveBeenCalled()
+    // FogInteraction should have registered mousedown/mouseup handlers
+    expect(capturedMousedownHandler).not.toBeNull()
+    expect(capturedMouseupHandler).not.toBeNull()
+    // Simulate drag: mousedown (paint) → mouseup (commit)
+    act(() => { capturedMousedownHandler!({ latlng: { lat: 100, lng: 200 } }) })
+    act(() => { capturedMouseupHandler!() })
+    await waitFor(() => expect(mockSaveMapFog).toHaveBeenCalledTimes(1))
   })
 
-  it('outside fogMode, map click does NOT call saveMapFog', async () => {
+  it('in fogMode, map click does NOT add a marker', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
-    // NOT entering fog mode — just click the map
+    // Enter fog mode
+    fireEvent.click(screen.getByTestId('fog-panel-toggle'))
+    await waitFor(() => screen.getByTestId('fog-config-panel'))
+    // Fire click — should be ignored (returns early in fogMode)
     expect(capturedClickHandler).not.toBeNull()
-    act(() => {
-      capturedClickHandler!({ latlng: { lat: 100, lng: 200 } })
-    })
-    // Give time for any async effects
+    act(() => { capturedClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
     await new Promise(r => setTimeout(r, 50))
+    // No pending marker should appear
+    expect(screen.queryByTestId('pending-marker')).toBeNull()
+  })
+
+  it('outside fogMode, mousedown does NOT call saveMapFog', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('fog-panel-toggle'))
+    // NOT entering fog mode
+    expect(capturedMousedownHandler).not.toBeNull()
+    act(() => { capturedMousedownHandler!({ latlng: { lat: 100, lng: 200 } }) })
+    act(() => { capturedMouseupHandler!() })
+    await new Promise(r => setTimeout(r, 50))
+    expect(mockSaveMapFog).not.toHaveBeenCalled()
+  })
+
+  it('outside fogMode, map click adds a pending marker (not fog)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('fog-panel-toggle'))
+    // Click without fog mode → should add pending marker
+    expect(capturedClickHandler).not.toBeNull()
+    act(() => { capturedClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
+    await waitFor(() => expect(screen.queryByTestId('pending-marker')).not.toBeNull())
     expect(mockSaveMapFog).not.toHaveBeenCalled()
   })
 })
@@ -353,6 +394,8 @@ describe('CampaignMapViewer — fog polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedClickHandler = null
+    capturedMousedownHandler = null
+    capturedMouseupHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
     mockSaveMapFog.mockResolvedValue(undefined)

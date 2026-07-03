@@ -31,6 +31,10 @@ vi.mock('react-leaflet', () => ({
   },
   Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Popup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  useMap: () => ({
+    dragging: { enable: () => undefined, disable: () => undefined },
+    getContainer: () => ({ style: { cursor: '' } }),
+  }),
   useMapEvents: () => null,
 }))
 

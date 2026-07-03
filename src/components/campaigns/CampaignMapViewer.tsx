@@ -6,9 +6,9 @@
  * Meant to be rendered inside a modal that defines the container height.
  */
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import type React from 'react'
-import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents, SVGOverlay } from 'react-leaflet'
+import { MapContainer, ImageOverlay, Marker, Popup, useMap, useMapEvents, SVGOverlay } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTranslation } from '@/i18n'
@@ -72,6 +72,41 @@ function getTokenIcon(color: string, size: number, gridSize: number | null): L.D
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
   useMapEvents({ click: e => onMapClick(e.latlng) })
+  return null
+}
+
+// Inner component — handles fog painting via drag; disables pan and sets crosshair cursor in fogMode
+function FogInteraction({
+  fogMode,
+  onPaint,
+  onCommit,
+}: {
+  fogMode: boolean
+  onPaint: (latlng: L.LatLng) => void
+  onCommit: () => void
+}) {
+  const leafletMap = useMap()
+  const painting = useRef(false)
+
+  useEffect(() => {
+    if (fogMode) {
+      leafletMap.dragging.disable()
+      leafletMap.getContainer().style.cursor = 'crosshair'
+    } else {
+      leafletMap.dragging.enable()
+      leafletMap.getContainer().style.cursor = ''
+    }
+    return () => {
+      leafletMap.dragging.enable()
+      leafletMap.getContainer().style.cursor = ''
+    }
+  }, [fogMode, leafletMap])
+
+  useMapEvents({
+    mousedown: e => { if (!fogMode) return; painting.current = true; onPaint(e.latlng) },
+    mousemove: e => { if (fogMode && painting.current) onPaint(e.latlng) },
+    mouseup:   () => { if (fogMode && painting.current) { painting.current = false; onCommit() } },
+  })
   return null
 }
 
@@ -185,6 +220,9 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
   const [fog, setFog] = useState<CampaignMapFog>({ mapId: map.id, enabled: false, revealed: [], updatedAt: 0 })
   const [fogMode, setFogMode] = useState(false)
   const [brush, setBrush] = useState<'reveal' | 'hide'>('reveal')
+  // Ref kept in sync so drag-paint commit always reads the latest fog state
+  const fogRef = useRef(fog)
+  useEffect(() => { fogRef.current = fog }, [fog])
 
   useEffect(() => {
     let cancelled = false
@@ -389,6 +427,27 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
     const next = { ...fog, revealed: [] }
     setFog(next)
     void saveMapFog(map.id, { enabled: next.enabled, revealed: [] }).catch(() => {})
+  }
+
+  // Fog drag-paint helpers — onPaint updates local state, onCommit persists once on mouseup
+  function handleFogPaint(latlng: L.LatLng) {
+    // CRS.Simple: lat=0 at bottom, viewBox y=0 at top → flip Y before cell lookup
+    const cell = pointToCell(latlng.lng, map.height - latlng.lat, localGrid)
+    if (!cell) return
+    const key = cellKey(cell.col, cell.row)
+    setFog(prev => {
+      const revealed = brush === 'reveal'
+        ? Array.from(new Set([...prev.revealed, key]))
+        : prev.revealed.filter(k => k !== key)
+      const next = { ...prev, revealed }
+      fogRef.current = next  // keep ref in sync for handleFogCommit
+      return next
+    })
+  }
+
+  function handleFogCommit() {
+    const current = fogRef.current
+    void saveMapFog(map.id, { enabled: current.enabled, revealed: current.revealed }).catch(() => {})
   }
 
   async function handleDeleteMarker(id: string) {
@@ -771,21 +830,19 @@ export function CampaignMapViewer({ map, isOwner = false, onGridSaved }: Props) 
         {isOwner && (
           <MapClickHandler
             onMapClick={latlng => {
-              if (fogMode) {
-                const cell = pointToCell(latlng.lng, latlng.lat, localGrid)
-                if (!cell) return
-                const key = cellKey(cell.col, cell.row)
-                const next = brush === 'reveal'
-                  ? Array.from(new Set([...fog.revealed, key]))
-                  : fog.revealed.filter(k => k !== key)
-                const updated = { ...fog, revealed: next }
-                setFog(updated)
-                void saveMapFog(map.id, { enabled: updated.enabled, revealed: next }).catch(() => {})
-                return
-              }
+              if (fogMode) return  // fog painting handled by FogInteraction (mousedown/mouseup)
               setPendingLatLng(latlng)
               setPendingLabel('')
             }}
+          />
+        )}
+
+        {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
+        {isOwner && (
+          <FogInteraction
+            fogMode={fogMode}
+            onPaint={handleFogPaint}
+            onCommit={handleFogCommit}
           />
         )}
 
