@@ -18,6 +18,8 @@ const mockInsert = vi.fn()
 const mockUpdate = vi.fn()
 const mockDelete = vi.fn()
 
+const mockStorageRemove = vi.fn()
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
     from: (_table: string) => ({
@@ -38,6 +40,11 @@ vi.mock('@/lib/supabase', () => ({
         eq: (_col: string, id: string) => mockDelete(id),
       }),
     }),
+    storage: {
+      from: (_bucket: string) => ({
+        remove: (paths: unknown) => mockStorageRemove(paths),
+      }),
+    },
   },
 }))
 
@@ -53,6 +60,7 @@ const DB_ROW = {
   label: 'Goblin',
   color: '#C0392B',
   size: 1,
+  image_path: null,
   created_at: '2026-01-01T00:00:00Z',
 }
 
@@ -64,6 +72,7 @@ const EXPECTED_TOKEN: CampaignMapToken = {
   label: 'Goblin',
   color: '#C0392B',
   size: 1,
+  imagePath: null,
   createdAt: new Date('2026-01-01T00:00:00Z').getTime(),
 }
 
@@ -142,14 +151,24 @@ describe('updateMapToken', () => {
 describe('deleteMapToken', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('deletes by id', async () => {
+  it('deletes by id (no image)', async () => {
     mockDelete.mockResolvedValue({ error: null })
-    await deleteMapToken('tok-1')
+    await deleteMapToken(EXPECTED_TOKEN)
+    expect(mockDelete).toHaveBeenCalledWith('tok-1')
+    expect(mockStorageRemove).not.toHaveBeenCalled()
+  })
+
+  it('removes storage image before deleting when imagePath is set', async () => {
+    mockStorageRemove.mockResolvedValue({ error: null })
+    mockDelete.mockResolvedValue({ error: null })
+    const tokenWithImage = { ...EXPECTED_TOKEN, imagePath: 'camp-1/tokens/tok-1.png' }
+    await deleteMapToken(tokenWithImage)
+    expect(mockStorageRemove).toHaveBeenCalledWith(['camp-1/tokens/tok-1.png'])
     expect(mockDelete).toHaveBeenCalledWith('tok-1')
   })
 
   it('throws on supabase error', async () => {
     mockDelete.mockResolvedValue({ error: { message: 'delete failed' } })
-    await expect(deleteMapToken('tok-1')).rejects.toBeDefined()
+    await expect(deleteMapToken(EXPECTED_TOKEN)).rejects.toBeDefined()
   })
 })

@@ -75,10 +75,13 @@ vi.mock('@/services/campaign-map-markers', () => ({
 const mockListMapTokens = vi.fn()
 
 vi.mock('@/services/campaign-map-tokens', () => ({
-  listMapTokens:  (...args: unknown[]) => mockListMapTokens(...args),
-  createMapToken: () => Promise.resolve({}),
-  updateMapToken: () => Promise.resolve(),
-  deleteMapToken: () => Promise.resolve(),
+  listMapTokens:          (...args: unknown[]) => mockListMapTokens(...args),
+  createMapToken:         () => Promise.resolve({}),
+  updateMapToken:         () => Promise.resolve(),
+  deleteMapToken:         () => Promise.resolve(),
+  uploadTokenImage:       () => Promise.resolve('camp-1/tokens/tok-a.png'),
+  getTokenImageSignedUrl: () => Promise.resolve('https://signed.example.com/token.png'),
+  removeTokenImage:       () => Promise.resolve(),
 }))
 
 const mockGetMapFog = vi.fn()
@@ -103,13 +106,13 @@ const MAP: CampaignMap = {
 
 const TOKEN_A: CampaignMapToken = {
   id: 'tok-a', mapId: 'map-1', x: 100, y: 300,
-  label: 'Goblin', color: '#C0392B', size: 1, createdAt: 0,
+  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, createdAt: 0,
 }
 
 // Token at the bottom of the map (high y value)
 const TOKEN_B: CampaignMapToken = {
   id: 'tok-b', mapId: 'map-1', x: 100, y: 900,
-  label: 'Dragon', color: '#8B0000', size: 1, createdAt: 1,
+  label: 'Dragon', color: '#8B0000', size: 1, imagePath: null, createdAt: 1,
 }
 
 const FOG_OFF    = { mapId: 'map-1', enabled: false, revealed: [],      updatedAt: 0 }

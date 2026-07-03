@@ -126,10 +126,13 @@ const mockUpdateMapToken = vi.fn()
 const mockDeleteMapToken = vi.fn()
 
 vi.mock('@/services/campaign-map-tokens', () => ({
-  listMapTokens:  (...args: unknown[]) => mockListMapTokens(...args),
-  createMapToken: (...args: unknown[]) => mockCreateMapToken(...args),
-  updateMapToken: (...args: unknown[]) => mockUpdateMapToken(...args),
-  deleteMapToken: (...args: unknown[]) => mockDeleteMapToken(...args),
+  listMapTokens:          (...args: unknown[]) => mockListMapTokens(...args),
+  createMapToken:         (...args: unknown[]) => mockCreateMapToken(...args),
+  updateMapToken:         (...args: unknown[]) => mockUpdateMapToken(...args),
+  deleteMapToken:         (...args: unknown[]) => mockDeleteMapToken(...args),
+  uploadTokenImage:       () => Promise.resolve('camp-1/tokens/tok-1.png'),
+  getTokenImageSignedUrl: () => Promise.resolve('https://signed.example.com/token.png'),
+  removeTokenImage:       () => Promise.resolve(),
 }))
 
 // ── Mock campaign-map-fog service ─────────────────────────────────────────────
@@ -149,12 +152,12 @@ const MAP: CampaignMap = {
 
 const TOKEN_1: CampaignMapToken = {
   id: 'tok-1', mapId: 'map-1', x: 400, y: 300,
-  label: 'Goblin', color: '#C0392B', size: 1, createdAt: 0,
+  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, createdAt: 0,
 }
 
 const TOKEN_2: CampaignMapToken = {
   id: 'tok-2', mapId: 'map-1', x: 800, y: 600,
-  label: '', color: '#2980B9', size: 2, createdAt: 1,
+  label: '', color: '#2980B9', size: 2, imagePath: null, createdAt: 1,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -286,7 +289,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId(`token-remove-${TOKEN_1.id}`))
     fireEvent.click(screen.getByTestId(`token-remove-${TOKEN_1.id}`))
-    await waitFor(() => expect(mockDeleteMapToken).toHaveBeenCalledWith(TOKEN_1.id))
+    await waitFor(() => expect(mockDeleteMapToken).toHaveBeenCalledWith(expect.objectContaining({ id: TOKEN_1.id })))
     await waitFor(() => expect(screen.queryByTestId(`token-popup-${TOKEN_1.id}`)).toBeNull())
   })
 
