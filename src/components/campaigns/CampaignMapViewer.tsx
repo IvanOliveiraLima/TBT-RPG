@@ -390,6 +390,16 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     })
   }, [fog.revealed, localGrid.size, localGrid.offsetX, localGrid.offsetY])
 
+  const revealedSet = useMemo(() => new Set(fog.revealed), [fog.revealed])
+
+  function isTokenHiddenForViewer(tok: CampaignMapToken): boolean {
+    if (isOwner) return false
+    if (!fog.enabled) return false
+    const cell = pointToCell(tok.x, map.height - tok.y, localGrid)
+    if (!cell) return false
+    return !revealedSet.has(cellKey(cell.col, cell.row))
+  }
+
   const pinIcon = useMemo(() => L.divIcon({
     className: 'tbt-map-pin',
     html: PIN_ICON_HTML,
@@ -1026,7 +1036,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         )}
 
         {/* Tokens — colored disc + label; owner can drag (snap) and edit/remove */}
-        {tokens.map(tok => (
+        {tokens.filter(tok => !isTokenHiddenForViewer(tok)).map(tok => (
           <Marker
             key={tok.id}
             position={[tok.y, tok.x]}
