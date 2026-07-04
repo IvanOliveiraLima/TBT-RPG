@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase'
 
-const BUCKET = 'campaign-maps'
-const MAX_BYTES = 10 * 1024 * 1024
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+export const BUCKET = 'campaign-maps'
+export const MAX_BYTES = 10 * 1024 * 1024
+export const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const MAX_MAPS_PER_CAMPAIGN = 20
 
 // ── Types ─────────────────────────────────────────────────────────────────────

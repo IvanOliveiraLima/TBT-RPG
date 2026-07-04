@@ -697,6 +697,9 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.token_size':   'Tamanho (células)',
   'campaign_maps.token_save':   'Salvar',
   'campaign_maps.token_remove': 'Remover',
+  'campaign_maps.token_image':        'Imagem',
+  'campaign_maps.token_image_upload': 'Enviar imagem',
+  'campaign_maps.token_image_remove': 'Remover imagem',
 
   'campaign_maps.fog_title':         'Névoa',
   'campaign_maps.fog_enable':        'Ativar névoa',

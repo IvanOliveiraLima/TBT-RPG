@@ -46,6 +46,7 @@ PWA instalável.
 - **Nome de exibição editável** — Cada user define um nome visível pros membros das suas campanhas
 - **Mapas de campanha** — Mestre sobe mapas (imagem) e adiciona marcadores com rótulo; membros visualizam com pan/zoom (react-leaflet)
 - **Grid, tokens e névoa de guerra** — o mestre configura grade, posiciona tokens (arrastar com snap na grade) e revela/oculta regiões com névoa manual; os jogadores acompanham em modo leitura
+- **Tokens com imagem e mapa em tela cheia** — tokens aceitam imagem (recorte circular) e escalam com o zoom; o viewer do mapa expande para quase toda a tela
 
 **Sincronização (opcional):**
 

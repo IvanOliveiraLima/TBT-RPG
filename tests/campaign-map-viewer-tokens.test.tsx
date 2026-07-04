@@ -25,6 +25,28 @@ import type { CampaignMapToken } from '@/services/campaign-map-tokens'
 // Key: "lat,lng" string from the marker position, value: the dragend handler
 const capturedDragHandlers = new Map<string, (e: unknown) => void>()
 
+// ── Stable leaflet map for ZoomScaleTracker ───────────────────────────────────
+
+let mockLatLngScale = 1
+const capturedZoomHandlers: Array<() => void> = []
+
+const mockLeafletMap = {
+  dragging: { enable: vi.fn(), disable: vi.fn() },
+  getContainer: () => ({
+    style: { cursor: '' as string, touchAction: '' as string },
+    setPointerCapture: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
+  mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
+  invalidateSize: vi.fn(),
+  latLngToLayerPoint: vi.fn(([_lat, lng]: [number, number]) => ({ x: lng * mockLatLngScale, y: 0 })),
+  on: vi.fn((event: string, handler: () => void) => {
+    if (event === 'zoomend') capturedZoomHandlers.push(handler)
+  }),
+  off: vi.fn(),
+}
+
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
 vi.mock('react-leaflet', () => ({
@@ -62,17 +84,7 @@ vi.mock('react-leaflet', () => ({
   Popup: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="popup">{children}</div>
   ),
-  useMap: () => ({
-    dragging: { enable: () => undefined, disable: () => undefined },
-    getContainer: () => ({
-      style: { cursor: '' as string, touchAction: '' as string },
-      setPointerCapture: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }),
-    mouseEventToLatLng: () => ({ lat: 500, lng: 500 }),
-    invalidateSize: () => {},
-  }),
+  useMap: () => mockLeafletMap,
   useMapEvents: () => null,
 }))
 
@@ -114,10 +126,13 @@ const mockUpdateMapToken = vi.fn()
 const mockDeleteMapToken = vi.fn()
 
 vi.mock('@/services/campaign-map-tokens', () => ({
-  listMapTokens:  (...args: unknown[]) => mockListMapTokens(...args),
-  createMapToken: (...args: unknown[]) => mockCreateMapToken(...args),
-  updateMapToken: (...args: unknown[]) => mockUpdateMapToken(...args),
-  deleteMapToken: (...args: unknown[]) => mockDeleteMapToken(...args),
+  listMapTokens:          (...args: unknown[]) => mockListMapTokens(...args),
+  createMapToken:         (...args: unknown[]) => mockCreateMapToken(...args),
+  updateMapToken:         (...args: unknown[]) => mockUpdateMapToken(...args),
+  deleteMapToken:         (...args: unknown[]) => mockDeleteMapToken(...args),
+  uploadTokenImage:       () => Promise.resolve('camp-1/tokens/tok-1.png'),
+  getTokenImageSignedUrl: () => Promise.resolve('https://signed.example.com/token.png'),
+  removeTokenImage:       () => Promise.resolve(),
 }))
 
 // ── Mock campaign-map-fog service ─────────────────────────────────────────────
@@ -137,12 +152,12 @@ const MAP: CampaignMap = {
 
 const TOKEN_1: CampaignMapToken = {
   id: 'tok-1', mapId: 'map-1', x: 400, y: 300,
-  label: 'Goblin', color: '#C0392B', size: 1, createdAt: 0,
+  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, createdAt: 0,
 }
 
 const TOKEN_2: CampaignMapToken = {
   id: 'tok-2', mapId: 'map-1', x: 800, y: 600,
-  label: '', color: '#2980B9', size: 2, createdAt: 1,
+  label: '', color: '#2980B9', size: 2, imagePath: null, createdAt: 1,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -151,6 +166,8 @@ describe('CampaignMapViewer — tokens (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1, TOKEN_2])
   })
@@ -206,6 +223,8 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1])
     mockUpdateMapToken.mockResolvedValue(undefined)
@@ -270,7 +289,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId(`token-remove-${TOKEN_1.id}`))
     fireEvent.click(screen.getByTestId(`token-remove-${TOKEN_1.id}`))
-    await waitFor(() => expect(mockDeleteMapToken).toHaveBeenCalledWith(TOKEN_1.id))
+    await waitFor(() => expect(mockDeleteMapToken).toHaveBeenCalledWith(expect.objectContaining({ id: TOKEN_1.id })))
     await waitFor(() => expect(screen.queryByTestId(`token-popup-${TOKEN_1.id}`)).toBeNull())
   })
 
@@ -297,6 +316,8 @@ describe('CampaignMapViewer — token polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
     vi.useFakeTimers()
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([TOKEN_1])
@@ -360,5 +381,42 @@ describe('snapToGrid', () => {
   it('snaps size-3 token to 3-cell span center', () => {
     // Span-3 centers: 75, 125... (size=50, offset=0)
     expect(snapToGrid(80, 80, 3, GRID)).toEqual({ x: 75, y: 75 })
+  })
+})
+
+// ── ZoomScaleTracker ──────────────────────────────────────────────────────────
+
+describe('ZoomScaleTracker — zoom scale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedDragHandlers.clear()
+    capturedZoomHandlers.length = 0
+    mockLatLngScale = 1
+    mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
+    mockListMapTokens.mockResolvedValue([])
+  })
+
+  it('registers a zoomend listener on mount', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function))
+  })
+
+  it('calls latLngToLayerPoint([0,0]) and ([0,1]) after zoomend', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    mockLeafletMap.latLngToLayerPoint.mockClear()
+
+    // Simulate a zoom event
+    act(() => { capturedZoomHandlers.forEach(h => h()) })
+
+    expect(mockLeafletMap.latLngToLayerPoint).toHaveBeenCalledWith([0, 0])
+    expect(mockLeafletMap.latLngToLayerPoint).toHaveBeenCalledWith([0, 1])
+  })
+
+  it('renders without error when expanded=true (ZoomScaleTracker + InvalidateOnChange coexist)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} expanded />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(screen.getByTestId('campaign-map-viewer')).toBeDefined()
   })
 })

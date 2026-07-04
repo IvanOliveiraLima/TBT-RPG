@@ -205,23 +205,22 @@ describe('CampaignCharacterView — character loaded', () => {
 
   it('renders linked chars in desktop sidebar', async () => {
     renderView()
-    await waitFor(() => expect(screen.getByTestId('campaign-view-char-list')).toBeDefined())
-    expect(screen.getAllByTestId('char-nav-char1').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByTestId('char-nav-char2').length).toBeGreaterThanOrEqual(1)
+    expect((await screen.findAllByTestId('char-nav-char1')).length).toBeGreaterThanOrEqual(1)
+    expect((await screen.findAllByTestId('char-nav-char2')).length).toBeGreaterThanOrEqual(1)
   })
 
   it('current char has aria-current=page in sidebar', async () => {
     renderView('char1')
-    await waitFor(() => screen.getByTestId('campaign-view-char-list'))
-    const btns = screen.getAllByTestId('char-nav-char1')
-    const activeBtn = btns.find(b => b.getAttribute('aria-current') === 'page')
-    expect(activeBtn).toBeDefined()
+    await waitFor(() => {
+      const btns = screen.getAllByTestId('char-nav-char1')
+      const activeBtn = btns.find(b => b.getAttribute('aria-current') === 'page')
+      expect(activeBtn).toBeDefined()
+    })
   })
 
   it('clicking sidebar char navigates to that char view', async () => {
     renderView('char1')
-    await waitFor(() => screen.getByTestId('campaign-view-char-list'))
-    const navBtns = screen.getAllByTestId('char-nav-char2')
+    const navBtns = await screen.findAllByTestId('char-nav-char2')
     await userEvent.click(navBtns[0]!)
     expect(mockNavigate).toHaveBeenCalledWith('/campaigns/c1/characters/char2')
   })

@@ -733,6 +733,33 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   Pointer Events (drag-paint desktop + touch, `touch-action:none`, pan travado, cursor crosshair); flip de
   Y na entrada do clique (`height - lat`); persistência única no `pointerup`. LOS dinâmico fora de escopo.
 
+### Map viewer — expand/maximize (COMPLETED — PR #162)
+- Botão maximizar/restaurar no header do modal (CSS-maximize `96vw × 94vh`; não Fullscreen API — iOS não
+  suporta em elemento arbitrário). `InvalidateOnChange` (filho do `MapContainer`) chama
+  `map.invalidateSize()` ~150ms após o toggle, preservando pan/zoom e mantendo a conversão de coordenada
+  correta. `expanded` reseta ao fechar o modal.
+
+### Spell slots — remoção no mobile (COMPLETED — PR #163)
+- Remover um nível de espaço de magia dependia de reduzir a 0 (setas do `input type=number`, ausentes no
+  mobile). `ConfirmableRemoveButton` (dois cliques) por nível chamando `onMaxChange(0)` (reusa o
+  `updateMax(0)` que já apaga); o input segue disponível no desktop.
+
+### Tactical maps — token zoom scale (COMPLETED — PR #165)
+- Token deixa de ter tamanho fixo em px: `<Marker>` + divIcon com o diâmetro recomputado no `zoomend` via
+  `pxPerUnit` (projeção de dois pontos `latLngToLayerPoint`), ficando proporcional à célula em qualquer
+  zoom. Helper puro `tokenDiameterPx`; a chave do cache do ícone inclui o tamanho.
+
+### Tactical maps — tokens under fog (COMPLETED — PR #166)
+- Pros jogadores, tokens em células não-reveladas ficam ocultos (regra do **centro**:
+  `pointToCell(tok.x, map.height - tok.y, localGrid)` — mesmo flip de Y do fog). Mestre sempre vê tudo;
+  frescor pelo polling de 5s existente.
+
+### Tactical maps — token images (COMPLETED — PR #167)
+- Upload próprio por token no bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` (RLS de
+  storage reusada — 1º segmento = campaignId; coluna `image_path`). Render circular + anel na cor, fallback
+  disco colorido, escala com o zoom, oculta sob fog igual. Signed URL 1h cacheada por path; limpeza de
+  órfãos no replace, no delete do token e varrendo `tokens/` no delete de campanha.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1437,6 +1464,8 @@ function buildInviteLink(): string {
 | **Tático — grid em colunas:** a grade é config por mapa em COLUNAS de `campaign_maps` (não tabela nova), reusando a RLS do mapa (membro lê / dono escreve). Overlay `SVGOverlay` com `pointer-events:none`. | PR #157 | Config 1:1 com o mapa vai em colunas + reuso de RLS |
 | **Tático — coordenada de fog (flip Y):** o clique vem do Leaflet (`CRS.Simple`, y para cima) e o render é SVG viewBox (y para baixo); converter a entrada com `height - lat` antes de mapear pra célula. Tokens/marcadores não precisam (posicionados pelo Leaflet). | PR #159 | Qualquer render SVG derivado de clique precisa do flip de Y |
 | **Tático — pintura por gesto:** drag-paint usa Pointer Events nativos no container + `touch-action:none` + `dragging.disable()` (eventos de mouse não cobrem touch). Persistir uma vez no `pointerup`, não por célula. | PR #159 | Interação de arraste no mapa usa pointer events, não mouse |
+| **Tático — escala de token:** token é `<Marker>` + divIcon com o tamanho recomputado no `zoomend` (px de tela = célula × `pxPerUnit`), não `<Circle>` (perderia o drag). Cache do ícone inclui o tamanho. | PR #165 | Overlay que escala "por unidade de mapa" com Marker exige recompute no zoom |
+| **Tático — imagem de token:** reusa o bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` — como o 1º segmento do path é o campaignId, a RLS de storage existente cobre; a limpeza deve varrer a subpasta `tokens/`. | PR #167 | Conteúdo de campanha novo no storage vai sob `{campaignId}/...` pra reusar RLS; limpeza varre subpastas |
 
 ---
 
@@ -1593,12 +1622,13 @@ New from Auth signup + Camp.1-5:
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
 - ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.
 - **OQ — Re-send confirmation email.** Não implementado.
-- **OQ — Expandir/fullscreen do viewer de mapa.** O modal é de tamanho fixo; mesmo com zoom pode ficar pequeno. Adicionar botão de expandir/fullscreen. Deferred.
-- **OQ — Imagens nos tokens.** Hoje o token é disco colorido + rótulo; permitir imagem/retrato (upload ou puxado do personagem vinculado). Deferred. *(Tokens são a área de maior trabalho futuro.)*
-- **OQ — Tokens escalam com o zoom.** O `divIcon` tem tamanho fixo em px, então o token muda de tamanho relativo à grade conforme o zoom. Investigar mantê-los proporcionais à célula em qualquer zoom. Deferred.
+- ~~**OQ — Expandir/fullscreen do viewer de mapa.**~~ *Resolved (PR #162).* Botão maximizar/restaurar no header do modal (CSS-maximize; não Fullscreen API — iOS). `InvalidateOnChange` chama `map.invalidateSize()` no toggle, preservando pan/zoom.
+- ~~**OQ — Imagens nos tokens.**~~ *Resolved (PR #167).* Upload próprio por token no bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` (RLS reusada; coluna `image_path`); render circular + anel na cor, fallback disco; escala com o zoom; limpeza de órfãos. *(Puxar do personagem vinculado segue como OQ abaixo.)*
+- **OQ — Puxar imagem do token do personagem vinculado.** Reaproveitar o retrato do personagem vinculado como imagem do token (o mestre já lê os retratos via `fetchCampaignCharacterImages`); acopla token↔personagem e precisa de um seletor de qual personagem. Deferred.
+- ~~**OQ — Tokens escalam com o zoom.**~~ *Resolved (PR #165).* `<Marker>` + divIcon com tamanho recomputado no `zoomend` via `pxPerUnit`; helper `tokenDiameterPx`.
 - **OQ — Marcador por duplo-clique.** Hoje um clique já cria o marcador pendente (aparece à toa); mudar a criação para duplo-clique. Deferred.
 - **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
-- **OQ — Tokens sob a névoa.** Tokens continuam visíveis mesmo em células cobertas por fog; analisar ocultá-los pros jogadores nas áreas não-reveladas. Deferred.
+- ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
 
