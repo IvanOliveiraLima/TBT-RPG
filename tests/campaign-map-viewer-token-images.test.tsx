@@ -92,6 +92,15 @@ vi.mock('@/services/campaign-map-tokens', () => ({
   uploadTokenImage:       (...args: unknown[]) => mockUploadTokenImage(...args),
   getTokenImageSignedUrl: (...args: unknown[]) => mockGetTokenImageUrl(...args),
   removeTokenImage:       (...args: unknown[]) => mockRemoveTokenImage(...args),
+  setTokenImageFromCharacterPortrait: vi.fn(),
+}))
+
+vi.mock('@/services/campaign-characters', () => ({
+  listCampaignCharacters: () => Promise.resolve([]),
+}))
+
+vi.mock('@/services/campaign-view', () => ({
+  fetchCampaignCharacterImages: () => Promise.resolve({ portraitData: null, symbolData: null }),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────

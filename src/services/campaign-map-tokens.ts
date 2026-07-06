@@ -149,3 +149,31 @@ export async function removeTokenImage(tokenId: string, imagePath: string): Prom
   await supabase.storage.from(BUCKET).remove([imagePath]).catch(() => undefined)
   await updateMapToken(tokenId, { imagePath: null })
 }
+
+function dataUrlToBlob(dataUrl: string): Blob {
+  const commaIdx = dataUrl.indexOf(',')
+  const head = commaIdx > -1 ? dataUrl.slice(0, commaIdx) : ''
+  const b64  = commaIdx > -1 ? dataUrl.slice(commaIdx + 1) : dataUrl
+  const mime = /data:(.*?);/.exec(head)?.[1] ?? 'image/png'
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
+export async function setTokenImageFromCharacterPortrait(
+  campaignId: string,
+  tokenId: string,
+  portraitDataUrl: string,
+): Promise<string> {
+  if (!supabase) throw new Error('not_authenticated')
+  const blob = dataUrlToBlob(portraitDataUrl)
+  const ext = extFromMimeType(blob.type)
+  const path = `${campaignId}/tokens/${tokenId}.${ext}`
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, blob, { contentType: blob.type, upsert: true })
+  if (error) throw error
+  await updateMapToken(tokenId, { imagePath: path })
+  return path
+}

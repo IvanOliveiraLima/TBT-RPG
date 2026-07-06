@@ -696,6 +696,9 @@ const en = {
   'campaign_maps.token_image':        'Image',
   'campaign_maps.token_image_upload': 'Upload image',
   'campaign_maps.token_image_remove': 'Remove image',
+  'campaign_maps.token_image_from_character':  'Use character portrait',
+  'campaign_maps.token_image_pick_character':  'Choose a character',
+  'campaign_maps.token_image_no_portrait':     'No portrait',
 
   'campaign_maps.fog_title':         'Fog',
   'campaign_maps.fog_enable':        'Enable fog',
