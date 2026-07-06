@@ -700,6 +700,9 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.token_image':        'Imagem',
   'campaign_maps.token_image_upload': 'Enviar imagem',
   'campaign_maps.token_image_remove': 'Remover imagem',
+  'campaign_maps.token_image_from_character':  'Usar retrato de personagem',
+  'campaign_maps.token_image_pick_character':  'Escolher personagem',
+  'campaign_maps.token_image_no_portrait':     'Sem retrato',
 
   'campaign_maps.fog_title':         'Névoa',
   'campaign_maps.fog_enable':        'Ativar névoa',
