@@ -672,7 +672,7 @@ const en = {
   'campaign_maps.upload_error_quota': 'Map limit reached (max 20 per campaign).',
   'campaign_maps.loading':          'Loading map…',
   'campaign_maps.remove_confirm':   'Remove this map?',
-  'campaign_maps.marker_add_hint':          'Click the map to add a marker',
+  'campaign_maps.marker_add_hint':          'Double-click the map to add a marker',
   'campaign_maps.marker_label_placeholder': 'Marker label',
   'campaign_maps.marker_save':              'Add',
   'campaign_maps.marker_cancel':            'Cancel',
@@ -696,6 +696,9 @@ const en = {
   'campaign_maps.token_image':        'Image',
   'campaign_maps.token_image_upload': 'Upload image',
   'campaign_maps.token_image_remove': 'Remove image',
+  'campaign_maps.token_image_from_character':  'Use character portrait',
+  'campaign_maps.token_image_pick_character':  'Choose a character',
+  'campaign_maps.token_image_no_portrait':     'No portrait',
 
   'campaign_maps.fog_title':         'Fog',
   'campaign_maps.fog_enable':        'Enable fog',

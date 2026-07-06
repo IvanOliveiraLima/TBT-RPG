@@ -18,9 +18,9 @@ import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
 import type { CampaignMap } from '@/services/campaign-maps'
 
-// ── Capture useMapEvents click handler ────────────────────────────────────────
+// ── Capture useMapEvents dblclick handler ─────────────────────────────────────
 
-let capturedClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
+let capturedDblClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
 
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
@@ -50,8 +50,8 @@ vi.mock('react-leaflet', () => ({
     on: () => {},
     off: () => {},
   }),
-  useMapEvents: (handlers: { click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
-    if (handlers.click !== undefined) capturedClickHandler = handlers.click
+  useMapEvents: (handlers: { dblclick?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
+    if (handlers.dblclick !== undefined) capturedDblClickHandler = handlers.dblclick
     return null
   },
 }))
@@ -123,7 +123,7 @@ const MARKER_2 = { id: 'mk-2', mapId: 'map-1', x: 100, y: 200, label: '',       
 describe('CampaignMapViewer — markers (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1, MARKER_2])
   })
@@ -177,18 +177,18 @@ describe('CampaignMapViewer — markers (member view)', () => {
     expect(screen.queryByTestId('marker-add-hint')).toBeNull()
   })
 
-  it('does NOT install click handler for member (no MapClickHandler)', async () => {
-    capturedClickHandler = null
+  it('does NOT install dblclick handler for member (no MapClickHandler)', async () => {
+    capturedDblClickHandler = null
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    expect(capturedClickHandler).toBeNull()
+    expect(capturedDblClickHandler).toBeNull()
   })
 })
 
 describe('CampaignMapViewer — markers (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1])
   })
@@ -201,7 +201,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('add hint text in PT', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
     await waitFor(() => screen.getByTestId('marker-add-hint'))
-    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique no mapa')
+    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique duas vezes no mapa')
   })
 
   it('shows rename and remove buttons for owner', async () => {
@@ -256,7 +256,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('map click shows pending marker UI for owner', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
     expect(screen.getByTestId('pending-label-input')).toBeDefined()
     expect(screen.getByTestId('pending-add-btn')).toBeDefined()
@@ -266,7 +266,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('cancel pending marker removes the pending UI', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-cancel-btn'))
     fireEvent.click(screen.getByTestId('pending-cancel-btn'))
     expect(screen.queryByTestId('pending-marker')).toBeNull()
@@ -277,7 +277,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
     mockCreateMapMarker.mockResolvedValue(newMarker)
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-label-input'))
     fireEvent.change(screen.getByTestId('pending-label-input'), { target: { value: 'New Spot' } })
     fireEvent.click(screen.getByTestId('pending-add-btn'))
@@ -289,7 +289,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('pending marker position uses [lat, lng] = [y, x]', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
     // Find the pending marker element (last marker rendered)
     const markerEls = screen.getAllByTestId('marker')
@@ -304,7 +304,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 describe('CampaignMapViewer — marker polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     vi.useFakeTimers()
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1])

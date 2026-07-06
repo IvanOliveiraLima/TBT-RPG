@@ -29,8 +29,11 @@ import {
   uploadTokenImage,
   getTokenImageSignedUrl,
   removeTokenImage,
+  setTokenImageFromCharacterPortrait,
 } from '@/services/campaign-map-tokens'
 import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
+import { listCampaignCharacters } from '@/services/campaign-characters'
+import { fetchCampaignCharacterImages } from '@/services/campaign-view'
 import { snapToGrid } from '@/utils/snap-to-grid'
 import { tokenDiameterPx } from '@/utils/token-size'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
@@ -89,7 +92,7 @@ function getTokenIcon(
 
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
-  useMapEvents({ click: e => onMapClick(e.latlng) })
+  useMapEvents({ dblclick: e => onMapClick(e.latlng) })
   return null
 }
 
@@ -167,22 +170,57 @@ function FogInteraction({
 // Inner component — owner popup for editing a token's label, color, size, and image
 function TokenPopupContent({
   token,
+  campaignId,
   onSave,
   onRemove,
   onUploadImage,
   onRemoveImage,
+  onPickCharacterPortrait,
 }: {
   token: CampaignMapToken
+  campaignId: string
   onSave: (id: string, patch: TokenPatch) => void
   onRemove: (id: string) => void
   onUploadImage: (tokenId: string, file: File) => void
   onRemoveImage: (tokenId: string, imagePath: string) => void
+  onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string) => void
 }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(token.label)
   const [color, setColor] = useState(token.color)
   const [size, setSize] = useState(token.size)
   const [imageError, setImageError] = useState<string | null>(null)
+
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [loadingPicker, setLoadingPicker] = useState(false)
+  const [pickerChars, setPickerChars] = useState<Array<{
+    characterId: string
+    characterName: string
+    portraitDataUrl: string | null
+  }>>([])
+
+  async function openPortraitPicker() {
+    setPickerOpen(true)
+    setLoadingPicker(true)
+    try {
+      const linked = await listCampaignCharacters(campaignId)
+      const withPortraits = await Promise.all(
+        linked.map(async (c) => {
+          const imgs = await fetchCampaignCharacterImages({ userId: c.userId, characterId: c.characterId })
+          return {
+            characterId: c.characterId,
+            characterName: c.characterName,
+            portraitDataUrl: imgs.portraitData,
+          }
+        }),
+      )
+      setPickerChars(withPortraits)
+    } catch {
+      setPickerOpen(false)
+    } finally {
+      setLoadingPicker(false)
+    }
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -237,6 +275,56 @@ function TokenPopupContent({
             style={{ display: 'none' }}
           />
         </label>
+        <button
+          type="button"
+          data-testid={`token-portrait-pick-${token.id}`}
+          onClick={() => void openPortraitPicker()}
+          style={{ fontSize: 12, padding: '2px 6px', borderRadius: 4, cursor: 'pointer', color: T.textMuted, background: 'none', border: `1px solid ${T.textMuted}`, marginBottom: 4, display: 'block' }}
+        >
+          {t('campaign_maps.token_image_from_character')}
+        </button>
+        {pickerOpen && (
+          <div data-testid={`token-portrait-picker-${token.id}`} style={{ marginBottom: 4, border: `1px solid ${T.textMuted}`, borderRadius: 4, padding: 4 }}>
+            <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>{t('campaign_maps.token_image_pick_character')}</div>
+            {loadingPicker ? (
+              <div data-testid={`token-portrait-loading-${token.id}`} style={{ fontSize: 12 }}>…</div>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 120, overflowY: 'auto' }}>
+                {pickerChars.map(c => (
+                  <li key={c.characterId}>
+                    <button
+                      type="button"
+                      data-testid={`portrait-char-${c.characterId}`}
+                      disabled={!c.portraitDataUrl}
+                      onClick={() => {
+                        if (c.portraitDataUrl) {
+                          onPickCharacterPortrait(token.id, c.portraitDataUrl)
+                          setPickerOpen(false)
+                        }
+                      }}
+                      style={{ width: '100%', textAlign: 'left', padding: '2px 4px', fontSize: 12, cursor: c.portraitDataUrl ? 'pointer' : 'not-allowed', opacity: c.portraitDataUrl ? 1 : 0.5, background: 'none', border: 'none' }}
+                    >
+                      {c.characterName}
+                      {!c.portraitDataUrl && (
+                        <span data-testid={`portrait-char-no-portrait-${c.characterId}`} style={{ marginLeft: 4, fontSize: 10, color: T.textMuted }}>
+                          ({t('campaign_maps.token_image_no_portrait')})
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              data-testid={`token-portrait-picker-close-${token.id}`}
+              onClick={() => setPickerOpen(false)}
+              style={{ fontSize: 11, marginTop: 4, cursor: 'pointer', background: 'none', border: 'none', color: T.textMuted }}
+            >
+              ×
+            </button>
+          </div>
+        )}
         {token.imagePath && (
           <button
             type="button"
@@ -548,6 +636,22 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       setTokenImageUrlsByPath(prev => {
         const next = { ...prev }
         delete next[imagePath]
+        return next
+      })
+    } catch {
+      // noop
+    }
+  }
+
+  async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string) {
+    try {
+      const path = await setTokenImageFromCharacterPortrait(map.campaignId, tokenId, portraitDataUrl)
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path } : t))
+      setTokenImageUrlsByPath(prev => {
+        const oldToken = tokens.find(t => t.id === tokenId)
+        if (!oldToken?.imagePath) return prev
+        const next = { ...prev }
+        delete next[oldToken.imagePath]
         return next
       })
     } catch {
@@ -965,6 +1069,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         bounds={bounds}
         minZoom={-4}
         maxZoom={4}
+        doubleClickZoom={false}
         style={{ height: '100%', width: '100%', background: T.bg }}
         attributionControl={false}
       >
@@ -1176,10 +1281,12 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                 {isOwner ? (
                   <TokenPopupContent
                     token={tok}
+                    campaignId={map.campaignId}
                     onSave={(id, patch) => void handleSaveToken(id, patch)}
                     onRemove={id => void handleRemoveToken(id)}
                     onUploadImage={(tokenId, file) => void handleUploadTokenImage(tokenId, file)}
                     onRemoveImage={(tokenId, imagePath) => void handleRemoveTokenImage(tokenId, imagePath)}
+                    onPickCharacterPortrait={(tokenId, dataUrl) => void handlePickCharacterPortrait(tokenId, dataUrl)}
                   />
                 ) : (
                   <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
