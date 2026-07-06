@@ -676,7 +676,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.upload_error_quota': 'Limite de mapas atingido (máx. 20 por campanha).',
   'campaign_maps.loading':          'Carregando mapa…',
   'campaign_maps.remove_confirm':   'Remover este mapa?',
-  'campaign_maps.marker_add_hint':          'Clique no mapa para adicionar um marcador',
+  'campaign_maps.marker_add_hint':          'Clique duas vezes no mapa para adicionar um marcador',
   'campaign_maps.marker_label_placeholder': 'Rótulo do marcador',
   'campaign_maps.marker_save':              'Adicionar',
   'campaign_maps.marker_cancel':            'Cancelar',

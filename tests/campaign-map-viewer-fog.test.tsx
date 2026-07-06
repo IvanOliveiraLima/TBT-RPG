@@ -18,7 +18,7 @@ import type { CampaignMap } from '@/services/campaign-maps'
 // ── Capture useMapEvents handlers ─────────────────────────────────────────────
 
 type FakeLatLng = { lat: number; lng: number }
-let capturedClickHandler: ((e: { latlng: FakeLatLng }) => void) | null = null
+let capturedDblClickHandler: ((e: { latlng: FakeLatLng }) => void) | null = null
 
 // ── Container pointer-event capture ──────────────────────────────────────────
 
@@ -80,8 +80,8 @@ vi.mock('react-leaflet', () => ({
   Marker: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Popup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   useMap: () => mockLeafletMap,
-  useMapEvents: (handlers: { click?: (e: { latlng: FakeLatLng }) => void }) => {
-    if (handlers.click !== undefined) capturedClickHandler = handlers.click
+  useMapEvents: (handlers: { dblclick?: (e: { latlng: FakeLatLng }) => void }) => {
+    if (handlers.dblclick !== undefined) capturedDblClickHandler = handlers.dblclick
     return null
   },
 }))
@@ -156,7 +156,7 @@ const FOG_ON  = { mapId: 'map-1', enabled: true,  revealed: ['0,0', '1,0'], upda
 describe('CampaignMapViewer — fog overlay (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -199,7 +199,7 @@ describe('CampaignMapViewer — fog overlay (member view)', () => {
 describe('CampaignMapViewer — fog overlay (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockSaveMapFog.mockResolvedValue(undefined)
@@ -220,7 +220,7 @@ describe('CampaignMapViewer — fog overlay (owner view)', () => {
 describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
@@ -308,7 +308,7 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
 describe('CampaignMapViewer — fog panel actions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
@@ -358,7 +358,7 @@ describe('CampaignMapViewer — fog panel actions', () => {
 describe('CampaignMapViewer — fog mode routing', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
@@ -386,8 +386,8 @@ describe('CampaignMapViewer — fog mode routing', () => {
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-config-panel'))
     // Fire click — should be ignored (MapClickHandler returns early in fogMode)
-    expect(capturedClickHandler).not.toBeNull()
-    act(() => { capturedClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
+    expect(capturedDblClickHandler).not.toBeNull()
+    act(() => { capturedDblClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
     await new Promise(r => setTimeout(r, 50))
     // No pending marker should appear
     expect(screen.queryByTestId('pending-marker')).toBeNull()
@@ -407,8 +407,8 @@ describe('CampaignMapViewer — fog mode routing', () => {
     renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Click without fog mode → should add pending marker
-    expect(capturedClickHandler).not.toBeNull()
-    act(() => { capturedClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
+    expect(capturedDblClickHandler).not.toBeNull()
+    act(() => { capturedDblClickHandler!({ latlng: { lat: 100, lng: 200 } }) })
     await waitFor(() => expect(screen.queryByTestId('pending-marker')).not.toBeNull())
     expect(mockSaveMapFog).not.toHaveBeenCalled()
   })
@@ -419,7 +419,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
 describe('CampaignMapViewer — fog polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    capturedClickHandler = null
+    capturedDblClickHandler = null
     containerHandlers = {}
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockGetMapFog.mockResolvedValue(FOG_OFF)
