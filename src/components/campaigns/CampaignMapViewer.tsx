@@ -89,7 +89,7 @@ function getTokenIcon(
 
 // Inner component — captures map click events for owner add-marker flow
 function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
-  useMapEvents({ click: e => onMapClick(e.latlng) })
+  useMapEvents({ dblclick: e => onMapClick(e.latlng) })
   return null
 }
 
@@ -965,6 +965,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         bounds={bounds}
         minZoom={-4}
         maxZoom={4}
+        doubleClickZoom={false}
         style={{ height: '100%', width: '100%', background: T.bg }}
         attributionControl={false}
       >
