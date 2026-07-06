@@ -760,6 +760,22 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   disco colorido, escala com o zoom, oculta sob fog igual. Signed URL 1h cacheada por path; limpeza de
   órfãos no replace, no delete do token e varrendo `tokens/` no delete de campanha.
 
+### CI — de-flake campaign-character-view (COMPLETED — PR #170)
+- Testes do sidebar esperavam o container `campaign-view-char-list` e consultavam os botões `char-nav-*`
+  com `getAllByTestId` síncrono (corrida com o render async). Trocado por consultas assíncronas
+  (`findAllByTestId` / asserção dentro de `waitFor`). Sem mudança de produção.
+
+### Tactical maps — marker double-click (COMPLETED — PR #171)
+- Criação de marcador passou de clique simples (marcador à toa) para **duplo-clique**
+  (`useMapEvents({ dblclick })`) + `doubleClickZoom={false}` no `MapContainer` (pra o duplo-clique não dar
+  zoom). Fluxo do marcador pendente (popup/label) inalterado.
+
+### Tactical maps — token portrait from linked character (COMPLETED — PR #172)
+- No popup do token, o mestre escolhe um personagem vinculado e o **retrato é copiado** como imagem do
+  token (`setTokenImageFromCharacterPortrait`: data URL → blob → `image_path`), reusando bucket/RLS/limpeza/
+  render/escala/ocultar-sob-fog. Personagem sem retrato fica desabilitado no seletor. **Cópia**, não
+  referência ao vivo.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1624,9 +1640,9 @@ New from Auth signup + Camp.1-5:
 - **OQ — Re-send confirmation email.** Não implementado.
 - ~~**OQ — Expandir/fullscreen do viewer de mapa.**~~ *Resolved (PR #162).* Botão maximizar/restaurar no header do modal (CSS-maximize; não Fullscreen API — iOS). `InvalidateOnChange` chama `map.invalidateSize()` no toggle, preservando pan/zoom.
 - ~~**OQ — Imagens nos tokens.**~~ *Resolved (PR #167).* Upload próprio por token no bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` (RLS reusada; coluna `image_path`); render circular + anel na cor, fallback disco; escala com o zoom; limpeza de órfãos. *(Puxar do personagem vinculado segue como OQ abaixo.)*
-- **OQ — Puxar imagem do token do personagem vinculado.** Reaproveitar o retrato do personagem vinculado como imagem do token (o mestre já lê os retratos via `fetchCampaignCharacterImages`); acopla token↔personagem e precisa de um seletor de qual personagem. Deferred.
+- ~~**OQ — Puxar imagem do token do personagem vinculado.**~~ *Resolved (PR #172).* Retrato do personagem vinculado copiado como imagem do token (data URL → blob → `image_path`), reusando todo o pipeline de imagem de token; personagem sem retrato não selecionável. Cópia (não referência ao vivo).
 - ~~**OQ — Tokens escalam com o zoom.**~~ *Resolved (PR #165).* `<Marker>` + divIcon com tamanho recomputado no `zoomend` via `pxPerUnit`; helper `tokenDiameterPx`.
-- **OQ — Marcador por duplo-clique.** Hoje um clique já cria o marcador pendente (aparece à toa); mudar a criação para duplo-clique. Deferred.
+- ~~**OQ — Marcador por duplo-clique.**~~ *Resolved (PR #171).* Marcador criado por duplo-clique (`dblclick`); `doubleClickZoom={false}` evita zoom no duplo-clique.
 - **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
