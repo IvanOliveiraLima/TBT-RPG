@@ -201,7 +201,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('add hint text in PT', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
     await waitFor(() => screen.getByTestId('marker-add-hint'))
-    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique no mapa')
+    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique duas vezes no mapa')
   })
 
   it('shows rename and remove buttons for owner', async () => {
