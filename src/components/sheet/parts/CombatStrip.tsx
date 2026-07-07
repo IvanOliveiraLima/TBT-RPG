@@ -20,8 +20,9 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
 
-  // AC is permanent — read-only when locked or no onUpdate
+  // AC and speed are permanent — read-only when locked or no onUpdate
   const acReadOnly = !onUpdate || locked
+  const speedReadOnly = !onUpdate || locked
 
   // Derive live — ignores stale stored values
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
@@ -109,7 +110,7 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
         )}
       </div>
 
-      {/* All other stats — display only */}
+      {/* All other stats */}
       {displayItems.map((it) => (
         <div
           key={it.key}
@@ -117,7 +118,30 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
           style={statCard}
         >
           <div style={labelStyle}>{it.label}</div>
-          <div style={valueStyle}>{it.value}</div>
+          {it.key === 'spd' && !speedReadOnly ? (
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 3 }}>
+              <NumberField
+                data-testid="speed-input"
+                value={character.speed}
+                min={0}
+                max={200}
+                onChange={(v) => onUpdate?.({ speed: v })}
+                aria-label={t('aria.speed_input')}
+                style={{
+                  ...valueStyle,
+                  background: 'transparent',
+                  border: '1px solid #2A2537',
+                  borderRadius: 4,
+                  width: '100%',
+                  padding: '2px 4px',
+                  textAlign: 'center',
+                }}
+              />
+              <span style={{ ...labelStyle, fontSize: 10 }}>ft</span>
+            </div>
+          ) : (
+            <div style={valueStyle}>{it.value}</div>
+          )}
         </div>
       ))}
     </div>
