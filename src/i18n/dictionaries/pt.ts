@@ -784,6 +784,7 @@ const pt: Record<keyof typeof en, string> = {
 
   // Aria — combat
   'aria.ac_input': 'Classe de Armadura',
+  'aria.speed_input': 'Velocidade em pés',
 
   // Export
   'export.empty_warning': 'Nenhum personagem para exportar.',

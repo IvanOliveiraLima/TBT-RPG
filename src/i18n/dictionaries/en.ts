@@ -780,6 +780,7 @@ const en = {
 
   // Aria — combat
   'aria.ac_input': 'Armor Class',
+  'aria.speed_input': 'Speed in feet',
 
   // Export
   'export.empty_warning': 'No characters to export.',
