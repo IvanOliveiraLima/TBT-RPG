@@ -274,15 +274,50 @@ describe('CombatStrip — AC field', () => {
     expect(acStat.querySelector('input')).toBeNull()
   })
 
-  it('other stats remain display-only even with onUpdate', () => {
+  it('derived stats remain display-only even with onUpdate', () => {
     render(
       <CombatStrip character={makeCharacter()} onUpdate={vi.fn()} />,
       { wrapper }
     )
     expect(screen.getByTestId('combat-stat-init').querySelector('input')).toBeNull()
-    expect(screen.getByTestId('combat-stat-spd').querySelector('input')).toBeNull()
     expect(screen.getByTestId('combat-stat-pp').querySelector('input')).toBeNull()
     expect(screen.getByTestId('combat-stat-prof').querySelector('input')).toBeNull()
+  })
+
+  it('renders speed as input when onUpdate is provided', () => {
+    render(
+      <CombatStrip character={makeCharacter({ speed: 30 })} onUpdate={vi.fn()} />,
+      { wrapper }
+    )
+    expect(screen.getByTestId('speed-input')).toBeDefined()
+  })
+
+  it('speed input calls onUpdate with new value', async () => {
+    const onUpdate = vi.fn()
+    render(
+      <CombatStrip character={makeCharacter({ speed: 30 })} onUpdate={onUpdate} />,
+      { wrapper }
+    )
+    const input = screen.getByTestId('speed-input') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '35' } })
+    await waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ speed: 35 }))
+  })
+
+  it('renders speed as display when locked', () => {
+    mockLocked = true
+    render(
+      <CombatStrip character={makeCharacter({ speed: 30 })} onUpdate={vi.fn()} />,
+      { wrapper }
+    )
+    const spdStat = screen.getByTestId('combat-stat-spd')
+    expect(spdStat.textContent).toContain('30')
+    expect(spdStat.querySelector('input')).toBeNull()
+  })
+
+  it('renders speed as display when no onUpdate (preview mode)', () => {
+    render(<CombatStrip character={makeCharacter({ speed: 30 })} />, { wrapper })
+    const spdStat = screen.getByTestId('combat-stat-spd')
+    expect(spdStat.querySelector('input')).toBeNull()
   })
 
   it('AC input accepts value 0', async () => {
