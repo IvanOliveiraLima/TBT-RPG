@@ -578,6 +578,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const input = screen.getByTestId('spell-name-sp_001') as HTMLInputElement
     expect(input.readOnly).toBe(true)
   })
@@ -587,6 +588,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...UNLOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const input = screen.getByTestId('spell-name-sp_001') as HTMLInputElement
     expect(input.readOnly).toBe(false)
   })
@@ -596,6 +598,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const select = screen.getByTestId('spell-level-sp_001') as HTMLSelectElement
     expect(select.disabled).toBe(true)
   })
@@ -605,6 +608,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const select = screen.getByTestId('spell-school-sp_001') as HTMLSelectElement
     expect(select.disabled).toBe(true)
   })
@@ -614,6 +618,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const input = screen.getByTestId('spell-casting-time-sp_001') as HTMLInputElement
     expect(input.readOnly).toBe(true)
   })
@@ -623,6 +628,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const input = screen.getByTestId('spell-range-sp_001') as HTMLInputElement
     expect(input.readOnly).toBe(true)
   })
@@ -632,6 +638,7 @@ describe('Lock — SpellCard fields read-only when locked', () => {
     const char = { ...LOCKED_CHAR, spells: [spell] }
     setStoreChar(char)
     renderWithI18n(<SpellList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('spell-card-sp_001'))
     const ta = screen.getByTestId('spell-description-sp_001') as HTMLTextAreaElement
     expect(ta.readOnly).toBe(true)
   })
