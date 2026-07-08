@@ -97,25 +97,29 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
             aria-label={t('aria.attack_name')}
             data-testid={`attack-name-input-${attack.id}`}
             className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
-            style={{ ...SEAMLESS_INPUT, flex: '1 1 0', minWidth: 0, fontFamily: T.serif, fontWeight: 600 }}
+            style={{ ...SEAMLESS_INPUT, flex: '0 1 auto', maxWidth: 'min(60%, 320px)', minWidth: 120, fontFamily: T.serif, fontWeight: 600 }}
           />
         ) : (
           <span
             style={{
-              flex: '1 1 0',
-              minWidth: 0,
-              fontFamily: T.serif,
-              fontSize: 14,
-              fontWeight: 600,
-              color: T.textPrimary,
-              overflow: 'hidden',
+              flex:         '0 1 auto',
+              maxWidth:     'min(60%, 320px)',
+              minWidth:     0,
+              fontFamily:   T.serif,
+              fontSize:     14,
+              fontWeight:   600,
+              color:        T.textPrimary,
+              overflow:     'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              whiteSpace:   'nowrap',
             }}
           >
             {attack.name || t('combat.unnamed_attack')}
           </span>
         )}
+
+        {/* Free space — clicking here collapses the card */}
+        <span data-testid={`attack-header-gap-${attack.id}`} style={{ flex: 1 }} />
 
         <span
           data-testid={`attack-bonus-chip-${attack.id}`}

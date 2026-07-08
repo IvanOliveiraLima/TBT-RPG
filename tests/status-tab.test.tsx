@@ -176,7 +176,11 @@ describe('StatusTab integration', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
+    // Cards are collapsed by default — expand to check name inputs
+    // (desktop+mobile renders two instances; click the first)
+    fireEvent.click(screen.getAllByTestId('feature-card-favored_enemy')[0]!)
     expect(screen.getAllByDisplayValue('Favored Enemy').length).toBeGreaterThanOrEqual(1)
+    fireEvent.click(screen.getAllByTestId('feature-card-extra_attack')[0]!)
     expect(screen.getAllByDisplayValue('Extra Attack').length).toBeGreaterThanOrEqual(1)
   })
 
@@ -204,6 +208,9 @@ describe('StatusTab integration', () => {
     useCharactersStore.setState({ characters: [EIRA], loading: false, error: null })
     useCharacterStore.setState({ activeId: EIRA.id, loading: false, error: null })
     renderWithI18n(<StatusTab />, 'pt')
+    // Uses row is in the expanded form — click to expand the active feature card
+    // (desktop+mobile renders two instances; click the first)
+    fireEvent.click(screen.getAllByTestId('feature-card-colossus_slayer')[0]!)
     expect(screen.getAllByTestId('feature-uses-row-colossus_slayer').length).toBeGreaterThanOrEqual(1)
   })
 
