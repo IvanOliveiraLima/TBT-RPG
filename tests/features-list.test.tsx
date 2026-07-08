@@ -94,29 +94,47 @@ describe('FeaturesList', () => {
     expect(screen.getByTestId('feature-card-f4')).toBeDefined()
   })
 
-  it('editable: shows feature names as input values', () => {
+  it('editable: closed cards show compact summary names', () => {
     renderWithI18n(<FeaturesList character={BASE} onUpdate={() => {}} />, 'pt')
+    // In closed state, names appear as summary spans
+    expect(screen.getByTestId('feature-summary-name-f1').textContent).toBe('Druidic')
+    expect(screen.getByTestId('feature-summary-name-f2').textContent).toBe('Wild Shape')
+    expect(screen.getByTestId('feature-summary-name-f3').textContent).toBe('Stonecunning')
+  })
+
+  it('editable: shows feature names as input values when expanded', () => {
+    renderWithI18n(<FeaturesList character={BASE} onUpdate={() => {}} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f1'))
     expect(screen.getByDisplayValue('Druidic')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('feature-card-f2'))
     expect(screen.getByDisplayValue('Wild Shape')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('feature-card-f3'))
     expect(screen.getByDisplayValue('Stonecunning')).toBeDefined()
   })
 
-  it('editable: shows feature sources as input values', () => {
+  it('editable: shows feature sources as input values when expanded', () => {
     renderWithI18n(<FeaturesList character={BASE} onUpdate={() => {}} />, 'pt')
-    const classeInputs = screen.getAllByDisplayValue('Classe')
-    expect(classeInputs.length).toBeGreaterThanOrEqual(3) // f1, f2, f4
+    fireEvent.click(screen.getByTestId('feature-card-f1'))
+    expect(screen.getByDisplayValue('Classe')).toBeDefined()
   })
 
-  it('editable: shows uses-row only for active features', () => {
+  it('editable: shows uses-row only for active features when expanded', () => {
     renderWithI18n(<FeaturesList character={BASE} onUpdate={() => {}} />, 'pt')
-    expect(screen.getByTestId('feature-uses-row-f2')).toBeDefined()
-    expect(screen.getByTestId('feature-uses-row-f4')).toBeDefined()
+
+    // passive feature (f1): expand — no uses-row
+    fireEvent.click(screen.getByTestId('feature-card-f1'))
     expect(screen.queryByTestId('feature-uses-row-f1')).toBeNull()
-    expect(screen.queryByTestId('feature-uses-row-f3')).toBeNull()
+
+    // active feature (f2): expand — has uses-row
+    fireEvent.click(screen.getByTestId('feature-card-f2'))
+    expect(screen.getByTestId('feature-uses-row-f2')).toBeDefined()
   })
 
-  it('editable: uses inputs show correct values for active feature', () => {
+  it('editable: uses inputs show correct values for active feature when expanded', () => {
     renderWithI18n(<FeaturesList character={BASE} onUpdate={() => {}} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f2'))
     const leftInput = screen.getByTestId('feature-uses-left-f2') as HTMLInputElement
     const maxInput = screen.getByTestId('feature-uses-max-f2') as HTMLInputElement
     expect(leftInput.value).toBe('2')
@@ -168,10 +186,9 @@ describe('FeaturesList', () => {
   it('remove: calls onUpdate without the removed feature (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
-    // First click enters confirming state — no action yet
+    // Remove button is in the compact header row — visible without expanding
     fireEvent.click(screen.getByTestId('feature-remove-f1'))
     expect(onUpdate).not.toHaveBeenCalled()
-    // Second click confirms
     fireEvent.click(screen.getByTestId('feature-remove-f1'))
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
     expect(call.features!.find(f => f.id === 'f1')).toBeUndefined()
@@ -192,6 +209,7 @@ describe('FeaturesList', () => {
   it('type change active→passive: clears usesLeft and usesMax', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f2'))  // expand f2 (active)
     const typeSelect = screen.getByTestId('feature-type-f2') as HTMLSelectElement
     fireEvent.change(typeSelect, { target: { value: 'passive' } })
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
@@ -204,6 +222,7 @@ describe('FeaturesList', () => {
   it('type change active→reaction: clears usesLeft and usesMax', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f2'))  // expand f2 (active)
     const typeSelect = screen.getByTestId('feature-type-f2') as HTMLSelectElement
     fireEvent.change(typeSelect, { target: { value: 'reaction' } })
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
@@ -218,6 +237,7 @@ describe('FeaturesList', () => {
   it('usesMax decrease: clamps usesLeft when usesLeft > new usesMax', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f2'))  // expand f2 (active)
     const maxInput = screen.getByTestId('feature-uses-max-f2') as HTMLInputElement
     fireEvent.change(maxInput, { target: { value: '1' } }) // usesLeft was 2, clamps to 1
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
@@ -229,6 +249,7 @@ describe('FeaturesList', () => {
   it('usesMax increase: does not change usesLeft', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<FeaturesList character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f2'))  // expand f2 (active)
     const maxInput = screen.getByTestId('feature-uses-max-f2') as HTMLInputElement
     fireEvent.change(maxInput, { target: { value: '5' } }) // usesLeft stays 2
     const call = onUpdate.mock.calls[0]![0] as Partial<Character>
@@ -241,6 +262,7 @@ describe('FeaturesList', () => {
 
   it('feature type select has dark-select class', () => {
     renderWithI18n(<FeaturesList character={BASE} onUpdate={vi.fn()} />, 'pt')
+    fireEvent.click(screen.getByTestId('feature-card-f1'))  // expand f1
     const typeSelect = screen.getByTestId('feature-type-f1')
     expect((typeSelect as HTMLElement).classList.contains('dark-select')).toBe(true)
   })

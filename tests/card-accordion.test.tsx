@@ -261,3 +261,131 @@ describe('InventoryList — single-open accordion', () => {
     expect(screen.queryByTestId('item-name-itm1')).toBeNull()
   })
 })
+
+// ── FeaturesList accordion ────────────────────────────────────────────────────
+
+import { FeaturesList } from '@/components/sheet/parts/FeaturesList'
+import type { Feature } from '@/domain/character'
+
+function makeFeature(overrides: Partial<Feature> = {}): Feature {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Test Feature',
+    source: 'Classe',
+    description: '',
+    type: 'passive',
+    ...overrides,
+  }
+}
+
+describe('FeaturesList — single-open accordion', () => {
+  const ft1 = makeFeature({ id: 'ft1', name: 'Feature Alpha', source: 'Raça', type: 'passive' })
+  const ft2 = makeFeature({ id: 'ft2', name: 'Feature Beta', source: 'Classe', type: 'active', usesLeft: 1, usesMax: 2 })
+  const char: Character = { ...BASE, features: [ft1, ft2] }
+
+  it('no card is expanded on initial render', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    expect(screen.queryByTestId('feature-name-ft1')).toBeNull()
+    expect(screen.queryByTestId('feature-name-ft2')).toBeNull()
+  })
+
+  it('clicking a card expands it (shows name input)', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-ft1'))
+    expect(screen.getByTestId('feature-name-ft1')).toBeDefined()
+  })
+
+  it('clicking card A (above), then card B (below) — B opens, A closes (the bug)', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-ft1'))
+    expect(screen.getByTestId('feature-name-ft1')).toBeDefined()
+    fireEvent.click(screen.getByTestId('feature-card-ft2'))
+    expect(screen.queryByTestId('feature-name-ft1')).toBeNull()
+    expect(screen.getByTestId('feature-name-ft2')).toBeDefined()
+  })
+
+  it('clicking card B, then card A above B — A opens, B closes', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-ft2'))
+    expect(screen.getByTestId('feature-name-ft2')).toBeDefined()
+    fireEvent.click(screen.getByTestId('feature-card-ft1'))
+    expect(screen.queryByTestId('feature-name-ft2')).toBeNull()
+    expect(screen.getByTestId('feature-name-ft1')).toBeDefined()
+  })
+
+  it('clicking outside the list closes the open card', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-ft1'))
+    expect(screen.getByTestId('feature-name-ft1')).toBeDefined()
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByTestId('feature-name-ft1')).toBeNull()
+  })
+
+  it('does not expand in readOnly mode (no onUpdate)', () => {
+    renderWithI18n(<FeaturesList character={char} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-ft1'))
+    expect(screen.queryByTestId('feature-name-ft1')).toBeNull()
+  })
+
+  it('compact summary shows name, source, type when closed', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    expect(screen.getByTestId('feature-summary-name-ft1').textContent).toBe('Feature Alpha')
+    expect(screen.getByTestId('feature-summary-source-ft1').textContent).toBe('Raça')
+    expect(screen.getByTestId('feature-summary-type-ft1')).toBeDefined()
+  })
+
+  it('compact summary shows uses for active feature when closed', () => {
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    const usesSpan = screen.getByTestId('feature-summary-uses-ft2')
+    expect(usesSpan.textContent).toBe('1/2')
+    // Passive feature has no uses chip
+    expect(screen.queryByTestId('feature-summary-uses-ft1')).toBeNull()
+  })
+})
+
+// ── Name field shrink — clicking free header space collapses item ─────────────
+
+describe('Name field shrink — click free header space collapses open item', () => {
+  it('SpellList: clicking header gap collapses the open spell card', () => {
+    const sp = makeSpell({ id: 'gsp1', name: 'Gap Spell' })
+    const char: Character = { ...BASE, spells: [sp] }
+    renderWithI18n(<SpellList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByText('Gap Spell'))
+    expect(screen.getByTestId('spell-name-gsp1')).toBeDefined()
+    fireEvent.click(screen.getByTestId('spell-header-gap-gsp1'))
+    expect(screen.queryByTestId('spell-name-gsp1')).toBeNull()
+  })
+
+  it('AttacksList: clicking header gap collapses the open attack card', () => {
+    const atk = makeAttack({ id: 'gatk1', name: 'Gap Attack' })
+    const char: Character = { ...BASE, attacks: [atk] }
+    renderWithI18n(<AttacksList character={char} onUpdate={() => {}} />, 'en')
+    // Click the kind icon (non-interactive for the guard) to expand
+    const card = screen.getByTestId('attack-card-gatk1')
+    const icon = card.querySelector('[data-testid="attack-kind-icon-gatk1"]')!
+    fireEvent.click(icon)
+    expect(screen.getByTestId('attack-name-input-gatk1')).toBeDefined()
+    fireEvent.click(screen.getByTestId('attack-header-gap-gatk1'))
+    expect(screen.queryByTestId('attack-name-input-gatk1')).toBeNull()
+  })
+
+  it('FeaturesList: clicking header gap collapses the open feature card', () => {
+    const ft = makeFeature({ id: 'gft1', name: 'Gap Feature' })
+    const char: Character = { ...BASE, features: [ft] }
+    renderWithI18n(<FeaturesList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('feature-card-gft1'))
+    expect(screen.getByTestId('feature-name-gft1')).toBeDefined()
+    fireEvent.click(screen.getByTestId('feature-header-gap-gft1'))
+    expect(screen.queryByTestId('feature-name-gft1')).toBeNull()
+  })
+
+  it('InventoryList: clicking header gap collapses the open item card', () => {
+    const itm = makeItem({ id: 'gitm1', name: 'Gap Item' })
+    const char: Character = { ...BASE, inventory: [itm] }
+    renderWithI18n(<InventoryList character={char} onUpdate={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('inventory-item-gitm1'))
+    expect(screen.getByTestId('item-name-gitm1')).toBeDefined()
+    fireEvent.click(screen.getByTestId('item-header-gap-gitm1'))
+    expect(screen.queryByTestId('item-name-gitm1')).toBeNull()
+  })
+})
