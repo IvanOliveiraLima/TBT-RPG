@@ -1,6 +1,7 @@
 import type { Character, Feature } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 
 const T = {
@@ -134,7 +135,7 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove, locked }: Featur
       </div>
 
       {/* Row 2: description */}
-      <textarea
+      <AutoGrowTextarea
         value={feature.description}
         onChange={e => onUpdate({ description: e.target.value })}
         placeholder={t('features.description_placeholder')}
@@ -144,7 +145,6 @@ function FeatureCard({ feature, datalistId, onUpdate, onRemove, locked }: Featur
         style={{
           ...INPUT_STYLE,
           width: '100%',
-          resize: 'vertical',
           boxSizing: 'border-box',
         }}
         onFocus={focusBorder}
