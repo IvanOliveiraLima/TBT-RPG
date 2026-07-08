@@ -776,6 +776,22 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   render/escala/ocultar-sob-fog. Personagem sem retrato fica desabilitado no seletor. **Cópia**, não
   referência ao vivo.
 
+### Sheet — auto-growing description textareas (COMPLETED — PR #177)
+- Primitivo `AutoGrowTextarea`: ajusta a altura via `scrollHeight` no `useLayoutEffect`[value] + no `resize`
+  do window; `rows` como mínimo; sem scroll interno nem alça de arrastar. Aplicado às descrições de magia,
+  característica, ataque e item.
+
+### Sheet — single-open accordion for card lists (COMPLETED — PR #178)
+- Expansão de card subiu pra `openId` no nível da lista (SpellList/AttacksList/InventoryList) + fechar em
+  `pointerdown` fora da lista. Corrige o bug em que, com um card aberto (A), clicar num card **abaixo** (B)
+  só retraía A: o `onBlur` por card retraía A e deslocava o layout antes do clique em B completar. Card novo
+  abre pelo `openId`; single-open por lista.
+
+### Sheet — collapsible features + shrink name field (COMPLETED — PR #179)
+- Características adotaram o mesmo acordeão (resumo fechado: nome + fonte + tipo + usos; expandido com a
+  descrição em `AutoGrowTextarea`). Nas 4 listas (magia/ataque/característica/item), o campo de nome passou a
+  `flex:'0 1 auto'` + `maxWidth: min(60%,320px)`, com um `header-gap` clicável que retrai o item.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1482,6 +1498,7 @@ function buildInviteLink(): string {
 | **Tático — pintura por gesto:** drag-paint usa Pointer Events nativos no container + `touch-action:none` + `dragging.disable()` (eventos de mouse não cobrem touch). Persistir uma vez no `pointerup`, não por célula. | PR #159 | Interação de arraste no mapa usa pointer events, não mouse |
 | **Tático — escala de token:** token é `<Marker>` + divIcon com o tamanho recomputado no `zoomend` (px de tela = célula × `pxPerUnit`), não `<Circle>` (perderia o drag). Cache do ícone inclui o tamanho. | PR #165 | Overlay que escala "por unidade de mapa" com Marker exige recompute no zoom |
 | **Tático — imagem de token:** reusa o bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` — como o 1º segmento do path é o campaignId, a RLS de storage existente cobre; a limpeza deve varrer a subpasta `tokens/`. | PR #167 | Conteúdo de campanha novo no storage vai sob `{campaignId}/...` pra reusar RLS; limpeza varre subpastas |
+| **Ficha — acordeão single-open:** listas de card (magias/ataques/características/itens) guardam `openId` no nível da lista e fecham em `pointerdown` fora — NÃO usar `onBlur`/estado por card (retrair o aberto desloca o layout e "engole" o clique no item de baixo). | PR #178 | Lista de card expansível usa openId na lista + pointerdown-fora, nunca blur |
 
 ---
 
