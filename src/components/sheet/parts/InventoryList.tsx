@@ -70,6 +70,19 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
   const locked = useCharacterLocked(character.id)
   const readOnly = !onUpdate
 
+  // Single-open accordion state
+  const [openId, setOpenId] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // Close open card on outside pointerdown (covers mouse + touch)
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (listRef.current && !listRef.current.contains(e.target as Node)) setOpenId(null)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [])
+
   const items = character.inventory
   const totalWeight = useMemo(() => calculateTotalWeight(items), [items])
   const maxWeight = calculateWeightCapacity(character.abilities.str)
@@ -79,8 +92,9 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
   const grouped = useMemo(() => groupItemsByCategory(items), [items])
 
   function addItem(category: ItemCategory) {
+    const newId = crypto.randomUUID()
     const newItem: InventoryItem = {
-      id:          crypto.randomUUID(),
+      id:          newId,
       name:        '',
       quantity:    1,
       weight:      0,
@@ -89,6 +103,7 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
       equipped:    false,
     }
     onUpdate?.({ inventory: [...items, newItem] })
+    setOpenId(newId)
   }
 
   function updateItem(id: string, partial: Partial<InventoryItem>) {
@@ -99,10 +114,11 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
 
   function removeItem(id: string) {
     onUpdate?.({ inventory: items.filter(item => item.id !== id) })
+    setOpenId(cur => (cur === id ? null : cur))
   }
 
   return (
-    <div data-testid="inventory-list">
+    <div ref={listRef} data-testid="inventory-list">
       <Card padding="md">
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -209,6 +225,8 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
                       key={item.id}
                       item={item}
                       readOnly={readOnly}
+                      expanded={openId === item.id}
+                      onToggle={() => setOpenId(cur => (cur === item.id ? null : item.id))}
                       onUpdate={partial => updateItem(item.id, partial)}
                       onRemove={() => removeItem(item.id)}
                       {...(locked ? { locked: true } : {})}
@@ -253,48 +271,30 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
 interface ItemCardProps {
   item: InventoryItem
   readOnly: boolean
+  expanded: boolean
+  onToggle: () => void
   onUpdate: (partial: Partial<InventoryItem>) => void
   onRemove: () => void
   locked?: boolean
 }
 
-function ItemCard({ item, readOnly, onUpdate, onRemove, locked }: ItemCardProps) {
+function ItemCard({ item, readOnly, expanded, onToggle, onUpdate, onRemove, locked }: ItemCardProps) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const newlyAddedRef = useRef(false)
-
-  // Auto-expand new (empty name) cards
-  useEffect(() => {
-    if (item.name === '' && !newlyAddedRef.current) {
-      newlyAddedRef.current = true
-      setExpanded(true)
-    }
-  }, [item.name])
 
   function handleCardClick(e: React.MouseEvent) {
     // readOnly (no onUpdate at all): don't expand; locked: allow expand for read-only view
     if (readOnly && !locked) return
     const target = e.target as HTMLElement
     if (target.closest('input, button, textarea, select, [role="checkbox"]')) return
-    setExpanded(prev => !prev)
-  }
-
-  function handleBlur(e: React.FocusEvent) {
-    if (!cardRef.current?.contains(e.relatedTarget as Node)) {
-      setExpanded(false)
-    }
+    onToggle()
   }
 
   const totalWeight = item.weight * item.quantity
 
   return (
     <div
-      ref={cardRef}
       data-testid={`inventory-item-${item.id}`}
       onClick={handleCardClick}
-      onBlur={(readOnly && !locked) ? undefined : handleBlur}
-      tabIndex={(readOnly && !locked) ? undefined : -1}
       style={{
         borderRadius:  8,
         border:        `1px solid ${expanded ? T.borderDefault : T.borderSubtle}`,
