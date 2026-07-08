@@ -17,6 +17,7 @@ import { Label } from '../ui/Label'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 
 const T = {
   textPrimary:   '#F4EFE0',
@@ -472,7 +473,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
           {/* Description */}
           <div>
             <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.description_label')}</Label>
-            <textarea
+            <AutoGrowTextarea
               value={spell.description}
               onChange={e => onUpdate({ description: e.target.value })}
               placeholder={t('spells.description_placeholder')}
@@ -481,7 +482,6 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
               style={{
                 ...SEAMLESS,
                 border:      `1px solid ${T.borderSubtle}`,
-                resize:       'vertical',
                 lineHeight:   1.5,
               }}
               className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"

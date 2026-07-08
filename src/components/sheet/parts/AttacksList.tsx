@@ -6,6 +6,7 @@ import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
 import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
@@ -341,7 +342,7 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
             <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
               {t('combat.notes_label')}
             </label>
-            <textarea
+            <AutoGrowTextarea
               value={attack.notes}
               onChange={e => onUpdate({ notes: e.target.value })}
               placeholder={t('combat.notes_placeholder')}
@@ -350,7 +351,6 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
               readOnly={locked}
               style={{
                 ...SEAMLESS_INPUT,
-                resize: 'vertical',
                 fontFamily: T.sans,
               }}
             />
