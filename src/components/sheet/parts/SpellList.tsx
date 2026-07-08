@@ -335,7 +335,7 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
             placeholder={t('spells.name_placeholder')}
             aria-label={t('aria.spell_name')}
             data-testid={`spell-name-${spell.id}`}
-            style={{ ...SEAMLESS, flex: 1, minWidth: 0 }}
+            style={{ ...SEAMLESS, flex: '0 1 auto', maxWidth: 'min(60%, 320px)', minWidth: 120 }}
             className="hover:border-[#2A2537] focus:border-[#2A2537] outline-none transition-colors"
             readOnly={locked}
             autoFocus={!locked}
@@ -343,19 +343,23 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
         ) : (
           <span
             style={{
-              flex:        1,
-              fontFamily:  T.sans,
-              fontSize:    13,
-              color:       T.textPrimary,
-              overflow:    'hidden',
+              flex:         '0 1 auto',
+              maxWidth:     'min(60%, 320px)',
+              fontFamily:   T.sans,
+              fontSize:     13,
+              color:        T.textPrimary,
+              overflow:     'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace:  'nowrap',
-              minWidth:    0,
+              whiteSpace:   'nowrap',
+              minWidth:     0,
             }}
           >
             {spell.name || t('spells.unnamed_spell')}
           </span>
         )}
+
+        {/* Free space — clicking here collapses the card */}
+        <span data-testid={`spell-header-gap-${spell.id}`} style={{ flex: 1 }} />
 
         {/* Prepared checkbox — non-cantrips only */}
         {!isCantrip && (

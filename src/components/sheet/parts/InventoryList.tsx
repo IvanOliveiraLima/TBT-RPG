@@ -342,7 +342,7 @@ function ItemCard({ item, readOnly, expanded, onToggle, onUpdate, onRemove, lock
             placeholder={t('inventory.name_placeholder')}
             aria-label={t('aria.item_name' as TranslationKey)}
             data-testid={`item-name-${item.id}`}
-            style={{ ...SEAMLESS, flex: 1, minWidth: 0 }}
+            style={{ ...SEAMLESS, flex: '0 1 auto', maxWidth: 'min(60%, 320px)', minWidth: 120 }}
             className="hover:border-[#2A2537] focus:border-[#2A2537] outline-none transition-colors"
             autoFocus={!locked}
             readOnly={locked}
@@ -350,19 +350,23 @@ function ItemCard({ item, readOnly, expanded, onToggle, onUpdate, onRemove, lock
         ) : (
           <span
             style={{
-              flex:        1,
-              fontFamily:  T.sans,
-              fontSize:    13,
-              color:       T.textPrimary,
-              overflow:    'hidden',
+              flex:         '0 1 auto',
+              maxWidth:     'min(60%, 320px)',
+              fontFamily:   T.sans,
+              fontSize:     13,
+              color:        T.textPrimary,
+              overflow:     'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace:  'nowrap',
-              minWidth:    0,
+              whiteSpace:   'nowrap',
+              minWidth:     0,
             }}
           >
             {item.name || t('inventory.unnamed_item')}
           </span>
         )}
+
+        {/* Free space — clicking here collapses the card */}
+        <span data-testid={`item-header-gap-${item.id}`} style={{ flex: 1 }} />
 
         {/* Quantity badge (only when > 1) */}
         {item.quantity > 1 && !expanded && (
