@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type React from 'react'
 import type { Character, Attack, AbilityKey } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -6,6 +6,7 @@ import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
 import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
@@ -46,24 +47,19 @@ const ABILITY_KEYS: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 
 interface AttackCardProps {
   attack: Attack
+  expanded: boolean
+  onToggle: () => void
   onUpdate: (partial: Partial<Attack>) => void
   onRemove: () => void
   locked?: boolean
 }
 
-function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: AttackCardProps) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
 
   function handleContainerClick(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest('input, button, textarea, select')) return
-    setExpanded(true)
-  }
-
-  function handleContainerBlur(e: React.FocusEvent) {
-    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-      setExpanded(false)
-    }
+    onToggle()
   }
 
   const abilityAbbrev = attack.ability
@@ -74,9 +70,7 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
   return (
     <div
       data-testid={`attack-card-${attack.id}`}
-      tabIndex={-1}
       onClick={handleContainerClick}
-      onBlur={handleContainerBlur}
       style={{
         background: T.elevated,
         border: `1px solid ${T.borderSubtle}`,
@@ -103,25 +97,29 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
             aria-label={t('aria.attack_name')}
             data-testid={`attack-name-input-${attack.id}`}
             className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
-            style={{ ...SEAMLESS_INPUT, flex: '1 1 0', minWidth: 0, fontFamily: T.serif, fontWeight: 600 }}
+            style={{ ...SEAMLESS_INPUT, flex: '0 1 auto', maxWidth: 'min(60%, 320px)', minWidth: 120, fontFamily: T.serif, fontWeight: 600 }}
           />
         ) : (
           <span
             style={{
-              flex: '1 1 0',
-              minWidth: 0,
-              fontFamily: T.serif,
-              fontSize: 14,
-              fontWeight: 600,
-              color: T.textPrimary,
-              overflow: 'hidden',
+              flex:         '0 1 auto',
+              maxWidth:     'min(60%, 320px)',
+              minWidth:     0,
+              fontFamily:   T.serif,
+              fontSize:     14,
+              fontWeight:   600,
+              color:        T.textPrimary,
+              overflow:     'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              whiteSpace:   'nowrap',
             }}
           >
             {attack.name || t('combat.unnamed_attack')}
           </span>
         )}
+
+        {/* Free space — clicking here collapses the card */}
+        <span data-testid={`attack-header-gap-${attack.id}`} style={{ flex: 1 }} />
 
         <span
           data-testid={`attack-bonus-chip-${attack.id}`}
@@ -341,7 +339,7 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
             <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
               {t('combat.notes_label')}
             </label>
-            <textarea
+            <AutoGrowTextarea
               value={attack.notes}
               onChange={e => onUpdate({ notes: e.target.value })}
               placeholder={t('combat.notes_placeholder')}
@@ -350,7 +348,6 @@ function AttackCard({ attack, onUpdate, onRemove, locked }: AttackCardProps) {
               readOnly={locked}
               style={{
                 ...SEAMLESS_INPUT,
-                resize: 'vertical',
                 fontFamily: T.sans,
               }}
             />
@@ -373,10 +370,24 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
+  // Single-open accordion state
+  const [openId, setOpenId] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // Close open card on outside pointerdown (covers mouse + touch)
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (listRef.current && !listRef.current.contains(e.target as Node)) setOpenId(null)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [])
+
   function addAttack() {
     if (!onUpdate) return
+    const newId = crypto.randomUUID()
     const newAttack: Attack = {
-      id: crypto.randomUUID(),
+      id: newId,
       name: '',
       kind: 'melee',
       ability: 'str',
@@ -388,6 +399,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
       notes: '',
     }
     onUpdate({ attacks: [...attacks, newAttack] })
+    setOpenId(newId)
   }
 
   function updateAttack(id: string, partial: Partial<Attack>) {
@@ -398,10 +410,11 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   function removeAttack(id: string) {
     if (!onUpdate) return
     onUpdate({ attacks: attacks.filter(a => a.id !== id) })
+    setOpenId(cur => (cur === id ? null : cur))
   }
 
   return (
-    <div data-testid="attacks-list">
+    <div ref={listRef} data-testid="attacks-list">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
         <h3
@@ -462,6 +475,8 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
             <AttackCard
               key={attack.id}
               attack={attack}
+              expanded={openId === attack.id}
+              onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
               onUpdate={partial => updateAttack(attack.id, partial)}
               onRemove={() => removeAttack(attack.id)}
               {...(locked ? { locked: true } : {})}

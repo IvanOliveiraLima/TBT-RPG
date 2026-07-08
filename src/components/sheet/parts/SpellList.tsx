@@ -17,6 +17,7 @@ import { Label } from '../ui/Label'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 
 const T = {
   textPrimary:   '#F4EFE0',
@@ -54,6 +55,19 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
   const locked = useCharacterLocked(character.id)
   const readOnly = !onUpdate
 
+  // Single-open accordion state
+  const [openId, setOpenId] = useState<string | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // Close open card on outside pointerdown (covers mouse + touch)
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      if (listRef.current && !listRef.current.contains(e.target as Node)) setOpenId(null)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [])
+
   // Defense-in-depth: guard against legacy object shape that slipped past normalizeSpells.
   const spells: Spell[] = useMemo(() => {
     if (!Array.isArray(character.spells)) {
@@ -87,8 +101,9 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
   }, [spellsByLevel, character.spellSlots])
 
   function addSpell(level: number) {
+    const newId = crypto.randomUUID()
     const newSpell: Spell = {
-      id:          crypto.randomUUID(),
+      id:          newId,
       name:        '',
       level,
       school:      'abjuration',
@@ -98,6 +113,7 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
       prepared:    false,
     }
     onUpdate?.({ spells: [...spells, newSpell] })
+    setOpenId(newId)
   }
 
   function updateSpell(id: string, partial: Partial<Spell>) {
@@ -108,12 +124,13 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
 
   function removeSpell(id: string) {
     onUpdate?.({ spells: spells.filter(s => s.id !== id) })
+    setOpenId(cur => (cur === id ? null : cur))
   }
 
   const total = spells.length
 
   return (
-    <div data-testid="spell-list">
+    <div ref={listRef} data-testid="spell-list">
       <Card padding="md">
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
@@ -194,6 +211,8 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
                       key={spell.id}
                       spell={spell}
                       readOnly={readOnly}
+                      expanded={openId === spell.id}
+                      onToggle={() => setOpenId(cur => (cur === spell.id ? null : spell.id))}
                       onUpdate={partial => updateSpell(spell.id, partial)}
                       onRemove={() => removeSpell(spell.id)}
                       {...(locked ? { locked: true } : {})}
@@ -248,37 +267,22 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
 interface SpellCardProps {
   spell: Spell
   readOnly: boolean
+  expanded: boolean
+  onToggle: () => void
   onUpdate: (partial: Partial<Spell>) => void
   onRemove: () => void
   locked?: boolean
 }
 
-function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardProps) {
+function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, locked }: SpellCardProps) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const newlyAddedRef = useRef(false)
-
-  // Auto-expand new (empty name) cards
-  useEffect(() => {
-    if (spell.name === '' && !newlyAddedRef.current) {
-      newlyAddedRef.current = true
-      setExpanded(true)
-    }
-  }, [spell.name])
 
   function handleCardClick(e: React.MouseEvent) {
     // When readOnly (no onUpdate at all): never expand
     if (readOnly) return
     const target = e.target as HTMLElement
     if (target.closest('input, button, textarea, select, [role="checkbox"]')) return
-    setExpanded(prev => !prev)
-  }
-
-  function handleBlur(e: React.FocusEvent) {
-    if (!cardRef.current?.contains(e.relatedTarget as Node)) {
-      setExpanded(false)
-    }
+    onToggle()
   }
 
   const isCantrip = spell.level === 0
@@ -288,11 +292,8 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
 
   return (
     <div
-      ref={cardRef}
       data-testid={`spell-card-${spell.id}`}
       onClick={handleCardClick}
-      onBlur={readOnly ? undefined : handleBlur}
-      tabIndex={readOnly ? undefined : -1}
       style={{
         borderRadius:  8,
         border:        `1px solid ${expanded ? T.borderDefault : T.borderSubtle}`,
@@ -334,7 +335,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
             placeholder={t('spells.name_placeholder')}
             aria-label={t('aria.spell_name')}
             data-testid={`spell-name-${spell.id}`}
-            style={{ ...SEAMLESS, flex: 1, minWidth: 0 }}
+            style={{ ...SEAMLESS, flex: '0 1 auto', maxWidth: 'min(60%, 320px)', minWidth: 120 }}
             className="hover:border-[#2A2537] focus:border-[#2A2537] outline-none transition-colors"
             readOnly={locked}
             autoFocus={!locked}
@@ -342,19 +343,23 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
         ) : (
           <span
             style={{
-              flex:        1,
-              fontFamily:  T.sans,
-              fontSize:    13,
-              color:       T.textPrimary,
-              overflow:    'hidden',
+              flex:         '0 1 auto',
+              maxWidth:     'min(60%, 320px)',
+              fontFamily:   T.sans,
+              fontSize:     13,
+              color:        T.textPrimary,
+              overflow:     'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace:  'nowrap',
-              minWidth:    0,
+              whiteSpace:   'nowrap',
+              minWidth:     0,
             }}
           >
             {spell.name || t('spells.unnamed_spell')}
           </span>
         )}
+
+        {/* Free space — clicking here collapses the card */}
+        <span data-testid={`spell-header-gap-${spell.id}`} style={{ flex: 1 }} />
 
         {/* Prepared checkbox — non-cantrips only */}
         {!isCantrip && (
@@ -472,7 +477,7 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
           {/* Description */}
           <div>
             <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.description_label')}</Label>
-            <textarea
+            <AutoGrowTextarea
               value={spell.description}
               onChange={e => onUpdate({ description: e.target.value })}
               placeholder={t('spells.description_placeholder')}
@@ -481,7 +486,6 @@ function SpellCard({ spell, readOnly, onUpdate, onRemove, locked }: SpellCardPro
               style={{
                 ...SEAMLESS,
                 border:      `1px solid ${T.borderSubtle}`,
-                resize:       'vertical',
                 lineHeight:   1.5,
               }}
               className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
