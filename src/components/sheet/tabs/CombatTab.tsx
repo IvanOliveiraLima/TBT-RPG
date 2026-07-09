@@ -5,6 +5,7 @@ import { useIsForceReadOnly } from '@/contexts/CampaignViewContext'
 import type { Character } from '@/domain/character'
 import { CombatStrip } from '../parts/CombatStrip'
 import { AttacksList } from '../parts/AttacksList'
+import { HpBlock } from '../parts/HpBlock'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -26,6 +27,7 @@ export function CombatTab() {
     <>
       {/* ── MOBILE STACK (hidden on lg+) ── */}
       <div className="lg:hidden flex flex-col gap-3">
+        <HpBlock character={character} {...upd} />
         <CombatStrip character={character} cols={3} {...upd} />
         <div style={CARD}>
           <AttacksList character={character} {...upd} />
@@ -34,6 +36,7 @@ export function CombatTab() {
 
       {/* ── DESKTOP (hidden below lg) ── */}
       <div className="hidden lg:flex lg:flex-col" style={{ gap: 14 }}>
+        <HpBlock character={character} {...upd} />
         <CombatStrip character={character} cols={6} {...upd} />
         <div style={CARD}>
           <AttacksList character={character} {...upd} />
