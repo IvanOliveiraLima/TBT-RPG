@@ -249,4 +249,21 @@ describe('SpellsTab integration', () => {
     renderWithI18n(<SpellsTab />, 'en')
     expect(screen.getByDisplayValue('WIS')).toBeDefined()
   })
+
+  // ── HpBlock on spells tab ─────────────────────────────────────────────────
+
+  it('shows HpBlock on spells tab', () => {
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
+    renderWithI18n(<SpellsTab />, 'pt')
+    expect(screen.getByTestId('hp-inputs')).toBeDefined()
+  })
+
+  it('HpBlock on spells tab shows current HP value', () => {
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
+    renderWithI18n(<SpellsTab />, 'pt')
+    const currentInput = screen.getByTestId('hp-current-input') as HTMLInputElement
+    expect(currentInput.value).toBe('35')
+  })
 })

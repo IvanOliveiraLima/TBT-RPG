@@ -3,6 +3,10 @@ import { screen, fireEvent, act } from '@testing-library/react'
 import { CharacterImageModal } from '@/components/sheet/parts/CharacterImageModal'
 import { renderWithI18n } from './helpers/render'
 
+// jsdom does not implement pointer capture APIs — stub them globally
+HTMLElement.prototype.setPointerCapture = () => {}
+HTMLElement.prototype.releasePointerCapture = () => {}
+
 // Canvas stubs — writable so tests can reset or extend them
 Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', {
   value: vi.fn().mockReturnValue('data:image/jpeg;base64,CANVAS_RESULT'),
@@ -308,9 +312,9 @@ describe('CharacterImageModal — canvas rendering', () => {
     expect(drawW2).toBeCloseTo(drawW1 * 2, 1)
   })
 
-  // ── drag ────────────────────────────────────────────────────────────────────
+  // ── drag (pointer events) ────────────────────────────────────────────────────
 
-  it('drag triggers additional redraws', async () => {
+  it('pointerdown+pointermove triggers additional redraws', async () => {
     renderWithI18n(<CharacterImageModal isOpen onClose={vi.fn()} onApply={vi.fn()} />, 'pt')
     await loadTestImage()
 
@@ -319,12 +323,18 @@ describe('CharacterImageModal — canvas rendering', () => {
 
     const canvas = screen.getByTestId('image-modal-canvas')
     await act(async () => {
-      fireEvent.mouseDown(canvas, { clientX: 100, clientY: 100 })
-      fireEvent.mouseMove(canvas, { clientX: 150, clientY: 130 })
-      fireEvent.mouseUp(canvas)
+      fireEvent.pointerDown(canvas, { clientX: 100, clientY: 100, pointerId: 1 })
+      fireEvent.pointerMove(canvas, { clientX: 150, clientY: 130, pointerId: 1 })
+      fireEvent.pointerUp(canvas, { pointerId: 1 })
     })
 
     expect(ctx.drawImage.mock.calls.length).toBeGreaterThan(callsBefore)
+  })
+
+  it('canvas has touch-action none style', () => {
+    renderWithI18n(<CharacterImageModal isOpen onClose={vi.fn()} onApply={vi.fn()} />, 'pt')
+    const canvas = screen.getByTestId('image-modal-canvas') as HTMLCanvasElement
+    expect(canvas.style.touchAction).toBe('none')
   })
 
   // ── apply ───────────────────────────────────────────────────────────────────
