@@ -136,4 +136,20 @@ describe('CombatTab integration', () => {
     const emptyStates = screen.getAllByTestId('attacks-empty-state')
     expect(emptyStates.length).toBeGreaterThanOrEqual(1)
   })
+
+  it('shows HpBlock on combat tab', () => {
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
+    renderWithI18n(<CombatTab />, 'pt')
+    const hpInputs = screen.getAllByTestId('hp-inputs')
+    expect(hpInputs.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('HpBlock on combat tab shows current HP value', () => {
+    useCharactersStore.setState({ characters: [KAEL], loading: false, error: null })
+    useCharacterStore.setState({ activeId: KAEL.id, loading: false, error: null })
+    renderWithI18n(<CombatTab />, 'pt')
+    const currentInputs = screen.getAllByTestId('hp-current-input') as HTMLInputElement[]
+    expect(currentInputs[0]!.value).toBe('35')
+  })
 })
