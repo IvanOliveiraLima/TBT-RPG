@@ -89,16 +89,17 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
     e.target.value = ''
   }, [t, loadImageUrl])
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onPointerDown = (e: React.PointerEvent) => {
     draggingRef.current = {
       startX: e.clientX - offset.x,
       startY: e.clientY - offset.y,
     }
     setIsDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
     e.preventDefault()
   }
 
-  const onMouseMove = (e: React.MouseEvent) => {
+  const onPointerMove = (e: React.PointerEvent) => {
     if (!draggingRef.current) return
     setOffset({
       x: e.clientX - draggingRef.current.startX,
@@ -241,10 +242,10 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
             ref={canvasRef}
             width={VIEWPORT_W}
             height={VIEWPORT_H}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={endDrag}
-            onMouseLeave={endDrag}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
             style={{
               display: 'block',
               background: '#0F0D14',
@@ -252,6 +253,7 @@ export function CharacterImageModal({ isOpen, onClose, onApply, initialImage }: 
               border: '1px solid #2A2537',
               cursor: isDragging ? 'grabbing' : 'grab',
               userSelect: 'none',
+              touchAction: 'none',
             }}
             aria-label={t('image.modal.drag_hint')}
             data-testid="image-modal-canvas"
