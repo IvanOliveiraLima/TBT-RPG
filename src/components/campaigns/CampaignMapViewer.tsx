@@ -1010,117 +1010,6 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             + {t('campaign_maps.token_add')}
           </button>
 
-          {/* Fog panel or toggle */}
-          {!fogMode && (
-            <button
-              type="button"
-              data-testid="fog-panel-toggle"
-              onClick={() => setFogMode(true)}
-              disabled={!localGrid.enabled}
-              {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
-              aria-label={t('campaign_maps.fog_title')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '6px 10px', borderRadius: 8,
-                cursor: !localGrid.enabled ? 'not-allowed' : 'pointer',
-                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
-                border: '1px solid rgba(255,255,255,0.12)',
-                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
-                opacity: !localGrid.enabled ? 0.5 : 1,
-              }}
-            >
-              ◎ {t('campaign_maps.fog_title')}
-            </button>
-          )}
-          {fogMode && (
-            <div
-              data-testid="fog-config-panel"
-              style={{
-                background: 'rgba(21, 18, 28, 0.92)',
-                border: '1px solid #2A2537',
-                borderRadius: 10,
-                padding: '10px 12px',
-                fontFamily: T.sans,
-                display: 'flex', flexDirection: 'column', gap: 8,
-                width: 220,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-                  {t('campaign_maps.fog_title')}
-                </span>
-                <button
-                  type="button"
-                  data-testid="fog-done-btn"
-                  onClick={() => setFogMode(false)}
-                  style={{ background: 'transparent', border: 'none', color: T.textPrimary, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: T.sans }}
-                >
-                  {t('campaign_maps.fog_done')}
-                </button>
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  data-testid="fog-enable-toggle"
-                  checked={fog.enabled}
-                  onChange={() => handleToggleFogEnabled()}
-                />
-                {t('campaign_maps.fog_enable')}
-              </label>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  type="button"
-                  data-testid="fog-brush-reveal"
-                  onClick={() => setBrush('reveal')}
-                  style={{
-                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
-                    fontFamily: T.sans, fontWeight: 600,
-                    background: brush === 'reveal' ? '#5B3FA8' : 'transparent',
-                    color: brush === 'reveal' ? T.textPrimary : T.textMuted,
-                    border: '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  {t('campaign_maps.fog_brush_reveal')}
-                </button>
-                <button
-                  type="button"
-                  data-testid="fog-brush-hide"
-                  onClick={() => setBrush('hide')}
-                  style={{
-                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
-                    fontFamily: T.sans, fontWeight: 600,
-                    background: brush === 'hide' ? '#5B3FA8' : 'transparent',
-                    color: brush === 'hide' ? T.textPrimary : T.textMuted,
-                    border: '1px solid rgba(255,255,255,0.15)',
-                  }}
-                >
-                  {t('campaign_maps.fog_brush_hide')}
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  type="button"
-                  data-testid="fog-reveal-all"
-                  onClick={() => handleRevealAll()}
-                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
-                >
-                  {t('campaign_maps.fog_reveal_all')}
-                </button>
-                <button
-                  type="button"
-                  data-testid="fog-hide-all"
-                  onClick={() => handleHideAll()}
-                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
-                >
-                  {t('campaign_maps.fog_hide_all')}
-                </button>
-              </div>
-              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
-                {t('campaign_maps.fog_paint_hint')}
-              </p>
-            </div>
-          )}
-
           {/* Preset palette — toggle button or panel */}
           {!presetPanelOpen && (
             <button
@@ -1232,6 +1121,117 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                   </button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Fog panel or toggle */}
+          {!fogMode && (
+            <button
+              type="button"
+              data-testid="fog-panel-toggle"
+              onClick={() => setFogMode(true)}
+              disabled={!localGrid.enabled}
+              {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
+              aria-label={t('campaign_maps.fog_title')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8,
+                cursor: !localGrid.enabled ? 'not-allowed' : 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+                opacity: !localGrid.enabled ? 0.5 : 1,
+              }}
+            >
+              ◎ {t('campaign_maps.fog_title')}
+            </button>
+          )}
+          {fogMode && (
+            <div
+              data-testid="fog-config-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 220,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                  {t('campaign_maps.fog_title')}
+                </span>
+                <button
+                  type="button"
+                  data-testid="fog-done-btn"
+                  onClick={() => setFogMode(false)}
+                  style={{ background: 'transparent', border: 'none', color: T.textPrimary, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: T.sans }}
+                >
+                  {t('campaign_maps.fog_done')}
+                </button>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  data-testid="fog-enable-toggle"
+                  checked={fog.enabled}
+                  onChange={() => handleToggleFogEnabled()}
+                />
+                {t('campaign_maps.fog_enable')}
+              </label>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  data-testid="fog-brush-reveal"
+                  onClick={() => setBrush('reveal')}
+                  style={{
+                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
+                    fontFamily: T.sans, fontWeight: 600,
+                    background: brush === 'reveal' ? '#5B3FA8' : 'transparent',
+                    color: brush === 'reveal' ? T.textPrimary : T.textMuted,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  {t('campaign_maps.fog_brush_reveal')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="fog-brush-hide"
+                  onClick={() => setBrush('hide')}
+                  style={{
+                    flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11,
+                    fontFamily: T.sans, fontWeight: 600,
+                    background: brush === 'hide' ? '#5B3FA8' : 'transparent',
+                    color: brush === 'hide' ? T.textPrimary : T.textMuted,
+                    border: '1px solid rgba(255,255,255,0.15)',
+                  }}
+                >
+                  {t('campaign_maps.fog_brush_hide')}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  data-testid="fog-reveal-all"
+                  onClick={() => handleRevealAll()}
+                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+                >
+                  {t('campaign_maps.fog_reveal_all')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="fog-hide-all"
+                  onClick={() => handleHideAll()}
+                  style={{ flex: 1, padding: '5px 0', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+                >
+                  {t('campaign_maps.fog_hide_all')}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+                {t('campaign_maps.fog_paint_hint')}
+              </p>
             </div>
           )}
         </div>
