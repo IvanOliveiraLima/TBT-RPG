@@ -808,6 +808,18 @@ const pt: Record<keyof typeof en, string> = {
   'import.error_incompatible_version': 'Este arquivo foi exportado de uma versão incompatível. Use uma exportação recente.',
   'import.error_apply_failed':       'Não foi possível importar. Tente novamente.',
   'import.error_unknown':            'Erro inesperado.',
+
+  // Token presets section
+  'token_presets.section_title': 'Tokens prontos',
+  'token_presets.add':           'Adicionar token',
+  'token_presets.name':          'Nome',
+  'token_presets.color':         'Cor',
+  'token_presets.size':          'Tamanho',
+  'token_presets.empty':         'Nenhum token pronto ainda.',
+  'token_presets.image_upload':  'Enviar imagem',
+  'token_presets.image_remove':  'Remover imagem',
+  'token_presets.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
+  'token_presets.upload_error_size': 'Imagem muito grande (máx. 10 MB).',
 };
 
 export default pt;

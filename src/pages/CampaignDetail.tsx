@@ -16,6 +16,7 @@ import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
 import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModal'
 import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
+import { TokenPresetsSection } from '@/components/campaigns/TokenPresetsSection'
 import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
@@ -354,6 +355,11 @@ export default function CampaignDetail() {
         {/* Maps section */}
         {id && (
           <CampaignMapsSection campaignId={id} isOwner={isOwner} />
+        )}
+
+        {/* Token presets section — owner only */}
+        {id && isOwner && (
+          <TokenPresetsSection campaignId={id} isOwner={isOwner} />
         )}
       </div>
 

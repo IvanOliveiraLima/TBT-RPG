@@ -804,6 +804,18 @@ const en = {
   'import.error_incompatible_version': 'This file was exported from an incompatible version. Please use a recent export.',
   'import.error_apply_failed':       'Could not import characters. Please try again.',
   'import.error_unknown':            'Unexpected error.',
+
+  // Token presets section
+  'token_presets.section_title': 'Ready tokens',
+  'token_presets.add':           'Add token',
+  'token_presets.name':          'Name',
+  'token_presets.color':         'Color',
+  'token_presets.size':          'Size',
+  'token_presets.empty':         'No ready tokens yet.',
+  'token_presets.image_upload':  'Upload image',
+  'token_presets.image_remove':  'Remove image',
+  'token_presets.upload_error_type': 'Use a PNG, JPG or WebP image.',
+  'token_presets.upload_error_size': 'Image is too large (max 10 MB).',
 } as const;
 
 export default en;

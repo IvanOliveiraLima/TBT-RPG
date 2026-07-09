@@ -88,6 +88,10 @@ export async function deleteCampaign(id: string): Promise<void> {
     if (tokenFiles && tokenFiles.length > 0) {
       await supabase.storage.from('campaign-maps').remove(tokenFiles.map(f => `${id}/tokens/${f.name}`))
     }
+    const { data: presetFiles } = await supabase.storage.from('campaign-maps').list(`${id}/presets`)
+    if (presetFiles && presetFiles.length > 0) {
+      await supabase.storage.from('campaign-maps').remove(presetFiles.map(f => `${id}/presets/${f.name}`))
+    }
   } catch (e) {
     console.error('[campaign] map storage cleanup failed (best-effort)', e)
   }
