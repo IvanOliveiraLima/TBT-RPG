@@ -27,11 +27,17 @@ import {
   updateMapToken,
   deleteMapToken,
   uploadTokenImage,
+  uploadTokenImageBlob,
   getTokenImageSignedUrl,
   removeTokenImage,
   setTokenImageFromCharacterPortrait,
 } from '@/services/campaign-map-tokens'
 import type { CampaignMapToken, TokenPatch } from '@/services/campaign-map-tokens'
+import {
+  listTokenPresets,
+  getTokenPresetImageSignedUrl,
+} from '@/services/campaign-token-presets'
+import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
 import { fetchCampaignCharacterImages } from '@/services/campaign-view'
 import { snapToGrid } from '@/utils/snap-to-grid'
@@ -90,9 +96,30 @@ function getTokenIcon(
   return icon
 }
 
-// Inner component — captures map click events for owner add-marker flow
-function MapClickHandler({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
-  useMapEvents({ dblclick: e => onMapClick(e.latlng) })
+// Inner component — captures map click events for owner flows.
+// onDblClick: create marker (blocked while a preset is armed).
+// onSingleClick: place preset token (only fires while a preset is armed).
+function MapClickHandler({
+  onDblClick,
+  onSingleClick,
+}: {
+  onDblClick?: (latlng: L.LatLng) => void
+  onSingleClick?: (latlng: L.LatLng) => void
+}) {
+  useMapEvents({
+    click:    e => onSingleClick?.(e.latlng),
+    dblclick: e => onDblClick?.(e.latlng),
+  })
+  return null
+}
+
+// Inner component — sets crosshair cursor on the Leaflet container while a preset is armed.
+function ArmedCursorEffect({ armed }: { armed: boolean }) {
+  const leafletMap = useMap()
+  useEffect(() => {
+    const container = leafletMap.getContainer()
+    container.style.cursor = armed ? 'crosshair' : ''
+  }, [armed, leafletMap])
   return null
 }
 
@@ -418,6 +445,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [pxPerUnit, setPxPerUnit] = useState(1)
   // Signed URLs for token images keyed by imagePath (path is stable until replaced)
   const [tokenImageUrlsByPath, setTokenImageUrlsByPath] = useState<Record<string, string>>({})
+  // Preset palette state (owner only)
+  const [presets, setPresets] = useState<CampaignTokenPreset[]>([])
+  const [presetUrls, setPresetUrls] = useState<Record<string, string>>({})
+  const [armedPresetId, setArmedPresetId] = useState<string | null>(null)
+  const [presetPanelOpen, setPresetPanelOpen] = useState(false)
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -515,6 +547,25 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     return () => { cancelled = true; clearInterval(id) }
   }, [map.id, isOwner])
 
+  // Fetch preset palette + resolve signed URLs for preset images (owner only)
+  useEffect(() => {
+    if (!isOwner) return
+    let cancelled = false
+    listTokenPresets(map.campaignId)
+      .then(ps => {
+        if (cancelled) return
+        setPresets(ps)
+        const paths = [...new Set(ps.filter(p => p.imagePath).map(p => p.imagePath!))]
+        paths.forEach(path => {
+          getTokenPresetImageSignedUrl(path)
+            .then(url => { if (!cancelled) setPresetUrls(prev => ({ ...prev, [path]: url })) })
+            .catch(() => undefined)
+        })
+      })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [isOwner, map.campaignId])
+
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
     [map.height, map.width],
@@ -582,6 +633,29 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       setTokens(prev => [...prev, token])
     } catch {
       // best-effort
+    }
+  }
+
+  async function placePreset(latlng: L.LatLng) {
+    const preset = presets.find(p => p.id === armedPresetId)
+    if (!preset) return
+    const snapped = snapToGrid(latlng.lng, latlng.lat, preset.size, localGrid)
+    try {
+      const tok = await createMapToken(map.id, snapped.x, snapped.y, {
+        label: preset.label,
+        color: preset.color,
+        size: preset.size,
+      })
+      setTokens(prev => [...prev, tok])
+      if (preset.imagePath) {
+        const signedUrl = presetUrls[preset.imagePath]
+          ?? await getTokenPresetImageSignedUrl(preset.imagePath)
+        const blob = await fetch(signedUrl).then(r => r.blob())
+        const imagePath = await uploadTokenImageBlob(map.campaignId, tok.id, blob)
+        setTokens(prev => prev.map(t => t.id === tok.id ? { ...t, imagePath } : t))
+      }
+    } catch {
+      // best-effort — token may have been created without image
     }
   }
 
@@ -1046,6 +1120,120 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               </p>
             </div>
           )}
+
+          {/* Preset palette — toggle button or panel */}
+          {!presetPanelOpen && (
+            <button
+              type="button"
+              data-testid="preset-palette-toggle"
+              onClick={() => setPresetPanelOpen(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: armedPresetId ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
+                color: armedPresetId ? '#D4A017' : T.textMuted,
+                border: armedPresetId ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ⬡ {t('token_presets.palette')}
+            </button>
+          )}
+          {presetPanelOpen && (
+            <div
+              data-testid="preset-palette-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 220,
+                maxHeight: 320,
+                overflowY: 'auto',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                  {t('token_presets.palette')}
+                </span>
+                <button
+                  type="button"
+                  data-testid="preset-palette-close"
+                  onClick={() => { setPresetPanelOpen(false); setArmedPresetId(null) }}
+                  style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
+                >×</button>
+              </div>
+
+              {presets.length === 0 ? (
+                <p data-testid="preset-palette-empty" style={{ fontSize: 12, color: T.textMuted, margin: 0, fontStyle: 'italic' }}>
+                  {t('token_presets.palette_empty')}
+                </p>
+              ) : (
+                presets.map(preset => {
+                  const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
+                  const isArmed = armedPresetId === preset.id
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      data-testid={`preset-palette-item-${preset.id}`}
+                      onClick={() => setArmedPresetId(isArmed ? null : preset.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
+                        border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent',
+                        borderRadius: 6,
+                        padding: '5px 8px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                        background: imgUrl ? undefined : preset.color,
+                        backgroundImage: imgUrl ? `url(${imgUrl})` : undefined,
+                        backgroundSize: 'cover', backgroundPosition: 'center',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                      }} />
+                      <span style={{ fontSize: 12, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {preset.label || '—'}
+                      </span>
+                    </button>
+                  )
+                })
+              )}
+
+              {armedPresetId && (
+                <>
+                  <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>
+                    {t('token_presets.place_hint').replace('{name}', presets.find(p => p.id === armedPresetId)?.label ?? '')}
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="preset-place-done"
+                    onClick={() => setArmedPresetId(null)}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 6,
+                      color: T.textPrimary,
+                      padding: '4px 10px',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: T.sans,
+                      alignSelf: 'flex-end',
+                    }}
+                  >
+                    {t('token_presets.place_done')}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1126,13 +1314,22 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         )}
 
         {isOwner && (
-          <MapClickHandler
-            onMapClick={latlng => {
-              if (fogMode) return  // fog painting handled by FogInteraction (mousedown/mouseup)
-              setPendingLatLng(latlng)
-              setPendingLabel('')
-            }}
-          />
+          <>
+            <MapClickHandler
+              onDblClick={latlng => {
+                if (fogMode) return  // fog painting handled by FogInteraction
+                if (armedPresetId) return  // dblclick ignored while preset is armed
+                setPendingLatLng(latlng)
+                setPendingLabel('')
+              }}
+              onSingleClick={latlng => {
+                if (fogMode) return
+                if (!armedPresetId) return
+                void placePreset(latlng)
+              }}
+            />
+            <ArmedCursorEffect armed={!!armedPresetId} />
+          </>
         )}
 
         {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
