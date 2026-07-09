@@ -150,6 +150,22 @@ export async function removeTokenImage(tokenId: string, imagePath: string): Prom
   await updateMapToken(tokenId, { imagePath: null })
 }
 
+export async function uploadTokenImageBlob(
+  campaignId: string,
+  tokenId: string,
+  blob: Blob,
+): Promise<string> {
+  if (!supabase) throw new Error('not_authenticated')
+  const ext = extFromMimeType(blob.type)
+  const path = `${campaignId}/tokens/${tokenId}.${ext}`
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, blob, { contentType: blob.type, upsert: true })
+  if (error) throw error
+  await updateMapToken(tokenId, { imagePath: path })
+  return path
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const commaIdx = dataUrl.indexOf(',')
   const head = commaIdx > -1 ? dataUrl.slice(0, commaIdx) : ''
