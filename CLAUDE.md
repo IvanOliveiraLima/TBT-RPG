@@ -792,6 +792,19 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   descrição em `AutoGrowTextarea`). Nas 4 listas (magia/ataque/característica/item), o campo de nome passou a
   `flex:'0 1 auto'` + `maxWidth: min(60%,320px)`, com um `header-gap` clicável que retrai o item.
 
+### Tactical maps — token preset library (COMPLETED — PR #184)
+- Biblioteca de tokens prontos **por campanha**: tabela `campaign_token_presets`
+  (label/color/size/image_path) + RLS via `is_campaign_owner` (só o dono). Service CRUD + upload de imagem em
+  `campaign-maps/{campaignId}/presets/{presetId}.{ext}` (RLS de storage reusada); `deleteCampaign` passou a
+  varrer também `presets/`. Seção "Tokens prontos" no CampaignDetail (só dono): criar/editar/excluir.
+
+### Tactical maps — place tokens from presets (COMPLETED — PR #185)
+- Paleta de presets no viewer (só dono): armar um preset (destaque + cursor crosshair) e cada **clique
+  simples** no mapa coloca um token via `createMapToken` + `snapToGrid` (sem flip de Y), copiando
+  nome/cor/tamanho. Se o preset tem imagem, ela é **copiada** pro token (`uploadTokenImageBlob`) —
+  desacoplando do preset. Fica armado (coloca vários) até "Concluir"; o duplo-clique do marcador é ignorado
+  enquanto armado. Toolbar reordenado (Adicionar token + Tokens prontos juntos).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1499,6 +1512,7 @@ function buildInviteLink(): string {
 | **Tático — escala de token:** token é `<Marker>` + divIcon com o tamanho recomputado no `zoomend` (px de tela = célula × `pxPerUnit`), não `<Circle>` (perderia o drag). Cache do ícone inclui o tamanho. | PR #165 | Overlay que escala "por unidade de mapa" com Marker exige recompute no zoom |
 | **Tático — imagem de token:** reusa o bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` — como o 1º segmento do path é o campaignId, a RLS de storage existente cobre; a limpeza deve varrer a subpasta `tokens/`. | PR #167 | Conteúdo de campanha novo no storage vai sob `{campaignId}/...` pra reusar RLS; limpeza varre subpastas |
 | **Ficha — acordeão single-open:** listas de card (magias/ataques/características/itens) guardam `openId` no nível da lista e fecham em `pointerdown` fora — NÃO usar `onBlur`/estado por card (retrair o aberto desloca o layout e "engole" o clique no item de baixo). | PR #178 | Lista de card expansível usa openId na lista + pointerdown-fora, nunca blur |
+| **Tático — presets de token:** biblioteca **por campanha** (`campaign_token_presets`, RLS `is_campaign_owner`); imagem sob `campaign-maps/{campaignId}/presets/`; ao colocar, a imagem do preset é **copiada** pro token (`{campaignId}/tokens/…`), nunca referenciada — excluir o preset não afeta tokens já postos. | PR #184/#185 | Biblioteca por campanha; placement copia a imagem (desacopla token do preset) |
 
 ---
 
@@ -1661,6 +1675,7 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Tokens escalam com o zoom.**~~ *Resolved (PR #165).* `<Marker>` + divIcon com tamanho recomputado no `zoomend` via `pxPerUnit`; helper `tokenDiameterPx`.
 - ~~**OQ — Marcador por duplo-clique.**~~ *Resolved (PR #171).* Marcador criado por duplo-clique (`dblclick`); `doubleClickZoom={false}` evita zoom no duplo-clique.
 - **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
+- **OQ — Biblioteca de tokens por-usuário (global).** Hoje os presets são por campanha; permitir uma biblioteca pessoal do mestre reutilizável entre campanhas (exige repensar storage/RLS por-usuário). Deferred.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
