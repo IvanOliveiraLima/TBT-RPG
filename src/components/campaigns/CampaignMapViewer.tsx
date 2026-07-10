@@ -1897,7 +1897,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               key={tok.id}
               position={[tok.y, tok.x]}
               icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
-              draggable={isOwner}
+              draggable={isOwner && !areaMode && !fogMode}
               {...(isOwner ? {
                 eventHandlers: {
                   dragend(e: L.DragEndEvent) {
