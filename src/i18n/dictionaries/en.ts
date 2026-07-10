@@ -820,6 +820,23 @@ const en = {
   'token_presets.place_hint':    'Click the map to place • {name}',
   'token_presets.place_done':    'Done',
   'token_presets.palette_empty': 'No ready tokens — add them in the campaign',
+
+  // ── Token conditions ──────────────────────────────────────────────────────────
+  'token_conditions_title': 'Conditions',
+  'conditions.blinded.name':       'Blinded',       'conditions.blinded.abbr':       'BL',
+  'conditions.charmed.name':       'Charmed',       'conditions.charmed.abbr':       'CH',
+  'conditions.deafened.name':      'Deafened',      'conditions.deafened.abbr':      'DF',
+  'conditions.frightened.name':    'Frightened',    'conditions.frightened.abbr':    'FR',
+  'conditions.grappled.name':      'Grappled',      'conditions.grappled.abbr':      'GR',
+  'conditions.incapacitated.name': 'Incapacitated', 'conditions.incapacitated.abbr': 'IN',
+  'conditions.invisible.name':     'Invisible',     'conditions.invisible.abbr':     'IV',
+  'conditions.paralyzed.name':     'Paralyzed',     'conditions.paralyzed.abbr':     'PA',
+  'conditions.petrified.name':     'Petrified',     'conditions.petrified.abbr':     'PE',
+  'conditions.poisoned.name':      'Poisoned',      'conditions.poisoned.abbr':      'PO',
+  'conditions.prone.name':         'Prone',         'conditions.prone.abbr':         'PR',
+  'conditions.restrained.name':    'Restrained',    'conditions.restrained.abbr':    'RE',
+  'conditions.stunned.name':       'Stunned',       'conditions.stunned.abbr':       'ST',
+  'conditions.unconscious.name':   'Unconscious',   'conditions.unconscious.abbr':   'UN',
 } as const;
 
 export default en;
