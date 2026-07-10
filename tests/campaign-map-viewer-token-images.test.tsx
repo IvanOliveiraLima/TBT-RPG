@@ -86,7 +86,7 @@ const mockDeleteMapToken      = vi.fn()
 
 vi.mock('@/services/campaign-map-tokens', () => ({
   listMapTokens:          (...args: unknown[]) => mockListMapTokens(...args),
-  createMapToken:         () => Promise.resolve({ id: 'new', mapId: 'map-1', x: 0, y: 0, label: '', color: '#C0392B', size: 1, imagePath: null, createdAt: 0 }),
+  createMapToken:         () => Promise.resolve({ id: 'new', mapId: 'map-1', x: 0, y: 0, label: '', color: '#C0392B', size: 1, imagePath: null, conditions: [], createdAt: 0 }),
   updateMapToken:         () => Promise.resolve(),
   deleteMapToken:         (...args: unknown[]) => mockDeleteMapToken(...args),
   uploadTokenImage:       (...args: unknown[]) => mockUploadTokenImage(...args),
@@ -113,13 +113,13 @@ const MAP: CampaignMap = {
 
 const TOKEN_NO_IMAGE: CampaignMapToken = {
   id: 'tok-1', mapId: 'map-1', x: 400, y: 300,
-  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, createdAt: 0,
+  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, conditions: [], createdAt: 0,
 }
 
 const TOKEN_WITH_IMAGE: CampaignMapToken = {
   id: 'tok-2', mapId: 'map-1', x: 800, y: 600,
   label: 'Dragon', color: '#8B0000', size: 1,
-  imagePath: 'camp-1/tokens/tok-2.png', createdAt: 1,
+  imagePath: 'camp-1/tokens/tok-2.png', conditions: [], createdAt: 1,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

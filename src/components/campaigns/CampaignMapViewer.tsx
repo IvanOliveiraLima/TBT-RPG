@@ -45,6 +45,8 @@ import { tokenDiameterPx } from '@/utils/token-size'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
 import type { CampaignMapFog } from '@/services/campaign-map-fog'
 import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
+import { CONDITION_KEYS, CONDITION_COLOR } from '@/domain/conditions'
+import type { ConditionKey } from '@/domain/conditions'
 
 const T = {
   bg:          '#15121C',
@@ -64,8 +66,12 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
-// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px)
+// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px, conditions)
 const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
+
+const CHIP_H = 14   // px — height of one chip row below the disc
+const CHIP_GAP = 2  // px — gap between chip row and disc
+const MAX_CHIPS = 3 // show at most this many condition abbr chips; the rest become "+N"
 
 function getTokenIcon(
   color: string,
@@ -73,11 +79,14 @@ function getTokenIcon(
   cellImageUnits: number | null,
   pxPerUnit: number,
   imageUrl?: string | null,
+  chips?: Array<{ abbr: string; color: string }>,
 ): L.DivIcon {
   const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
-  const key = `${imageUrl ?? color}-${d}`
+  const condKey = chips && chips.length > 0 ? chips.map(c => c.abbr).join(',') : ''
+  const key = `${imageUrl ?? color}-${d}-${condKey}`
   const cached = TOKEN_ICON_CACHE.get(key)
   if (cached) return cached
+
   const ring = 2
   const inner = imageUrl
     ? `background-image:url('${imageUrl}');background-size:cover;background-position:center;`
@@ -85,10 +94,25 @@ function getTokenIcon(
   const border = imageUrl
     ? `border:${ring}px solid ${color};`
     : `border:${ring}px solid rgba(255,255,255,0.7);`
+
+  let chipHtml = ''
+  if (chips && chips.length > 0) {
+    const visible = chips.slice(0, MAX_CHIPS)
+    const overflow = chips.length - MAX_CHIPS
+    const chipSpans = visible.map(c =>
+      `<span style="background:${c.color};color:#fff;font-size:9px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">${c.abbr}</span>`
+    ).join('')
+    const overflowSpan = overflow > 0
+      ? `<span style="background:#374151;color:#fff;font-size:9px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">+${overflow}</span>`
+      : ''
+    chipHtml = `<div style="display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;margin-top:${CHIP_GAP}px;max-width:${d + 16}px;">${chipSpans}${overflowSpan}</div>`
+  }
+
+  const totalH = chips && chips.length > 0 ? d + CHIP_GAP + CHIP_H : d
   const icon = L.divIcon({
     className: 'tbt-token',
-    html: `<div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box;"></div>`,
-    iconSize: [d, d],
+    html: `<div style="display:inline-block;"><div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box;"></div>${chipHtml}</div>`,
+    iconSize: [d, totalH],
     iconAnchor: [d / 2, d / 2],
     popupAnchor: [0, -d / 2],
   })
@@ -203,6 +227,7 @@ function TokenPopupContent({
   onUploadImage,
   onRemoveImage,
   onPickCharacterPortrait,
+  onToggleCondition,
 }: {
   token: CampaignMapToken
   campaignId: string
@@ -211,6 +236,7 @@ function TokenPopupContent({
   onUploadImage: (tokenId: string, file: File) => void
   onRemoveImage: (tokenId: string, imagePath: string) => void
   onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string) => void
+  onToggleCondition: (tokenId: string, key: ConditionKey) => void
 }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(token.label)
@@ -367,6 +393,40 @@ function TokenPopupContent({
             {imageError}
           </div>
         )}
+      </div>
+      <div style={{ marginBottom: 6 }}>
+        <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
+          {t('token_conditions_title')}
+        </div>
+        <div
+          data-testid={`token-conditions-${token.id}`}
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}
+        >
+          {CONDITION_KEYS.map(key => {
+            const active = token.conditions.includes(key)
+            return (
+              <button
+                key={key}
+                type="button"
+                data-testid={`condition-toggle-${token.id}-${key}`}
+                onClick={() => onToggleCondition(token.id, key)}
+                style={{
+                  padding: '3px 4px',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  background: active ? CONDITION_COLOR[key] : 'transparent',
+                  color: active ? '#fff' : T.textMuted,
+                  border: `1px solid ${active ? CONDITION_COLOR[key] : T.textMuted}`,
+                  fontWeight: active ? 700 : 400,
+                }}
+              >
+                {t(`conditions.${key}.abbr` as Parameters<typeof t>[0])} {t(`conditions.${key}.name` as Parameters<typeof t>[0])}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 4 }}>
         <button
@@ -730,6 +790,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       })
     } catch {
       // noop
+    }
+  }
+
+  async function handleToggleCondition(tokenId: string, key: ConditionKey) {
+    const tok = tokens.find(t => t.id === tokenId)
+    if (!tok) return
+    const next = tok.conditions.includes(key)
+      ? tok.conditions.filter(c => c !== key)
+      : [...tok.conditions, key]
+    setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, conditions: next } : t))
+    try {
+      await updateMapToken(tokenId, { conditions: next })
+    } catch {
+      // revert
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, conditions: tok.conditions } : t))
     }
   }
 
@@ -1457,11 +1532,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         {/* Tokens — disc (or circular image) + label; owner can drag (snap) and edit/remove */}
         {tokens.filter(tok => !isTokenHiddenForViewer(tok)).map(tok => {
           const imageUrl = tok.imagePath ? (tokenImageUrlsByPath[tok.imagePath] ?? null) : null
+          const conditionChips = tok.conditions
+            .filter((c): c is ConditionKey => CONDITION_KEYS.includes(c as ConditionKey))
+            .map(c => ({ abbr: t(`conditions.${c}.abbr` as Parameters<typeof t>[0]), color: CONDITION_COLOR[c] }))
           return (
             <Marker
               key={tok.id}
               position={[tok.y, tok.x]}
-              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl)}
+              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
               draggable={isOwner}
               {...(isOwner ? {
                 eventHandlers: {
@@ -1484,6 +1562,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                     onUploadImage={(tokenId, file) => void handleUploadTokenImage(tokenId, file)}
                     onRemoveImage={(tokenId, imagePath) => void handleRemoveTokenImage(tokenId, imagePath)}
                     onPickCharacterPortrait={(tokenId, dataUrl) => void handlePickCharacterPortrait(tokenId, dataUrl)}
+                    onToggleCondition={(tokenId, key) => void handleToggleCondition(tokenId, key)}
                   />
                 ) : (
                   <div data-testid={`token-popup-${tok.id}`} style={{ fontFamily: T.sans }}>
