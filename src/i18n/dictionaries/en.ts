@@ -837,6 +837,15 @@ const en = {
   'conditions.restrained.name':    'Restrained',    'conditions.restrained.abbr':    'RE',
   'conditions.stunned.name':       'Stunned',       'conditions.stunned.abbr':       'ST',
   'conditions.unconscious.name':   'Unconscious',   'conditions.unconscious.abbr':   'UN',
+
+  // ── Map areas ─────────────────────────────────────────────────────────────────
+  'areas.title':       'Areas',
+  'areas.shape_circle': 'Circle',
+  'areas.shape_square': 'Square',
+  'areas.color':       'Color',
+  'areas.clear':       'Clear all',
+  'areas.draw_hint':   'Drag on the map to draw',
+  'areas.done':        'Done',
 } as const;
 
 export default en;

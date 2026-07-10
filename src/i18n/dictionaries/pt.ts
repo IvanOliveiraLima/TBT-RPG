@@ -841,6 +841,15 @@ const pt: Record<keyof typeof en, string> = {
   'conditions.restrained.name':    'Impedido',      'conditions.restrained.abbr':    'IMP',
   'conditions.stunned.name':       'Atordoado',     'conditions.stunned.abbr':       'ATD',
   'conditions.unconscious.name':   'Inconsciente',  'conditions.unconscious.abbr':   'INS',
+
+  // ── Map areas ─────────────────────────────────────────────────────────────────
+  'areas.title':       'Áreas',
+  'areas.shape_circle': 'Círculo',
+  'areas.shape_square': 'Quadrado',
+  'areas.color':       'Cor',
+  'areas.clear':       'Limpar tudo',
+  'areas.draw_hint':   'Arraste no mapa para desenhar',
+  'areas.done':        'Concluir',
 };
 
 export default pt;
