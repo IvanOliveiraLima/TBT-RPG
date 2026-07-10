@@ -580,7 +580,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [areaPanelOpen, setAreaPanelOpen] = useState(false)
   // Preview during drag: centre (viewBox space) + current radius
   const [areaPreview, setAreaPreview] = useState<{ x: number; y: number; radius: number; shape: 'circle' | 'square'; color: string } | null>(null)
-  const areaCenterRef = useRef<{ x: number; y: number } | null>(null)
+  const areaCenterRef   = useRef<{ x: number; y: number } | null>(null)
+  const areaPreviewRef  = useRef<{ x: number; y: number; radius: number } | null>(null)
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -994,7 +995,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const handleAreaStart = useCallback((latlng: L.LatLng) => {
     const cx = latlng.lng
     const cy = map.height - latlng.lat
-    areaCenterRef.current = { x: cx, y: cy }
+    areaCenterRef.current  = { x: cx, y: cy }
+    areaPreviewRef.current = { x: cx, y: cy, radius: 0 }
     setAreaPreview({ x: cx, y: cy, radius: 0, shape: areaShape, color: areaColor })
   }, [map.height, areaShape, areaColor])
 
@@ -1004,23 +1006,24 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const px = latlng.lng
     const py = map.height - latlng.lat
     const radius = Math.sqrt((px - center.x) ** 2 + (py - center.y) ** 2)
+    areaPreviewRef.current = { x: center.x, y: center.y, radius }
     setAreaPreview({ x: center.x, y: center.y, radius, shape: areaShape, color: areaColor })
   }, [map.height, areaShape, areaColor])
 
+  // onEnd reads from ref (not state) so the useCallback deps stay stable during the drag.
+  // areaPreview changes on every pointermove, which would cause AreaInteraction's useEffect
+  // to remount mid-drag (clearing `let dragging` and losing pointer capture).
   const handleAreaEnd = useCallback(() => {
-    const center = areaCenterRef.current
-    if (!center || !areaPreview || areaPreview.radius < 6) {
-      areaCenterRef.current = null
-      setAreaPreview(null)
-      return
-    }
-    const { x, y, radius } = areaPreview
-    areaCenterRef.current = null
+    const preview = areaPreviewRef.current
+    areaCenterRef.current  = null
+    areaPreviewRef.current = null
     setAreaPreview(null)
+    if (!preview || preview.radius < 6) return
+    const { x, y, radius } = preview
     void createMapArea(map.id, { shape: areaShape, x, y, radius, color: areaColor })
       .then(area => setAreas(prev => [...prev, area]))
       .catch(() => {})
-  }, [areaPreview, map.id, areaShape, areaColor])
+  }, [map.id, areaShape, areaColor])
 
   async function handleClearAreas() {
     await clearMapAreas(map.id)
