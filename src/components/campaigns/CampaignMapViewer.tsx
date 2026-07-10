@@ -47,6 +47,12 @@ import type { CampaignMapFog } from '@/services/campaign-map-fog'
 import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
 import { CONDITION_KEYS, CONDITION_COLOR } from '@/domain/conditions'
 import type { ConditionKey } from '@/domain/conditions'
+import {
+  listMapAreas,
+  createMapArea,
+  clearMapAreas,
+} from '@/services/campaign-map-areas'
+import type { CampaignMapArea } from '@/services/campaign-map-areas'
 
 const T = {
   bg:          '#15121C',
@@ -214,6 +220,62 @@ function FogInteraction({
       container.style.touchAction = ''
     }
   }, [fogMode, leafletMap, onPaint, onCommit])
+
+  return null
+}
+
+// Inner component — handles area drawing via drag; disables pan and sets crosshair in areaMode.
+// onStart(latlng) called on pointerdown, onMove(latlng) on pointermove, onEnd() on pointerup.
+function AreaInteraction({
+  areaMode,
+  onStart,
+  onMove,
+  onEnd,
+}: {
+  areaMode: boolean
+  onStart: (latlng: L.LatLng) => void
+  onMove:  (latlng: L.LatLng) => void
+  onEnd:   () => void
+}) {
+  const leafletMap = useMap()
+
+  useEffect(() => {
+    const container = leafletMap.getContainer()
+    if (!areaMode) {
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+      return
+    }
+    leafletMap.dragging.disable()
+    container.style.cursor = 'crosshair'
+    container.style.touchAction = 'none'
+    let dragging = false
+    const down = (e: Event) => {
+      const pe = e as PointerEvent
+      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      dragging = true
+      try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
+      onStart(leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent))
+    }
+    const move = (e: Event) => {
+      if (dragging) onMove(leafletMap.mouseEventToLatLng(e as unknown as MouseEvent))
+    }
+    const end = () => { if (dragging) { dragging = false; onEnd() } }
+    container.addEventListener('pointerdown', down)
+    container.addEventListener('pointermove', move)
+    container.addEventListener('pointerup', end)
+    container.addEventListener('pointercancel', end)
+    return () => {
+      container.removeEventListener('pointerdown', down)
+      container.removeEventListener('pointermove', move)
+      container.removeEventListener('pointerup', end)
+      container.removeEventListener('pointercancel', end)
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+    }
+  }, [areaMode, leafletMap, onStart, onMove, onEnd])
 
   return null
 }
@@ -510,6 +572,16 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [presetUrls, setPresetUrls] = useState<Record<string, string>>({})
   const [armedPresetId, setArmedPresetId] = useState<string | null>(null)
   const [presetPanelOpen, setPresetPanelOpen] = useState(false)
+  // Area drawing state (owner only)
+  const [areas, setAreas] = useState<CampaignMapArea[]>([])
+  const [areaMode, setAreaMode] = useState(false)
+  const [areaShape, setAreaShape] = useState<'circle' | 'square'>('circle')
+  const [areaColor, setAreaColor] = useState('#E0562D')
+  const [areaPanelOpen, setAreaPanelOpen] = useState(false)
+  // Preview during drag: centre (viewBox space) + current radius
+  const [areaPreview, setAreaPreview] = useState<{ x: number; y: number; radius: number; shape: 'circle' | 'square'; color: string } | null>(null)
+  const areaCenterRef   = useRef<{ x: number; y: number } | null>(null)
+  const areaPreviewRef  = useRef<{ x: number; y: number; radius: number } | null>(null)
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -560,6 +632,27 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const id = setInterval(() => {
       listMapTokens(map.id)
         .then(ts => { if (!cancelled) setTokens(ts) })
+        .catch(() => {})
+    }, TOKEN_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.id, isOwner])
+
+  // Fetch areas on mount
+  useEffect(() => {
+    let cancelled = false
+    listMapAreas(map.id)
+      .then(as => { if (!cancelled) setAreas(as) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.id])
+
+  // Poll areas every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner) return
+    let cancelled = false
+    const id = setInterval(() => {
+      listMapAreas(map.id)
+        .then(as => { if (!cancelled) setAreas(as) })
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
@@ -899,6 +992,44 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     }
   }
 
+  const handleAreaStart = useCallback((latlng: L.LatLng) => {
+    const cx = latlng.lng
+    const cy = map.height - latlng.lat
+    areaCenterRef.current  = { x: cx, y: cy }
+    areaPreviewRef.current = { x: cx, y: cy, radius: 0 }
+    setAreaPreview({ x: cx, y: cy, radius: 0, shape: areaShape, color: areaColor })
+  }, [map.height, areaShape, areaColor])
+
+  const handleAreaMove = useCallback((latlng: L.LatLng) => {
+    const center = areaCenterRef.current
+    if (!center) return
+    const px = latlng.lng
+    const py = map.height - latlng.lat
+    const radius = Math.sqrt((px - center.x) ** 2 + (py - center.y) ** 2)
+    areaPreviewRef.current = { x: center.x, y: center.y, radius }
+    setAreaPreview({ x: center.x, y: center.y, radius, shape: areaShape, color: areaColor })
+  }, [map.height, areaShape, areaColor])
+
+  // onEnd reads from ref (not state) so the useCallback deps stay stable during the drag.
+  // areaPreview changes on every pointermove, which would cause AreaInteraction's useEffect
+  // to remount mid-drag (clearing `let dragging` and losing pointer capture).
+  const handleAreaEnd = useCallback(() => {
+    const preview = areaPreviewRef.current
+    areaCenterRef.current  = null
+    areaPreviewRef.current = null
+    setAreaPreview(null)
+    if (!preview || preview.radius < 6) return
+    const { x, y, radius } = preview
+    void createMapArea(map.id, { shape: areaShape, x, y, radius, color: areaColor })
+      .then(area => setAreas(prev => [...prev, area]))
+      .catch(() => {})
+  }, [map.id, areaShape, areaColor])
+
+  async function handleClearAreas() {
+    await clearMapAreas(map.id)
+    setAreas([])
+  }
+
   const viewerHeight = expanded ? '100%' : '70vh'
 
   if (error) {
@@ -1199,12 +1330,154 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             </div>
           )}
 
+          {/* Area drawing panel */}
+          {!areaPanelOpen && !areaMode && (
+            <button
+              type="button"
+              data-testid="area-panel-toggle"
+              onClick={() => {
+                setAreaPanelOpen(true)
+                setFogMode(false)
+                setArmedPresetId(null)
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+                border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ◎ {t('areas.title')}
+            </button>
+          )}
+          {(areaPanelOpen || areaMode) && (
+            <div
+              data-testid="area-panel"
+              style={{
+                background: 'rgba(21, 18, 28, 0.92)',
+                border: '1px solid #2A2537',
+                borderRadius: 10,
+                padding: '10px 12px',
+                fontFamily: T.sans,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: 200,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                  {t('areas.title')}
+                </span>
+                <button
+                  type="button"
+                  data-testid="area-panel-close"
+                  onClick={() => { setAreaPanelOpen(false); setAreaMode(false); setAreaPreview(null) }}
+                  style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
+                >×</button>
+              </div>
+
+              {/* Shape selector */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  data-testid="area-shape-circle"
+                  onClick={() => setAreaShape('circle')}
+                  style={{
+                    flex: 1, padding: '4px 0', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+                    background: areaShape === 'circle' ? '#5B3FA8' : 'transparent',
+                    color: areaShape === 'circle' ? T.textPrimary : T.textMuted,
+                    border: areaShape === 'circle' ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)',
+                    fontFamily: T.sans,
+                  }}
+                >
+                  {t('areas.shape_circle')}
+                </button>
+                <button
+                  type="button"
+                  data-testid="area-shape-square"
+                  onClick={() => setAreaShape('square')}
+                  style={{
+                    flex: 1, padding: '4px 0', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+                    background: areaShape === 'square' ? '#5B3FA8' : 'transparent',
+                    color: areaShape === 'square' ? T.textPrimary : T.textMuted,
+                    border: areaShape === 'square' ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)',
+                    fontFamily: T.sans,
+                  }}
+                >
+                  {t('areas.shape_square')}
+                </button>
+              </div>
+
+              {/* Color picker */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('areas.color')}</label>
+                <input
+                  type="color"
+                  data-testid="area-color-input"
+                  value={areaColor}
+                  onChange={e => setAreaColor(e.target.value)}
+                  style={{ height: 30, width: '100%', cursor: 'pointer', borderRadius: 4, border: 'none' }}
+                />
+              </div>
+
+              {/* Draw hint */}
+              {areaMode && (
+                <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>{t('areas.draw_hint')}</p>
+              )}
+
+              {/* Clear all */}
+              {areas.length > 0 && (
+                <button
+                  type="button"
+                  data-testid="area-clear-btn"
+                  onClick={() => void handleClearAreas()}
+                  style={{
+                    background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 6, color: T.danger, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: 12, fontFamily: T.sans,
+                  }}
+                >
+                  {t('areas.clear')}
+                </button>
+              )}
+
+              {/* Draw mode toggle */}
+              {!areaMode ? (
+                <button
+                  type="button"
+                  data-testid="area-draw-start"
+                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true) }}
+                  style={{
+                    background: '#5B3FA8', border: 'none', borderRadius: 6,
+                    color: T.textPrimary, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: 12, fontFamily: T.sans, fontWeight: 600,
+                  }}
+                >
+                  {t('areas.draw_hint')}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  data-testid="area-draw-done"
+                  onClick={() => { setAreaMode(false); setAreaPreview(null) }}
+                  style={{
+                    background: '#5B3FA8', border: 'none', borderRadius: 6,
+                    color: T.textPrimary, padding: '4px 10px',
+                    cursor: 'pointer', fontSize: 12, fontFamily: T.sans, fontWeight: 600,
+                  }}
+                >
+                  {t('areas.done')}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Fog panel or toggle */}
           {!fogMode && (
             <button
               type="button"
               data-testid="fog-panel-toggle"
-              onClick={() => setFogMode(true)}
+              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false) }}
               disabled={!localGrid.enabled}
               {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
               aria-label={t('campaign_maps.fog_title')}
@@ -1360,6 +1633,79 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </SVGOverlay>
         )}
 
+        {/* Area shapes — pointer-events:none; visible to all */}
+        {(areas.length > 0 || areaPreview) && (
+          <SVGOverlay
+            bounds={bounds}
+            attributes={{
+              viewBox: `0 0 ${map.width} ${map.height}`,
+              style: 'pointer-events: none',
+              'data-testid': 'areas-overlay',
+            }}
+          >
+            {areas.map(area =>
+              area.shape === 'circle' ? (
+                <circle
+                  key={area.id}
+                  cx={area.x}
+                  cy={area.y}
+                  r={area.radius}
+                  fill={area.color}
+                  fillOpacity={0.28}
+                  stroke={area.color}
+                  strokeOpacity={0.9}
+                  strokeWidth={2}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ) : (
+                <rect
+                  key={area.id}
+                  x={area.x - area.radius}
+                  y={area.y - area.radius}
+                  width={area.radius * 2}
+                  height={area.radius * 2}
+                  fill={area.color}
+                  fillOpacity={0.28}
+                  stroke={area.color}
+                  strokeOpacity={0.9}
+                  strokeWidth={2}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ),
+            )}
+            {areaPreview && areaPreview.radius > 0 && (
+              areaPreview.shape === 'circle' ? (
+                <circle
+                  cx={areaPreview.x}
+                  cy={areaPreview.y}
+                  r={areaPreview.radius}
+                  fill={areaPreview.color}
+                  fillOpacity={0.18}
+                  stroke={areaPreview.color}
+                  strokeOpacity={0.7}
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ) : (
+                <rect
+                  x={areaPreview.x - areaPreview.radius}
+                  y={areaPreview.y - areaPreview.radius}
+                  width={areaPreview.radius * 2}
+                  height={areaPreview.radius * 2}
+                  fill={areaPreview.color}
+                  fillOpacity={0.18}
+                  stroke={areaPreview.color}
+                  strokeOpacity={0.7}
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              )
+            )}
+          </SVGOverlay>
+        )}
+
         {/* Fog of war mask — pointer-events:none so it never blocks pan/markers */}
         {fog.enabled && (
           <SVGOverlay
@@ -1393,12 +1739,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             <MapClickHandler
               onDblClick={latlng => {
                 if (fogMode) return  // fog painting handled by FogInteraction
+                if (areaMode) return  // area drawing handled by AreaInteraction
                 if (armedPresetId) return  // dblclick ignored while preset is armed
                 setPendingLatLng(latlng)
                 setPendingLabel('')
               }}
               onSingleClick={latlng => {
                 if (fogMode) return
+                if (areaMode) return  // area drawing handled by AreaInteraction
                 if (!armedPresetId) return
                 void placePreset(latlng)
               }}
@@ -1413,6 +1761,15 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             fogMode={fogMode}
             onPaint={handleFogPaint}
             onCommit={handleFogCommit}
+          />
+        )}
+
+        {isOwner && (
+          <AreaInteraction
+            areaMode={areaMode}
+            onStart={handleAreaStart}
+            onMove={handleAreaMove}
+            onEnd={handleAreaEnd}
           />
         )}
 
@@ -1540,7 +1897,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               key={tok.id}
               position={[tok.y, tok.x]}
               icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
-              draggable={isOwner}
+              draggable={isOwner && !areaMode && !fogMode}
               {...(isOwner ? {
                 eventHandlers: {
                   dragend(e: L.DragEndEvent) {

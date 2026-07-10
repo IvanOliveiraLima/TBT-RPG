@@ -91,6 +91,15 @@ vi.mock('@/services/campaign-map-fog', () => ({
   saveMapFog: () => Promise.resolve(),
 }))
 
+// ── Mock campaign-map-areas service ──────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-areas', () => ({
+  listMapAreas:   () => Promise.resolve([]),
+  createMapArea:  () => Promise.resolve({ id: 'area-new', mapId: 'map-1', shape: 'circle', x: 0, y: 0, radius: 0, color: '#E0562D' }),
+  deleteMapArea:  () => Promise.resolve(),
+  clearMapAreas:  () => Promise.resolve(),
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 // Grid: size=50, no offset. map.height=1024.
