@@ -183,7 +183,7 @@ const PRESET_WITH_IMG: CampaignTokenPreset = {
 }
 
 const CREATED_TOKEN: CampaignMapToken = {
-  id: 'tok-new', mapId: 'map-1', x: 100, y: 200, label: 'Goblin', color: '#C0392B', size: 2, imagePath: null, createdAt: 0,
+  id: 'tok-new', mapId: 'map-1', x: 100, y: 200, label: 'Goblin', color: '#C0392B', size: 2, imagePath: null, conditions: [], createdAt: 0,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

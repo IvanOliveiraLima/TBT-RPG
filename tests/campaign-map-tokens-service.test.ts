@@ -61,6 +61,7 @@ const DB_ROW = {
   color: '#C0392B',
   size: 1,
   image_path: null,
+  conditions: [],
   created_at: '2026-01-01T00:00:00Z',
 }
 
@@ -73,6 +74,7 @@ const EXPECTED_TOKEN: CampaignMapToken = {
   color: '#C0392B',
   size: 1,
   imagePath: null,
+  conditions: [],
   createdAt: new Date('2026-01-01T00:00:00Z').getTime(),
 }
 
