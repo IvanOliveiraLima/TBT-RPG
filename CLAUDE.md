@@ -805,6 +805,28 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   desacoplando do preset. Fica armado (coloca vários) até "Concluir"; o duplo-clique do marcador é ignorado
   enquanto armado. Toolbar reordenado (Adicionar token + Tokens prontos juntos).
 
+### Tactical maps — token status conditions (COMPLETED — PR #188)
+- Coluna `conditions jsonb` em `campaign_map_tokens` (14 condições fixas de 5e; módulo
+  `src/domain/conditions.ts` com cor por condição). Chips de abreviação renderizados **abaixo** do token (até
+  3 + "+N"); `iconAnchor` fica no **centro do círculo** (`[d/2,d/2]`) — só a **altura** do `iconSize` cresce,
+  então snap/drag/escala/ocultar-sob-fog não mudam. A chave do cache do `getTokenIcon` passou a incluir as
+  condições. Toggle no popup (só dono); membros veem via polling de 5s.
+
+### Tactical maps — shared AoE area shapes (COMPLETED — PR #189)
+- Formas de área compartilhadas por mapa: tabela `campaign_map_areas` (`shape` 'circle'|'square', centro
+  `x`/`y`, `radius`, `color`) + RLS `is_map_*`. Desenho por **arraste do centro** (`AreaInteraction`, mesmo
+  padrão de Pointer Events do fog + `touch-action:none`, pan travado); centro guardado em **espaço de viewBox**
+  (`x=lng`, `y=height-lat`), **raio = distância euclidiana** (invariante ao flip). `SVGOverlay`
+  (`pointer-events:none`) renderiza círculo/rect + preview pra todos; membros via polling de 5s; "Limpar
+  tudo". `areaMode` exclusivo com fog/preset.
+  - Hotfix (desenho não aparecia): handler de gesto não pode depender de estado que muda durante o arraste —
+    `handleAreaEnd` lia `areaPreview` (mudava a cada move) → o `useEffect` do `AreaInteraction` remontava no
+    meio, resetando `dragging`/pointer-capture. Fix: `areaPreviewRef` + tirar `areaPreview` das deps do `onEnd`
+    (mesma lição do `fogRef`).
+  - Hotfix (token arrastava ao desenhar): `draggable={isOwner && !areaMode && !fogMode}` — token
+    não-arrastável nos modos de desenho, aí o `pointerdown` borbulha ao container e a área/fog inicia mesmo
+    começando sobre um token.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1513,6 +1535,8 @@ function buildInviteLink(): string {
 | **Tático — imagem de token:** reusa o bucket `campaign-maps` sob `{campaignId}/tokens/{tokenId}.{ext}` — como o 1º segmento do path é o campaignId, a RLS de storage existente cobre; a limpeza deve varrer a subpasta `tokens/`. | PR #167 | Conteúdo de campanha novo no storage vai sob `{campaignId}/...` pra reusar RLS; limpeza varre subpastas |
 | **Ficha — acordeão single-open:** listas de card (magias/ataques/características/itens) guardam `openId` no nível da lista e fecham em `pointerdown` fora — NÃO usar `onBlur`/estado por card (retrair o aberto desloca o layout e "engole" o clique no item de baixo). | PR #178 | Lista de card expansível usa openId na lista + pointerdown-fora, nunca blur |
 | **Tático — presets de token:** biblioteca **por campanha** (`campaign_token_presets`, RLS `is_campaign_owner`); imagem sob `campaign-maps/{campaignId}/presets/`; ao colocar, a imagem do preset é **copiada** pro token (`{campaignId}/tokens/…`), nunca referenciada — excluir o preset não afeta tokens já postos. | PR #184/#185 | Biblioteca por campanha; placement copia a imagem (desacopla token do preset) |
+| **Tático — âncora dos chips de condição:** condições viram chips abaixo do token, mas o `iconAnchor` fica no **centro do círculo** (`[d/2,d/2]`); só a altura do `iconSize` cresce. A chave do cache do `getTokenIcon` inclui as condições. | PR #188 | Overlay no token (chips) nunca move a âncora; posição lógica = centro do círculo; cache-key inclui o overlay |
+| **Tático — coordenada da AoE + drag por modo:** área guarda o **centro em viewBox** (`x=lng`, `y=height-lat`) e **raio = distância** (invariante ao flip); render SVG em viewBox com `pointer-events:none`. Token fica **não-arrastável** em `areaMode`/`fogMode` (senão o `<Marker>` captura o `pointerdown`). | PR #189 | Formas derivadas de clique: centro flipado + raio=distância; em modo de desenho, desabilitar drag de Marker pra o gesto borbular ao container |
 
 ---
 
@@ -1676,6 +1700,9 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Marcador por duplo-clique.**~~ *Resolved (PR #171).* Marcador criado por duplo-clique (`dblclick`); `doubleClickZoom={false}` evita zoom no duplo-clique.
 - **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
 - **OQ — Biblioteca de tokens por-usuário (global).** Hoje os presets são por campanha; permitir uma biblioteca pessoal do mestre reutilizável entre campanhas (exige repensar storage/RLS por-usuário). Deferred.
+- **OQ — Iniciativa / turnos.** Lista ordenada de combatentes com valor de iniciativa e destaque do turno atual (próximo/anterior); painel, compartilhado com os jogadores. Bloco maior, não mexe em coordenada. Deferred.
+- **OQ — Régua / medir distância.** Medir distância em células/pés entre dois pontos; pode ser efêmera e só do mestre (sem tabela/sync). Extra barato. Deferred.
+- **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
