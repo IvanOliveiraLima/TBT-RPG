@@ -12,10 +12,11 @@ export interface CampaignMapToken {
   color: string
   size: number
   imagePath: string | null
+  conditions: string[]
   createdAt: number
 }
 
-export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size' | 'imagePath'>>
+export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size' | 'imagePath' | 'conditions'>>
 
 type Row = {
   id: string
@@ -26,6 +27,7 @@ type Row = {
   color: string
   size: number
   image_path: string | null
+  conditions: string[]
   created_at: string
 }
 
@@ -39,6 +41,7 @@ function toToken(row: Row): CampaignMapToken {
     color: row.color,
     size: row.size,
     imagePath: row.image_path ?? null,
+    conditions: row.conditions ?? [],
     createdAt: new Date(row.created_at).getTime(),
   }
 }
@@ -94,6 +97,7 @@ export async function updateMapToken(id: string, patch: TokenPatch): Promise<voi
   if (patch.color !== undefined) update.color = patch.color
   if (patch.size !== undefined) update.size = patch.size
   if (patch.imagePath !== undefined) update.image_path = patch.imagePath
+  if (patch.conditions !== undefined) update.conditions = patch.conditions
   const { error } = await supabase
     .from('campaign_map_tokens')
     .update(update)

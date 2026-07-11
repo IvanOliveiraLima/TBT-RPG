@@ -153,6 +153,15 @@ vi.mock('@/services/campaign-map-fog', () => ({
   saveMapFog: () => Promise.resolve(),
 }))
 
+// ── Mock campaign-map-areas service ──────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-areas', () => ({
+  listMapAreas:   () => Promise.resolve([]),
+  createMapArea:  () => Promise.resolve({ id: 'area-new', mapId: 'map-1', shape: 'circle', x: 0, y: 0, radius: 0, color: '#E0562D' }),
+  deleteMapArea:  () => Promise.resolve(),
+  clearMapAreas:  () => Promise.resolve(),
+}))
+
 // ── Mock @/data/db (needed transitively) ─────────────────────────────────────
 
 vi.mock('@/data/db', () => ({
@@ -183,7 +192,7 @@ const PRESET_WITH_IMG: CampaignTokenPreset = {
 }
 
 const CREATED_TOKEN: CampaignMapToken = {
-  id: 'tok-new', mapId: 'map-1', x: 100, y: 200, label: 'Goblin', color: '#C0392B', size: 2, imagePath: null, createdAt: 0,
+  id: 'tok-new', mapId: 'map-1', x: 100, y: 200, label: 'Goblin', color: '#C0392B', size: 2, imagePath: null, conditions: [], createdAt: 0,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

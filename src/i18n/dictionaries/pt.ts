@@ -824,6 +824,32 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.place_hint':    'Clique no mapa para colocar • {name}',
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
+
+  // ── Token conditions ──────────────────────────────────────────────────────────
+  'token_conditions_title': 'Condições',
+  'conditions.blinded.name':       'Cego',          'conditions.blinded.abbr':       'CEG',
+  'conditions.charmed.name':       'Enfeitiçado',   'conditions.charmed.abbr':       'ENF',
+  'conditions.deafened.name':      'Surdo',         'conditions.deafened.abbr':      'SUR',
+  'conditions.frightened.name':    'Amedrontado',   'conditions.frightened.abbr':    'AMD',
+  'conditions.grappled.name':      'Agarrado',      'conditions.grappled.abbr':      'AGA',
+  'conditions.incapacitated.name': 'Incapacitado',  'conditions.incapacitated.abbr': 'INC',
+  'conditions.invisible.name':     'Invisível',     'conditions.invisible.abbr':     'INV',
+  'conditions.paralyzed.name':     'Paralisado',    'conditions.paralyzed.abbr':     'PAR',
+  'conditions.petrified.name':     'Petrificado',   'conditions.petrified.abbr':     'PET',
+  'conditions.poisoned.name':      'Envenenado',    'conditions.poisoned.abbr':      'ENV',
+  'conditions.prone.name':         'Caído',         'conditions.prone.abbr':         'CAI',
+  'conditions.restrained.name':    'Impedido',      'conditions.restrained.abbr':    'IMP',
+  'conditions.stunned.name':       'Atordoado',     'conditions.stunned.abbr':       'ATD',
+  'conditions.unconscious.name':   'Inconsciente',  'conditions.unconscious.abbr':   'INS',
+
+  // ── Map areas ─────────────────────────────────────────────────────────────────
+  'areas.title':       'Áreas',
+  'areas.shape_circle': 'Círculo',
+  'areas.shape_square': 'Quadrado',
+  'areas.color':       'Cor',
+  'areas.clear':       'Limpar tudo',
+  'areas.draw_hint':   'Arraste no mapa para desenhar',
+  'areas.done':        'Concluir',
 };
 
 export default pt;

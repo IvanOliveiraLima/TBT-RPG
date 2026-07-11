@@ -91,6 +91,15 @@ vi.mock('@/services/campaign-map-fog', () => ({
   saveMapFog: () => Promise.resolve(),
 }))
 
+// ── Mock campaign-map-areas service ──────────────────────────────────────────
+
+vi.mock('@/services/campaign-map-areas', () => ({
+  listMapAreas:   () => Promise.resolve([]),
+  createMapArea:  () => Promise.resolve({ id: 'area-new', mapId: 'map-1', shape: 'circle', x: 0, y: 0, radius: 0, color: '#E0562D' }),
+  deleteMapArea:  () => Promise.resolve(),
+  clearMapAreas:  () => Promise.resolve(),
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 // Grid: size=50, no offset. map.height=1024.
@@ -106,13 +115,13 @@ const MAP: CampaignMap = {
 
 const TOKEN_A: CampaignMapToken = {
   id: 'tok-a', mapId: 'map-1', x: 100, y: 300,
-  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, createdAt: 0,
+  label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, conditions: [], createdAt: 0,
 }
 
 // Token at the bottom of the map (high y value)
 const TOKEN_B: CampaignMapToken = {
   id: 'tok-b', mapId: 'map-1', x: 100, y: 900,
-  label: 'Dragon', color: '#8B0000', size: 1, imagePath: null, createdAt: 1,
+  label: 'Dragon', color: '#8B0000', size: 1, imagePath: null, conditions: [], createdAt: 1,
 }
 
 const FOG_OFF    = { mapId: 'map-1', enabled: false, revealed: [],      updatedAt: 0 }
