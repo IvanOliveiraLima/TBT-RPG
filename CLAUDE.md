@@ -827,6 +827,19 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
     não-arrastável nos modos de desenho, aí o `pointerdown` borbulha ao container e a área/fog inicia mesmo
     começando sobre um token.
 
+### Tactical maps — broadcast screen (COMPLETED — PR #192)
+- Resolve o vazamento de compartilhar a tela do mestre (a vista dele revela névoa/segredos). Rota nova
+  `/campaigns/:id/maps/:mapId/broadcast` (`CampaignMapBroadcast`) que o mestre abre em **segunda janela**
+  (`window.open`) e joga no projetor / compartilha só ela; renderiza o mapa em **perspectiva de jogador**
+  (névoa opaca, tokens ocultos somem, sem toolbar/popups, tela cheia).
+- Sync por **BroadcastChannel** `tbt-map-{mapId}` (mesma origem/navegador/máquina — nada vaza pra outros
+  usuários). A janela de controle (dono) é **emissor**: posta o **estado completo** (`tokens/fog/areas/grid`)
+  no mount, a cada mudança, e em resposta ao `hello`. A janela de transmissão é **receptor**: aplica o
+  snapshot e posta `hello` no mount; todos os fetch/poll do Supabase ficam sob `if (broadcast) return` —
+  **zero estado ao vivo do Supabase** (só resolve a signed URL da imagem via `getCampaignMap`+`image_path`).
+- Handshake nas duas ordens de abertura; estado-completo (não delta) auto-corrige qualquer dessincronia.
+  Sem polling/Realtime. É um passo manual do mestre (abrir a janela).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1537,6 +1550,7 @@ function buildInviteLink(): string {
 | **Tático — presets de token:** biblioteca **por campanha** (`campaign_token_presets`, RLS `is_campaign_owner`); imagem sob `campaign-maps/{campaignId}/presets/`; ao colocar, a imagem do preset é **copiada** pro token (`{campaignId}/tokens/…`), nunca referenciada — excluir o preset não afeta tokens já postos. | PR #184/#185 | Biblioteca por campanha; placement copia a imagem (desacopla token do preset) |
 | **Tático — âncora dos chips de condição:** condições viram chips abaixo do token, mas o `iconAnchor` fica no **centro do círculo** (`[d/2,d/2]`); só a altura do `iconSize` cresce. A chave do cache do `getTokenIcon` inclui as condições. | PR #188 | Overlay no token (chips) nunca move a âncora; posição lógica = centro do círculo; cache-key inclui o overlay |
 | **Tático — coordenada da AoE + drag por modo:** área guarda o **centro em viewBox** (`x=lng`, `y=height-lat`) e **raio = distância** (invariante ao flip); render SVG em viewBox com `pointer-events:none`. Token fica **não-arrastável** em `areaMode`/`fogMode` (senão o `<Marker>` captura o `pointerdown`). | PR #189 | Formas derivadas de clique: centro flipado + raio=distância; em modo de desenho, desabilitar drag de Marker pra o gesto borbular ao container |
+| **Tático — tela de transmissão:** espelho na **perspectiva de jogador** via `BroadcastChannel('tbt-map-'+mapId)` (mesma máquina). Emissor (dono) posta **estado completo** (tokens/fog/areas/grid) no mount + a cada mudança + em resposta ao `hello`; receptor aplica e pede `hello` no mount. **Sem** estado ao vivo do Supabase na transmissão (só a signed URL da imagem); sem polling/Realtime. | PR #192 | Segunda-tela = espelho estado-completo por-mapa, perspectiva de jogador, sem estado ao vivo do Supabase |
 
 ---
 

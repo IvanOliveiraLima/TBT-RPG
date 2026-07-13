@@ -49,6 +49,7 @@ PWA instalável.
 - **Tokens com imagem e mapa em tela cheia** — tokens aceitam imagem (recorte circular) e escalam com o zoom; o viewer do mapa expande para quase toda a tela
 - **Biblioteca de tokens prontos** — o mestre monta tokens reutilizáveis (nome, cor, tamanho, imagem) e os posiciona no mapa rapidamente durante o jogo
 - **Condições e áreas no mapa** — o mestre marca condições de status nos tokens e desenha áreas (círculo/quadrado) pra mostrar efeitos (ex.: bola de fogo); os jogadores veem
+- **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
 
 **Sincronização (opcional):**
 
