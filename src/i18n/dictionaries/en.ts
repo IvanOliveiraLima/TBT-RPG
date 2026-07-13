@@ -846,6 +846,11 @@ const en = {
   'areas.clear':       'Clear all',
   'areas.draw_hint':   'Drag on the map to draw',
   'areas.done':        'Done',
+
+  // ── Broadcast screen ──────────────────────────────────────────────────────────
+  'broadcast.open':        'Open broadcast screen',
+  'broadcast.waiting':     'Waiting for the main screen…',
+  'broadcast.unsupported': "This browser doesn't support the broadcast screen",
 } as const;
 
 export default en;
