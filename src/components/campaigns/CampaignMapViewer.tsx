@@ -517,6 +517,7 @@ interface Props {
   isOwner?: boolean
   expanded?: boolean
   onGridSaved?: (mapId: string, grid: GridConfig) => void
+  broadcast?: boolean
 }
 
 function InvalidateOnChange({ dep }: { dep: unknown }) {
@@ -541,7 +542,7 @@ const GRID_INPUT: React.CSSProperties = {
   fontSize: 16,
 }
 
-export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGridSaved }: Props) {
+export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGridSaved, broadcast = false }: Props) {
   const { t } = useTranslation()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
@@ -587,6 +588,10 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   useEffect(() => { fogRef.current = fog }, [fog])
   // Tracks the last painted cell key so drag-paint skips redundant setFog calls for the same cell
   const lastPaintedCellRef = useRef<string | null>(null)
+  // BroadcastChannel refs (owner emitter)
+  const broadcastChRef       = useRef<BroadcastChannel | null>(null)
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid } }, [tokens, fog, areas, localGrid])
 
   useEffect(() => {
     let cancelled = false
@@ -597,16 +602,17 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   }, [map.imagePath])
 
   useEffect(() => {
+    if (broadcast) return
     let cancelled = false
     listMapMarkers(map.id)
       .then(ms => { if (!cancelled) setMarkers(ms) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [map.id])
+  }, [map.id, broadcast])
 
   // Poll markers every 15 s for non-owners (members see additions without reopening)
   useEffect(() => {
-    if (isOwner) return
+    if (isOwner || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapMarkers(map.id)
@@ -614,20 +620,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, MAP_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner])
+  }, [map.id, isOwner, broadcast])
 
   // Fetch tokens on mount
   useEffect(() => {
+    if (broadcast) return
     let cancelled = false
     listMapTokens(map.id)
       .then(ts => { if (!cancelled) setTokens(ts) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [map.id])
+  }, [map.id, broadcast])
 
   // Poll tokens every 5 s for non-owners
   useEffect(() => {
-    if (isOwner) return
+    if (isOwner || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapTokens(map.id)
@@ -635,20 +642,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner])
+  }, [map.id, isOwner, broadcast])
 
   // Fetch areas on mount
   useEffect(() => {
+    if (broadcast) return
     let cancelled = false
     listMapAreas(map.id)
       .then(as => { if (!cancelled) setAreas(as) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [map.id])
+  }, [map.id, broadcast])
 
   // Poll areas every 5 s for non-owners
   useEffect(() => {
-    if (isOwner) return
+    if (isOwner || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapAreas(map.id)
@@ -656,7 +664,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner])
+  }, [map.id, isOwner, broadcast])
 
   // Resolve signed URLs for tokens that have an image; dedup by path
   useEffect(() => {
@@ -681,16 +689,17 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Fetch fog on mount
   useEffect(() => {
+    if (broadcast) return
     let cancelled = false
     getMapFog(map.id)
       .then(f => { if (!cancelled) setFog(f) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [map.id])
+  }, [map.id, broadcast])
 
   // Poll fog every 5 s for non-owners
   useEffect(() => {
-    if (isOwner) return
+    if (isOwner || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       getMapFog(map.id)
@@ -698,7 +707,52 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, FOG_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner])
+  }, [map.id, isOwner, broadcast])
+
+  // ── BroadcastChannel — owner emits state; broadcast receiver applies it ─────
+
+  // Owner: create channel, respond to hello with snapshot, post snapshot on mount
+  useEffect(() => {
+    if (!isOwner || broadcast) return
+    if (typeof BroadcastChannel === 'undefined') return
+    const ch = new BroadcastChannel(`tbt-map-${map.id}`)
+    broadcastChRef.current = ch
+    ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'hello') {
+        ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
+      }
+    }
+    ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
+    return () => { ch.close(); broadcastChRef.current = null }
+  }, [isOwner, broadcast, map.id])
+
+  // Owner: re-post full snapshot whenever any shared state changes
+  useEffect(() => {
+    if (!isOwner || broadcast) return
+    const ch = broadcastChRef.current
+    if (!ch) return
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid })
+  }, [isOwner, broadcast, tokens, fog, areas, localGrid])
+
+  // Broadcast receiver: apply incoming snapshots; post hello on mount
+  useEffect(() => {
+    if (!broadcast) return
+    if (typeof BroadcastChannel === 'undefined') return
+    const ch = new BroadcastChannel(`tbt-map-${map.id}`)
+    ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'snapshot') {
+        const { tokens: t, fog: f, areas: a, grid: g } = e.data as {
+          tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid
+        }
+        if (Array.isArray(t)) setTokens(t)
+        if (f) setFog(f)
+        if (Array.isArray(a)) setAreas(a)
+        if (g) setLocalGrid(g)
+      }
+    }
+    ch.postMessage({ type: 'hello' })
+    return () => { ch.close() }
+  }, [broadcast, map.id])
 
   // Fetch preset palette + resolve signed URLs for preset images (owner only)
   useEffect(() => {
@@ -1582,6 +1636,25 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               </p>
             </div>
           )}
+
+          {/* Broadcast screen button */}
+          <button
+            type="button"
+            data-testid="broadcast-open-btn"
+            onClick={() => {
+              const base = import.meta.env.PROD ? '/TBT-RPG' : ''
+              window.open(`${base}/campaigns/${map.campaignId}/maps/${map.id}/broadcast`, 'tbt-broadcast', 'width=1280,height=800')
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: 'rgba(21,18,28,0.85)', color: T.textMuted,
+              border: '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ⊡ {t('broadcast.open')}
+          </button>
         </div>
       )}
 
