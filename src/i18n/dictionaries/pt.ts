@@ -850,6 +850,11 @@ const pt: Record<keyof typeof en, string> = {
   'areas.clear':       'Limpar tudo',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
   'areas.done':        'Concluir',
+
+  // ── Broadcast screen ──────────────────────────────────────────────────────────
+  'broadcast.open':        'Abrir tela de transmissão',
+  'broadcast.waiting':     'Aguardando a tela principal…',
+  'broadcast.unsupported': 'Este navegador não suporta a tela de transmissão',
 };
 
 export default pt;

@@ -173,6 +173,17 @@ export async function updateCampaignMapGrid(mapId: string, grid: GridConfig): Pr
   }
 }
 
+export async function getCampaignMap(mapId: string): Promise<CampaignMap | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('campaign_maps')
+    .select('*')
+    .eq('id', mapId)
+    .single()
+  if (error) return null
+  return toMap(data as Row)
+}
+
 export async function getCampaignMapSignedUrl(imagePath: string): Promise<string> {
   if (!supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase.storage
