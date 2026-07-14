@@ -220,10 +220,9 @@ describe('CampaignMapViewer — tokens (member view)', () => {
     expect(screen.getByTestId(`token-label-${TOKEN_2.id}`).textContent).toContain('(no label)')
   })
 
-  it('does NOT show save/remove controls for member', async () => {
+  it('does NOT show remove control for member', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-${TOKEN_1.id}`))
-    expect(screen.queryByTestId(`token-save-${TOKEN_1.id}`)).toBeNull()
     expect(screen.queryByTestId(`token-remove-${TOKEN_1.id}`)).toBeNull()
   })
 })
@@ -273,25 +272,60 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
     expect(markers.some(el => el.getAttribute('data-draggable') === 'true')).toBe(true)
   })
 
-  it('shows owner popup with label input, color, size, save and remove', async () => {
+  it('shows owner popup with label input, color, size and remove (no save button)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_1.id}`))
     expect(screen.getByTestId(`token-label-input-${TOKEN_1.id}`)).toBeDefined()
     expect(screen.getByTestId(`token-color-input-${TOKEN_1.id}`)).toBeDefined()
     expect(screen.getByTestId(`token-size-select-${TOKEN_1.id}`)).toBeDefined()
-    expect(screen.getByTestId(`token-save-${TOKEN_1.id}`)).toBeDefined()
+    expect(screen.queryByTestId(`token-save-${TOKEN_1.id}`)).toBeNull()
     expect(screen.getByTestId(`token-remove-${TOKEN_1.id}`)).toBeDefined()
   })
 
-  it('save button calls updateMapToken with current patch', async () => {
+  it('color change calls updateMapToken immediately', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId(`token-color-input-${TOKEN_1.id}`))
+    fireEvent.change(screen.getByTestId(`token-color-input-${TOKEN_1.id}`), { target: { value: '#ff0000' } })
+    await waitFor(() => expect(mockUpdateMapToken).toHaveBeenCalledWith(
+      TOKEN_1.id,
+      expect.objectContaining({ color: '#ff0000' }),
+    ))
+  })
+
+  it('size change calls updateMapToken immediately', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId(`token-size-select-${TOKEN_1.id}`))
+    fireEvent.change(screen.getByTestId(`token-size-select-${TOKEN_1.id}`), { target: { value: '3' } })
+    await waitFor(() => expect(mockUpdateMapToken).toHaveBeenCalledWith(
+      TOKEN_1.id,
+      expect.objectContaining({ size: 3 }),
+    ))
+  })
+
+  it('label onChange does NOT call updateMapToken mid-typing', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
     fireEvent.change(screen.getByTestId(`token-label-input-${TOKEN_1.id}`), { target: { value: 'Dragon' } })
-    fireEvent.click(screen.getByTestId(`token-save-${TOKEN_1.id}`))
+    expect(mockUpdateMapToken).not.toHaveBeenCalled()
+  })
+
+  it('label blur calls updateMapToken when value changed', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
+    fireEvent.change(screen.getByTestId(`token-label-input-${TOKEN_1.id}`), { target: { value: 'Dragon' } })
+    fireEvent.blur(screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
     await waitFor(() => expect(mockUpdateMapToken).toHaveBeenCalledWith(
       TOKEN_1.id,
       expect.objectContaining({ label: 'Dragon' }),
     ))
+  })
+
+  it('label blur does NOT call updateMapToken when value unchanged', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
+    // Don't change the value, just blur
+    fireEvent.blur(screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
+    expect(mockUpdateMapToken).not.toHaveBeenCalled()
   })
 
   it('remove button calls deleteMapToken and removes token from DOM', async () => {
