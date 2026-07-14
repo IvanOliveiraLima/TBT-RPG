@@ -50,6 +50,7 @@ import type { ConditionKey } from '@/domain/conditions'
 import {
   listMapAreas,
   createMapArea,
+  deleteMapArea,
   clearMapAreas,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
@@ -567,13 +568,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   // Area drawing state (owner only)
   const [areas, setAreas] = useState<CampaignMapArea[]>([])
   const [areaMode, setAreaMode] = useState(false)
-  const [areaShape, setAreaShape] = useState<'circle' | 'square'>('circle')
+  const [areaShape, setAreaShape] = useState<CampaignMapArea['shape']>('circle')
   const [areaColor, setAreaColor] = useState('#E0562D')
   const [areaPanelOpen, setAreaPanelOpen] = useState(false)
-  // Preview during drag: centre (viewBox space) + current radius
-  const [areaPreview, setAreaPreview] = useState<{ x: number; y: number; radius: number; shape: 'circle' | 'square'; color: string } | null>(null)
+  // Preview during drag: start/centre (viewBox space) + current radius + optional second point
+  const [areaPreview, setAreaPreview] = useState<{ x: number; y: number; radius: number; shape: CampaignMapArea['shape']; color: string; x2?: number; y2?: number } | null>(null)
   const areaCenterRef   = useRef<{ x: number; y: number } | null>(null)
-  const areaPreviewRef  = useRef<{ x: number; y: number; radius: number } | null>(null)
+  const areaPreviewRef  = useRef<{ x: number; y: number; radius: number; x2?: number; y2?: number } | null>(null)
   // Ref kept in sync so drag-paint commit always reads the latest fog state
   const fogRef = useRef(fog)
   useEffect(() => { fogRef.current = fog }, [fog])
@@ -1040,9 +1041,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const handleAreaStart = useCallback((latlng: L.LatLng) => {
     const cx = latlng.lng
     const cy = map.height - latlng.lat
-    areaCenterRef.current  = { x: cx, y: cy }
-    areaPreviewRef.current = { x: cx, y: cy, radius: 0 }
-    setAreaPreview({ x: cx, y: cy, radius: 0, shape: areaShape, color: areaColor })
+    areaCenterRef.current = { x: cx, y: cy }
+    if (areaShape === 'line' || areaShape === 'cone') {
+      areaPreviewRef.current = { x: cx, y: cy, radius: 0, x2: cx, y2: cy }
+      setAreaPreview({ x: cx, y: cy, radius: 0, shape: areaShape, color: areaColor, x2: cx, y2: cy })
+    } else {
+      areaPreviewRef.current = { x: cx, y: cy, radius: 0 }
+      setAreaPreview({ x: cx, y: cy, radius: 0, shape: areaShape, color: areaColor })
+    }
   }, [map.height, areaShape, areaColor])
 
   const handleAreaMove = useCallback((latlng: L.LatLng) => {
@@ -1051,8 +1057,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const px = latlng.lng
     const py = map.height - latlng.lat
     const radius = Math.sqrt((px - center.x) ** 2 + (py - center.y) ** 2)
-    areaPreviewRef.current = { x: center.x, y: center.y, radius }
-    setAreaPreview({ x: center.x, y: center.y, radius, shape: areaShape, color: areaColor })
+    if (areaShape === 'line' || areaShape === 'cone') {
+      areaPreviewRef.current = { x: center.x, y: center.y, radius, x2: px, y2: py }
+      setAreaPreview({ x: center.x, y: center.y, radius, shape: areaShape, color: areaColor, x2: px, y2: py })
+    } else {
+      areaPreviewRef.current = { x: center.x, y: center.y, radius }
+      setAreaPreview({ x: center.x, y: center.y, radius, shape: areaShape, color: areaColor })
+    }
   }, [map.height, areaShape, areaColor])
 
   // onEnd reads from ref (not state) so the useCallback deps stay stable during the drag.
@@ -1064,8 +1075,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     areaPreviewRef.current = null
     setAreaPreview(null)
     if (!preview || preview.radius < 6) return
-    const { x, y, radius } = preview
-    void createMapArea(map.id, { shape: areaShape, x, y, radius, color: areaColor })
+    const { x, y, radius, x2, y2 } = preview
+    void createMapArea(map.id, { shape: areaShape, x, y, radius, color: areaColor, x2: x2 ?? null, y2: y2 ?? null })
       .then(area => setAreas(prev => [...prev, area]))
       .catch(() => {})
   }, [map.id, areaShape, areaColor])
@@ -1073,6 +1084,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   async function handleClearAreas() {
     await clearMapAreas(map.id)
     setAreas([])
+  }
+
+  async function handleRemoveArea(id: string) {
+    await deleteMapArea(id)
+    setAreas(prev => prev.filter(a => a.id !== id))
   }
 
   const viewerHeight = expanded ? '100%' : '70vh'
@@ -1422,35 +1438,24 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               </div>
 
               {/* Shape selector */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  type="button"
-                  data-testid="area-shape-circle"
-                  onClick={() => setAreaShape('circle')}
-                  style={{
-                    flex: 1, padding: '4px 0', borderRadius: 6, cursor: 'pointer', fontSize: 12,
-                    background: areaShape === 'circle' ? '#5B3FA8' : 'transparent',
-                    color: areaShape === 'circle' ? T.textPrimary : T.textMuted,
-                    border: areaShape === 'circle' ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)',
-                    fontFamily: T.sans,
-                  }}
-                >
-                  {t('areas.shape_circle')}
-                </button>
-                <button
-                  type="button"
-                  data-testid="area-shape-square"
-                  onClick={() => setAreaShape('square')}
-                  style={{
-                    flex: 1, padding: '4px 0', borderRadius: 6, cursor: 'pointer', fontSize: 12,
-                    background: areaShape === 'square' ? '#5B3FA8' : 'transparent',
-                    color: areaShape === 'square' ? T.textPrimary : T.textMuted,
-                    border: areaShape === 'square' ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)',
-                    fontFamily: T.sans,
-                  }}
-                >
-                  {t('areas.shape_square')}
-                </button>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {(['circle', 'square', 'line', 'cone'] as const).map(sh => (
+                  <button
+                    key={sh}
+                    type="button"
+                    data-testid={`area-shape-${sh}`}
+                    onClick={() => setAreaShape(sh)}
+                    style={{
+                      flex: '1 1 calc(50% - 3px)', padding: '4px 0', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+                      background: areaShape === sh ? '#5B3FA8' : 'transparent',
+                      color: areaShape === sh ? T.textPrimary : T.textMuted,
+                      border: areaShape === sh ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)',
+                      fontFamily: T.sans,
+                    }}
+                  >
+                    {t(`areas.shape_${sh}` as 'areas.shape_circle')}
+                  </button>
+                ))}
               </div>
 
               {/* Color picker */}
@@ -1468,6 +1473,37 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               {/* Draw hint */}
               {areaMode && (
                 <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>{t('areas.draw_hint')}</p>
+              )}
+
+              {/* Area list with per-area remove */}
+              {areas.length > 0 && (
+                <div
+                  data-testid="area-list"
+                  style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 110, overflowY: 'auto' }}
+                >
+                  {areas.map(area => (
+                    <div key={area.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span
+                        style={{
+                          width: 10, height: 10, flexShrink: 0,
+                          borderRadius: area.shape === 'circle' ? '50%' : area.shape === 'cone' ? 0 : 2,
+                          background: area.color,
+                          clipPath: area.shape === 'cone' ? 'polygon(50% 0%,100% 100%,0% 100%)' : undefined,
+                        }}
+                      />
+                      <span style={{ fontSize: 11, color: T.textMuted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t(`areas.shape_${area.shape}` as 'areas.shape_circle')}
+                      </span>
+                      <button
+                        type="button"
+                        data-testid={`area-remove-${area.id}`}
+                        aria-label={t('areas.remove_one')}
+                        onClick={() => void handleRemoveArea(area.id)}
+                        style={{ background: 'transparent', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {/* Clear all */}
@@ -1707,66 +1743,158 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               'data-testid': 'areas-overlay',
             }}
           >
-            {areas.map(area =>
-              area.shape === 'circle' ? (
-                <circle
-                  key={area.id}
-                  cx={area.x}
-                  cy={area.y}
-                  r={area.radius}
-                  fill={area.color}
-                  fillOpacity={0.28}
-                  stroke={area.color}
-                  strokeOpacity={0.9}
-                  strokeWidth={2}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ) : (
-                <rect
-                  key={area.id}
-                  x={area.x - area.radius}
-                  y={area.y - area.radius}
-                  width={area.radius * 2}
-                  height={area.radius * 2}
-                  fill={area.color}
-                  fillOpacity={0.28}
-                  stroke={area.color}
-                  strokeOpacity={0.9}
-                  strokeWidth={2}
-                  vectorEffect="non-scaling-stroke"
-                />
-              ),
-            )}
-            {areaPreview && areaPreview.radius > 0 && (
-              areaPreview.shape === 'circle' ? (
-                <circle
-                  cx={areaPreview.x}
-                  cy={areaPreview.y}
-                  r={areaPreview.radius}
-                  fill={areaPreview.color}
-                  fillOpacity={0.18}
-                  stroke={areaPreview.color}
-                  strokeOpacity={0.7}
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-              ) : (
-                <rect
-                  x={areaPreview.x - areaPreview.radius}
-                  y={areaPreview.y - areaPreview.radius}
-                  width={areaPreview.radius * 2}
-                  height={areaPreview.radius * 2}
-                  fill={areaPreview.color}
-                  fillOpacity={0.18}
-                  stroke={areaPreview.color}
-                  strokeOpacity={0.7}
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-              )
-            )}
+            {areas.map(area => {
+              if (area.shape === 'circle') {
+                return (
+                  <circle
+                    key={area.id}
+                    cx={area.x}
+                    cy={area.y}
+                    r={area.radius}
+                    fill={area.color}
+                    fillOpacity={0.28}
+                    stroke={area.color}
+                    strokeOpacity={0.9}
+                    strokeWidth={2}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              }
+              if (area.shape === 'square') {
+                return (
+                  <rect
+                    key={area.id}
+                    x={area.x - area.radius}
+                    y={area.y - area.radius}
+                    width={area.radius * 2}
+                    height={area.radius * 2}
+                    fill={area.color}
+                    fillOpacity={0.28}
+                    stroke={area.color}
+                    strokeOpacity={0.9}
+                    strokeWidth={2}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              }
+              if (area.shape === 'line') {
+                const lineW = localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10
+                return (
+                  <line
+                    key={area.id}
+                    x1={area.x} y1={area.y}
+                    x2={area.x2 ?? area.x} y2={area.y2 ?? area.y}
+                    stroke={area.color}
+                    strokeOpacity={0.9}
+                    strokeLinecap="round"
+                    strokeWidth={lineW}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              }
+              if (area.shape === 'cone') {
+                const x2v = area.x2 ?? area.x
+                const y2v = area.y2 ?? area.y
+                const dx = x2v - area.x, dy = y2v - area.y
+                const L = Math.sqrt(dx * dx + dy * dy)
+                if (L === 0) return null
+                const ux = dx / L, uy = dy / L
+                const nx = -uy, ny = ux
+                const half = L / 2
+                const points = `${area.x},${area.y} ${x2v + nx * half},${y2v + ny * half} ${x2v - nx * half},${y2v - ny * half}`
+                return (
+                  <polygon
+                    key={area.id}
+                    points={points}
+                    fill={area.color}
+                    fillOpacity={0.28}
+                    stroke={area.color}
+                    strokeOpacity={0.9}
+                    strokeWidth={2}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              }
+              return null
+            })}
+            {areaPreview && areaPreview.radius > 0 && (() => {
+              const p = areaPreview
+              const sharedPreviewProps = {
+                fill: p.color, fillOpacity: 0.18,
+                stroke: p.color, strokeOpacity: 0.7,
+                strokeWidth: 2, strokeDasharray: '6 4',
+                vectorEffect: 'non-scaling-stroke' as const,
+              }
+              let previewEl: React.ReactNode = null
+              if (p.shape === 'circle') {
+                previewEl = <circle cx={p.x} cy={p.y} r={p.radius} {...sharedPreviewProps} />
+              } else if (p.shape === 'square') {
+                previewEl = (
+                  <rect
+                    x={p.x - p.radius} y={p.y - p.radius}
+                    width={p.radius * 2} height={p.radius * 2}
+                    {...sharedPreviewProps}
+                  />
+                )
+              } else if (p.shape === 'line') {
+                const lineW = localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10
+                previewEl = (
+                  <line
+                    x1={p.x} y1={p.y}
+                    x2={p.x2 ?? p.x} y2={p.y2 ?? p.y}
+                    stroke={p.color} strokeOpacity={0.7}
+                    strokeLinecap="round" strokeWidth={lineW}
+                    strokeDasharray="6 4"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )
+              } else if (p.shape === 'cone') {
+                const x2v = p.x2 ?? p.x
+                const y2v = p.y2 ?? p.y
+                const dx = x2v - p.x, dy = y2v - p.y
+                const L = Math.sqrt(dx * dx + dy * dy)
+                if (L > 0) {
+                  const ux = dx / L, uy = dy / L
+                  const nx = -uy, ny = ux
+                  const half = L / 2
+                  const pts = `${p.x},${p.y} ${x2v + nx * half},${y2v + ny * half} ${x2v - nx * half},${y2v - ny * half}`
+                  previewEl = <polygon points={pts} {...sharedPreviewProps} />
+                }
+              }
+
+              // Size label — only when grid is enabled
+              const cellPx = localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : null
+              let labelEl: React.ReactNode = null
+              if (cellPx) {
+                const measuredPx = p.shape === 'square' ? p.radius * 2 : p.radius
+                const cells = Math.round(measuredPx / cellPx)
+                const feet = cells * 5
+                const labelText = `${feet} ft (${cells}\u25a1)`
+                const fontSize = 12 / pxPerUnit
+                // Label position: midpoint for line/cone, centre for circle/square
+                const lx = (p.shape === 'line' || p.shape === 'cone') && p.x2 !== undefined
+                  ? (p.x + p.x2) / 2 : p.x
+                const ly = (p.shape === 'line' || p.shape === 'cone') && p.y2 !== undefined
+                  ? (p.y + p.y2) / 2 : p.y
+                labelEl = (
+                  <text
+                    x={lx} y={ly}
+                    fontSize={fontSize}
+                    fill="white"
+                    stroke="#15121C"
+                    strokeWidth={fontSize * 0.15}
+                    paintOrder="stroke"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    data-testid="area-size-label"
+                  >
+                    {labelText}
+                  </text>
+                )
+              }
+
+              return <>{previewEl}{labelEl}</>
+            })()}
           </SVGOverlay>
         )}
 

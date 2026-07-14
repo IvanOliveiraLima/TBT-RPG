@@ -840,6 +840,17 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - Handshake nas duas ordens de abertura; estado-completo (não delta) auto-corrige qualquer dessincronia.
   Sem polling/Realtime. É um passo manual do mestre (abrir a janela).
 
+### Tactical maps — AoE line & cone + size label + per-area removal (COMPLETED — PR #197)
+- Completa as formas de área: além de círculo/quadrado (centro + `radius`), agora **linha** e **cone** —
+  formas de **dois pontos** (com direção). Schema ganhou `x2`/`y2` **nulos** (linha = começo→fim, cone =
+  ápice→ponta); `radius` mantido pra círculo/quadrado — **retrocompatível** com as áreas já salvas.
+- Desenho de linha/cone **arrasta do começo**, com **flip de Y nos dois pontos**; render `<line>`
+  (stroke-width = célula) e `<polygon>` (cone 5e: base centrada na ponta, meia-largura `L/2` → largura na
+  ponta = comprimento). Círculo/quadrado inalterados.
+- Melhorias: **rótulo de tamanho** durante o arraste ("N ft (M□)", `font-size = 12/pxPerUnit`, dependente do
+  grid) e **remover área individual** pela lista do painel (`deleteMapArea` + filtro), além do "Limpar tudo".
+  Linha/cone aparecem na tela de transmissão automaticamente (areas já no snapshot).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1551,6 +1562,7 @@ function buildInviteLink(): string {
 | **Tático — âncora dos chips de condição:** condições viram chips abaixo do token, mas o `iconAnchor` fica no **centro do círculo** (`[d/2,d/2]`); só a altura do `iconSize` cresce. A chave do cache do `getTokenIcon` inclui as condições. | PR #188 | Overlay no token (chips) nunca move a âncora; posição lógica = centro do círculo; cache-key inclui o overlay |
 | **Tático — coordenada da AoE + drag por modo:** área guarda o **centro em viewBox** (`x=lng`, `y=height-lat`) e **raio = distância** (invariante ao flip); render SVG em viewBox com `pointer-events:none`. Token fica **não-arrastável** em `areaMode`/`fogMode` (senão o `<Marker>` captura o `pointerdown`). | PR #189 | Formas derivadas de clique: centro flipado + raio=distância; em modo de desenho, desabilitar drag de Marker pra o gesto borbular ao container |
 | **Tático — tela de transmissão:** espelho na **perspectiva de jogador** via `BroadcastChannel('tbt-map-'+mapId)` (mesma máquina). Emissor (dono) posta **estado completo** (tokens/fog/areas/grid) no mount + a cada mudança + em resposta ao `hello`; receptor aplica e pede `hello` no mount. **Sem** estado ao vivo do Supabase na transmissão (só a signed URL da imagem); sem polling/Realtime. | PR #192 | Segunda-tela = espelho estado-completo por-mapa, perspectiva de jogador, sem estado ao vivo do Supabase |
+| **Tático — AoE de dois pontos (linha/cone):** formas com direção guardam um **2º ponto** `x2`/`y2` (nulos p/ círculo/quadrado), com **flip de Y nos dois**; render `<line>`/`<polygon>` em viewBox (cone 5e: meia-largura `L/2`, largura na ponta = comprimento). `radius` permanece pra círculo/quadrado (retrocompatível). | PR #197 | Formas com direção = dois pontos flipados + geometria em viewBox; manter os campos das formas antigas (não migrar) |
 
 ---
 
