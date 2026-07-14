@@ -846,8 +846,11 @@ const pt: Record<keyof typeof en, string> = {
   'areas.title':       'Áreas',
   'areas.shape_circle': 'Círculo',
   'areas.shape_square': 'Quadrado',
+  'areas.shape_line':   'Linha',
+  'areas.shape_cone':   'Cone',
   'areas.color':       'Cor',
   'areas.clear':       'Limpar tudo',
+  'areas.remove_one':  'Remover',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
   'areas.done':        'Concluir',
 

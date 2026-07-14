@@ -842,8 +842,11 @@ const en = {
   'areas.title':       'Areas',
   'areas.shape_circle': 'Circle',
   'areas.shape_square': 'Square',
+  'areas.shape_line':   'Line',
+  'areas.shape_cone':   'Cone',
   'areas.color':       'Color',
   'areas.clear':       'Clear all',
+  'areas.remove_one':  'Remove',
   'areas.draw_hint':   'Drag on the map to draw',
   'areas.done':        'Done',
 
