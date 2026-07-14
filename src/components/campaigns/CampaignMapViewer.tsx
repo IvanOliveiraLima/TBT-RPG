@@ -351,6 +351,7 @@ function TokenPopupContent({
         data-testid={`token-label-input-${token.id}`}
         value={label}
         onChange={e => setLabel(e.target.value)}
+        onBlur={() => { if (label !== token.label) onSave(token.id, { label }) }}
         placeholder={t('campaign_maps.token_label')}
         style={{
           width: '100%', marginBottom: 6, padding: '3px 6px',
@@ -362,13 +363,13 @@ function TokenPopupContent({
           type="color"
           data-testid={`token-color-input-${token.id}`}
           value={color}
-          onChange={e => setColor(e.target.value)}
+          onChange={e => { setColor(e.target.value); onSave(token.id, { color: e.target.value }) }}
           style={{ width: 36, height: 30, cursor: 'pointer', borderRadius: 4, border: 'none', padding: 0 }}
         />
         <select
           data-testid={`token-size-select-${token.id}`}
           value={size}
-          onChange={e => setSize(Number(e.target.value))}
+          onChange={e => { const s = Number(e.target.value); setSize(s); onSave(token.id, { size: s }) }}
           style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
         >
           {[1, 2, 3, 4, 5].map(n => (
@@ -490,24 +491,14 @@ function TokenPopupContent({
           })}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        <button
-          type="button"
-          data-testid={`token-save-${token.id}`}
-          onClick={() => onSave(token.id, { label, color, size })}
-          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}
-        >
-          {t('campaign_maps.token_save')}
-        </button>
-        <button
-          type="button"
-          data-testid={`token-remove-${token.id}`}
-          onClick={() => onRemove(token.id)}
-          style={{ flex: 1, padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: T.danger }}
-        >
-          {t('campaign_maps.token_remove')}
-        </button>
-      </div>
+      <button
+        type="button"
+        data-testid={`token-remove-${token.id}`}
+        onClick={() => onRemove(token.id)}
+        style={{ width: '100%', padding: '8px 0', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: T.danger }}
+      >
+        {t('campaign_maps.token_remove')}
+      </button>
     </div>
   )
 }
