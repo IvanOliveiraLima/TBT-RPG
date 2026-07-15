@@ -10,7 +10,7 @@
  * response are left as the factory default.
  */
 
-import type { Character, AbilityKey, Attack } from '@/domain/character'
+import type { Character, AbilityKey, Attack, Spell, SpellSchool } from '@/domain/character'
 import { createEmptyCharacter, CANONICAL_SKILLS } from '@/domain/factories'
 import {
   abilityModifier,
@@ -19,6 +19,7 @@ import {
   savingThrowBonus,
   passivePerception,
   formatSigned,
+  spellSaveDC,
 } from '@/domain/calculations'
 import { getHitDie } from '@/domain/classes'
 
@@ -66,6 +67,14 @@ interface WorkerCharacter {
   bonds?:             string
   flaws?:             string
   backstory?:         string
+  spellcasting_ability?: string
+  spellcasting_class?: string
+  spells?: Array<{
+    name?: string
+    level?: string | number
+    school?: string
+    prepared?: boolean
+  }>
   attacks?: Array<{
     name?: string
     kind?: string
@@ -252,9 +261,11 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
   if (ai.bonds)              base.personality.bonds          = ai.bonds
   if (ai.flaws)              base.personality.flaws          = ai.flaws
 
+  const ABILS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
+  const SCHOOLS = ['abjuration', 'conjuration', 'divination', 'enchantment', 'evocation', 'illusion', 'necromancy', 'transmutation'] as const
+
   // Attacks — worker supplies selection/flavor; client derives attack bonus and damage modifier
   if (Array.isArray(ai.attacks)) {
-    const ABILS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
     base.attacks = ai.attacks.slice(0, 6).map((a): Attack => {
       const kind: Attack['kind'] =
         a.kind === 'ranged' || a.kind === 'spell' ? a.kind : 'melee'
@@ -274,6 +285,33 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
         notes: '',
       }
     }).filter(a => a.name !== '')
+  }
+
+  // Spellcasting ability + class; derive save DC on the client
+  if (ai.spellcasting_ability && (ABILS as readonly string[]).includes(ai.spellcasting_ability)) {
+    base.spellcastingAbility = ai.spellcasting_ability as AbilityKey
+    base.spellSaveDC = spellSaveDC(mergedAbilities[base.spellcastingAbility], profBonus)
+  }
+  if (ai.spellcasting_class?.trim()) base.spellcastingClass = ai.spellcasting_class.trim()
+
+  // Spell list — no description; discard invalid school or level; cap at 12
+  if (Array.isArray(ai.spells)) {
+    base.spells = ai.spells.slice(0, 12).map((s): Spell | null => {
+      const name = (s.name ?? '').trim()
+      const level = parseInt(String(s.level), 10)
+      const schoolOk = (SCHOOLS as readonly string[]).includes(s.school ?? '')
+      if (!name || !schoolOk || isNaN(level) || level < 0 || level > 9) return null
+      return {
+        id: crypto.randomUUID(),
+        name,
+        level,
+        school: s.school as SpellSchool,
+        castingTime: '',
+        range: '',
+        description: '',
+        prepared: s.prepared === true,
+      }
+    }).filter((x): x is Spell => x !== null)
   }
 
   base.updatedAt = Date.now()
