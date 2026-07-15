@@ -6,6 +6,7 @@ import { HpBar } from './HpBar'
 import { HitDicePool } from './HitDicePool'
 import { DeathSaves } from './DeathSaves'
 import { NumberField } from '@/components/primitives/NumberField'
+import { abilityModifier } from '@/domain/calculations'
 
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9,
@@ -57,6 +58,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
   const max = hp.max
   const pct = max > 0 ? Math.round((current / max) * 100) : 0
   const low = pct < 30
+  const conMod = abilityModifier(character.abilities.con)
 
   return (
     <Card>
@@ -164,6 +166,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
       >
         <HitDicePool
           hitDice={hitDice}
+          conMod={conMod}
           {...(onUpdate !== undefined
             ? { onUpdate: (updated) => onUpdate({ hitDice: updated }) }
             : {})}

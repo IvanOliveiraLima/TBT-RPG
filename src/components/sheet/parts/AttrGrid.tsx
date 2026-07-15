@@ -4,6 +4,7 @@ import { abilityModifier, formatSigned } from '@/domain/calculations'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface AttrGridProps {
   character: Character
@@ -46,6 +47,7 @@ interface AttrCellProps {
 function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }: AttrCellProps) {
   const { t } = useTranslation()
   const mod = abilityModifier(score)
+  const { rollCheck } = useSheetRoll()
 
   return (
     <div
@@ -90,6 +92,11 @@ function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }
       </div>
       <div
         data-testid={`attr-${k}-mod`}
+        role="button"
+        tabIndex={0}
+        onClick={() => rollCheck(t(`ability.${k}`), mod)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') rollCheck(t(`ability.${k}`), mod) }}
+        title={t('dice.roll')}
         style={{
           fontFamily: "'Cinzel', Georgia, serif",
           fontSize: compact ? 28 : 32,
@@ -98,6 +105,7 @@ function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }
           lineHeight: 1,
           marginTop: 4,
           textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          cursor: 'pointer',
         }}
       >
         {formatSigned(mod)}

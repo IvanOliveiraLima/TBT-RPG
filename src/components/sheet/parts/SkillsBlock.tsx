@@ -6,6 +6,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Pip } from '../ui/Pip'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface SkillsBlockProps {
   character: Character
@@ -50,6 +51,7 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
+  const { rollCheck } = useSheetRoll()
 
   function skillLabel(name: string): string {
     const k = SKILL_DISPLAY_TO_KEY[name]
@@ -160,8 +162,11 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
             >
               {t(`ability.${s.ability}`)}
             </span>
-            <span
+            <button
+              type="button"
               data-testid={`skill-${s.name}-bonus`}
+              onClick={() => rollCheck(label, bonus)}
+              title={t('dice.roll')}
               style={{
                 fontFamily: "'Cinzel', Georgia, serif",
                 fontWeight: 600,
@@ -170,10 +175,15 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
                 fontVariantNumeric: 'tabular-nums',
                 minWidth: 28,
                 textAlign: 'right',
+                background: 'none',
+                border: 'none',
+                padding: '4px 2px',
+                margin: '-4px -2px',
+                cursor: 'pointer',
               }}
             >
               {formatSigned(bonus)}
-            </span>
+            </button>
           </div>
         )
       })}

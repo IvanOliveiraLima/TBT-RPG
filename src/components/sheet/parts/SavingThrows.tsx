@@ -8,6 +8,7 @@ import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Pip } from '../ui/Pip'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface SavingThrowsProps {
   character: Character
@@ -21,6 +22,7 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
   const locked = useCharacterLocked(character.id)
   const profMap = new Map(character.savingThrows.map((st) => [st.ability, st.proficient]))
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
+  const { rollCheck } = useSheetRoll()
 
   function handleToggle(k: AbilityKey) {
     if (!onUpdate) return
@@ -80,8 +82,11 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
             <span style={{ flex: 1, fontSize: 12, color: '#C8C4D6' }}>
               {t(`saves.ability.${k}`)}
             </span>
-            <span
+            <button
+              type="button"
               data-testid={`save-${k}-bonus`}
+              onClick={() => rollCheck(t(`saves.ability.${k}`), bonus)}
+              title={t('dice.roll')}
               style={{
                 fontFamily: "'Cinzel', Georgia, serif",
                 fontWeight: 600,
@@ -90,10 +95,15 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
                 fontVariantNumeric: 'tabular-nums',
                 minWidth: 24,
                 textAlign: 'right',
+                background: 'none',
+                border: 'none',
+                padding: '4px 2px',
+                margin: '-4px -2px',
+                cursor: 'pointer',
               }}
             >
               {formatSigned(bonus)}
-            </span>
+            </button>
           </div>
         )
       })}

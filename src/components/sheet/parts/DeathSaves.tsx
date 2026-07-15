@@ -1,6 +1,7 @@
 import type React from 'react'
 import { Pip } from '../ui/Pip'
 import { useTranslation } from '@/i18n'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 const INDICES = [1, 2, 3] as const
 
@@ -24,6 +25,7 @@ interface DeathSavesProps {
 
 export function DeathSaves({ successes, failures, onUpdate }: DeathSavesProps) {
   const { t } = useTranslation()
+  const { rollExpr } = useSheetRoll()
 
   function handleSuccessClick(targetCount: number) {
     if (!onUpdate) return
@@ -40,17 +42,35 @@ export function DeathSaves({ successes, failures, onUpdate }: DeathSavesProps) {
 
   return (
     <div>
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: 1.2,
-          color: '#7A7788',
-          marginBottom: 6,
-        }}
-      >
-        {t('deathsaves.section_title')}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: 1.2,
+            color: '#7A7788',
+          }}
+        >
+          {t('deathsaves.section_title')}
+        </div>
+        <button
+          type="button"
+          data-testid="deathsave-roll-btn"
+          onClick={() => rollExpr(t('dice.label_death_save'), 'd20')}
+          title={t('dice.roll')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#5B3FA8',
+            fontSize: 14,
+            cursor: 'pointer',
+            padding: '2px 4px',
+            lineHeight: 1,
+          }}
+        >
+          ⚅
+        </button>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {/* Successes */}

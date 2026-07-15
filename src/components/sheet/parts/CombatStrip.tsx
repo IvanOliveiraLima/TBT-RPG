@@ -9,6 +9,7 @@ import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { NumberField } from '@/components/primitives/NumberField'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface CombatStripProps {
   character: Character
@@ -19,6 +20,7 @@ interface CombatStripProps {
 export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
+  const { rollCheck } = useSheetRoll()
 
   // AC and speed are permanent — read-only when locked or no onUpdate
   const acReadOnly = !onUpdate || locked
@@ -115,7 +117,11 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
         <div
           key={it.key}
           data-testid={`combat-stat-${it.key}`}
-          style={statCard}
+          onClick={it.key === 'init' ? () => rollCheck(t('combat.initiative'), initiative) : undefined}
+          style={{
+            ...statCard,
+            ...(it.key === 'init' ? { cursor: 'pointer' } : {}),
+          }}
         >
           <div style={labelStyle}>{it.label}</div>
           {it.key === 'spd' && !speedReadOnly ? (
