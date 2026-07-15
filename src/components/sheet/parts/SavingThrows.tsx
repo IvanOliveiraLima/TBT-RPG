@@ -8,6 +8,7 @@ import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
 import { Pip } from '../ui/Pip'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface SavingThrowsProps {
   character: Character
@@ -21,6 +22,7 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
   const locked = useCharacterLocked(character.id)
   const profMap = new Map(character.savingThrows.map((st) => [st.ability, st.proficient]))
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
+  const { rollCheck } = useSheetRoll()
 
   function handleToggle(k: AbilityKey) {
     if (!onUpdate) return
@@ -80,20 +82,37 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
             <span style={{ flex: 1, fontSize: 12, color: '#C8C4D6' }}>
               {t(`saves.ability.${k}`)}
             </span>
-            <span
-              data-testid={`save-${k}-bonus`}
+            <button
+              type="button"
+              onClick={() => rollCheck(t(`saves.ability.${k}`), bonus)}
+              aria-label={t('aria.roll', { label: t(`saves.ability.${k}`) })}
+              className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded"
               style={{
-                fontFamily: "'Cinzel', Georgia, serif",
-                fontWeight: 600,
-                color: proficient ? '#D4A017' : '#F4EFE0',
-                fontSize: 14,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 24,
-                textAlign: 'right',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                background: 'none',
+                border: 'none',
+                padding: '4px 4px',
+                margin: '-4px -4px',
+                cursor: 'pointer',
               }}
             >
-              {formatSigned(bonus)}
-            </span>
+              <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.55 }}>⚅</span>
+              <span
+                data-testid={`save-${k}-bonus`}
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontWeight: 600,
+                  color: proficient ? '#D4A017' : '#F4EFE0',
+                  fontSize: 14,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 24,
+                }}
+              >
+                {formatSigned(bonus)}
+              </span>
+            </button>
           </div>
         )
       })}

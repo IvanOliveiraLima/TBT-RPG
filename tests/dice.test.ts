@@ -228,3 +228,38 @@ describe('roll — id', () => {
     expect(new Set(ids).size).toBe(5)
   })
 })
+
+// ── doubleDiceCount ───────────────────────────────────────────────────────────
+
+import { doubleDiceCount } from '@/domain/dice'
+
+describe('doubleDiceCount', () => {
+  it('doubles count: 1d6 → 2d6', () => {
+    expect(doubleDiceCount('1d6')).toBe('2d6')
+  })
+
+  it('doubles count: d6 → 2d6 (implied count=1)', () => {
+    expect(doubleDiceCount('d6')).toBe('2d6')
+  })
+
+  it('doubles count: 2d6+3 → 4d6+3 (modifier unchanged)', () => {
+    expect(doubleDiceCount('2d6+3')).toBe('4d6+3')
+  })
+
+  it('doubles count: 1d8-1 → 2d8-1 (negative modifier)', () => {
+    expect(doubleDiceCount('1d8-1')).toBe('2d8-1')
+  })
+
+  it('doubles count: 3d12+5 → 6d12+5', () => {
+    expect(doubleDiceCount('3d12+5')).toBe('6d12+5')
+  })
+
+  it('returns original notation for invalid input', () => {
+    expect(doubleDiceCount('invalid')).toBe('invalid')
+    expect(doubleDiceCount('')).toBe('')
+  })
+
+  it('preserves modifier=0 (no sign)', () => {
+    expect(doubleDiceCount('2d8')).toBe('4d8')
+  })
+})

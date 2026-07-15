@@ -8,6 +8,7 @@ import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
@@ -56,6 +57,7 @@ interface AttackCardProps {
 
 function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: AttackCardProps) {
   const { t } = useTranslation()
+  const { rollCheck, rollDamage } = useSheetRoll()
 
   function handleContainerClick(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest('input, button, textarea, select')) return
@@ -121,18 +123,60 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
         {/* Free space — clicking here collapses the card */}
         <span data-testid={`attack-header-gap-${attack.id}`} style={{ flex: 1 }} />
 
-        <span
+        <button
+          type="button"
           data-testid={`attack-bonus-chip-${attack.id}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            rollCheck(
+              `${t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
+              attack.attackBonus,
+              attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
+            )
+          }}
+          title={t('dice.label_attack')}
           style={{
             flexShrink: 0,
             fontSize: 13,
             fontWeight: 600,
             color: T.accent,
             fontFamily: T.sans,
+            background: 'none',
+            border: 'none',
+            padding: '2px 4px',
+            margin: '-2px -4px',
+            cursor: 'pointer',
           }}
         >
           {formatAttackBonus(attack.attackBonus)}
-        </span>
+        </button>
+
+        {attack.damage && (
+          <button
+            type="button"
+            data-testid={`attack-damage-btn-${attack.id}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              rollDamage(
+                `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
+                attack.damage,
+              )
+            }}
+            title={t('dice.label_damage')}
+            style={{
+              flexShrink: 0,
+              fontSize: 14,
+              color: '#7A7788',
+              background: 'none',
+              border: 'none',
+              padding: '2px 2px',
+              cursor: 'pointer',
+              lineHeight: 1,
+            }}
+          >
+            ⚅
+          </button>
+        )}
 
         {!locked && (
           <ConfirmableRemoveButton

@@ -11,6 +11,7 @@ import { useCharactersStore } from '@/store/characters'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { useAuthStore } from '@/store/auth'
 import { DicePanel } from '@/components/dice/DicePanel'
+import { useDiceStore } from '@/store/useDiceStore'
 
 const T = {
   surface:      '#15121C',
@@ -33,8 +34,12 @@ interface MobileShellProps {
 
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [diceOpen, setDiceOpen] = useState(false)
   const navigate = useNavigate()
+  const isOpen = useDiceStore(s => s.isOpen)
+  const toggle = useDiceStore(s => s.toggle)
+  const close = useDiceStore(s => s.close)
+  const rollMode = useDiceStore(s => s.rollMode)
+  const setRollMode = useDiceStore(s => s.setRollMode)
   const { t, lang, setLang } = useTranslation()
   const authStatus = useAuthStatus()
   const updateCharacter = useCharactersStore(s => s.updateCharacter)
@@ -62,16 +67,47 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
 
       <BottomTabBar active={activeTab} onChange={onTabChange} />
 
-      {/* Dice FAB + panel */}
-      <div style={{ position: 'fixed', bottom: 70, right: 16, zIndex: 50 }}>
-        {diceOpen && (
-          <div style={{ position: 'absolute', bottom: 56, right: 0 }}>
-            <DicePanel onClose={() => setDiceOpen(false)} />
-          </div>
-        )}
+      {/* Dice panel: separate fixed layer so it can be bounded by viewport height */}
+      {isOpen && (
+        <div style={{ position: 'fixed', top: 12, bottom: 180, right: 16, zIndex: 50, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <DicePanel onClose={close} />
+        </div>
+      )}
+
+      {/* Dice FAB + mode selector */}
+      <div style={{ position: 'fixed', bottom: 70, right: 16, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+        {/* Roll mode selector */}
+        <div style={{ display: 'flex', gap: 3 }}>
+          {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
+            const active = rollMode === m
+            const label = m === 'normal' ? t('dice.normal')[0] : m === 'advantage' ? t('dice.advantage')[0] : t('dice.disadvantage')[0]
+            const activeColor = m === 'advantage' ? '#27AE60' : m === 'disadvantage' ? '#C0392B' : '#5B3FA8'
+            return (
+              <button
+                key={m}
+                data-testid={`roll-mode-${m}`}
+                onClick={() => setRollMode(m)}
+                title={m === 'normal' ? t('dice.normal') : m === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')}
+                style={{
+                  width: 28, height: 28,
+                  borderRadius: 6,
+                  border: `1px solid ${active ? activeColor : '#3A3450'}`,
+                  background: active ? activeColor : 'rgba(255,255,255,0.06)',
+                  color: active ? '#fff' : '#7A7788',
+                  fontSize: 10, fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  lineHeight: 1,
+                }}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
         <button
           data-testid="dice-fab"
-          onClick={() => setDiceOpen(prev => !prev)}
+          onClick={toggle}
           title={t('dice.title')}
           style={{
             width: 48, height: 48,

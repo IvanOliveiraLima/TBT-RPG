@@ -1,6 +1,8 @@
 import type React from 'react'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
+import { formatSigned } from '@/domain/calculations'
 
 interface HitDiceEntry {
   className: string
@@ -12,6 +14,7 @@ interface HitDiceEntry {
 interface HitDicePoolProps {
   hitDice: HitDiceEntry[]
   onUpdate?: (updated: HitDiceEntry[]) => void
+  conMod?: number
 }
 
 const NUMBER_INPUT: React.CSSProperties = {
@@ -30,8 +33,9 @@ const NUMBER_INPUT: React.CSSProperties = {
   MozAppearance: 'textfield',
 }
 
-export function HitDicePool({ hitDice, onUpdate }: HitDicePoolProps) {
+export function HitDicePool({ hitDice, onUpdate, conMod = 0 }: HitDicePoolProps) {
   const { t } = useTranslation()
+  const { rollExpr } = useSheetRoll()
 
   function updateEntry(className: string, current: number) {
     if (!onUpdate) return
@@ -121,6 +125,27 @@ export function HitDicePool({ hitDice, onUpdate }: HitDicePoolProps) {
               <span style={{ fontSize: 12, color: '#7A7788' }}>
                 / {hd.max > 0 ? hd.max : '—'} d{hd.dieSize}
               </span>
+              <button
+                type="button"
+                data-testid={`hitdice-${hd.className}-roll-btn`}
+                onClick={() => {
+                  const modPart = conMod !== 0 ? formatSigned(conMod) : ''
+                  rollExpr(`d${hd.dieSize}${modPart}`, `1d${hd.dieSize}${modPart}`)
+                }}
+                title={t('dice.roll')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#5B3FA8',
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  padding: '2px 2px',
+                  marginLeft: 2,
+                  lineHeight: 1,
+                }}
+              >
+                ⚅
+              </button>
             </div>
           ))}
 

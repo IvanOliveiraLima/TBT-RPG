@@ -6,6 +6,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Pip } from '../ui/Pip'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface SkillsBlockProps {
   character: Character
@@ -50,6 +51,7 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
   const profBonus = proficiencyBonus(deriveTotalLevel(character))
+  const { rollCheck } = useSheetRoll()
 
   function skillLabel(name: string): string {
     const k = SKILL_DISPLAY_TO_KEY[name]
@@ -160,20 +162,37 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
             >
               {t(`ability.${s.ability}`)}
             </span>
-            <span
-              data-testid={`skill-${s.name}-bonus`}
+            <button
+              type="button"
+              onClick={() => rollCheck(label, bonus)}
+              aria-label={t('aria.roll', { label })}
+              className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded"
               style={{
-                fontFamily: "'Cinzel', Georgia, serif",
-                fontWeight: 600,
-                color: valueColor,
-                fontSize: 14,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 28,
-                textAlign: 'right',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                background: 'none',
+                border: 'none',
+                padding: '4px 4px',
+                margin: '-4px -4px',
+                cursor: 'pointer',
               }}
             >
-              {formatSigned(bonus)}
-            </span>
+              <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.55 }}>⚅</span>
+              <span
+                data-testid={`skill-${s.name}-bonus`}
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontWeight: 600,
+                  color: valueColor,
+                  fontSize: 14,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 28,
+                }}
+              >
+                {formatSigned(bonus)}
+              </span>
+            </button>
           </div>
         )
       })}
