@@ -3,6 +3,7 @@ import { useTranslation } from '@/i18n'
 import { roll } from '@/domain/dice'
 import type { RollResult } from '@/domain/dice'
 import { useDiceStore } from '@/store/useDiceStore'
+import { NumberField } from '@/components/primitives/NumberField'
 
 const T = {
   surface:      '#15121C',
@@ -217,19 +218,18 @@ export function DicePanel({ onClose }: DicePanelProps) {
 
       {/* Quantity + Modifier */}
       <div style={{ display: 'flex', gap: 8 }}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
             {t('dice.quantity')}
           </label>
-          <input
+          <NumberField
             data-testid="quantity-input"
-            type="number"
-            min={1}
-            max={20}
             value={quantity}
-            onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+            min={1}
+            max={99}
+            showSteppers
+            onChange={setQuantity}
             style={{
-              width: '100%', boxSizing: 'border-box',
               background: T.surface,
               border: `1px solid ${T.border}`,
               borderRadius: 7, padding: '5px 8px',
@@ -237,19 +237,18 @@ export function DicePanel({ onClose }: DicePanelProps) {
             }}
           />
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
             {t('dice.modifier')}
           </label>
-          <input
+          <NumberField
             data-testid="modifier-input"
-            type="number"
+            value={modifier}
             min={-20}
             max={20}
-            value={modifier}
-            onChange={e => setModifier(parseInt(e.target.value) || 0)}
+            showSteppers
+            onChange={setModifier}
             style={{
-              width: '100%', boxSizing: 'border-box',
               background: T.surface,
               border: `1px solid ${T.border}`,
               borderRadius: 7, padding: '5px 8px',
