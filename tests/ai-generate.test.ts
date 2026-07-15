@@ -343,4 +343,132 @@ describe('mergeAIResponseIntoCharacter', () => {
     })
     expect(result.attacks[0]!.id).not.toBe(result.attacks[1]!.id)
   })
+
+  // ── spells mapping ───────────────────────────────────────────────────────────
+
+  it('leaves spells empty when AI response has no spells field', () => {
+    const result = mergeAIResponseIntoCharacter({})
+    expect(result.spells).toHaveLength(0)
+  })
+
+  it('leaves spells empty when spells field is not an array', () => {
+    const result = mergeAIResponseIntoCharacter({ spells: 'bad' as never })
+    expect(result.spells).toHaveLength(0)
+  })
+
+  it('maps a valid spell with all fields', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [{ name: 'Fireball', level: '3', school: 'evocation', prepared: true }],
+    })
+    expect(result.spells).toHaveLength(1)
+    const sp = result.spells[0]!
+    expect(sp.name).toBe('Fireball')
+    expect(sp.level).toBe(3)
+    expect(sp.school).toBe('evocation')
+    expect(sp.prepared).toBe(true)
+    expect(sp.description).toBe('')
+    expect(sp.castingTime).toBe('')
+    expect(sp.range).toBe('')
+    expect(sp.id).toBeTruthy()
+  })
+
+  it('maps a cantrip (level 0) correctly', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [{ name: 'Fire Bolt', level: 0, school: 'evocation', prepared: false }],
+    })
+    expect(result.spells[0]!.level).toBe(0)
+    expect(result.spells[0]!.prepared).toBe(false)
+  })
+
+  it('discards spells with invalid school', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [
+        { name: 'Fireball', level: 3, school: 'evocation', prepared: true },
+        { name: 'Bad Spell', level: 1, school: 'shadow' },
+        { name: 'Also Bad', level: 2, school: undefined },
+      ],
+    })
+    expect(result.spells).toHaveLength(1)
+    expect(result.spells[0]!.name).toBe('Fireball')
+  })
+
+  it('discards spells with level out of range', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [
+        { name: 'Good', level: 5, school: 'abjuration', prepared: false },
+        { name: 'Too High', level: 10, school: 'abjuration', prepared: false },
+        { name: 'Negative', level: -1, school: 'abjuration', prepared: false },
+      ],
+    })
+    expect(result.spells).toHaveLength(1)
+    expect(result.spells[0]!.name).toBe('Good')
+  })
+
+  it('discards spells with NaN level', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [{ name: 'Broken', level: 'x', school: 'necromancy', prepared: false }],
+    })
+    expect(result.spells).toHaveLength(0)
+  })
+
+  it('discards spells without a name', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [
+        { name: '', level: 1, school: 'divination', prepared: false },
+        { level: 2, school: 'illusion', prepared: false },
+        { name: 'Detect Magic', level: 1, school: 'divination', prepared: true },
+      ],
+    })
+    expect(result.spells).toHaveLength(1)
+    expect(result.spells[0]!.name).toBe('Detect Magic')
+  })
+
+  it('caps spells at 12 items', () => {
+    const many = Array.from({ length: 15 }, (_, i) => ({ name: `Spell${i}`, level: 1, school: 'evocation', prepared: false }))
+    const result = mergeAIResponseIntoCharacter({ spells: many })
+    expect(result.spells).toHaveLength(12)
+  })
+
+  it('each generated spell has a unique id', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [
+        { name: 'Spell A', level: 1, school: 'abjuration', prepared: true },
+        { name: 'Spell B', level: 2, school: 'conjuration', prepared: false },
+      ],
+    })
+    expect(result.spells[0]!.id).not.toBe(result.spells[1]!.id)
+  })
+
+  it('sets spellcastingAbility and derives spellSaveDC', () => {
+    // Wizard level 1: INT=16 (mod=+3), prof=+2 → DC = 8+2+3 = 13
+    const result = mergeAIResponseIntoCharacter({
+      classes: [{ name: 'Wizard', level: '1' }],
+      int: '16',
+      spellcasting_ability: 'int',
+      spellcasting_class: 'Wizard',
+    })
+    expect(result.spellcastingAbility).toBe('int')
+    expect(result.spellcastingClass).toBe('Wizard')
+    expect(result.spellSaveDC).toBe(13)
+  })
+
+  it('does not set spellcastingAbility for invalid ability key', () => {
+    const base = mergeAIResponseIntoCharacter({})
+    const result = mergeAIResponseIntoCharacter({ spellcasting_ability: 'magic' as never })
+    expect(result.spellcastingAbility).toBe(base.spellcastingAbility)
+  })
+
+  it('does not set spellcastingClass when value is blank', () => {
+    const base = mergeAIResponseIntoCharacter({})
+    const result = mergeAIResponseIntoCharacter({ spellcasting_class: '   ' })
+    expect(result.spellcastingClass).toBe(base.spellcastingClass)
+  })
+
+  it('leaves spellSlots untouched (user fills them)', () => {
+    const result = mergeAIResponseIntoCharacter({
+      spells: [{ name: 'Fireball', level: 3, school: 'evocation', prepared: true }],
+    })
+    const base = mergeAIResponseIntoCharacter({})
+    expect(result.spellSlots).toEqual(base.spellSlots)
+  })
 })
