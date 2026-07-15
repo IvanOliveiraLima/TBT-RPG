@@ -187,10 +187,12 @@ export function DicePanel({ onClose }: DicePanelProps) {
         color: T.text,
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         display: 'flex', flexDirection: 'column', gap: 12,
+        maxHeight: '100%',
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <span style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600 }}>
           {t('dice.title')}
         </span>
@@ -204,7 +206,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
       </div>
 
       {/* Die selector */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flexShrink: 0 }}>
         {DIE_SIDES.map(sides => {
           const active = sides === selectedSides
           return (
@@ -230,7 +232,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
       </div>
 
       {/* Quantity + Modifier */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
             {t('dice.quantity')}
@@ -273,7 +275,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
 
       {/* Advantage / Disadvantage (d20 only) — reads/writes global rollMode */}
       {selectedSides === 20 && (
-        <div style={{ display: 'flex', gap: 5 }}>
+        <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
           {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
             const mLabel = m === 'normal' ? t('dice.normal') : m === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')
             const active = rollMode === m
@@ -309,6 +311,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
           background: T.ruby,
           color: '#fff',
           border: `1px solid ${T.rubyLight}`,
+          flexShrink: 0,
         }}
       >
         {t('dice.roll')}
@@ -326,6 +329,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
             background: T.green,
             color: '#fff',
             border: `1px solid #1E8449`,
+            flexShrink: 0,
           }}
         >
           {t('dice.crit_damage')}
@@ -333,11 +337,11 @@ export function DicePanel({ onClose }: DicePanelProps) {
       )}
 
       {/* Last result */}
-      {lastResult && <RollSummary result={lastResult} />}
+      {lastResult && <div style={{ flexShrink: 0 }}><RollSummary result={lastResult} /></div>}
 
-      {/* History */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+      {/* History — flex: 1 so it fills remaining panel height; history list scrolls internally */}
+      <div style={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexShrink: 0 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: T.textSub }}>{t('dice.history')}</span>
           {history.length > 0 && (
             <button
@@ -355,7 +359,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
             {t('dice.empty')}
           </div>
         ) : (
-          <div data-testid="dice-history" style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto', paddingRight: 4 }}>
+          <div data-testid="dice-history" style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 auto', minHeight: 0, overflowY: 'auto', paddingRight: 4 }}>
             {history.map(r => (
               <div
                 key={r.id}

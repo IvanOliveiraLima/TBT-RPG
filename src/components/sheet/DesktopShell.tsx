@@ -121,13 +121,15 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
         </div>
       </div>
 
-      {/* Dice FAB + mode selector + panel */}
+      {/* Dice panel: separate fixed layer so it can be bounded by viewport height */}
+      {isOpen && (
+        <div style={{ position: 'fixed', top: 12, bottom: 128, right: 24, zIndex: 50, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <DicePanel onClose={close} />
+        </div>
+      )}
+
+      {/* Dice FAB + mode selector */}
       <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-        {isOpen && (
-          <div style={{ position: 'absolute', bottom: 104, right: 0 }}>
-            <DicePanel onClose={close} />
-          </div>
-        )}
         {/* Roll mode selector */}
         <div style={{ display: 'flex', gap: 3 }}>
           {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
