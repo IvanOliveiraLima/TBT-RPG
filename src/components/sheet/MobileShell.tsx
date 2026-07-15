@@ -10,6 +10,7 @@ import { useAuthStatus } from '@/hooks/useAuthStatus'
 import { useCharactersStore } from '@/store/characters'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { useAuthStore } from '@/store/auth'
+import { DicePanel } from '@/components/dice/DicePanel'
 
 const T = {
   surface:      '#15121C',
@@ -32,6 +33,7 @@ interface MobileShellProps {
 
 export function MobileShell({ character, activeTab, onTabChange, children }: MobileShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [diceOpen, setDiceOpen] = useState(false)
   const navigate = useNavigate()
   const { t, lang, setLang } = useTranslation()
   const authStatus = useAuthStatus()
@@ -59,6 +61,33 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
       </div>
 
       <BottomTabBar active={activeTab} onChange={onTabChange} />
+
+      {/* Dice FAB + panel */}
+      <div style={{ position: 'fixed', bottom: 70, right: 16, zIndex: 50 }}>
+        {diceOpen && (
+          <div style={{ position: 'absolute', bottom: 56, right: 0 }}>
+            <DicePanel onClose={() => setDiceOpen(false)} />
+          </div>
+        )}
+        <button
+          data-testid="dice-fab"
+          onClick={() => setDiceOpen(prev => !prev)}
+          title={t('dice.title')}
+          style={{
+            width: 48, height: 48,
+            borderRadius: '50%',
+            background: '#5B3FA8',
+            border: '2px solid #7B5FC8',
+            color: '#fff',
+            fontSize: 22, lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ⚄
+        </button>
+      </div>
 
       {/* Drawer overlay */}
       {drawerOpen && (
