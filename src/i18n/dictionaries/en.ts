@@ -850,6 +850,19 @@ const en = {
   'areas.draw_hint':   'Drag on the map to draw',
   'areas.done':        'Done',
 
+  // ── Dice ──────────────────────────────────────────────────────────────────────
+  'dice.title':          'Dice Tray',
+  'dice.roll':           'Roll',
+  'dice.quantity':       'Quantity',
+  'dice.modifier':       'Modifier',
+  'dice.advantage':      'Advantage',
+  'dice.disadvantage':   'Disadvantage',
+  'dice.clear':          'Clear',
+  'dice.history':        'History',
+  'dice.empty':          'No rolls yet',
+  'dice.crit_hit':       'Critical!',
+  'dice.crit_miss':      'Fumble',
+
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Open broadcast screen',
   'broadcast.waiting':     'Waiting for the main screen…',

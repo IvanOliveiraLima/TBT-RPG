@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Character } from '@/domain/character'
 import { formatClassesShort } from '@/domain/derived'
 import type { TabKey } from './types'
@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/primitives/StatusBadge'
 import { useAuthStatus } from '@/hooks/useAuthStatus'
 import { useCharactersStore } from '@/store/characters'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { DicePanel } from '@/components/dice/DicePanel'
 
 const T = {
   borderSubtle: '#2A2537',
@@ -33,6 +34,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
   const authStatus = useAuthStatus()
   const updateCharacter = useCharactersStore(s => s.updateCharacter)
   const locked = useCharacterLocked(character.id)
+  const [diceOpen, setDiceOpen] = useState(false)
   return (
     <div style={{
       display: 'flex',
@@ -112,6 +114,33 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
         <div style={{ flex: 1, padding: 20 }}>
           {children}
         </div>
+      </div>
+
+      {/* Dice FAB + panel */}
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50 }}>
+        {diceOpen && (
+          <div style={{ position: 'absolute', bottom: 60, right: 0 }}>
+            <DicePanel onClose={() => setDiceOpen(false)} />
+          </div>
+        )}
+        <button
+          data-testid="dice-fab"
+          onClick={() => setDiceOpen(prev => !prev)}
+          title={t('dice.title')}
+          style={{
+            width: 48, height: 48,
+            borderRadius: '50%',
+            background: '#5B3FA8',
+            border: '2px solid #7B5FC8',
+            color: '#fff',
+            fontSize: 22, lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ⚄
+        </button>
       </div>
     </div>
   )

@@ -854,6 +854,19 @@ const pt: Record<keyof typeof en, string> = {
   'areas.draw_hint':   'Arraste no mapa para desenhar',
   'areas.done':        'Concluir',
 
+  // ── Dice ──────────────────────────────────────────────────────────────────────
+  'dice.title':          'Bandeja de Dados',
+  'dice.roll':           'Rolar',
+  'dice.quantity':       'Quantidade',
+  'dice.modifier':       'Modificador',
+  'dice.advantage':      'Vantagem',
+  'dice.disadvantage':   'Desvantagem',
+  'dice.clear':          'Limpar',
+  'dice.history':        'Histórico',
+  'dice.empty':          'Nenhuma rolagem ainda',
+  'dice.crit_hit':       'Crítico!',
+  'dice.crit_miss':      'Falha crítica',
+
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Abrir tela de transmissão',
   'broadcast.waiting':     'Aguardando a tela principal…',
