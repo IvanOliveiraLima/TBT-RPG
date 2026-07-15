@@ -156,3 +156,18 @@ export function roll(notation: string, opts: RollOptions = {}): RollResult {
   if (label !== undefined) result.label = label
   return result
 }
+
+// ── Critical hit helper ───────────────────────────────────────────────────────
+
+/**
+ * Doubles the dice count for critical hits (5e rule): "2d6+3" → "4d6+3".
+ * Modifier is unchanged. Returns original notation if it cannot be parsed.
+ */
+export function doubleDiceCount(notation: string): string {
+  const parsed = parseNotation(notation)
+  if (!parsed) return notation
+  const { count, sides, modifier } = parsed
+  const doubled = `${count * 2}d${sides}`
+  if (modifier === 0) return doubled
+  return `${doubled}${modifier >= 0 ? `+${modifier}` : `${modifier}`}`
+}
