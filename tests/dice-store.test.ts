@@ -58,3 +58,71 @@ describe('useDiceStore', () => {
     expect(useDiceStore.getState().history).toHaveLength(0)
   })
 })
+
+describe('useDiceStore — rollMode', () => {
+  beforeEach(() => {
+    useDiceStore.setState({ rollMode: 'normal' })
+  })
+
+  it('starts as normal', () => {
+    expect(useDiceStore.getState().rollMode).toBe('normal')
+  })
+
+  it('setRollMode updates rollMode', () => {
+    useDiceStore.getState().setRollMode('advantage')
+    expect(useDiceStore.getState().rollMode).toBe('advantage')
+    useDiceStore.getState().setRollMode('disadvantage')
+    expect(useDiceStore.getState().rollMode).toBe('disadvantage')
+    useDiceStore.getState().setRollMode('normal')
+    expect(useDiceStore.getState().rollMode).toBe('normal')
+  })
+})
+
+describe('useDiceStore — isOpen', () => {
+  beforeEach(() => {
+    useDiceStore.setState({ isOpen: false })
+  })
+
+  it('starts closed', () => {
+    expect(useDiceStore.getState().isOpen).toBe(false)
+  })
+
+  it('open() sets isOpen true', () => {
+    useDiceStore.getState().open()
+    expect(useDiceStore.getState().isOpen).toBe(true)
+  })
+
+  it('close() sets isOpen false', () => {
+    useDiceStore.setState({ isOpen: true })
+    useDiceStore.getState().close()
+    expect(useDiceStore.getState().isOpen).toBe(false)
+  })
+
+  it('toggle() flips isOpen', () => {
+    useDiceStore.getState().toggle()
+    expect(useDiceStore.getState().isOpen).toBe(true)
+    useDiceStore.getState().toggle()
+    expect(useDiceStore.getState().isOpen).toBe(false)
+  })
+})
+
+describe('useDiceStore — critContext', () => {
+  beforeEach(() => {
+    useDiceStore.setState({ critContext: null })
+  })
+
+  it('starts null', () => {
+    expect(useDiceStore.getState().critContext).toBeNull()
+  })
+
+  it('setCritContext stores the context', () => {
+    useDiceStore.getState().setCritContext({ label: 'Dano: Espada', damage: '1d8+3' })
+    expect(useDiceStore.getState().critContext).toEqual({ label: 'Dano: Espada', damage: '1d8+3' })
+  })
+
+  it('clearCritContext resets to null', () => {
+    useDiceStore.getState().setCritContext({ label: 'Dano: Arco', damage: '1d6' })
+    useDiceStore.getState().clearCritContext()
+    expect(useDiceStore.getState().critContext).toBeNull()
+  })
+})
