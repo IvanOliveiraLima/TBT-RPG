@@ -218,4 +218,129 @@ describe('mergeAIResponseIntoCharacter', () => {
     const result = mergeAIResponseIntoCharacter({ dex: '16' }) // mod = +3
     expect(result.initiative).toBe(3)
   })
+
+  // ── attacks mapping ──────────────────────────────────────────────────────────
+
+  it('leaves attacks empty when AI response has no attacks field', () => {
+    const result = mergeAIResponseIntoCharacter({})
+    expect(result.attacks).toHaveLength(0)
+  })
+
+  it('leaves attacks empty when attacks field is not an array', () => {
+    const result = mergeAIResponseIntoCharacter({ attacks: 'invalid' as never })
+    expect(result.attacks).toHaveLength(0)
+  })
+
+  it('maps a melee attack with str ability and positive mod', () => {
+    // Fighter str=16 → mod=+3, level=1 → prof=+2 → attackBonus=5, damage="1d8+3"
+    const result = mergeAIResponseIntoCharacter({
+      classes: [{ name: 'Fighter', level: '1' }],
+      str: '16',
+      attacks: [{ name: 'Longsword', kind: 'melee', ability: 'str', damage: '1d8', damage_type: 'Slashing', range: '5 ft', properties: 'Versatile' }],
+    })
+    expect(result.attacks).toHaveLength(1)
+    const atk = result.attacks[0]!
+    expect(atk.name).toBe('Longsword')
+    expect(atk.kind).toBe('melee')
+    expect(atk.ability).toBe('str')
+    expect(atk.attackBonus).toBe(5)   // mod(3) + prof(2)
+    expect(atk.damage).toBe('1d8+3')
+    expect(atk.damageType).toBe('Slashing')
+    expect(atk.range).toBe('5 ft')
+    expect(atk.properties).toBe('Versatile')
+    expect(atk.notes).toBe('')
+    expect(atk.id).toBeTruthy()
+  })
+
+  it('maps a ranged attack with dex ability', () => {
+    // Ranger dex=16 → mod=+3, level=1 → prof=+2 → attackBonus=5, damage="1d8+3"
+    const result = mergeAIResponseIntoCharacter({
+      classes: [{ name: 'Ranger', level: '1' }],
+      dex: '16',
+      attacks: [{ name: 'Longbow', kind: 'ranged', ability: 'dex', damage: '1d8', damage_type: 'Piercing', range: '150/600 ft', properties: 'Heavy, Two-Handed' }],
+    })
+    const atk = result.attacks[0]!
+    expect(atk.kind).toBe('ranged')
+    expect(atk.ability).toBe('dex')
+    expect(atk.attackBonus).toBe(5)
+    expect(atk.damage).toBe('1d8+3')
+  })
+
+  it('defaults unknown kind to melee', () => {
+    const result = mergeAIResponseIntoCharacter({
+      str: '10',
+      attacks: [{ name: 'Bite', kind: 'natural' as never, ability: 'str', damage: '1d6' }],
+    })
+    expect(result.attacks[0]!.kind).toBe('melee')
+  })
+
+  it('defaults invalid ability to empty string and attackBonus to 0', () => {
+    const result = mergeAIResponseIntoCharacter({
+      attacks: [{ name: 'Cantrip', kind: 'spell', ability: 'magic' as never, damage: '1d10' }],
+    })
+    const atk = result.attacks[0]!
+    expect(atk.ability).toBe('')
+    expect(atk.attackBonus).toBe(0)
+  })
+
+  it('does not append modifier to damage when ability is empty', () => {
+    const result = mergeAIResponseIntoCharacter({
+      attacks: [{ name: 'Ray', ability: undefined, damage: '1d8' }],
+    })
+    expect(result.attacks[0]!.damage).toBe('1d8')
+  })
+
+  it('does not append modifier to damage when mod is 0', () => {
+    // str=10 → mod=0
+    const result = mergeAIResponseIntoCharacter({
+      str: '10',
+      attacks: [{ name: 'Club', kind: 'melee', ability: 'str', damage: '1d4' }],
+    })
+    expect(result.attacks[0]!.damage).toBe('1d4')
+  })
+
+  it('appends negative modifier to damage when mod is negative', () => {
+    // str=8 → mod=-1
+    const result = mergeAIResponseIntoCharacter({
+      str: '8',
+      attacks: [{ name: 'Dagger', kind: 'melee', ability: 'str', damage: '1d4' }],
+    })
+    expect(result.attacks[0]!.damage).toBe('1d4-1')
+  })
+
+  it('produces empty damage string when damage field is missing', () => {
+    const result = mergeAIResponseIntoCharacter({
+      str: '16',
+      attacks: [{ name: 'Unarmed', kind: 'melee', ability: 'str' }],
+    })
+    expect(result.attacks[0]!.damage).toBe('')
+  })
+
+  it('caps attacks at 6 items', () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({ name: `Weapon${i}`, kind: 'melee', ability: 'str', damage: '1d6' }))
+    const result = mergeAIResponseIntoCharacter({ attacks: many })
+    expect(result.attacks).toHaveLength(6)
+  })
+
+  it('filters out attacks without a name', () => {
+    const result = mergeAIResponseIntoCharacter({
+      attacks: [
+        { name: 'Sword', kind: 'melee', ability: 'str', damage: '1d8' },
+        { name: '', kind: 'melee', ability: 'str', damage: '1d6' },
+        { kind: 'melee', ability: 'str', damage: '1d4' },
+      ],
+    })
+    expect(result.attacks).toHaveLength(1)
+    expect(result.attacks[0]!.name).toBe('Sword')
+  })
+
+  it('each generated attack has a unique id', () => {
+    const result = mergeAIResponseIntoCharacter({
+      attacks: [
+        { name: 'Sword', kind: 'melee', ability: 'str', damage: '1d8' },
+        { name: 'Dagger', kind: 'melee', ability: 'dex', damage: '1d4' },
+      ],
+    })
+    expect(result.attacks[0]!.id).not.toBe(result.attacks[1]!.id)
+  })
 })
