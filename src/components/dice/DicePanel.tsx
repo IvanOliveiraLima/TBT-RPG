@@ -355,7 +355,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
             {t('dice.empty')}
           </div>
         ) : (
-          <div data-testid="dice-history" style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div data-testid="dice-history" style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto', paddingRight: 4 }}>
             {history.map(r => (
               <div
                 key={r.id}
