@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from '@/i18n'
-import { roll } from '@/domain/dice'
+import { roll, doubleDiceCount } from '@/domain/dice'
 import type { RollResult } from '@/domain/dice'
 import { useDiceStore } from '@/store/useDiceStore'
 import { NumberField } from '@/components/primitives/NumberField'
@@ -70,7 +70,7 @@ function RollSummary({ result }: { result: RollResult }) {
         >
           {result.total}
         </span>
-        <span style={{ fontSize: 13, color: T.textSub }}>{result.notation}</span>
+        <span style={{ fontSize: 13, color: T.textSub }}>{result.label ?? result.notation}</span>
         {result.mode !== 'normal' && (
           <span style={{ fontSize: 11, color: T.textMuted, marginLeft: 2 }}>
             ({result.mode === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')})
@@ -130,11 +130,14 @@ export function DicePanel({ onClose }: DicePanelProps) {
   const history = useDiceStore(s => s.history)
   const addRoll = useDiceStore(s => s.addRoll)
   const clear = useDiceStore(s => s.clear)
+  const rollMode = useDiceStore(s => s.rollMode)
+  const setRollMode = useDiceStore(s => s.setRollMode)
+  const critContext = useDiceStore(s => s.critContext)
+  const clearCritContext = useDiceStore(s => s.clearCritContext)
 
   const [selectedSides, setSelectedSides] = useState<DieSides>(20)
   const [quantity, setQuantity] = useState(1)
   const [modifier, setModifier] = useState(0)
-  const [mode, setMode] = useState<'normal' | 'advantage' | 'disadvantage'>('normal')
   const [lastResult, setLastResult] = useState<RollResult | null>(history[0] ?? null)
 
   function handleRoll() {
@@ -144,9 +147,19 @@ export function DicePanel({ onClose }: DicePanelProps) {
         ? `${quantity}d${selectedSides}`
         : `${quantity}d${selectedSides}${modifier >= 0 ? '+' : ''}${modifier}`
 
-    const result = roll(notation, { mode })
+    const result = roll(notation, { mode: rollMode })
     addRoll(result)
     setLastResult(result)
+    clearCritContext()
+  }
+
+  function handleCritDamage() {
+    if (!critContext) return
+    const n = doubleDiceCount(critContext.damage)
+    const result = roll(n, { mode: 'normal', label: critContext.label })
+    addRoll(result)
+    setLastResult(result)
+    clearCritContext()
   }
 
   function handleClear() {
@@ -258,17 +271,17 @@ export function DicePanel({ onClose }: DicePanelProps) {
         </div>
       </div>
 
-      {/* Advantage / Disadvantage (d20 only) */}
+      {/* Advantage / Disadvantage (d20 only) — reads/writes global rollMode */}
       {selectedSides === 20 && (
         <div style={{ display: 'flex', gap: 5 }}>
           {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
-            const label = m === 'normal' ? '—' : m === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')
-            const active = mode === m
+            const mLabel = m === 'normal' ? t('dice.normal') : m === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')
+            const active = rollMode === m
             return (
               <button
                 key={m}
                 data-testid={`mode-${m}`}
-                onClick={() => setMode(m)}
+                onClick={() => setRollMode(m)}
                 style={{
                   ...btnBase,
                   flex: 1, padding: '5px 4px',
@@ -278,7 +291,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
                   border: `1px solid ${active ? 'transparent' : T.border}`,
                 }}
               >
-                {label}
+                {mLabel}
               </button>
             )
           })}
@@ -300,6 +313,24 @@ export function DicePanel({ onClose }: DicePanelProps) {
       >
         {t('dice.roll')}
       </button>
+
+      {/* Critical damage button — shown when an attack crit was just rolled */}
+      {critContext && (
+        <button
+          data-testid="crit-damage-btn"
+          onClick={handleCritDamage}
+          style={{
+            ...btnBase,
+            padding: '8px',
+            fontSize: 13,
+            background: T.green,
+            color: '#fff',
+            border: `1px solid #1E8449`,
+          }}
+        >
+          {t('dice.crit_damage')}
+        </button>
+      )}
 
       {/* Last result */}
       {lastResult && <RollSummary result={lastResult} />}
@@ -338,7 +369,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
                   fontSize: 12,
                 }}
               >
-                <span style={{ color: T.textSub }}>{r.notation}</span>
+                <span style={{ color: T.textSub }}>{r.label ?? r.notation}</span>
                 <span style={{ fontWeight: 700, color: r.crit === 'hit' ? T.green : r.crit === 'miss' ? T.rubyLight : T.text }}>
                   {r.total}
                 </span>
