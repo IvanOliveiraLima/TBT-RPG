@@ -10,6 +10,7 @@ interface CritContext {
 
 interface DiceState {
   history: RollResult[]
+  lastResult: RollResult | null
   addRoll: (result: RollResult) => void
   clear: () => void
 
@@ -28,10 +29,12 @@ interface DiceState {
 
 export const useDiceStore = create<DiceState>((set) => ({
   history: [],
+  lastResult: null,
 
   addRoll: (result) =>
     set((state) => ({
       history: [result, ...state.history].slice(0, HISTORY_CAP),
+      lastResult: result,
     })),
 
   clear: () => set({ history: [] }),

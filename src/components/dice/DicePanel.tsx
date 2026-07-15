@@ -132,13 +132,13 @@ export function DicePanel({ onClose }: DicePanelProps) {
   const clear = useDiceStore(s => s.clear)
   const rollMode = useDiceStore(s => s.rollMode)
   const setRollMode = useDiceStore(s => s.setRollMode)
+  const lastResult = useDiceStore(s => s.lastResult)
   const critContext = useDiceStore(s => s.critContext)
   const clearCritContext = useDiceStore(s => s.clearCritContext)
 
   const [selectedSides, setSelectedSides] = useState<DieSides>(20)
   const [quantity, setQuantity] = useState(1)
   const [modifier, setModifier] = useState(0)
-  const [lastResult, setLastResult] = useState<RollResult | null>(history[0] ?? null)
 
   function handleRoll() {
     const notation = quantity === 1 && modifier === 0
@@ -149,7 +149,6 @@ export function DicePanel({ onClose }: DicePanelProps) {
 
     const result = roll(notation, { mode: rollMode })
     addRoll(result)
-    setLastResult(result)
     clearCritContext()
   }
 
@@ -158,13 +157,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
     const n = doubleDiceCount(critContext.damage)
     const result = roll(n, { mode: 'normal', label: critContext.label })
     addRoll(result)
-    setLastResult(result)
     clearCritContext()
-  }
-
-  function handleClear() {
-    clear()
-    setLastResult(null)
   }
 
   const btnBase: React.CSSProperties = {
@@ -346,7 +339,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
           {history.length > 0 && (
             <button
               data-testid="clear-history-btn"
-              onClick={handleClear}
+              onClick={clear}
               style={{ ...btnBase, padding: '3px 8px', fontSize: 11, background: 'transparent', color: T.textMuted, border: `1px solid ${T.border}` }}
             >
               {t('dice.clear')}

@@ -60,7 +60,7 @@ const baseChar = createEmptyCharacter('Test')
 
 describe('SkillsBlock — roll on bonus click', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })
@@ -97,7 +97,7 @@ describe('SkillsBlock — roll on bonus click', () => {
 
 describe('SavingThrows — roll on bonus click', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })
@@ -126,7 +126,7 @@ describe('SavingThrows — roll on bonus click', () => {
 
 describe('CombatStrip — initiative roll', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })
@@ -170,7 +170,7 @@ describe('AttacksList — attack and damage rolls', () => {
   }
 
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })
@@ -230,7 +230,7 @@ describe('AttacksList — attack and damage rolls', () => {
 
 describe('DeathSaves — roll button', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })
@@ -265,7 +265,7 @@ describe('HitDicePool — roll button', () => {
   const hitDice = [{ className: 'Fighter', current: 3, max: 5, dieSize: 10 }]
 
   beforeEach(() => {
-    useDiceStore.setState({ history: [], isOpen: false, rollMode: 'normal', critContext: null })
+    useDiceStore.setState({ history: [], lastResult: null, isOpen: false, rollMode: 'normal', critContext: null })
     mockRoll.mockClear()
     mockRoll.mockReturnValue(makeRollResult())
   })

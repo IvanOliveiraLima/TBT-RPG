@@ -25,11 +25,15 @@ function makeResult(id: string, total: number = 10): RollResult {
 
 describe('useDiceStore', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [] })
+    useDiceStore.setState({ history: [], lastResult: null })
   })
 
   it('starts with empty history', () => {
     expect(useDiceStore.getState().history).toHaveLength(0)
+  })
+
+  it('starts with lastResult null', () => {
+    expect(useDiceStore.getState().lastResult).toBeNull()
   })
 
   it('addRoll prepends (most recent first)', () => {
@@ -40,6 +44,15 @@ describe('useDiceStore', () => {
     const { history } = useDiceStore.getState()
     expect(history[0].id).toBe('r2')
     expect(history[1].id).toBe('r1')
+  })
+
+  it('addRoll sets lastResult to the newest entry', () => {
+    const r1 = makeResult('r1')
+    const r2 = makeResult('r2')
+    useDiceStore.getState().addRoll(r1)
+    expect(useDiceStore.getState().lastResult?.id).toBe('r1')
+    useDiceStore.getState().addRoll(r2)
+    expect(useDiceStore.getState().lastResult?.id).toBe('r2')
   })
 
   it('caps history at 20 entries', () => {

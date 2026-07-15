@@ -45,7 +45,7 @@ function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {})
 
 describe('DicePanel', () => {
   beforeEach(() => {
-    useDiceStore.setState({ history: [] })
+    useDiceStore.setState({ history: [], lastResult: null })
     mockRoll.mockReturnValue(makeResult())
   })
 
