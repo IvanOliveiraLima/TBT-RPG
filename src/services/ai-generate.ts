@@ -10,7 +10,7 @@
  * response are left as the factory default.
  */
 
-import type { Character, AbilityKey } from '@/domain/character'
+import type { Character, AbilityKey, Attack } from '@/domain/character'
 import { createEmptyCharacter, CANONICAL_SKILLS } from '@/domain/factories'
 import {
   abilityModifier,
@@ -18,6 +18,7 @@ import {
   skillBonus,
   savingThrowBonus,
   passivePerception,
+  formatSigned,
 } from '@/domain/calculations'
 import { getHitDie } from '@/domain/classes'
 
@@ -65,6 +66,15 @@ interface WorkerCharacter {
   bonds?:             string
   flaws?:             string
   backstory?:         string
+  attacks?: Array<{
+    name?: string
+    kind?: string
+    ability?: string
+    damage?: string
+    damage_type?: string
+    range?: string
+    properties?: string
+  }>
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -241,6 +251,30 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
   if (ai.ideals)             base.personality.ideals         = ai.ideals
   if (ai.bonds)              base.personality.bonds          = ai.bonds
   if (ai.flaws)              base.personality.flaws          = ai.flaws
+
+  // Attacks — worker supplies selection/flavor; client derives attack bonus and damage modifier
+  if (Array.isArray(ai.attacks)) {
+    const ABILS = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const
+    base.attacks = ai.attacks.slice(0, 6).map((a): Attack => {
+      const kind: Attack['kind'] =
+        a.kind === 'ranged' || a.kind === 'spell' ? a.kind : 'melee'
+      const ability: AbilityKey | '' =
+        (ABILS as readonly string[]).includes(a.ability ?? '') ? (a.ability as AbilityKey) : ''
+      const mod = ability ? abilityModifier(mergedAbilities[ability]) : 0
+      const attackBonus = ability ? mod + profBonus : 0
+      const dice = (a.damage ?? '').trim()
+      const damage = dice ? `${dice}${ability && mod !== 0 ? formatSigned(mod) : ''}` : ''
+      return {
+        id: crypto.randomUUID(),
+        name: (a.name ?? '').trim(),
+        kind, ability, attackBonus, damage,
+        damageType: (a.damage_type ?? '').trim(),
+        range: (a.range ?? '').trim(),
+        properties: (a.properties ?? '').trim(),
+        notes: '',
+      }
+    }).filter(a => a.name !== '')
+  }
 
   base.updatedAt = Date.now()
   return base
