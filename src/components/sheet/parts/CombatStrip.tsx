@@ -113,43 +113,60 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
       </div>
 
       {/* All other stats */}
-      {displayItems.map((it) => (
-        <div
-          key={it.key}
-          data-testid={`combat-stat-${it.key}`}
-          onClick={it.key === 'init' ? () => rollCheck(t('combat.initiative'), initiative) : undefined}
-          style={{
-            ...statCard,
-            ...(it.key === 'init' ? { cursor: 'pointer' } : {}),
-          }}
-        >
-          <div style={labelStyle}>{it.label}</div>
-          {it.key === 'spd' && !speedReadOnly ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 3 }}>
-              <NumberField
-                data-testid="speed-input"
-                value={character.speed}
-                min={0}
-                max={200}
-                onChange={(v) => onUpdate?.({ speed: v })}
-                aria-label={t('aria.speed_input')}
-                style={{
-                  ...valueStyle,
-                  background: 'transparent',
-                  border: '1px solid #2A2537',
-                  borderRadius: 4,
-                  width: '100%',
-                  padding: '2px 4px',
-                  textAlign: 'center',
-                }}
-              />
-              <span style={{ ...labelStyle, fontSize: 10 }}>ft</span>
-            </div>
-          ) : (
-            <div style={valueStyle}>{it.value}</div>
-          )}
-        </div>
-      ))}
+      {displayItems.map((it) => {
+        if (it.key === 'init') {
+          return (
+            <button
+              key="init"
+              type="button"
+              data-testid="combat-stat-init"
+              onClick={() => rollCheck(t('combat.initiative'), initiative)}
+              aria-label={t('aria.roll', { label: t('combat.initiative') })}
+              className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors"
+              style={{ ...statCard, cursor: 'pointer', width: '100%', fontFamily: 'inherit', color: 'inherit' }}
+            >
+              <div style={labelStyle}>{it.label}</div>
+              <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                {it.value}
+                <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.5, lineHeight: 1 }}>⚅</span>
+              </div>
+            </button>
+          )
+        }
+        return (
+          <div
+            key={it.key}
+            data-testid={`combat-stat-${it.key}`}
+            style={statCard}
+          >
+            <div style={labelStyle}>{it.label}</div>
+            {it.key === 'spd' && !speedReadOnly ? (
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 3 }}>
+                <NumberField
+                  data-testid="speed-input"
+                  value={character.speed}
+                  min={0}
+                  max={200}
+                  onChange={(v) => onUpdate?.({ speed: v })}
+                  aria-label={t('aria.speed_input')}
+                  style={{
+                    ...valueStyle,
+                    background: 'transparent',
+                    border: '1px solid #2A2537',
+                    borderRadius: 4,
+                    width: '100%',
+                    padding: '2px 4px',
+                    textAlign: 'center',
+                  }}
+                />
+                <span style={{ ...labelStyle, fontSize: 10 }}>ft</span>
+              </div>
+            ) : (
+              <div style={valueStyle}>{it.value}</div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

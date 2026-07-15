@@ -90,26 +90,39 @@ function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }
       >
         {t(`ability.${k}`)}
       </div>
-      <div
-        data-testid={`attr-${k}-mod`}
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={() => rollCheck(t(`ability.${k}`), mod)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') rollCheck(t(`ability.${k}`), mod) }}
-        title={t('dice.roll')}
+        aria-label={t('aria.roll', { label: t(`ability.${k}`) })}
+        className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded-lg"
         style={{
-          fontFamily: "'Cinzel', Georgia, serif",
-          fontSize: compact ? 28 : 32,
-          fontWeight: 600,
-          color: '#F4EFE0',
-          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          width: '100%',
           marginTop: 4,
-          textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          background: 'none',
+          border: 'none',
+          padding: '4px 2px',
           cursor: 'pointer',
         }}
       >
-        {formatSigned(mod)}
-      </div>
+        <span
+          data-testid={`attr-${k}-mod`}
+          style={{
+            fontFamily: "'Cinzel', Georgia, serif",
+            fontSize: compact ? 28 : 32,
+            fontWeight: 600,
+            color: '#F4EFE0',
+            lineHeight: 1,
+            textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          }}
+        >
+          {formatSigned(mod)}
+        </span>
+        <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.5, lineHeight: 1 }}>⚅</span>
+      </button>
       <div
         style={{
           marginTop: 6,

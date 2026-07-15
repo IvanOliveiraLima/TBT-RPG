@@ -475,6 +475,7 @@ const pt: Record<keyof typeof en, string> = {
   'aria.deathsave_success_toggle':   'Alternar sucesso {n} de teste de morte',
   'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
   'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
+  'aria.roll':                       'Rolar {label}',
 
   // Aria — languages
   'aria.language_input':       'Idioma {index}',

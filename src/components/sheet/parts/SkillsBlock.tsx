@@ -164,25 +164,34 @@ export function SkillsBlock({ character, onUpdate }: SkillsBlockProps) {
             </span>
             <button
               type="button"
-              data-testid={`skill-${s.name}-bonus`}
               onClick={() => rollCheck(label, bonus)}
-              title={t('dice.roll')}
+              aria-label={t('aria.roll', { label })}
+              className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded"
               style={{
-                fontFamily: "'Cinzel', Georgia, serif",
-                fontWeight: 600,
-                color: valueColor,
-                fontSize: 14,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 28,
-                textAlign: 'right',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
                 background: 'none',
                 border: 'none',
-                padding: '4px 2px',
-                margin: '-4px -2px',
+                padding: '4px 4px',
+                margin: '-4px -4px',
                 cursor: 'pointer',
               }}
             >
-              {formatSigned(bonus)}
+              <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.55 }}>⚅</span>
+              <span
+                data-testid={`skill-${s.name}-bonus`}
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontWeight: 600,
+                  color: valueColor,
+                  fontSize: 14,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 28,
+                }}
+              >
+                {formatSigned(bonus)}
+              </span>
             </button>
           </div>
         )

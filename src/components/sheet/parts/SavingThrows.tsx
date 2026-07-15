@@ -84,25 +84,34 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
             </span>
             <button
               type="button"
-              data-testid={`save-${k}-bonus`}
               onClick={() => rollCheck(t(`saves.ability.${k}`), bonus)}
-              title={t('dice.roll')}
+              aria-label={t('aria.roll', { label: t(`saves.ability.${k}`) })}
+              className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded"
               style={{
-                fontFamily: "'Cinzel', Georgia, serif",
-                fontWeight: 600,
-                color: proficient ? '#D4A017' : '#F4EFE0',
-                fontSize: 14,
-                fontVariantNumeric: 'tabular-nums',
-                minWidth: 24,
-                textAlign: 'right',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
                 background: 'none',
                 border: 'none',
-                padding: '4px 2px',
-                margin: '-4px -2px',
+                padding: '4px 4px',
+                margin: '-4px -4px',
                 cursor: 'pointer',
               }}
             >
-              {formatSigned(bonus)}
+              <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.55 }}>⚅</span>
+              <span
+                data-testid={`save-${k}-bonus`}
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontWeight: 600,
+                  color: proficient ? '#D4A017' : '#F4EFE0',
+                  fontSize: 14,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 24,
+                }}
+              >
+                {formatSigned(bonus)}
+              </span>
             </button>
           </div>
         )

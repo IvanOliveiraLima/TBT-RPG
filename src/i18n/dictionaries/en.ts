@@ -473,6 +473,7 @@ const en = {
   'aria.deathsave_success_toggle':   'Toggle death save success {n}',
   'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
   'aria.hitdice_class_input':        'Hit dice remaining for {className}',
+  'aria.roll':                       'Roll {label}',
 
   // Languages & Proficiencies
   'aria.language_input':       'Language {index}',
