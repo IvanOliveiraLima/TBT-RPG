@@ -871,9 +871,11 @@ const en = {
   'dice.label_death_save': 'Death save',
 
   // ── Campaign dice log ─────────────────────────────────────────────────────────
-  'dice_log.title': 'Roll log',
-  'dice_log.empty': 'No rolls yet',
-  'dice_log.clear': 'Clear log',
+  'dice_log.title':        'Roll log',
+  'dice_log.empty':        'No rolls yet',
+  'dice_log.clear':        'Clear log',
+  'dice_log.master':       'GM',
+  'dice_log.rolls_toggle': 'Rolls',
 
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Open broadcast screen',
