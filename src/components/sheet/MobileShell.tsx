@@ -59,7 +59,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
       <MobileHeader character={character} onMenu={() => setDrawerOpen(true)} />
 
       <div style={{
-        flex: 1, padding: '14px 12px',
+        flex: 1, padding: '14px 12px 120px',
         overflowY: 'auto',
       }}>
         {children}

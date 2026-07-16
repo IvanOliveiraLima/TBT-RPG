@@ -123,61 +123,6 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
         {/* Free space — clicking here collapses the card */}
         <span data-testid={`attack-header-gap-${attack.id}`} style={{ flex: 1 }} />
 
-        <button
-          type="button"
-          data-testid={`attack-bonus-chip-${attack.id}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            rollCheck(
-              `${t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
-              attack.attackBonus,
-              attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
-            )
-          }}
-          title={t('dice.label_attack')}
-          style={{
-            flexShrink: 0,
-            fontSize: 13,
-            fontWeight: 600,
-            color: T.accent,
-            fontFamily: T.sans,
-            background: 'none',
-            border: 'none',
-            padding: '2px 4px',
-            margin: '-2px -4px',
-            cursor: 'pointer',
-          }}
-        >
-          {formatAttackBonus(attack.attackBonus)}
-        </button>
-
-        {attack.damage && (
-          <button
-            type="button"
-            data-testid={`attack-damage-btn-${attack.id}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              rollDamage(
-                `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
-                attack.damage,
-              )
-            }}
-            title={t('dice.label_damage')}
-            style={{
-              flexShrink: 0,
-              fontSize: 14,
-              color: '#7A7788',
-              background: 'none',
-              border: 'none',
-              padding: '2px 2px',
-              cursor: 'pointer',
-              lineHeight: 1,
-            }}
-          >
-            ⚅
-          </button>
-        )}
-
         {!locked && (
           <ConfirmableRemoveButton
             onConfirm={onRemove}
@@ -200,6 +145,70 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
           }}
         >
           {summary}
+        </div>
+      )}
+
+      {/* ── Action row — large tap targets, left-aligned (clear of FAB) ─── */}
+      {!expanded && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            type="button"
+            data-testid={`attack-bonus-chip-${attack.id}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              rollCheck(
+                `${t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
+                attack.attackBonus,
+                attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
+              )
+            }}
+            aria-label={t('dice.label_attack')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(232,197,105,0.12)',
+              border: '1px solid rgba(232,197,105,0.3)',
+              color: T.accent,
+              fontSize: 13, fontWeight: 600,
+              fontFamily: T.sans,
+              cursor: 'pointer',
+              minHeight: 36,
+              lineHeight: 1,
+            }}
+          >
+            ⚔ {t('dice.label_attack')} {formatAttackBonus(attack.attackBonus)}
+          </button>
+
+          {attack.damage && (
+            <button
+              type="button"
+              data-testid={`attack-damage-btn-${attack.id}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                rollDamage(
+                  `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
+                  attack.damage,
+                )
+              }}
+              aria-label={t('dice.label_damage')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.06)',
+                border: `1px solid ${T.borderSubtle}`,
+                color: T.textPrimary,
+                fontSize: 13, fontWeight: 600,
+                fontFamily: T.sans,
+                cursor: 'pointer',
+                minHeight: 36,
+                lineHeight: 1,
+              }}
+            >
+              🎲 {t('dice.label_damage')} {attack.damage}
+            </button>
+          )}
         </div>
       )}
 
