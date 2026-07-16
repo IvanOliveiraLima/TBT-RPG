@@ -851,6 +851,31 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   grid) e **remover área individual** pela lista do painel (`deleteMapArea` + filtro), além do "Limpar tudo".
   Linha/cone aparecem na tela de transmissão automaticamente (areas já no snapshot).
 
+### Dice — engine + manual tray + local history (COMPLETED — PR #202)
+- Motor `src/domain/dice.ts`: parser `NdM±K`, RNG justo por `crypto.getRandomValues` + rejection sampling
+  (`rng` injetável p/ teste); vantagem/desvantagem só em d20 (2d20 keep high/low, descartado com `kept:false`);
+  crit 20/1; `RollResult` **serializável**. Store `useDiceStore` (histórico cap 20; `lastResult` como **fonte
+  única** do card — evita card congelado em rolagem contextual). Bandeja manual (d4…d100 + quantidade/modificador
+  via `NumberField` com steppers, amigável no mobile) + FAB; painel limitado à viewport (flex + `minHeight:0`,
+  só o histórico rola).
+
+### Dice — contextual sheet rolls (COMPLETED — PR #203)
+- Tocar em perícia / resistência / atributo / iniciativa / ataque / dano / teste-de-morte / dado-de-vida rola
+  via o motor (helper de ficha), com affordance de dado (ícone + hover + aria) por superfície. Seletor visível
+  Normal/Vantagem/Desvantagem (`rollMode`, **fonte única** no store, só afeta d20). Ataque com nat 20 → botão
+  "dano crítico" (`doubleDiceCount`, dobra só os dados). **Não muta a ficha** (não gasta dado de vida nem marca
+  teste de morte — isso segue nos controles manuais).
+
+### Dice — shared campaign roll log (COMPLETED — PRs #204–#206)
+- Log compartilhado por campanha: tabela `campaign_dice_rolls` (`result` jsonb) + RLS `is_campaign_member`
+  (insert com `user_id = auth.uid()`) + **retenção por trigger** (TTL 12h + teto 50/campanha) — sem cron/cliente.
+  Rolagem na ficha de personagem vinculado insere **uma linha por campanha vinculada** (`addRoll`
+  fire-and-forget; sem vínculo → só local). Painel `CampaignRollLog` (polling 5s; dono limpa) no CampaignDetail
+  **e** no viewer (ausente no `broadcast`). Mestre rola da página ou do viewer como "Mestre" — o
+  **CampaignDetail é o dono do contexto** de dados (o viewer só **usa**, nunca seta, pra não limpá-lo ao fechar).
+  Layout do CampaignDetail responsivo (grid 2-col no desktop via `auto-fit minmax(min(100%,460px),1fr)`,
+  empilhado no mobile).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1563,6 +1588,9 @@ function buildInviteLink(): string {
 | **Tático — coordenada da AoE + drag por modo:** área guarda o **centro em viewBox** (`x=lng`, `y=height-lat`) e **raio = distância** (invariante ao flip); render SVG em viewBox com `pointer-events:none`. Token fica **não-arrastável** em `areaMode`/`fogMode` (senão o `<Marker>` captura o `pointerdown`). | PR #189 | Formas derivadas de clique: centro flipado + raio=distância; em modo de desenho, desabilitar drag de Marker pra o gesto borbular ao container |
 | **Tático — tela de transmissão:** espelho na **perspectiva de jogador** via `BroadcastChannel('tbt-map-'+mapId)` (mesma máquina). Emissor (dono) posta **estado completo** (tokens/fog/areas/grid) no mount + a cada mudança + em resposta ao `hello`; receptor aplica e pede `hello` no mount. **Sem** estado ao vivo do Supabase na transmissão (só a signed URL da imagem); sem polling/Realtime. | PR #192 | Segunda-tela = espelho estado-completo por-mapa, perspectiva de jogador, sem estado ao vivo do Supabase |
 | **Tático — AoE de dois pontos (linha/cone):** formas com direção guardam um **2º ponto** `x2`/`y2` (nulos p/ círculo/quadrado), com **flip de Y nos dois**; render `<line>`/`<polygon>` em viewBox (cone 5e: meia-largura `L/2`, largura na ponta = comprimento). `radius` permanece pra círculo/quadrado (retrocompatível). | PR #197 | Formas com direção = dois pontos flipados + geometria em viewBox; manter os campos das formas antigas (não migrar) |
+| **Dados — rolagem não muta a ficha:** as rolagens (motor + contextuais) só rolam e mostram; nunca gastam dado de vida, marcam teste de morte ou alteram estado do personagem. `RollResult` é **serializável** e reusado no motor, no contexto e no log. | PRs #202–#203 | Rolagem é read-only sobre a ficha; RollResult serializável reusado em todas as fatias |
+| **Dados — log compartilhado:** por campanha (`campaign_dice_rolls`, RLS `is_campaign_member`, insert com `user_id=auth.uid()`); **retenção por trigger** no banco (TTL 12h + teto 50), não por cliente/cron; transporte por **polling 5s** (Realtime deferido); a rolagem registra em **todas** as campanhas vinculadas do personagem. | PRs #204–#205 | Log por campanha via tabela+polling; retenção no banco (trigger); registra em todos os vínculos |
+| **Dados — dono do contexto:** o **CampaignDetail** seta/limpa o contexto de dados da campanha (ator "Mestre"); o viewer (modal filho) só **usa** o contexto, nunca seta — senão o limparia ao fechar. | PR #206 | Contexto de dados pertence à página persistente, não ao modal filho |
 
 ---
 
@@ -1729,6 +1757,7 @@ New from Auth signup + Camp.1-5:
 - **OQ — Iniciativa / turnos.** Lista ordenada de combatentes com valor de iniciativa e destaque do turno atual (próximo/anterior); painel, compartilhado com os jogadores. Bloco maior, não mexe em coordenada. Deferred.
 - **OQ — Régua / medir distância.** Medir distância em células/pés entre dois pontos; pode ser efêmera e só do mestre (sem tabela/sync). Extra barato. Deferred.
 - **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
+- **OQ — Rolagem secreta do mestre.** Hoje toda rolagem em campanha é pública pra mesa; permitir que o mestre role escondido (só ele vê). Deferred.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
