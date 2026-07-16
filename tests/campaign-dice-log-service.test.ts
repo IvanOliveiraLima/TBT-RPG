@@ -20,10 +20,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Mock @/lib/supabase ───────────────────────────────────────────────────────
 
 let mockSupabaseConfigured = false
+let mockSessionUserId: string | null = 'user1'
 const mockFrom = vi.fn()
 
 vi.mock('@/lib/supabase', () => ({
   get supabase() { return mockSupabaseConfigured ? mockClient : null },
+  getSession: () => Promise.resolve(
+    mockSessionUserId ? { user: { id: mockSessionUserId } } : null
+  ),
 }))
 
 const mockClient = {
@@ -106,7 +110,7 @@ describe('listCampaignIdsForCharacter', () => {
 // ── logRoll ───────────────────────────────────────────────────────────────────
 
 describe('logRoll', () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => { vi.clearAllMocks(); mockSessionUserId = 'user1' })
 
   it('skips when supabase is null', async () => {
     resetSupabase()
@@ -120,7 +124,14 @@ describe('logRoll', () => {
     expect(mockFrom).not.toHaveBeenCalled()
   })
 
-  it('inserts one row per campaignId (single)', async () => {
+  it('skips when no session (not logged in)', async () => {
+    setupSupabase()
+    mockSessionUserId = null
+    await expect(logRoll(['c1'], 'Aragorn', makeResult())).resolves.toBeUndefined()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('inserts one row per campaignId (single) including user_id', async () => {
     setupSupabase()
     const mockInsert = vi.fn().mockResolvedValue({ error: null })
     mockFrom.mockReturnValue({ insert: mockInsert })
@@ -131,10 +142,11 @@ describe('logRoll', () => {
     const rows = mockInsert.mock.calls[0]![0] as unknown[]
     expect(rows).toHaveLength(1)
     expect((rows[0] as Record<string, unknown>)['campaign_id']).toBe('c1')
+    expect((rows[0] as Record<string, unknown>)['user_id']).toBe('user1')
     expect((rows[0] as Record<string, unknown>)['actor_name']).toBe('Aragorn')
   })
 
-  it('inserts N rows for N campaigns', async () => {
+  it('inserts N rows for N campaigns, each with user_id', async () => {
     setupSupabase()
     const mockInsert = vi.fn().mockResolvedValue({ error: null })
     mockFrom.mockReturnValue({ insert: mockInsert })
@@ -144,8 +156,11 @@ describe('logRoll', () => {
     const rows = mockInsert.mock.calls[0]![0] as unknown[]
     expect(rows).toHaveLength(3)
     expect((rows[0] as Record<string, unknown>)['campaign_id']).toBe('c1')
+    expect((rows[0] as Record<string, unknown>)['user_id']).toBe('user1')
     expect((rows[1] as Record<string, unknown>)['campaign_id']).toBe('c2')
+    expect((rows[1] as Record<string, unknown>)['user_id']).toBe('user1')
     expect((rows[2] as Record<string, unknown>)['campaign_id']).toBe('c3')
+    expect((rows[2] as Record<string, unknown>)['user_id']).toBe('user1')
   })
 
   it('does not throw on DB error (best-effort)', async () => {

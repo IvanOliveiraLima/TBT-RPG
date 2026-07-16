@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, getSession } from '@/lib/supabase'
 import type { RollResult } from '@/domain/dice'
 
 export interface CampaignDiceRoll {
@@ -23,8 +23,13 @@ export async function logRoll(
 ): Promise<void> {
   if (!supabase || campaignIds.length === 0) return
 
+  const session = await getSession()
+  const userId = session?.user?.id
+  if (!userId) return   // RLS requires auth.uid(); skip silently if not logged in
+
   const rows = campaignIds.map(campaign_id => ({
     campaign_id,
+    user_id: userId,
     actor_name: actorName,
     result: result as unknown as Record<string, unknown>,
   }))
