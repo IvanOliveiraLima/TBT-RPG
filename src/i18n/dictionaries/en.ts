@@ -473,6 +473,7 @@ const en = {
   'aria.deathsave_success_toggle':   'Toggle death save success {n}',
   'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
   'aria.hitdice_class_input':        'Hit dice remaining for {className}',
+  'aria.roll':                       'Roll {label}',
 
   // Languages & Proficiencies
   'aria.language_input':       'Language {index}',
@@ -849,6 +850,32 @@ const en = {
   'areas.remove_one':  'Remove',
   'areas.draw_hint':   'Drag on the map to draw',
   'areas.done':        'Done',
+
+  // ── Dice ──────────────────────────────────────────────────────────────────────
+  'dice.title':            'Dice Tray',
+  'dice.roll':             'Roll',
+  'dice.quantity':         'Quantity',
+  'dice.modifier':         'Modifier',
+  'dice.normal':           'Normal',
+  'dice.advantage':        'Advantage',
+  'dice.disadvantage':     'Disadvantage',
+  'dice.clear':            'Clear',
+  'dice.history':          'History',
+  'dice.empty':            'No rolls yet',
+  'dice.crit_hit':         'Critical!',
+  'dice.crit_miss':        'Fumble',
+  'dice.crit_damage':      'Roll critical damage',
+  'dice.mode':             'Roll mode',
+  'dice.label_attack':     'Attack',
+  'dice.label_damage':     'Damage',
+  'dice.label_death_save': 'Death save',
+
+  // ── Campaign dice log ─────────────────────────────────────────────────────────
+  'dice_log.title':        'Roll log',
+  'dice_log.empty':        'No rolls yet',
+  'dice_log.clear':        'Clear log',
+  'dice_log.master':       'GM',
+  'dice_log.rolls_toggle': 'Rolls',
 
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Open broadcast screen',

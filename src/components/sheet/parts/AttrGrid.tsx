@@ -4,6 +4,7 @@ import { abilityModifier, formatSigned } from '@/domain/calculations'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { useSheetRoll } from '@/hooks/useSheetRoll'
 
 interface AttrGridProps {
   character: Character
@@ -46,6 +47,7 @@ interface AttrCellProps {
 function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }: AttrCellProps) {
   const { t } = useTranslation()
   const mod = abilityModifier(score)
+  const { rollCheck } = useSheetRoll()
 
   return (
     <div
@@ -88,20 +90,39 @@ function AttrCell({ k, score, abilities, proficient, compact, locked, onUpdate }
       >
         {t(`ability.${k}`)}
       </div>
-      <div
-        data-testid={`attr-${k}-mod`}
+      <button
+        type="button"
+        onClick={() => rollCheck(t(`ability.${k}`), mod)}
+        aria-label={t('aria.roll', { label: t(`ability.${k}`) })}
+        className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors rounded-lg"
         style={{
-          fontFamily: "'Cinzel', Georgia, serif",
-          fontSize: compact ? 28 : 32,
-          fontWeight: 600,
-          color: '#F4EFE0',
-          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 3,
+          width: '100%',
           marginTop: 4,
-          textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          background: 'none',
+          border: 'none',
+          padding: '4px 2px',
+          cursor: 'pointer',
         }}
       >
-        {formatSigned(mod)}
-      </div>
+        <span
+          data-testid={`attr-${k}-mod`}
+          style={{
+            fontFamily: "'Cinzel', Georgia, serif",
+            fontSize: compact ? 28 : 32,
+            fontWeight: 600,
+            color: '#F4EFE0',
+            lineHeight: 1,
+            textShadow: '0 2px 8px rgba(0,0,0,0.6)',
+          }}
+        >
+          {formatSigned(mod)}
+        </span>
+        <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.5, lineHeight: 1 }}>⚅</span>
+      </button>
       <div
         style={{
           marginTop: 6,

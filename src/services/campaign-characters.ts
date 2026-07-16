@@ -89,6 +89,28 @@ export async function listCampaignCharacters(campaignId: string): Promise<Campai
   return (data ?? []).map(mapRow)
 }
 
+// ── Campaign IDs for character ────────────────────────────────────────────────
+
+/**
+ * Returns all campaign IDs that the current user's character is linked to.
+ * Used by useDiceStore to know which campaigns to log rolls into.
+ */
+export async function listCampaignIdsForCharacter(characterId: string): Promise<string[]> {
+  if (!supabase) return []
+
+  const { data, error } = await supabase
+    .from('campaign_characters')
+    .select('campaign_id')
+    .eq('character_id', characterId)
+
+  if (error) {
+    console.error('[campaign-chars] listCampaignIdsForCharacter error', error)
+    return []
+  }
+
+  return (data ?? []).map((row: { campaign_id: string }) => row.campaign_id)
+}
+
 // ── Cascade delete ────────────────────────────────────────────────────────────
 
 /**

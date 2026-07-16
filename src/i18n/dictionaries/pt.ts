@@ -475,6 +475,7 @@ const pt: Record<keyof typeof en, string> = {
   'aria.deathsave_success_toggle':   'Alternar sucesso {n} de teste de morte',
   'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
   'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
+  'aria.roll':                       'Rolar {label}',
 
   // Aria — languages
   'aria.language_input':       'Idioma {index}',
@@ -853,6 +854,32 @@ const pt: Record<keyof typeof en, string> = {
   'areas.remove_one':  'Remover',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
   'areas.done':        'Concluir',
+
+  // ── Dice ──────────────────────────────────────────────────────────────────────
+  'dice.title':            'Bandeja de Dados',
+  'dice.roll':             'Rolar',
+  'dice.quantity':         'Quantidade',
+  'dice.modifier':         'Modificador',
+  'dice.normal':           'Normal',
+  'dice.advantage':        'Vantagem',
+  'dice.disadvantage':     'Desvantagem',
+  'dice.clear':            'Limpar',
+  'dice.history':          'Histórico',
+  'dice.empty':            'Nenhuma rolagem ainda',
+  'dice.crit_hit':         'Crítico!',
+  'dice.crit_miss':        'Falha crítica',
+  'dice.crit_damage':      'Rolar dano crítico',
+  'dice.mode':             'Modo',
+  'dice.label_attack':     'Ataque',
+  'dice.label_damage':     'Dano',
+  'dice.label_death_save': 'Teste de Morte',
+
+  // ── Campaign dice log ─────────────────────────────────────────────────────────
+  'dice_log.title':        'Log de rolagens',
+  'dice_log.empty':        'Nenhuma rolagem ainda',
+  'dice_log.clear':        'Limpar log',
+  'dice_log.master':       'Mestre',
+  'dice_log.rolls_toggle': 'Rolagens',
 
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Abrir tela de transmissão',

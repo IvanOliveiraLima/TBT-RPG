@@ -54,6 +54,8 @@ import {
   clearMapAreas,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
+import { DicePanel } from '@/components/dice/DicePanel'
+import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
 
 const T = {
   bg:          '#15121C',
@@ -584,6 +586,10 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
   const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid })
   useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid } }, [tokens, fog, areas, localGrid])
+  // Dice tray (owner only, not broadcast)
+  const [diceOpen, setDiceOpen] = useState(false)
+  // Roll log panel (all members, not broadcast)
+  const [rollLogOpen, setRollLogOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -1124,6 +1130,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   }
 
   return (
+    <>
     <div
       data-testid="campaign-map-viewer"
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
@@ -1699,6 +1706,39 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         </div>
       )}
 
+      {/* Roll log toggle — all members, not in broadcast */}
+      {!broadcast && (
+        <button
+          type="button"
+          data-testid="roll-log-toggle"
+          onClick={() => setRollLogOpen(v => !v)}
+          style={{
+            position: 'absolute', top: 8, left: 56, zIndex: 999,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+            background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+            color: rollLogOpen ? T.textPrimary : T.textMuted,
+            border: `1px solid ${rollLogOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+          }}
+        >
+          ⚄ {t('dice_log.rolls_toggle')}
+        </button>
+      )}
+
+      {/* Roll log panel (collapsible) */}
+      {!broadcast && rollLogOpen && (
+        <div
+          data-testid="viewer-roll-log-panel"
+          style={{
+            position: 'absolute', top: 48, left: 56, zIndex: 998,
+            width: 300, maxHeight: '70%', overflowY: 'auto',
+          }}
+        >
+          <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+        </div>
+      )}
+
       <MapContainer
         key={map.id}
         crs={L.CRS.Simple}
@@ -2125,6 +2165,38 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           )
         })}
       </MapContainer>
+
+      {/* GM dice panel — absolute inside the relative viewer wrapper (avoids backdrop-filter clipping) */}
+      {isOwner && !broadcast && diceOpen && (
+        <div style={{ position: 'absolute', top: 12, bottom: 80, right: 24, zIndex: 1001, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <DicePanel onClose={() => setDiceOpen(false)} />
+        </div>
+      )}
+
+      {/* GM dice FAB — owner only, not in broadcast */}
+      {isOwner && !broadcast && (
+        <button
+          type="button"
+          data-testid="viewer-dice-fab"
+          onClick={() => setDiceOpen(v => !v)}
+          title={t('dice.title')}
+          style={{
+            position: 'absolute', bottom: 24, right: 24, zIndex: 1000,
+            width: 48, height: 48,
+            borderRadius: '50%',
+            background: '#5B3FA8',
+            border: '2px solid #7B5FC8',
+            color: '#fff',
+            fontSize: 22, lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ⚄
+        </button>
+      )}
     </div>
+    </>
   )
 }

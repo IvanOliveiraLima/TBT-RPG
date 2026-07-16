@@ -50,6 +50,7 @@ PWA instalável.
 - **Biblioteca de tokens prontos** — o mestre monta tokens reutilizáveis (nome, cor, tamanho, imagem) e os posiciona no mapa rapidamente durante o jogo
 - **Condições e áreas no mapa** — o mestre marca condições de status nos tokens e desenha áreas (círculo, quadrado, linha, cone) pra mostrar efeitos (ex.: bola de fogo), com o tamanho em pés durante o desenho; os jogadores veem
 - **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
+- **Dados** — motor de rolagem com vantagem/desvantagem e crítico; tocar em perícias/testes/ataques rola com o bônus certo; em campanha, as rolagens aparecem num log compartilhado que a mesa vê (o mestre rola como "Mestre")
 
 **Sincronização (opcional):**
 
