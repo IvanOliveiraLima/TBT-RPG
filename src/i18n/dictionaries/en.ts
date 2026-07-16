@@ -870,6 +870,11 @@ const en = {
   'dice.label_damage':     'Damage',
   'dice.label_death_save': 'Death save',
 
+  // ── Campaign dice log ─────────────────────────────────────────────────────────
+  'dice_log.title': 'Roll log',
+  'dice_log.empty': 'No rolls yet',
+  'dice_log.clear': 'Clear log',
+
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Open broadcast screen',
   'broadcast.waiting':     'Waiting for the main screen…',

@@ -874,6 +874,11 @@ const pt: Record<keyof typeof en, string> = {
   'dice.label_damage':     'Dano',
   'dice.label_death_save': 'Teste de Morte',
 
+  // ── Campaign dice log ─────────────────────────────────────────────────────────
+  'dice_log.title': 'Log de rolagens',
+  'dice_log.empty': 'Nenhuma rolagem ainda',
+  'dice_log.clear': 'Limpar log',
+
   // ── Broadcast screen ──────────────────────────────────────────────────────────
   'broadcast.open':        'Abrir tela de transmissão',
   'broadcast.waiting':     'Aguardando a tela principal…',
