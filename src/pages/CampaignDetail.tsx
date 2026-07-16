@@ -17,6 +17,7 @@ import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModa
 import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import { TokenPresetsSection } from '@/components/campaigns/TokenPresetsSection'
+import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
 import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
@@ -360,6 +361,11 @@ export default function CampaignDetail() {
         {/* Token presets section — owner only */}
         {id && isOwner && (
           <TokenPresetsSection campaignId={id} isOwner={isOwner} />
+        )}
+
+        {/* Dice roll log — visible to all members */}
+        {id && (
+          <CampaignRollLog campaignId={id} isOwner={isOwner} />
         )}
       </div>
 
