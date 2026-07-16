@@ -55,7 +55,6 @@ import {
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
 import { DicePanel } from '@/components/dice/DicePanel'
-import { useDiceStore } from '@/store/useDiceStore'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
 
 const T = {
@@ -591,8 +590,6 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [diceOpen, setDiceOpen] = useState(false)
   // Roll log panel (all members, not broadcast)
   const [rollLogOpen, setRollLogOpen] = useState(false)
-  const setCampaignContext  = useDiceStore(s => s.setCampaignContext)
-  const clearCampaignContext = useDiceStore(s => s.clearCampaignContext)
 
   useEffect(() => {
     let cancelled = false
@@ -754,13 +751,6 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     ch.postMessage({ type: 'hello' })
     return () => { ch.close() }
   }, [broadcast, map.id])
-
-  // Set campaign context so GM rolls in the viewer are logged as "Mestre" (owner only, not broadcast)
-  useEffect(() => {
-    if (!isOwner || broadcast) return
-    setCampaignContext({ campaignTargets: [map.campaignId], actorName: t('dice_log.master') })
-    return () => { clearCampaignContext() }
-  }, [isOwner, broadcast, map.campaignId, setCampaignContext, clearCampaignContext, t])
 
   // Fetch preset palette + resolve signed URLs for preset images (owner only)
   useEffect(() => {
