@@ -1723,7 +1723,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           data-testid="roll-log-toggle"
           onClick={() => setRollLogOpen(v => !v)}
           style={{
-            position: 'absolute', top: 8, left: 8, zIndex: 999,
+            position: 'absolute', top: 8, left: 56, zIndex: 999,
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
             background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
@@ -1741,7 +1741,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         <div
           data-testid="viewer-roll-log-panel"
           style={{
-            position: 'absolute', top: 48, left: 8, zIndex: 998,
+            position: 'absolute', top: 48, left: 56, zIndex: 998,
             width: 300, maxHeight: '70%', overflowY: 'auto',
           }}
         >
@@ -2175,38 +2175,38 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           )
         })}
       </MapContainer>
+
+      {/* GM dice panel — absolute inside the relative viewer wrapper (avoids backdrop-filter clipping) */}
+      {isOwner && !broadcast && diceOpen && (
+        <div style={{ position: 'absolute', top: 12, bottom: 80, right: 24, zIndex: 1001, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <DicePanel onClose={() => setDiceOpen(false)} />
+        </div>
+      )}
+
+      {/* GM dice FAB — owner only, not in broadcast */}
+      {isOwner && !broadcast && (
+        <button
+          type="button"
+          data-testid="viewer-dice-fab"
+          onClick={() => setDiceOpen(v => !v)}
+          title={t('dice.title')}
+          style={{
+            position: 'absolute', bottom: 24, right: 24, zIndex: 1000,
+            width: 48, height: 48,
+            borderRadius: '50%',
+            background: '#5B3FA8',
+            border: '2px solid #7B5FC8',
+            color: '#fff',
+            fontSize: 22, lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ⚄
+        </button>
+      )}
     </div>
-
-    {/* GM dice panel — fixed above the modal overlay (zIndex > 1000) */}
-    {isOwner && !broadcast && diceOpen && (
-      <div style={{ position: 'fixed', top: 12, bottom: 128, right: 24, zIndex: 1010, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <DicePanel onClose={() => setDiceOpen(false)} />
-      </div>
-    )}
-
-    {/* GM dice FAB — owner only, not in broadcast */}
-    {isOwner && !broadcast && (
-      <button
-        type="button"
-        data-testid="viewer-dice-fab"
-        onClick={() => setDiceOpen(v => !v)}
-        title={t('dice.title')}
-        style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 1010,
-          width: 48, height: 48,
-          borderRadius: '50%',
-          background: '#5B3FA8',
-          border: '2px solid #7B5FC8',
-          color: '#fff',
-          fontSize: 22, lineHeight: 1,
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        ⚄
-      </button>
-    )}
     </>
   )
 }
