@@ -90,22 +90,27 @@ describe('AttacksList — compact mode', () => {
     expect(screen.getByText('Fire Bolt')).toBeDefined()
   })
 
-  it('shows formatted attack bonus chip', () => {
+  it('shows formatted attack bonus in attack button', () => {
     renderWithI18n(<AttacksList character={BASE} />, 'en')
-    expect(screen.getByTestId('attack-bonus-chip-atk_0').textContent).toBe('+5')
-    expect(screen.getByTestId('attack-bonus-chip-atk_1').textContent).toBe('+6')
+    expect(screen.getByTestId('attack-bonus-chip-atk_0').textContent).toContain('+5')
+    expect(screen.getByTestId('attack-bonus-chip-atk_1').textContent).toContain('+6')
   })
 
-  it('formats zero bonus as +0', () => {
+  it('attack button includes label text (EN)', () => {
+    renderWithI18n(<AttacksList character={BASE} />, 'en')
+    expect(screen.getByTestId('attack-bonus-chip-atk_0').textContent).toContain('Attack')
+  })
+
+  it('formats zero bonus as +0 in attack button', () => {
     const char = { ...BASE, attacks: [makeAttack({ id: 'x', name: 'Punch', attackBonus: 0 })] }
     renderWithI18n(<AttacksList character={char} />, 'en')
-    expect(screen.getByTestId('attack-bonus-chip-x').textContent).toBe('+0')
+    expect(screen.getByTestId('attack-bonus-chip-x').textContent).toContain('+0')
   })
 
-  it('formats negative bonus correctly', () => {
+  it('formats negative bonus correctly in attack button', () => {
     const char = { ...BASE, attacks: [makeAttack({ id: 'x', name: 'Throw', attackBonus: -2 })] }
     renderWithI18n(<AttacksList character={char} />, 'en')
-    expect(screen.getByTestId('attack-bonus-chip-x').textContent).toBe('-2')
+    expect(screen.getByTestId('attack-bonus-chip-x').textContent).toContain('-2')
   })
 
   it('shows summary line with ability + damage + range in EN', () => {
