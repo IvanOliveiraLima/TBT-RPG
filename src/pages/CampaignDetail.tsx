@@ -18,6 +18,8 @@ import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMe
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import { TokenPresetsSection } from '@/components/campaigns/TokenPresetsSection'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
+import { DicePanel } from '@/components/dice/DicePanel'
+import { useDiceStore } from '@/store/useDiceStore'
 import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
 
 const T = {
@@ -52,6 +54,9 @@ export default function CampaignDetail() {
   const [leaveModalOpen, setLeaveModalOpen] = useState(false)
   const [editNameOpen, setEditNameOpen] = useState(false)
   const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
+  const [diceOpen, setDiceOpen] = useState(false)
+  const setCampaignContext   = useDiceStore(s => s.setCampaignContext)
+  const clearCampaignContext = useDiceStore(s => s.clearCampaignContext)
 
   async function loadCampaignData(campaignId: string) {
     const m = await listCampaignMembers(campaignId)
@@ -93,6 +98,14 @@ export default function CampaignDetail() {
       setLoading(false)
     })
   }, [id, user, authLoading, navigate])
+
+  // Set campaign context so GM rolls on this page are logged as "Mestre" (owner only)
+  const isOwnerForContext = !loading && !authLoading && campaign != null && user?.id === campaign.ownerId
+  useEffect(() => {
+    if (!isOwnerForContext || !id) return
+    setCampaignContext({ campaignTargets: [id], actorName: t('dice_log.master') })
+    return () => { clearCampaignContext() }
+  }, [isOwnerForContext, id, setCampaignContext, clearCampaignContext, t])
 
   async function handleUnlink(characterId: string) {
     if (!id) return
@@ -155,7 +168,7 @@ export default function CampaignDetail() {
       fontFamily: T.sans,
       color: T.textPrimary,
     }}>
-      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
 
         {/* Back */}
         <button
@@ -175,7 +188,7 @@ export default function CampaignDetail() {
           {t('campaigns.my_campaigns')}
         </button>
 
-        {/* Campaign header */}
+        {/* Campaign header — full width */}
         <div style={{ marginBottom: 24 }}>
           <div style={{
             fontFamily: T.serif, fontSize: 24, fontWeight: 700,
@@ -189,6 +202,17 @@ export default function CampaignDetail() {
             </div>
           )}
         </div>
+
+        {/* Responsive 2-column grid on desktop, stacked on mobile */}
+        <div
+          data-testid="campaign-detail-grid"
+          style={{
+            display: 'grid',
+            gap: 16,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))',
+            alignItems: 'start',
+          }}
+        >
 
         {/* Invite code — owner only */}
         <InviteCodeBlock
@@ -207,7 +231,6 @@ export default function CampaignDetail() {
             border: `1px solid ${T.borderSubtle}`,
             borderRadius: 14,
             padding: 20,
-            marginBottom: 20,
           }}
         >
           <div style={{
@@ -288,6 +311,7 @@ export default function CampaignDetail() {
             border: `1px solid ${T.borderSubtle}`,
             borderRadius: 14,
             padding: 20,
+            alignSelf: 'start',
           }}
         >
           <div style={{
@@ -353,20 +377,26 @@ export default function CampaignDetail() {
           />
         )}
 
-        {/* Maps section */}
-        {id && (
-          <CampaignMapsSection campaignId={id} isOwner={isOwner} />
-        )}
-
         {/* Token presets section — owner only */}
         {id && isOwner && (
           <TokenPresetsSection campaignId={id} isOwner={isOwner} />
         )}
 
-        {/* Dice roll log — visible to all members */}
+        {/* Maps section — full width */}
         {id && (
-          <CampaignRollLog campaignId={id} isOwner={isOwner} />
+          <div style={{ gridColumn: '1 / -1' }}>
+            <CampaignMapsSection campaignId={id} isOwner={isOwner} />
+          </div>
         )}
+
+        {/* Dice roll log — full width, visible to all members */}
+        {id && (
+          <div style={{ gridColumn: '1 / -1' }}>
+            <CampaignRollLog campaignId={id} isOwner={isOwner} />
+          </div>
+        )}
+
+        </div>{/* end grid */}
       </div>
 
       {/* Modals — outside maxWidth container */}
@@ -407,6 +437,40 @@ export default function CampaignDetail() {
           }}
           onCancel={() => setPendingRemoveMember(null)}
         />
+      )}
+
+      {/* GM dice panel — fixed (no backdrop-filter above this level) */}
+      {isOwner && diceOpen && (
+        <div style={{
+          position: 'fixed', bottom: 80, right: 24, zIndex: 40,
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+        }}>
+          <DicePanel onClose={() => setDiceOpen(false)} />
+        </div>
+      )}
+
+      {/* GM dice FAB — owner only */}
+      {isOwner && (
+        <button
+          type="button"
+          data-testid="campaign-detail-dice-fab"
+          onClick={() => setDiceOpen(v => !v)}
+          title={t('dice.title')}
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 40,
+            width: 48, height: 48,
+            borderRadius: '50%',
+            background: '#5B3FA8',
+            border: '2px solid #7B5FC8',
+            color: '#fff',
+            fontSize: 22, lineHeight: 1,
+            cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          ⚄
+        </button>
       )}
     </div>
   )

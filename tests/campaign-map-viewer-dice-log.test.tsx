@@ -297,35 +297,30 @@ describe('CampaignMapViewer — GM dice tray', () => {
 })
 
 // ── GM campaign context tests ─────────────────────────────────────────────────
+// Context ownership moved to CampaignDetail (Dice.3b+polish). The viewer no
+// longer sets or clears campaign context — it relies on the page having already
+// set it. All cases must result in zero calls to setCampaignContext.
 
-describe('CampaignMapViewer — GM campaign context', () => {
+describe('CampaignMapViewer — GM campaign context (viewer does NOT own it)', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
-  it('sets campaign context on mount for owner (EN: actorName="GM")', async () => {
+  it('does NOT set campaign context for owner (EN)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
-    await waitFor(() => {
-      expect(mockSetCampaignContext).toHaveBeenCalledWith({
-        campaignTargets: ['camp-1'],
-        actorName: 'GM',
-      })
-    })
+    await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
+    expect(mockSetCampaignContext).not.toHaveBeenCalled()
   })
 
-  it('sets campaign context on mount for owner (PT: actorName="Mestre")', async () => {
+  it('does NOT set campaign context for owner (PT)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
-    await waitFor(() => {
-      expect(mockSetCampaignContext).toHaveBeenCalledWith({
-        campaignTargets: ['camp-1'],
-        actorName: 'Mestre',
-      })
-    })
+    await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
+    expect(mockSetCampaignContext).not.toHaveBeenCalled()
   })
 
-  it('clears campaign context on unmount', async () => {
+  it('does NOT clear campaign context on unmount', async () => {
     const { unmount } = renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
-    await waitFor(() => expect(mockSetCampaignContext).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     unmount()
-    expect(mockClearCampaignContext).toHaveBeenCalled()
+    expect(mockClearCampaignContext).not.toHaveBeenCalled()
   })
 
   it('does not set campaign context for member', async () => {
