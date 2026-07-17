@@ -13,11 +13,17 @@ export function deriveTotalLevel(character: Character): number {
 /**
  * Short class string for display, e.g. "Cleric 5" or "Cleric 5 / Fighter 3".
  * Empty classes (no name) are omitted.
+ *
+ * @param resolveLabel  Optional label resolver — receives the stored class name and
+ *   returns the display string (e.g. localized via classLabel). Defaults to identity.
  */
-export function formatClassesShort(character: Character): string {
+export function formatClassesShort(
+  character: Character,
+  resolveLabel?: (name: string) => string,
+): string {
   return character.classes
     .filter(c => c.name)
-    .map(c => `${c.name} ${c.level}`)
+    .map(c => `${resolveLabel ? resolveLabel(c.name) : c.name} ${c.level}`)
     .join(' / ')
 }
 
