@@ -900,6 +900,12 @@ const en = {
   'broadcast.open':        'Open broadcast screen',
   'broadcast.waiting':     'Waiting for the main screen…',
   'broadcast.unsupported': "This browser doesn't support the broadcast screen",
+
+  // ── PWA update prompt ─────────────────────────────────────────────────────────
+  'pwa.update_available': 'New version available',
+  'pwa.reload':           'Reload',
+  'pwa.dismiss':          'Dismiss',
+  'pwa.offline_ready':    'Ready to work offline',
 } as const;
 
 export default en;
