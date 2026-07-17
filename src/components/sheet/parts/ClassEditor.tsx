@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react'
 import type React from 'react'
 import type { Character, ClassEntry } from '@/domain/character'
 import { useTranslation } from '@/i18n'
-import { CANONICAL_CLASSES } from '@/data/canonical/classes'
 import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { getHitDie } from '@/domain/classes'
+import { ClassSelect } from './ClassSelect'
 
 const COLUMN_LABEL: React.CSSProperties = {
   fontSize: 9,
@@ -13,19 +13,6 @@ const COLUMN_LABEL: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: 1,
   color: '#7A7788',
-}
-
-const CLASS_NAME_INPUT: React.CSSProperties = {
-  background: 'transparent',
-  border: '1px solid transparent',
-  borderRadius: 6,
-  padding: '4px 6px',
-  fontFamily: 'inherit',
-  color: '#F4EFE0',
-  fontSize: 13,
-  outline: 'none',
-  flex: '1 1 0',
-  minWidth: 0,
 }
 
 // Fixed width: 2 digits (1–20) always fit; flex-shrink: 0 prevents squeezing on narrow viewports
@@ -49,7 +36,6 @@ interface ClassEditorProps {
 
 export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
   const { t } = useTranslation()
-  // Holds the index of a newly-added class so we can focus+select its name input after render
   const newlyAddedIndexRef = useRef<number | null>(null)
 
   function updateClass(index: number, partial: Partial<ClassEntry>) {
@@ -73,21 +59,13 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
   }
 
   function addClass() {
-    const existing = character.classes.map(c => c.name)
-    const baseName = t('identity.class_default_name')
-    let defaultName = baseName
-    let suffix = 2
-    while (existing.includes(defaultName)) {
-      defaultName = `${baseName} ${suffix}`
-      suffix++
-    }
-    const newClass: ClassEntry = { name: defaultName, level: 1, hitDie: 8 }
-    newlyAddedIndexRef.current = character.classes.length  // index of the new entry
+    const newClass: ClassEntry = { name: '', level: 1, hitDie: 8 }
+    newlyAddedIndexRef.current = character.classes.length
     onUpdate({
       classes: [...character.classes, newClass],
       hitDice: [
         ...character.hitDice,
-        { className: defaultName, dieSize: 8, current: 1, max: 1 },
+        { className: '', dieSize: 8, current: 1, max: 1 },
       ],
     })
   }
@@ -100,21 +78,14 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
     })
   }
 
-  // After each render, check if a new class was just added and focus+select its name input
+  // After each render, check if a new class was just added and focus the new select
   useEffect(() => {
     if (newlyAddedIndexRef.current !== null) {
       const idx = newlyAddedIndexRef.current
-      const input = document.querySelector(
+      const sel = document.querySelector(
         `[data-testid="class-name-${idx}"]`
-      ) as HTMLInputElement | null
-      if (input) {
-        input.focus()
-        if (typeof input.select === 'function') {
-          input.select()
-        } else {
-          input.setSelectionRange(0, input.value.length)
-        }
-      }
+      ) as HTMLSelectElement | null
+      sel?.focus()
       newlyAddedIndexRef.current = null
     }
   })
@@ -138,17 +109,12 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
           style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, minWidth: 0 }}
           data-testid={`class-row-${i}`}
         >
-          <input
-            type="text"
+          <ClassSelect
             value={cls.name}
-            onChange={e => updateClass(i, { name: e.target.value })}
-            list="canonical-classes"
-            placeholder={t('identity.class_name_placeholder')}
-            aria-label={t('aria.class_name_input', { index: String(i + 1) })}
-            className="hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
-            style={CLASS_NAME_INPUT}
-            data-testid={`class-name-${i}`}
-            readOnly={locked}
+            onChange={name => updateClass(i, { name })}
+            {...(locked ? { disabled: true } : {})}
+            index={i}
+            style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }}
           />
           <NumberField
             value={cls.level}
@@ -169,9 +135,6 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
           />
         </div>
       ))}
-      <datalist id="canonical-classes">
-        {[...CANONICAL_CLASSES].sort((a, b) => a.localeCompare(b)).map(c => <option key={c} value={c} />)}
-      </datalist>
       <button
         type="button"
         onClick={addClass}
