@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import { supabase, signIn as supaSignIn, signOut as supaSignOut, type User, type Session } from '@/lib/supabase'
 import { deleteAccountService } from '@/services/delete-account'
+import { clearAllLocalData } from '@/data/db'
+import { syncAll } from '@/services/sync'
+import { useCharactersStore } from './characters'
+import { useCharacterStore } from './character'
 
 export type SignUpResult =
   | { status: 'signed_in' }
@@ -20,6 +24,11 @@ interface AuthState {
   authCallbackError: string | null
   /** Transient — set true after a successful password update; cleared on banner dismiss. */
   passwordResetSuccess: boolean
+  /**
+   * Transient — set true when explicit logout couldn't flush sync (offline or error).
+   * The UI may use this to warn the user that local characters were kept on device.
+   */
+  localKept: boolean
 
   initAuth:             () => Promise<void>
   signIn:               (email: string, password: string) => Promise<void>
@@ -39,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   authCallbackType:     null,
   authCallbackError:    null,
   passwordResetSuccess: false,
+  localKept:            false,
 
   initAuth: async () => {
     if (!supabase) {
@@ -103,8 +113,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
+    // 1. Flush pending edits while session is still valid.
+    let synced = false
+    if (navigator.onLine) {
+      try {
+        await syncAll()
+        synced = true
+      } catch {
+        // syncAll threw unexpectedly — treat as failed flush
+      }
+    }
+
+    // 2. Invalidate the Supabase session.
     await supaSignOut()
-    set({ user: null, session: null })
+
+    // 3. If flush succeeded, wipe local data and reset in-memory stores.
+    if (synced) {
+      try { await clearAllLocalData() } catch { /* best-effort */ }
+      useCharactersStore.getState().reset()
+      useCharacterStore.getState().clearCharacter()
+    }
+
+    // 4. Clear auth state; surface warning if local chars were kept.
+    set({ user: null, session: null, localKept: !synced })
   },
 
   requestPasswordReset: async (email) => {

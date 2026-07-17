@@ -36,6 +36,11 @@ interface CharactersState {
    * Call before page unload or cross-version validation.
    */
   flushPendingSaves: () => Promise<void>
+  /**
+   * Clear all in-memory character state and cancel pending saves.
+   * Called on explicit logout after local IndexedDB has been wiped.
+   */
+  reset: () => void
 }
 
 export const useCharactersStore = create<CharactersState>((set, get) => ({
@@ -107,5 +112,11 @@ export const useCharactersStore = create<CharactersState>((set, get) => ({
     const { characters } = get()
     const toSave = characters.filter(c => ids.includes(c.id))
     await Promise.all(toSave.map(c => saveCharacter(c)))
+  },
+
+  reset: () => {
+    for (const timer of saveTimers.values()) clearTimeout(timer)
+    saveTimers.clear()
+    set({ characters: [], loading: false, error: null })
   },
 }))
