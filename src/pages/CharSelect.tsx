@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import type { Character } from '@/domain/character'
 import type { Campaign } from '@/domain/campaign'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { classLabel as resolveClassLabel } from '@/utils/classLabel'
 import { createEmptyCharacter } from '@/domain/factories'
 import { useTranslation, pluralKey } from '@/i18n'
 import { useCampaignsStore } from '@/store/campaigns'
@@ -124,7 +125,7 @@ function CharCard({ ch, selected, onRequestDelete }: CharCardProps) {
         <CharCardVisual
           name={ch.name}
           raceLabel={ch.race || '—'}
-          classLabel={formatClassesShort(ch) || '—'}
+          classLabel={formatClassesShort(ch, name => resolveClassLabel(name, t)) || '—'}
           totalLevel={deriveTotalLevel(ch)}
           portraitData={ch.images.character ?? null}
           hpCurrent={ch.hp.current}

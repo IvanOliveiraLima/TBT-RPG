@@ -424,6 +424,25 @@ const pt: Record<keyof typeof en, string> = {
   'identity.class_name_placeholder':  'Nome da classe',
   'identity.add_class_button':        '+ Adicionar classe',
   'identity.class_default_name':      'Nova classe',
+  'identity.class_name_unselected':   'Selecione uma classe…',
+  'identity.class_custom_label':      'Customizado: {value}',
+
+  // Nomes de classe (chaves canônicas → rótulos localizados)
+  'class.barbarian':    'Bárbaro',
+  'class.bard':         'Bardo',
+  'class.cleric':       'Clérigo',
+  'class.druid':        'Druida',
+  'class.fighter':      'Guerreiro',
+  'class.monk':         'Monge',
+  'class.paladin':      'Paladino',
+  'class.ranger':       'Patrulheiro',
+  'class.rogue':        'Ladino',
+  'class.sorcerer':     'Feiticeiro',
+  'class.warlock':      'Bruxo',
+  'class.wizard':       'Mago',
+  'class.artificer':    'Artífice',
+  'class.blood_hunter': 'Caçador de Sangue',
+  'class.gunslinger':   'Pistoleiro',
   'identity.inspiration_label':       'Inspiração',
 
   // Aria labels (accessibility)

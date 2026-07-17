@@ -52,3 +52,65 @@ export const CLASS_HIT_DIE: Record<string, number> = Object.fromEntries(
 export function getHitDie(className: string): number {
   return CLASS_HIT_DIE[normalizeClassName(className)] ?? 8
 }
+
+import type { CanonicalClass } from '@/data/canonical/classes'
+import { CANONICAL_CLASSES } from '@/data/canonical/classes'
+
+/**
+ * Synonym map: normalized EN + PT-BR names → canonical class key.
+ * Keys are pre-normalized (lowercase, accent-free).
+ */
+const CANONICAL_SYNONYM_SOURCE: Record<string, CanonicalClass> = {
+  // Barbarian
+  barbarian: 'Barbarian',   barbaro: 'Barbarian',
+  // Bard
+  bard: 'Bard',             bardo: 'Bard',
+  // Cleric
+  cleric: 'Cleric',         clerigo: 'Cleric',
+  // Druid
+  druid: 'Druid',           druida: 'Druid',
+  // Fighter
+  fighter: 'Fighter',       guerreiro: 'Fighter',
+  // Monk
+  monk: 'Monk',             monge: 'Monk',
+  // Paladin
+  paladin: 'Paladin',       paladino: 'Paladin',
+  // Ranger
+  ranger: 'Ranger',         patrulheiro: 'Ranger',
+  // Rogue
+  rogue: 'Rogue',           ladino: 'Rogue',
+  // Sorcerer
+  sorcerer: 'Sorcerer',     feiticeiro: 'Sorcerer',
+  // Warlock
+  warlock: 'Warlock',       bruxo: 'Warlock',
+  // Wizard
+  wizard: 'Wizard',         mago: 'Wizard',
+  // Artificer
+  artificer: 'Artificer',   artifice: 'Artificer',
+  // Blood Hunter
+  'blood hunter': 'Blood Hunter',
+  // Gunslinger
+  gunslinger: 'Gunslinger',
+}
+
+// Auto-register all canonical classes as self-synonyms (no-op for already-listed)
+for (const c of CANONICAL_CLASSES) {
+  const key = normalizeClassName(c)
+  if (!(key in CANONICAL_SYNONYM_SOURCE)) {
+    CANONICAL_SYNONYM_SOURCE[key] = c
+  }
+}
+
+/**
+ * Resolves a class name (EN or PT-BR, any case/accents) to its canonical key.
+ * Returns null for homebrew / unrecognised names.
+ *
+ * Examples:
+ *   getCanonicalClass('Bruxo')   → 'Warlock'
+ *   getCanonicalClass('clerigo') → 'Cleric'
+ *   getCanonicalClass('Wizard')  → 'Wizard'
+ *   getCanonicalClass('MyBrew')  → null
+ */
+export function getCanonicalClass(name: string): CanonicalClass | null {
+  return CANONICAL_SYNONYM_SOURCE[normalizeClassName(name)] ?? null
+}

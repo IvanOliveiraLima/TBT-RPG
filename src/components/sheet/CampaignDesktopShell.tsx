@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { Character } from '@/domain/character'
 import type { CampaignCharacter } from '@/domain/campaign'
 import { formatClassesShort } from '@/domain/derived'
+import { classLabel } from '@/utils/classLabel'
 import type { TabKey } from './types'
 import { CampaignSidebar } from './CampaignSidebar'
 import { useTranslation } from '@/i18n'
@@ -73,7 +74,7 @@ export function CampaignDesktopShell({
             <div style={{ fontSize: 12, color: T.textTertiary, marginTop: 2 }}>
               {character.race}
               {' · '}
-              {formatClassesShort(character)}
+              {formatClassesShort(character, name => classLabel(name, t))}
               {character.background ? ` · ${character.background}` : ''}
             </div>
           </div>

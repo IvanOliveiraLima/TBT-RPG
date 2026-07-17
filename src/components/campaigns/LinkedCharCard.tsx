@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/i18n'
 import { CharCardVisual } from '@/components/character/CharCardVisual'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { classLabel as resolveClassLabel } from '@/utils/classLabel'
 import { fetchCampaignCharacterImages } from '@/services/campaign-view'
 import type { LinkedCharacterDetails } from '@/services/campaign-view'
 
@@ -66,7 +67,7 @@ export function LinkedCharCard({
 
   const name = char?.name ?? t('campaign_detail.unknown_character')
   const raceLabel = char?.race ?? null
-  const classLabel = char ? (formatClassesShort(char) || null) : null
+  const classLabel = char ? (formatClassesShort(char, name => resolveClassLabel(name, t)) || null) : null
   const totalLevel = char ? deriveTotalLevel(char) : null
   const hpCurrent = char?.hp?.current ?? null
   const hpMax = char?.hp?.max ?? null

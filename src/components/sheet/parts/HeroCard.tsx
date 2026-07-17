@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { classLabel } from '@/utils/classLabel'
 import { useTranslation } from '@/i18n'
 import { Badge } from '../ui/Badge'
 import { NumberField } from '@/components/primitives/NumberField'
@@ -42,7 +43,7 @@ export function HeroCard({ character, onUpdate, compact = false }: HeroCardProps
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
   const portrait = character.images.character
-  const classLine = formatClassesShort(character)
+  const classLine = formatClassesShort(character, name => classLabel(name, t))
   const totalLevel = deriveTotalLevel(character)
   const portraitSize = compact ? 58 : 72
   const nameFontSize = compact ? 18 : 22

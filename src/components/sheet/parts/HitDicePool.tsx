@@ -3,6 +3,7 @@ import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
 import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { formatSigned } from '@/domain/calculations'
+import { classLabel } from '@/utils/classLabel'
 
 interface HitDiceEntry {
   className: string
@@ -96,7 +97,7 @@ export function HitDicePool({ hitDice, onUpdate, conMod = 0 }: HitDicePoolProps)
                     minWidth: 44,
                   }}
                 >
-                  {hd.className}
+                  {classLabel(hd.className, t)}
                 </span>
               )}
               {onUpdate ? (

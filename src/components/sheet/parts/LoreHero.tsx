@@ -2,6 +2,7 @@ import type React from 'react'
 import { useState } from 'react'
 import type { Character } from '@/domain/character'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
+import { classLabel } from '@/utils/classLabel'
 import { useTranslation } from '@/i18n'
 import { CharacterImageModal } from './CharacterImageModal'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
@@ -31,7 +32,7 @@ export function LoreHero({ character, onUpdate }: LoreHeroProps) {
 
   const portrait = character.images.character
   const initial = (character.name[0] ?? '?').toUpperCase()
-  const classStr = formatClassesShort(character)
+  const classStr = formatClassesShort(character, name => classLabel(name, t))
 
   const metaParts = [
     character.race,

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import type { Character } from '@/domain/character'
 import { formatClassesShort } from '@/domain/derived'
+import { classLabel } from '@/utils/classLabel'
 import type { TabKey } from './types'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
@@ -157,7 +158,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
             {character.name}
           </div>
           <div style={{ fontSize: 10, color: T.textTertiary }}>
-            {formatClassesShort(character)}
+            {formatClassesShort(character, name => classLabel(name, t))}
           </div>
         </div>
       </div>
