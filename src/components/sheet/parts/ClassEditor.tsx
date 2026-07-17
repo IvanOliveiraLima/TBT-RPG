@@ -97,7 +97,7 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
         aria-hidden="true"
         data-testid="class-level-header"
       >
-        <span style={{ flex: '1 1 0', minWidth: 0 }} />
+        <span style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }} />
         <span style={{ ...COLUMN_LABEL, width: 64, textAlign: 'center' }}>
           {t('identity.class_level_label')}
         </span>
