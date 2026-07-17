@@ -82,8 +82,13 @@ describe('HeroCard', () => {
     expect(screen.getByText('Elfo')).toBeDefined()
   })
 
-  it('renders class + level in meta line', () => {
+  it('renders class + level in meta line (PT)', () => {
     renderWithI18n(<HeroCard character={BASE} />, 'pt')
+    expect(screen.getByText('Patrulheiro 4')).toBeDefined()
+  })
+
+  it('renders class + level in meta line (EN)', () => {
+    renderWithI18n(<HeroCard character={BASE} />, 'en')
     expect(screen.getByText('Ranger 4')).toBeDefined()
   })
 
