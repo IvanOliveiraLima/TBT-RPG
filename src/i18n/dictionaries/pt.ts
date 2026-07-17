@@ -904,6 +904,12 @@ const pt: Record<keyof typeof en, string> = {
   'broadcast.open':        'Abrir tela de transmissão',
   'broadcast.waiting':     'Aguardando a tela principal…',
   'broadcast.unsupported': 'Este navegador não suporta a tela de transmissão',
+
+  // ── PWA update prompt ─────────────────────────────────────────────────────────
+  'pwa.update_available': 'Nova versão disponível',
+  'pwa.reload':           'Atualizar',
+  'pwa.dismiss':          'Agora não',
+  'pwa.offline_ready':    'Pronto para uso offline',
 };
 
 export default pt;
