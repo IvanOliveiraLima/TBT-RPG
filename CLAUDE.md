@@ -876,6 +876,31 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   Layout do CampaignDetail responsivo (grid 2-col no desktop via `auto-fit minmax(min(100%,460px),1fr)`,
   empilhado no mobile).
 
+### Sheet — clearer attack/damage roll buttons on mobile (COMPLETED — PR #209)
+- Na linha de ataque, os gatilhos minúsculos (bônus "+3" + ícone de dado) viraram **dois botões rotulados**
+  ("Atacar +3" / "Dano 1d10"), maiores (≥36px), à esquerda (fora do canto do FAB). Conteúdo do MobileShell
+  ganhou `paddingBottom` pra o último card clarear o FAB. Só apresentação; lógica de rolagem intacta.
+
+### Sheet — localized fixed-list class select (COMPLETED — PR #211)
+- Campo de classe deixou de ser texto-livre e virou **lista fixa localizada**: guarda a **chave canônica**
+  (`CANONICAL_CLASSES`) e exibe o **rótulo traduzido** (PT/EN) via i18n. `getCanonicalClass` (EN+PT, acento/
+  case-insensível) reconhece legados (Bruxo→Warlock) — que passam a traduzir sozinhos; homebrew/typo cru via
+  `__custom__`. `classLabel(name,t)` localiza a exibição (`formatClassesShort` com resolver + `HitDicePool`).
+  Dado de vida sempre de valor reconhecido (fim do bug de classe em PT). Campo com `maxWidth` no desktop, sem
+  "Nova classe" (placeholder). `SpellHeader` intacto.
+
+### Auth — logout limpa fichas locais (COMPLETED — PR #212)
+- No **logout explícito**: `syncAll()` (flush) → `supaSignOut()` → **se o flush deu certo** →
+  `clearAllLocalData()` + reset dos stores em memória (`useCharactersStore.reset()`, `clearCharacter`,
+  sessionStorage). **Se offline/flush falhou** → mantém as fichas e sinaliza (`localKept`) pra evitar perda de
+  edição. Não limpa em SIGNED_OUT por expiração de sessão. Resolve o "lixo" e a contaminação entre contas no
+  mesmo dispositivo.
+
+### Campaigns — vida dos vinculados por polling (COMPLETED — PR #213)
+- `CampaignDetail` passou a repetir `loadLinkedDetails` por `setInterval` (~10s, limpo no unmount), além do
+  fetch de mount — a vida (HP) dos personagens vinculados atualiza sem recarregar a página. Imagens seguem lazy
+  (não repolidas).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1591,6 +1616,9 @@ function buildInviteLink(): string {
 | **Dados — rolagem não muta a ficha:** as rolagens (motor + contextuais) só rolam e mostram; nunca gastam dado de vida, marcam teste de morte ou alteram estado do personagem. `RollResult` é **serializável** e reusado no motor, no contexto e no log. | PRs #202–#203 | Rolagem é read-only sobre a ficha; RollResult serializável reusado em todas as fatias |
 | **Dados — log compartilhado:** por campanha (`campaign_dice_rolls`, RLS `is_campaign_member`, insert com `user_id=auth.uid()`); **retenção por trigger** no banco (TTL 12h + teto 50), não por cliente/cron; transporte por **polling 5s** (Realtime deferido); a rolagem registra em **todas** as campanhas vinculadas do personagem. | PRs #204–#205 | Log por campanha via tabela+polling; retenção no banco (trigger); registra em todos os vínculos |
 | **Dados — dono do contexto:** o **CampaignDetail** seta/limpa o contexto de dados da campanha (ator "Mestre"); o viewer (modal filho) só **usa** o contexto, nunca seta — senão o limparia ao fechar. | PR #206 | Contexto de dados pertence à página persistente, não ao modal filho |
+| **Classe — chave canônica + exibição localizada:** o campo de classe é lista fixa que guarda a chave canônica (`CANONICAL_CLASSES`) e exibe rótulo traduzido; legados PT reconhecidos por `getCanonicalClass`, homebrew cru. Dado de vida sempre de valor reconhecido (`getHitDie`). | PR #211 | Sem typo no dado de vida; nomes de classe traduzíveis; sem migração (normaliza na exibição/seleção) |
+| **Logout limpa o local (flush-first):** logout explícito faz flush de sync e, se OK, apaga fichas locais + reseta stores; se offline, mantém e avisa. Não limpa em expiração de sessão. | PR #212 | Evita "lixo"/contaminação entre contas sem perder edição offline |
+| **Vinculados por polling:** a vida dos personagens vinculados no CampaignDetail atualiza por polling (~10s), não só no reload. | PR #213 | Acompanhamento em tempo (quase) real, consistente com o resto do VTT |
 
 ---
 
@@ -1614,9 +1642,9 @@ function buildInviteLink(): string {
   Not modeled yet; current policy is DEX-always-derived. Requires a separate bonus
   field (not a replacement for the derived value).
 
-- **OQ — Localization of canonical race/class/background names.** Currently free-text;
-  could be mapped to i18n keys but with significant complexity (custom values, reverse
-  lookup across languages). Deferred indefinitely.
+- **OQ — Localization of canonical names.** **Classes: resolvido (PR #211)** — lista fixa que guarda chave
+  canônica e exibe rótulo traduzido (PT/EN), com `getCanonicalClass` reconhecendo legados. **Raça e
+  antecedente seguem free-text** (localização deferida — mesma complexidade de valores custom/reverse lookup).
 
 - **OQ — Character creation flow.** "Meus Personagens" screen still requires migrating
   from v1 or editing existing characters. Requires defaults definition and creation UI
