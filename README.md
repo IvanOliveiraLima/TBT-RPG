@@ -23,6 +23,7 @@ PWA instalável.
   expand/collapse, datalists canônicos, UUIDs estáveis
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
+- **Classe** — lista fixa traduzida (PT/EN); o dado de vida sai sempre correto pela classe escolhida
 
 **Lock (modo leitura):**
 
@@ -51,6 +52,7 @@ PWA instalável.
 - **Condições e áreas no mapa** — o mestre marca condições de status nos tokens e desenha áreas (círculo, quadrado, linha, cone) pra mostrar efeitos (ex.: bola de fogo), com o tamanho em pés durante o desenho; os jogadores veem
 - **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
 - **Dados** — motor de rolagem com vantagem/desvantagem e crítico; tocar em perícias/testes/ataques rola com o bônus certo; em campanha, as rolagens aparecem num log compartilhado que a mesa vê (o mestre rola como "Mestre")
+- **HP ao vivo** — o mestre vê o HP (e outros stats) de cada personagem vinculado atualizar automaticamente a cada ~10s, sem precisar recarregar a página
 
 **Sincronização (opcional):**
 
@@ -65,6 +67,7 @@ PWA instalável.
 - **Tombstones** — deleções propagam entre devices (com limitação conhecida)
 - **Auth status badge** — indicador visual de Conectado/Entrar + status de sync
 - **Excluir conta** — remoção permanente da conta, personagens e campanhas criadas, com confirmação por e-mail
+- **Logout limpa o local** — ao sair da conta, as fichas locais são limpas do dispositivo (após sincronizar) pra não sobrarem entre contas; se offline, mantém e avisa
 - **Mostrar/ocultar senha** no login e submissão com a tecla Enter
 
 **Outras funcionalidades:**

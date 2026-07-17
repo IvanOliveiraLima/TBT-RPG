@@ -99,6 +99,14 @@ export default function CampaignDetail() {
     })
   }, [id, user, authLoading, navigate])
 
+  // Poll linked characters' live data (HP, level, etc.) so the master sees updates
+  // without reloading the page. 10s aligns well with active combat pacing.
+  useEffect(() => {
+    if (!id || !user || authLoading) return
+    const t = setInterval(() => { void loadLinkedDetails(id) }, 10_000)
+    return () => { clearInterval(t) }
+  }, [id, user, authLoading])
+
   // Set campaign context so GM rolls on this page are logged as "Mestre" (owner only)
   const isOwnerForContext = !loading && !authLoading && campaign != null && user?.id === campaign.ownerId
   useEffect(() => {

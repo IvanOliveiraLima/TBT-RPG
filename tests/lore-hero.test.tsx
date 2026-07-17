@@ -51,13 +51,19 @@ describe('LoreHero', () => {
     expect(screen.getByTestId('lore-hero')).toBeDefined()
   })
 
-  it('shows meta line with race, class, level, background, and alignment', () => {
+  it('shows meta line with race, class, level, background, and alignment (PT)', () => {
     renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'pt')
     const meta = screen.getByTestId('lore-meta').textContent ?? ''
     expect(meta).toContain('Wood Elf')
-    expect(meta).toContain('Ranger 5')
+    expect(meta).toContain('Patrulheiro 5')
     expect(meta).toContain('Outlander')
     expect(meta).toContain('Neutral Good')
+  })
+
+  it('shows localized class name in meta line (EN)', () => {
+    renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'en')
+    const meta = screen.getByTestId('lore-meta').textContent ?? ''
+    expect(meta).toContain('Ranger 5')
   })
 
   it('portrait button has aria-label for edit (PT)', () => {
@@ -114,7 +120,7 @@ describe('LoreHero', () => {
     expect(screen.getByTestId('lore-level-text').textContent).toContain('Level 5')
   })
 
-  it('race, class, alignment are not translated (free-text)', () => {
+  it('race and alignment are not translated (free-text); class is localized', () => {
     renderWithI18n(<LoreHero character={BASE} onUpdate={vi.fn()} />, 'en')
     const meta = screen.getByTestId('lore-meta').textContent ?? ''
     expect(meta).toContain('Wood Elf')

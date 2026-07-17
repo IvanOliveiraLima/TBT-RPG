@@ -422,6 +422,25 @@ const en = {
   'identity.class_name_placeholder':  'Class name',
   'identity.add_class_button':        '+ Add class',
   'identity.class_default_name':      'New class',
+  'identity.class_name_unselected':   'Select class…',
+  'identity.class_custom_label':      'Custom: {value}',
+
+  // Class names (canonical keys → localized labels)
+  'class.barbarian':    'Barbarian',
+  'class.bard':         'Bard',
+  'class.cleric':       'Cleric',
+  'class.druid':        'Druid',
+  'class.fighter':      'Fighter',
+  'class.monk':         'Monk',
+  'class.paladin':      'Paladin',
+  'class.ranger':       'Ranger',
+  'class.rogue':        'Rogue',
+  'class.sorcerer':     'Sorcerer',
+  'class.warlock':      'Warlock',
+  'class.wizard':       'Wizard',
+  'class.artificer':    'Artificer',
+  'class.blood_hunter': 'Blood Hunter',
+  'class.gunslinger':   'Gunslinger',
   'identity.inspiration_label':       'Inspiration',
 
   // Aria labels (accessibility)

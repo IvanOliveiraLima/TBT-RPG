@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import type { Character } from '@/domain/character'
 import { formatClassesShort } from '@/domain/derived'
+import { classLabel } from '@/utils/classLabel'
 import type { TabKey } from './types'
 import { Sidebar } from './Sidebar'
 import { useTranslation } from '@/i18n'
@@ -76,7 +77,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
             <div style={{ fontSize: 12, color: T.textTertiary, marginTop: 2 }}>
               {character.race}
               {' · '}
-              {formatClassesShort(character)}
+              {formatClassesShort(character, name => classLabel(name, t))}
               {character.background ? ` · ${character.background}` : ''}
               {character.alignment ? ` · ${character.alignment}` : ''}
             </div>

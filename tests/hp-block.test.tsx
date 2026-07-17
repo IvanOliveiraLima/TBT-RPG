@@ -414,13 +414,24 @@ describe('HitDicePool (editable)', () => {
     expect(screen.getByText(/5\s*\/\s*5/)).toBeDefined()
   })
 
-  it('shows className label for each entry when editable', () => {
+  it('shows localized className label for each entry when editable (PT)', () => {
     renderWithI18n(
       <HitDicePool
         hitDice={[{ className: 'Paladin', current: 2, max: 3, dieSize: 10 }]}
         onUpdate={vi.fn()}
       />,
       'pt',
+    )
+    expect(screen.getByText('Paladino')).toBeDefined()
+  })
+
+  it('shows localized className label for each entry when editable (EN)', () => {
+    renderWithI18n(
+      <HitDicePool
+        hitDice={[{ className: 'Paladin', current: 2, max: 3, dieSize: 10 }]}
+        onUpdate={vi.fn()}
+      />,
+      'en',
     )
     expect(screen.getByText('Paladin')).toBeDefined()
   })

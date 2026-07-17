@@ -100,34 +100,29 @@ describe('ClassEditor', () => {
     expect(call.hitDice).toHaveLength(2)
   })
 
-  it('adding a class uses a non-empty default name (PT)', () => {
+  it('adding a class starts with empty name (select placeholder)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('add-class'))
     const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[]; hitDice: { className: string }[] }
-    expect(call.classes.at(-1)!.name).not.toBe('')
-    expect(call.hitDice.at(-1)!.className).not.toBe('')
+    expect(call.classes.at(-1)!.name).toBe('')
+    expect(call.hitDice.at(-1)!.className).toBe('')
   })
 
-  it('adding a class uses "New class" default name in EN', () => {
+  it('adding a class starts with empty name (EN)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'en')
     fireEvent.click(screen.getByTestId('add-class'))
     const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[] }
-    expect(call.classes.at(-1)!.name).toBe('New class')
+    expect(call.classes.at(-1)!.name).toBe('')
   })
 
-  it('adding two classes generates distinct non-empty default names', () => {
+  it('adding a second class also starts with empty name', () => {
     const onUpdate = vi.fn()
-    const charWithDefault = {
-      ...BASE,
-      classes: [{ name: 'Nova classe', level: 1, hitDie: 8 }],
-      hitDice: [{ className: 'Nova classe', current: 1, max: 1, dieSize: 8 }],
-    }
-    renderWithI18n(<ClassEditor character={charWithDefault} onUpdate={onUpdate} />, 'pt')
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('add-class'))
     const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[] }
-    expect(call.classes.at(-1)!.name).toBe('Nova classe 2')
+    expect(call.classes.at(-1)!.name).toBe('')
   })
 
   it('removing a class calls onUpdate with filtered classes and hitDice', () => {
@@ -225,17 +220,12 @@ describe('ClassEditor', () => {
     expect(call.hitDice[0]!.dieSize).toBe(6)
   })
 
-  it('renaming during incremental typing keeps hitDice in sync', () => {
+  it('selecting a canonical class keeps hitDice in sync', () => {
     const onUpdate = vi.fn()
-    const char = {
-      ...BASE,
-      classes: [{ name: 'C', level: 3, hitDie: 8 }],
-      hitDice: [{ className: 'C', current: 3, max: 3, dieSize: 8 }],
-    }
-    renderWithI18n(<ClassEditor character={char} onUpdate={onUpdate} />, 'pt')
-    fireEvent.change(screen.getByTestId('class-name-0'), { target: { value: 'Cl' } })
+    renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'pt')
+    fireEvent.change(screen.getByTestId('class-name-0'), { target: { value: 'Cleric' } })
     const call = onUpdate.mock.calls[0]![0] as { hitDice: { className: string }[] }
-    expect(call.hitDice[0]!.className).toBe('Cl')
+    expect(call.hitDice[0]!.className).toBe('Cleric')
     expect(call.hitDice).toHaveLength(1)
   })
 
@@ -303,16 +293,14 @@ describe('ClassEditor — layout constraints', () => {
 describe('ClassEditor — auto-focus on add', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('focuses the new class name input after adding a class', () => {
-    // Because ClassEditor is controlled and onUpdate only captures the call (doesn't re-render),
-    // we test that newlyAddedIndexRef is set and the effect would run, by checking
-    // that clicking add-class calls onUpdate with a new class at the expected index.
+  it('adds a new class row (empty name) after clicking add', () => {
+    // ClassEditor is controlled — onUpdate captures the call. New class starts with empty name.
     const onUpdate = vi.fn()
     renderWithI18n(<ClassEditor character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('add-class'))
     // onUpdate was called with 2 classes; new class is at index 1
     const call = onUpdate.mock.calls[0]![0] as { classes: { name: string }[] }
     expect(call.classes).toHaveLength(2)
-    expect(call.classes[1]!.name).not.toBe('')
+    expect(call.classes[1]!.name).toBe('')
   })
 })

@@ -100,9 +100,17 @@ describe('LoreTab integration', () => {
     expect(screen.getByTestId('notes-block')).toBeDefined()
   })
 
-  it('shows character meta (race, class) in LoreHero', () => {
+  it('shows character meta (race, class) in LoreHero — PT class label', () => {
     activateEira()
     renderWithI18n(<LoreTab />, 'pt')
+    const meta = screen.getByTestId('lore-meta').textContent ?? ''
+    expect(meta).toContain('Wood Elf')
+    expect(meta).toContain('Patrulheiro 5')
+  })
+
+  it('shows character meta (race, class) in LoreHero — EN class label', () => {
+    activateEira()
+    renderWithI18n(<LoreTab />, 'en')
     const meta = screen.getByTestId('lore-meta').textContent ?? ''
     expect(meta).toContain('Wood Elf')
     expect(meta).toContain('Ranger 5')
