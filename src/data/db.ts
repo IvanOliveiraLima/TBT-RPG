@@ -1,17 +1,15 @@
 /**
  * IndexedDB wrapper for v2 — v2-native persistence.
  *
- * Strategy (Phase C.1.0 pivot):
- *   v2 DB  (dnd-character-sheet-v2, version 6) — read + write, stores Character directly
- *   v1 DB  (dnd-character-sheet, version 3)    — read-only, accessed only during migration
+ * Strategy:
+ *   v2 DB  (dnd-character-sheet-v2, version 10) — read + write, stores Character directly
  *
- * Characters are stored as domain Character objects (v2-native schema).
- * The v1 DB is read ONCE via migrateV1Characters() (migration.ts), then
- * never touched again from v2. The v1 app at /TBT-RPG/ remains frozen and
- * unaware of v2's existence.
+ * The v2 app does NOT open or read the v1 DB (dnd-character-sheet). The v1
+ * app at /TBT-RPG/ remains frozen and independent. migration.ts and adapter.ts
+ * were deleted as part of the v2-promotion refactor (tag v1-final preserves history).
  *
  * Schema history:
- *   v1 → v2: store cleared (V1Character shape incompatible with Character)
+ *   v1 → v2: initial v2-native store created (Character shape, incompatible with v1)
  *   v2 → v3: backfill className on hitDice entries (C.1.c.4)
  *   v3 → v4: migrate proficiencies strings→arrays; lift languages to top-level;
  *             backfill id/source on features missing them (C.1.c.5)
