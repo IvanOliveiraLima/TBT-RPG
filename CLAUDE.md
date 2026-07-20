@@ -30,6 +30,7 @@ npm run preview    # Preview production build locally
 npm run lint       # ESLint
 npm run test       # Run Vitest (single run)
 npm run test:watch # Run tests in watch mode
+npm run knip       # Dead code / unused exports / deps audit
 ```
 
 CI runs lint + test + build on PRs to `main-dev` and `master`.
@@ -358,10 +359,6 @@ All testing-related packages are declared explicitly in `devDependencies`
 `@testing-library/user-event`, `jsdom`, `vitest`) — `npm install` without
 any flags should produce a complete environment. No `--legacy-peer-deps`
 required.
-
-### known layout issues (to fix when touching mobile layout)
-
-- **Mobile drawer — PT/EN toggle pushed too far down**: `MobileShell.tsx` uses `marginTop: 'auto'` on the toggle wrapper, which pushes it to the bottom of the drawer via the flex-spacer. On short screens the toggle may be hidden or hard to reach. Consider either moving the toggle closer to the nav menu items or constraining the drawer height so it doesn't rely on `auto` margin.
 
 ---
 
@@ -868,7 +865,7 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 
 ### Dice — shared campaign roll log (COMPLETED — PRs #204–#206)
 - Log compartilhado por campanha: tabela `campaign_dice_rolls` (`result` jsonb) + RLS `is_campaign_member`
-  (insert com `user_id = auth.uid()`) + **retenção por trigger** (TTL 12h + teto 50/campanha) — sem cron/cliente.
+  (insert com `user_id = auth.uid()`) + **retenção: cron** (TTL 12h, `pg_cron`, job `trim_campaign_dice_rolls_ttl` a cada 30 min) + **trigger `AFTER INSERT`** (teto 50/campanha) — o trigger sozinho não podava campanhas paradas.
   Rolagem na ficha de personagem vinculado insere **uma linha por campanha vinculada** (`addRoll`
   fire-and-forget; sem vínculo → só local). Painel `CampaignRollLog` (polling 5s; dono limpa) no CampaignDetail
   **e** no viewer (ausente no `broadcast`). Mestre rola da página ou do viewer como "Mestre" — o
@@ -900,6 +897,30 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - `CampaignDetail` passou a repetir `loadLinkedDetails` por `setInterval` (~10s, limpo no unmount), além do
   fetch de mount — a vida (HP) dos personagens vinculados atualiza sem recarregar a página. Imagens seguem lazy
   (não repolidas).
+
+### PWA — aviso de nova versão (COMPLETED — PR #216)
+- `registerType: 'autoUpdate' → 'prompt'`. `PwaUpdatePrompt` (no root, via `useRegisterSW`) mostra banner
+  "nova versão disponível" + botão Atualizar (`updateServiceWorker(true)`, reload só no clique); checagem
+  periódica (1h) + ao focar a aba; `offlineReady` sutil (some em 5s). Aviso só em **deploy novo**
+  (`onNeedRefresh`), não a cada visita. Cache do workbox inalterado. Transição: clientes com o SW `autoUpdate`
+  migram pro `prompt` num carregamento; o aviso passa a funcionar do deploy seguinte em diante.
+
+### Dice log — retenção por cron (HOTFIX Supabase — SQL manual, sem PR)
+- O trigger `AFTER INSERT` só podava na inserção → campanhas paradas mantinham registros além do TTL. Fix:
+  `pg_cron` (disponível no free tier) roda `delete … where created_at < now() - interval '12 hours'` a cada
+  30 min (job `trim_campaign_dice_rolls_ttl`). Papéis: **cron = TTL por tempo**; **trigger `AFTER INSERT` =
+  teto 50/campanha**. SQL aplicado no Supabase (não passa por CI).
+
+### Mobile — seletor de idioma abaixo do menu (COMPLETED — PR #218)
+- Nos shells mobile (`MobileShell`, `CampaignMobileShell`) o toggle PT/EN saiu do `marginTop:'auto'` (colado no
+  rodapé, longe em telas longas) → `marginTop: 12`, logo abaixo das opções do menu. Desktop inalterado.
+
+### Chore — auditoria da suíte + higiene de código morto (COMPLETED — PRs #219, #220)
+- Auditoria da suíte (2400+ testes): sem `.skip/.only/.todo`, sem testes triviais, sem resíduo v1 no `src`.
+  Removido o módulo morto `casters` (+ seu teste) e corrigido o comentário de migração obsoleto do `db.ts`
+  (#219). Adicionado **`knip`** (arquivos/exports/deps não usados) + `npm run knip`; passada conservadora
+  removeu barrels/shims mortos, 3 deps redundantes (incl. `@typescript-eslint/*`, cobertos pelo
+  `typescript-eslint` combinado) e internalizou exports órfãos (#220). Baseline verde.
 
 ---
 
@@ -1614,11 +1635,13 @@ function buildInviteLink(): string {
 | **Tático — tela de transmissão:** espelho na **perspectiva de jogador** via `BroadcastChannel('tbt-map-'+mapId)` (mesma máquina). Emissor (dono) posta **estado completo** (tokens/fog/areas/grid) no mount + a cada mudança + em resposta ao `hello`; receptor aplica e pede `hello` no mount. **Sem** estado ao vivo do Supabase na transmissão (só a signed URL da imagem); sem polling/Realtime. | PR #192 | Segunda-tela = espelho estado-completo por-mapa, perspectiva de jogador, sem estado ao vivo do Supabase |
 | **Tático — AoE de dois pontos (linha/cone):** formas com direção guardam um **2º ponto** `x2`/`y2` (nulos p/ círculo/quadrado), com **flip de Y nos dois**; render `<line>`/`<polygon>` em viewBox (cone 5e: meia-largura `L/2`, largura na ponta = comprimento). `radius` permanece pra círculo/quadrado (retrocompatível). | PR #197 | Formas com direção = dois pontos flipados + geometria em viewBox; manter os campos das formas antigas (não migrar) |
 | **Dados — rolagem não muta a ficha:** as rolagens (motor + contextuais) só rolam e mostram; nunca gastam dado de vida, marcam teste de morte ou alteram estado do personagem. `RollResult` é **serializável** e reusado no motor, no contexto e no log. | PRs #202–#203 | Rolagem é read-only sobre a ficha; RollResult serializável reusado em todas as fatias |
-| **Dados — log compartilhado:** por campanha (`campaign_dice_rolls`, RLS `is_campaign_member`, insert com `user_id=auth.uid()`); **retenção por trigger** no banco (TTL 12h + teto 50), não por cliente/cron; transporte por **polling 5s** (Realtime deferido); a rolagem registra em **todas** as campanhas vinculadas do personagem. | PRs #204–#205 | Log por campanha via tabela+polling; retenção no banco (trigger); registra em todos os vínculos |
+| **Dados — log compartilhado:** por campanha (`campaign_dice_rolls`, RLS `is_campaign_member`, insert com `user_id=auth.uid()`); retenção: **cron** (TTL 12h, `pg_cron`, job `trim_campaign_dice_rolls_ttl` a cada 30 min) + **trigger `AFTER INSERT`** (teto 50/campanha) — o trigger sozinho não podava campanhas paradas; transporte por **polling 5s** (Realtime deferido); a rolagem registra em **todas** as campanhas vinculadas do personagem. | PRs #204–#205 + hotfix | Log por campanha via tabela+polling; retenção: cron (TTL) + trigger (teto); registra em todos os vínculos |
 | **Dados — dono do contexto:** o **CampaignDetail** seta/limpa o contexto de dados da campanha (ator "Mestre"); o viewer (modal filho) só **usa** o contexto, nunca seta — senão o limparia ao fechar. | PR #206 | Contexto de dados pertence à página persistente, não ao modal filho |
 | **Classe — chave canônica + exibição localizada:** o campo de classe é lista fixa que guarda a chave canônica (`CANONICAL_CLASSES`) e exibe rótulo traduzido; legados PT reconhecidos por `getCanonicalClass`, homebrew cru. Dado de vida sempre de valor reconhecido (`getHitDie`). | PR #211 | Sem typo no dado de vida; nomes de classe traduzíveis; sem migração (normaliza na exibição/seleção) |
 | **Logout limpa o local (flush-first):** logout explícito faz flush de sync e, se OK, apaga fichas locais + reseta stores; se offline, mantém e avisa. Não limpa em expiração de sessão. | PR #212 | Evita "lixo"/contaminação entre contas sem perder edição offline |
 | **Vinculados por polling:** a vida dos personagens vinculados no CampaignDetail atualiza por polling (~10s), não só no reload. | PR #213 | Acompanhamento em tempo (quase) real, consistente com o resto do VTT |
+| **PWA — update via prompt:** aviso de nova versão com **reload no clique** (não auto-reload); só em deploy novo (`onNeedRefresh`); checagem periódica + ao focar a aba; cache do workbox inalterado. | PR #216 | App "vivo" sem reload forçado; a ficha autosalva torna o reload seguro |
+| **Higiene de código morto (knip):** projeto usa `knip` (`npm run knip`) pra barrar arquivos/exports/deps órfãos; baseline verde; suíte auditada (sem skip/only/trivial/resíduo v1). | PRs #219–#220 | Impede novo acúmulo de código/teste morto |
 
 ---
 

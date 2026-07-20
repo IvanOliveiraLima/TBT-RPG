@@ -74,6 +74,8 @@ PWA instalável.
 
 - Image upload (character portrait via canvas-based modal)
 - Bilíngue PT/EN com toggle persistente
+- **Aviso de nova versão** — quando há atualização em produção, um banner sugere recarregar (as fichas são
+  salvas localmente, então o reload é seguro)
 - PWA instalável
 
 ### Roadmap
