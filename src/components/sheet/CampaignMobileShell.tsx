@@ -173,7 +173,7 @@ export function CampaignMobileShell({
             </button>
 
             {/* Language toggle */}
-            <div style={{ marginTop: 'auto' }}>
+            <div style={{ marginTop: 12 }}>
               <div style={{
                 display: 'flex', gap: 6,
                 paddingTop: 10,

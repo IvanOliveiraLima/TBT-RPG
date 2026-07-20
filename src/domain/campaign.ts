@@ -44,6 +44,3 @@ export function buildCharacterSummary(char: {
   return parts.join(' — ')
 }
 
-export function isMaster(member: CampaignMember | null | undefined): boolean {
-  return member?.role === 'master'
-}
