@@ -2,7 +2,7 @@ import type en from './dictionaries/en';
 
 export type Lang = 'en' | 'pt';
 
-export type Dictionary = typeof en;
+type Dictionary = typeof en;
 
 /**
  * Union of all valid translation keys, inferred from the EN dictionary

@@ -6,13 +6,13 @@ import { syncAll } from '@/services/sync'
 import { useCharactersStore } from './characters'
 import { useCharacterStore } from './character'
 
-export type SignUpResult =
+type SignUpResult =
   | { status: 'signed_in' }
   | { status: 'email_confirmation_required' }
   | { status: 'error'; code: string }
 
-export type RequestResetResult  = { status: 'sent' }    | { status: 'error'; code: string }
-export type UpdatePasswordResult = { status: 'updated' } | { status: 'error'; code: string }
+type RequestResetResult  = { status: 'sent' }    | { status: 'error'; code: string }
+type UpdatePasswordResult = { status: 'updated' } | { status: 'error'; code: string }
 
 interface AuthState {
   user:    User | null

@@ -4,8 +4,6 @@ import type { TabKey } from './types'
 import { DesktopShell } from './DesktopShell'
 import { MobileShell } from './MobileShell'
 
-export type { TabKey }
-
 interface SheetLayoutProps {
   character: Character
   activeTab: TabKey
