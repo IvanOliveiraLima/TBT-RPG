@@ -23,6 +23,7 @@ import {
   getCharacter,
   deleteCharacter,
   importCharacter,
+  markCharacterSynced,
 } from '@/data/db'
 import { deleteCharacterImages } from '@/services/delete-character'
 import type { Character } from '@/domain/character'
@@ -120,13 +121,19 @@ async function uploadCharacter(character: Character, userId: string): Promise<vo
     if (cloudTime > localTime) return  // cloud is newer — download will handle it
   }
 
+  // Strip local-only sync metadata before sending to cloud
+  const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = character
+
   const { error } = await supabase.from('characters').upsert({
     id:         character.id,
     user_id:    userId,
-    data:       character,
+    data:       charData,
     updated_at: new Date(character.updatedAt).toISOString(),
   })
   if (error) throw error
+
+  // Mark local copy as clean; skips if a concurrent edit advanced updatedAt
+  await markCharacterSynced(character.id, character.updatedAt)
 
   // Upload images to Storage (best-effort per image)
   if (character.images.character) {
@@ -360,7 +367,8 @@ export async function syncAll(): Promise<void> {
     // 2. Pre-fetch cloud tombstone IDs — prevents re-uploading chars deleted on another device
     const cloudTombstoneIds = await fetchCloudTombstoneIds(userId)
 
-    // 3. Upload local characters — skip tombstoned chars; LWW for the rest
+    // 3. Upload local characters — skip tombstoned and clean chars; LWW for the rest.
+    //    dirty === undefined is treated as dirty (legacy: chars without the flag may have unsynced edits).
     let uploadPhaseDeletedLocally = false
     const characters = useCharactersStore.getState().characters
     for (const char of characters) {
@@ -374,6 +382,8 @@ export async function syncAll(): Promise<void> {
         }
         continue
       }
+      // Skip chars known to have no local edits; undefined ⇒ dirty (legacy compatibility)
+      if (char.dirty === false) continue
       try {
         await uploadCharacter(char, userId)
       } catch (err) {

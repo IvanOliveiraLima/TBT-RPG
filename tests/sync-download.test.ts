@@ -19,9 +19,10 @@ vi.mock('@/data/db', () => ({
   getPendingTombstones: (...a: unknown[]) => mockGetPendingTombstones(...(a as [])),
   removeTombstone:      (...a: unknown[]) => mockRemoveTombstone(...(a as [string])),
   // unused in sync-download tests but required by the mock module shape
-  saveCharacter:     vi.fn(),
-  createTombstone:   vi.fn(),
-  markTombstoneSynced: vi.fn(),
+  saveCharacter:        vi.fn(),
+  createTombstone:      vi.fn(),
+  markTombstoneSynced:  vi.fn(),
+  markCharacterSynced:  vi.fn().mockResolvedValue(undefined),
 }))
 
 // ── Mock @/store/characters ───────────────────────────────────────────────────

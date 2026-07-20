@@ -15,11 +15,12 @@ vi.mock('@/data/db', () => ({
   listCharacters:       (...a: unknown[]) => mockListCharacters(...(a as [])),
   importCharacter:      (...a: unknown[]) => mockImportCharacter(...(a as [Character])),
   // Other DB exports not exercised in these tests
-  getCharacter:        vi.fn().mockResolvedValue(null),
-  saveCharacter:       vi.fn(),
-  deleteCharacter:     vi.fn(),
-  createTombstone:     vi.fn(),
-  markTombstoneSynced: vi.fn(),
+  getCharacter:         vi.fn().mockResolvedValue(null),
+  saveCharacter:        vi.fn(),
+  deleteCharacter:      vi.fn(),
+  createTombstone:      vi.fn(),
+  markTombstoneSynced:  vi.fn(),
+  markCharacterSynced:  vi.fn().mockResolvedValue(undefined),
 }))
 
 // ── Mock @/store/characters ───────────────────────────────────────────────────
