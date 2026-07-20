@@ -9,7 +9,7 @@
  *  - Serialisable RollResult (ready for Dice.2/Dice.3 reuse)
  */
 
-export interface DieRoll {
+interface DieRoll {
   sides: number
   value: number
   /** false = discarded by advantage/disadvantage */
