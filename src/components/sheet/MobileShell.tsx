@@ -240,7 +240,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
               {locked ? `🔓 ${t('chrome.unlock')}` : `🔒 ${t('drawer.lock')}`}
             </button>
 
-            <div style={{ marginTop: 'auto' }}>
+            <div style={{ marginTop: 12 }}>
               <div style={{
                 display: 'flex', gap: 6,
                 paddingTop: 10,
