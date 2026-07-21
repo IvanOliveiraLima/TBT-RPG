@@ -925,6 +925,9 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.turn_of':     'Turno: {name}',
   'initiative.empty':       'Nenhum combatente ainda',
 
+  // ── Mobile viewer ─────────────────────────────────────────────────────────────
+  'campaign_maps.tools_menu_btn': 'Ferramentas',
+
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} conflito(s) de sincronização — Resolver',
   'sync_conflict.resolve':     'Resolver',

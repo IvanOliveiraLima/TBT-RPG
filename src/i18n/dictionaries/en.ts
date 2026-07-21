@@ -921,6 +921,9 @@ const en = {
   'initiative.turn_of':     'Turn: {name}',
   'initiative.empty':       'No combatants yet',
 
+  // ── Mobile viewer ─────────────────────────────────────────────────────────────
+  'campaign_maps.tools_menu_btn': 'Tools',
+
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} sync conflict(s) — Resolve',
   'sync_conflict.resolve':     'Resolve',
