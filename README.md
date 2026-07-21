@@ -62,6 +62,7 @@ PWA instalável.
 - **Upload reactive** — edições sobem pra cloud 15s após (debounced)
 - **Upload periodic** — background a cada 30s pra garantir consistência
 - **Download** — chars da cloud baixam pro IndexedDB local no login + periodic
+- **Multi-dispositivo seguro** — só sobe o que você editou de fato; se o mesmo personagem mudou em dois aparelhos, o app pergunta como resolver em vez de sobrescrever calado
 - **Conflict resolution** — Last-write-wins por `updatedAt`
 - **Imagens** — upload/download eager via Supabase Storage (base64 ↔ blob)
 - **Tombstones** — deleções propagam entre devices (com limitação conhecida)

@@ -59,7 +59,7 @@ If the production domain changes, update `ALLOWED_ORIGINS` in [worker/src/index.
 | `src/pages/CharSelect.tsx` | Character select screen — first screen, reads from IndexedDB |
 | `src/pages/Login.tsx` | Login page (email + password via Supabase) |
 | `src/routes.tsx` | React Router v6 config (/, /login, * → /) |
-| `src/services/sync.ts` | Sync service — upload + download with LWW, tombstone propagation, debounce, periodic |
+| `src/services/sync.ts` | Sync service — upload (só dirty) + download com LWW, detecção/resolução de conflito, tombstones, debounce, periodic |
 | `tests/db.test.ts` | Basic test for IndexedDB wrapper |
 | `src/i18n/index.ts` | Re-exports: `I18nProvider`, `useTranslation`, `pluralKey`, types |
 | `src/i18n/i18n.tsx` | `I18nProvider` — holds lang state, `setLang`, `t()` function |
@@ -922,6 +922,24 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   removeu barrels/shims mortos, 3 deps redundantes (incl. `@typescript-eslint/*`, cobertos pelo
   `typescript-eslint` combinado) e internalizou exports órfãos (#220). Baseline verde.
 
+### Sync.1 — dirty flag: só sobe o que foi editado (COMPLETED — PR #223)
+- Metadados locais por personagem (IndexedDB, não vão pra nuvem): `dirty` (edição local não sincronizada) e
+  `baseUpdatedAt` (snapshot da nuvem reconciliado; fundação da Sync.2). `saveCharacter` → `dirty:true`;
+  `importCharacter` → `dirty:false`+`baseUpdatedAt`; `markCharacterSynced(id, ts)` limpa `dirty` após upload
+  (pula se `updatedAt` avançou = edição concorrente). `syncAll` sobe **só** fichas `dirty` (undefined⇒dirty
+  p/ legado). Metadados removidos do payload antes do upsert. Resolve o cenário "aparelho com ficha velha só
+  reaberta sobrescrevia a nuvem" — imune a clock skew (cópia limpa nunca sobe).
+
+### Sync.2 — detecção e resolução de conflito (COMPLETED — PR #224)
+- Conflito = ficha `dirty` **e** `cloud.updated_at > baseUpdatedAt` (editou base velha enquanto a nuvem
+  avançou). Detectado **no `uploadCharacter`** (antes do clobber): registra em `useSyncConflictStore` e
+  **segura** (não sobe); o `downloadCharacters` **pula** fichas em conflito (nenhum lado sobrescrito). UI:
+  `SyncConflictBanner` (persistente) → `SyncConflictModal` (um card por conflito, com horários dos dois lados).
+  Três resoluções, **nenhuma perde dado**: **manter deste aparelho** (`resolveConflictKeepMine` — carimba
+  `updatedAt = max(now, cloud+1)` em `data` e coluna, pra vencer/propagar em qualquer relógio),
+  **manter da nuvem** (importa o snapshot), **manter as duas** (nuvem fica no id; edição local vira ficha nova
+  `"(conflito)"`, `dirty`). Store de conflito em memória, re-detectável no próximo sync.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1642,6 +1660,8 @@ function buildInviteLink(): string {
 | **Vinculados por polling:** a vida dos personagens vinculados no CampaignDetail atualiza por polling (~10s), não só no reload. | PR #213 | Acompanhamento em tempo (quase) real, consistente com o resto do VTT |
 | **PWA — update via prompt:** aviso de nova versão com **reload no clique** (não auto-reload); só em deploy novo (`onNeedRefresh`); checagem periódica + ao focar a aba; cache do workbox inalterado. | PR #216 | App "vivo" sem reload forçado; a ficha autosalva torna o reload seguro |
 | **Higiene de código morto (knip):** projeto usa `knip` (`npm run knip`) pra barrar arquivos/exports/deps órfãos; baseline verde; suíte auditada (sem skip/only/trivial/resíduo v1). | PRs #219–#220 | Impede novo acúmulo de código/teste morto |
+| **Sync — sobe só o que foi editado (`dirty`):** upload apenas de fichas com edição local não sincronizada; `undefined⇒dirty` (legado); metadados (`dirty`/`baseUpdatedAt`) são locais (removidos antes do upsert). Cópia velha só reaberta nunca sobrescreve a nuvem. | PR #223 | Blinda multi-dispositivo contra clock skew; base pra detecção de conflito |
+| **Sync — conflito nunca é LWW silencioso:** `dirty` + `cloud.updated_at > baseUpdatedAt` → segura (não sobe, download pula) e pede resolução no modal (manter deste aparelho / da nuvem / as duas), sem perder dado; "manter deste aparelho" carimba `updatedAt = max(now, cloud+1)` pra vencer em todos os dispositivos. | PR #224 | Edição sobre base velha vira escolha consciente, não perda |
 
 ---
 
