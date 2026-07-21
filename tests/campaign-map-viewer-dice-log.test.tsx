@@ -154,6 +154,7 @@ vi.mock('@/services/campaign-characters', () => ({
 
 vi.mock('@/services/campaign-view', () => ({
   fetchCampaignCharacterImages: () => Promise.resolve({ portraitData: null, symbolData: null }),
+  fetchLinkedCharactersDetails: () => Promise.resolve([]),
 }))
 
 vi.mock('@/data/db', () => ({

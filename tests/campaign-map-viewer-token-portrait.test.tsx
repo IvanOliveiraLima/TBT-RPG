@@ -101,6 +101,7 @@ vi.mock('@/services/campaign-characters', () => ({
 
 vi.mock('@/services/campaign-view', () => ({
   fetchCampaignCharacterImages: (...args: unknown[]) => mockFetchCampaignCharacterImages(...args),
+  fetchLinkedCharactersDetails: () => Promise.resolve([]),
 }))
 
 vi.mock('@/services/campaign-map-areas', () => ({
