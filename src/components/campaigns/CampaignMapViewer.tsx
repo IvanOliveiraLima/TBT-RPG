@@ -570,7 +570,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [presets, setPresets] = useState<CampaignTokenPreset[]>([])
   const [presetUrls, setPresetUrls] = useState<Record<string, string>>({})
   const [armedPresetId, setArmedPresetId] = useState<string | null>(null)
-  const [presetPanelOpen, setPresetPanelOpen] = useState(false)
+  // Single active panel — mutually exclusive (rolls | presets | initiative)
+  const [activePanel, setActivePanel] = useState<'rolls' | 'presets' | 'initiative' | null>(null)
   // Area drawing state (owner only)
   const [areas, setAreas] = useState<CampaignMapArea[]>([])
   const [areaMode, setAreaMode] = useState(false)
@@ -588,13 +589,10 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const lastPaintedCellRef = useRef<string | null>(null)
   // Initiative tracker state + panel toggle (declared before broadcastSnapshotRef to avoid TDZ)
   const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
-  const [initiativeOpen, setInitiativeOpen] = useState(false)
   // Quick-add linked chars for initiative panel (owner only)
   const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
-  // Roll log panel (all members, not broadcast)
-  const [rollLogOpen, setRollLogOpen] = useState(false)
   // BroadcastChannel refs (owner emitter)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
   const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker })
@@ -1339,11 +1337,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </button>
 
           {/* Preset palette — toggle button or panel */}
-          {!presetPanelOpen && (
+          {activePanel !== 'presets' && (
             <button
               type="button"
               data-testid="preset-palette-toggle"
-              onClick={() => setPresetPanelOpen(true)}
+              onClick={() => setActivePanel('presets')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
@@ -1356,7 +1354,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               ⬡ {t('token_presets.palette')}
             </button>
           )}
-          {presetPanelOpen && (
+          {activePanel === 'presets' && (
             <div
               data-testid="preset-palette-panel"
               style={{
@@ -1378,7 +1376,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                 <button
                   type="button"
                   data-testid="preset-palette-close"
-                  onClick={() => { setPresetPanelOpen(false); setArmedPresetId(null) }}
+                  onClick={() => { setActivePanel(null); setArmedPresetId(null) }}
                   style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
                 >×</button>
               </div>
@@ -1766,13 +1764,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           <button
             type="button"
             data-testid="roll-log-toggle"
-            onClick={() => setRollLogOpen(v => !v)}
+            onClick={() => setActivePanel(p => p === 'rolls' ? null : 'rolls')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-              background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
-              color: rollLogOpen ? T.textPrimary : T.textMuted,
-              border: `1px solid ${rollLogOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              background: activePanel === 'rolls' ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: activePanel === 'rolls' ? T.textPrimary : T.textMuted,
+              border: `1px solid ${activePanel === 'rolls' ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
               fontSize: 12, fontWeight: 600, fontFamily: T.sans,
             }}
           >
@@ -1781,13 +1779,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           <button
             type="button"
             data-testid="initiative-toggle"
-            onClick={() => setInitiativeOpen(v => !v)}
+            onClick={() => setActivePanel(p => p === 'initiative' ? null : 'initiative')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-              background: initiativeOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
-              color: initiativeOpen ? T.textPrimary : T.textMuted,
-              border: `1px solid ${initiativeOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              background: activePanel === 'initiative' ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: activePanel === 'initiative' ? T.textPrimary : T.textMuted,
+              border: `1px solid ${activePanel === 'initiative' ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
               fontSize: 12, fontWeight: 600, fontFamily: T.sans,
             }}
           >
@@ -1797,7 +1795,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Roll log panel (collapsible) */}
-      {!broadcast && rollLogOpen && (
+      {!broadcast && activePanel === 'rolls' && (
         <div
           data-testid="viewer-roll-log-panel"
           style={{
@@ -1810,7 +1808,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Initiative panel (collapsible) */}
-      {!broadcast && initiativeOpen && (
+      {!broadcast && activePanel === 'initiative' && (
         <div
           data-testid="viewer-initiative-panel"
           style={{
