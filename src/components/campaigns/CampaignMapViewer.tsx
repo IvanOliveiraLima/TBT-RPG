@@ -39,7 +39,11 @@ import {
 } from '@/services/campaign-token-presets'
 import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
-import { fetchCampaignCharacterImages } from '@/services/campaign-view'
+import { fetchCampaignCharacterImages, fetchLinkedCharactersDetails } from '@/services/campaign-view'
+import { getInitiative, saveInitiative } from '@/services/campaign-initiative'
+import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
+import { emptyTracker, sortCombatants } from '@/domain/initiative'
+import type { InitiativeTracker } from '@/domain/initiative'
 import { snapToGrid } from '@/utils/snap-to-grid'
 import { tokenDiameterPx } from '@/utils/token-size'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
@@ -582,14 +586,19 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   useEffect(() => { fogRef.current = fog }, [fog])
   // Tracks the last painted cell key so drag-paint skips redundant setFog calls for the same cell
   const lastPaintedCellRef = useRef<string | null>(null)
-  // BroadcastChannel refs (owner emitter)
-  const broadcastChRef       = useRef<BroadcastChannel | null>(null)
-  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid })
-  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid } }, [tokens, fog, areas, localGrid])
+  // Initiative tracker state + panel toggle (declared before broadcastSnapshotRef to avoid TDZ)
+  const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
+  const [initiativeOpen, setInitiativeOpen] = useState(false)
+  // Quick-add linked chars for initiative panel (owner only)
+  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
   // Roll log panel (all members, not broadcast)
   const [rollLogOpen, setRollLogOpen] = useState(false)
+  // BroadcastChannel refs (owner emitter)
+  const broadcastChRef       = useRef<BroadcastChannel | null>(null)
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker } }, [tokens, fog, areas, localGrid, tracker])
 
   useEffect(() => {
     let cancelled = false
@@ -729,8 +738,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     if (!isOwner || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
-    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid })
-  }, [isOwner, broadcast, tokens, fog, areas, localGrid])
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker })
+  }, [isOwner, broadcast, tokens, fog, areas, localGrid, tracker])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
@@ -739,13 +748,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     ch.onmessage = (e: MessageEvent) => {
       if (e.data?.type === 'snapshot') {
-        const { tokens: t, fog: f, areas: a, grid: g } = e.data as {
-          tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid
+        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini } = e.data as {
+          tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
         }
         if (Array.isArray(t)) setTokens(t)
         if (f) setFog(f)
         if (Array.isArray(a)) setAreas(a)
         if (g) setLocalGrid(g)
+        if (ini) setTracker(ini)
       }
     }
     ch.postMessage({ type: 'hello' })
@@ -770,6 +780,45 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       .catch(() => undefined)
     return () => { cancelled = true }
   }, [isOwner, map.campaignId])
+
+  // Fetch initiative on mount (not broadcast)
+  useEffect(() => {
+    if (broadcast) return
+    let cancelled = false
+    getInitiative(map.campaignId)
+      .then(tr => { if (!cancelled) setTracker(tr) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.campaignId, broadcast])
+
+  // Poll initiative every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner || broadcast) return
+    let cancelled = false
+    const id = setInterval(() => {
+      getInitiative(map.campaignId)
+        .then(tr => { if (!cancelled) setTracker(tr) })
+        .catch(() => {})
+    }, TOKEN_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.campaignId, isOwner, broadcast])
+
+  // Fetch linked char names for initiative quick-add (owner only)
+  useEffect(() => {
+    if (!isOwner || broadcast) return
+    let cancelled = false
+    fetchLinkedCharactersDetails(map.campaignId)
+      .then(details => {
+        if (cancelled) return
+        setLinkedChars(
+          details
+            .filter(d => d.character !== null)
+            .map(d => ({ characterId: d.characterId, name: d.character!.name }))
+        )
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isOwner, broadcast, map.campaignId])
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -976,6 +1025,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     } catch {
       // noop — keep editing open
     }
+  }
+
+  async function handleUpdateTracker(t: InitiativeTracker) {
+    setTracker(t)
+    await saveInitiative(map.campaignId, t)
   }
 
   async function handleSaveGrid() {
@@ -1706,24 +1760,40 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         </div>
       )}
 
-      {/* Roll log toggle — all members, not in broadcast */}
+      {/* Left toolbar — roll log + initiative toggles; all members, not in broadcast */}
       {!broadcast && (
-        <button
-          type="button"
-          data-testid="roll-log-toggle"
-          onClick={() => setRollLogOpen(v => !v)}
-          style={{
-            position: 'absolute', top: 8, left: 56, zIndex: 999,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-            background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
-            color: rollLogOpen ? T.textPrimary : T.textMuted,
-            border: `1px solid ${rollLogOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
-            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
-          }}
-        >
-          ⚄ {t('dice_log.rolls_toggle')}
-        </button>
+        <div style={{ position: 'absolute', top: 8, left: 56, zIndex: 999, display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            data-testid="roll-log-toggle"
+            onClick={() => setRollLogOpen(v => !v)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: rollLogOpen ? T.textPrimary : T.textMuted,
+              border: `1px solid ${rollLogOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ⚄ {t('dice_log.rolls_toggle')}
+          </button>
+          <button
+            type="button"
+            data-testid="initiative-toggle"
+            onClick={() => setInitiativeOpen(v => !v)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: initiativeOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: initiativeOpen ? T.textPrimary : T.textMuted,
+              border: `1px solid ${initiativeOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ⚔ {t('initiative.title')}
+          </button>
+        </div>
       )}
 
       {/* Roll log panel (collapsible) */}
@@ -1736,6 +1806,50 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           }}
         >
           <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+        </div>
+      )}
+
+      {/* Initiative panel (collapsible) */}
+      {!broadcast && initiativeOpen && (
+        <div
+          data-testid="viewer-initiative-panel"
+          style={{
+            position: 'absolute', top: 48, left: 56, zIndex: 997,
+            width: 300, maxHeight: '80%', overflowY: 'auto',
+          }}
+        >
+          <CampaignInitiativePanel
+            isOwner={isOwner}
+            tracker={tracker}
+            linkedChars={linkedChars}
+            onUpdate={(t) => { void handleUpdateTracker(t) }}
+          />
+        </div>
+      )}
+
+      {/* Current turn banner — broadcast screen only */}
+      {broadcast && tracker.active && tracker.activeCombatantId && (
+        <div
+          data-testid="broadcast-turn-banner"
+          style={{
+            position:      'absolute',
+            bottom:        24,
+            left:          '50%',
+            transform:     'translateX(-50%)',
+            zIndex:        1000,
+            background:    'rgba(21,18,28,0.88)',
+            border:        '1px solid rgba(91,63,168,0.5)',
+            borderRadius:  10,
+            padding:       '10px 24px',
+            color:         T.textPrimary,
+            fontFamily:    T.sans,
+            fontSize:      15,
+            fontWeight:    700,
+            whiteSpace:    'nowrap',
+            pointerEvents: 'none',
+          }}
+        >
+          {t('initiative.turn_of', { name: sortCombatants(tracker.combatants).find(c => c.id === tracker.activeCombatantId)?.name ?? '?' })} · {t('initiative.round', { n: tracker.round })}
         </div>
       )}
 
