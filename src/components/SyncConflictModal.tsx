@@ -56,7 +56,7 @@ export function SyncConflictModal({ onClose }: Props) {
     setResolvingId(id)
     clearError(id)
     try {
-      await resolveConflictKeepMine(entry.local)
+      await resolveConflictKeepMine(entry.local, entry.cloud.updatedAt)
     } catch {
       setError(id)
     } finally {

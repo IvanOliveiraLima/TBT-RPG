@@ -477,25 +477,39 @@ export function initSyncListeners(): void {
 /* ── Conflict resolution ─────────────────────────────────────────────── */
 
 /**
- * Keep this device's version: force-upload local over cloud, then mark clean.
+ * Keep this device's version: force-upload local over cloud with a winning timestamp.
+ *
+ * Uses winTs = max(Date.now(), cloudUpdatedAt + 1) to guarantee the chosen version
+ * is strictly newer than the cloud on every device's clock — so other devices running
+ * LWW will pull it down and not revert to the old cloud version.
+ *
  * Requires an active session (throws if not authenticated or supabase unavailable).
  */
-export async function resolveConflictKeepMine(local: Character): Promise<void> {
+export async function resolveConflictKeepMine(
+  local: Character,
+  cloudUpdatedAt: number,
+): Promise<void> {
   if (!supabase) throw new Error('supabase_not_configured')
   const session = await getSession()
   if (!session) throw new Error('not_authenticated')
 
+  // Stamp a timestamp guaranteed to beat the cloud's version on any device clock
+  const winTs = Math.max(Date.now(), cloudUpdatedAt + 1)
   const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = local
+  const winner = { ...charData, updatedAt: winTs }
+
   const { error } = await supabase.from('characters').upsert({
     id:         local.id,
     user_id:    session.user.id,
-    data:       charData,
-    updated_at: new Date(local.updatedAt).toISOString(),
+    data:       winner,                              // updatedAt stamped inside data too
+    updated_at: new Date(winTs).toISOString(),
   })
   if (error) throw error
 
-  await markCharacterSynced(local.id, local.updatedAt)
+  // Persist locally as clean and reconciled (importCharacter sets dirty:false, baseUpdatedAt:winTs)
+  await importCharacter({ ...winner })
   useSyncConflictStore.getState().removeConflict(local.id)
+  await useCharactersStore.getState().fetchCharacters()
 }
 
 /**

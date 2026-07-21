@@ -315,24 +315,41 @@ describe('resolveConflictKeepMine', () => {
   it('upserts local data to cloud and removes conflict', async () => {
     const local = makeChar({ dirty: true, baseUpdatedAt: 1000, updatedAt: 1500 })
 
-    await resolveConflictKeepMine(local)
+    await resolveConflictKeepMine(local, 2000)
 
     expect(mockUpsert).toHaveBeenCalledTimes(1)
     expect(mockRemoveConflict).toHaveBeenCalledWith('char_001')
   })
 
-  it('calls markCharacterSynced with char id and updatedAt', async () => {
+  it('stamps updated_at strictly greater than cloudUpdatedAt', async () => {
+    // Use a far-future cloudUpdatedAt to force the max() branch: winTs = cloudUpdatedAt + 1
+    const cloudUpdatedAt = 9_999_999_999_999
     const local = makeChar({ dirty: true, baseUpdatedAt: 1000, updatedAt: 1500 })
 
-    await resolveConflictKeepMine(local)
+    await resolveConflictKeepMine(local, cloudUpdatedAt)
 
-    expect(mockMarkCharacterSynced).toHaveBeenCalledWith('char_001', 1500)
+    const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
+    const stamped = new Date(payload['updated_at'] as string).getTime()
+    expect(stamped).toBeGreaterThan(cloudUpdatedAt)
+  })
+
+  it('stamps the same winTs in both updated_at column and data.updatedAt', async () => {
+    const cloudUpdatedAt = 9_999_999_999_999
+    const local = makeChar({ dirty: true, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, cloudUpdatedAt)
+
+    const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
+    const data    = payload['data'] as Record<string, unknown>
+    const colTs   = new Date(payload['updated_at'] as string).getTime()
+    expect(data['updatedAt']).toBe(colTs)
+    expect(colTs).toBeGreaterThan(cloudUpdatedAt)
   })
 
   it('strips dirty and baseUpdatedAt from cloud payload', async () => {
     const local = makeChar({ dirty: true, baseUpdatedAt: 999, updatedAt: 1500 })
 
-    await resolveConflictKeepMine(local)
+    await resolveConflictKeepMine(local, 2000)
 
     const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
     const data    = payload['data'] as Record<string, unknown>
@@ -340,15 +357,42 @@ describe('resolveConflictKeepMine', () => {
     expect('baseUpdatedAt' in data).toBe(false)
   })
 
-  it('payload contains expected cloud columns', async () => {
+  it('payload contains expected cloud columns (id, user_id)', async () => {
     const local = makeChar({ dirty: true, updatedAt: 1500 })
 
-    await resolveConflictKeepMine(local)
+    await resolveConflictKeepMine(local, 2000)
 
     const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
     expect(payload['id']).toBe('char_001')
     expect(payload['user_id']).toBe('user_001')
-    expect(payload['updated_at']).toBe(new Date(1500).toISOString())
+  })
+
+  it('persists winning version locally via importCharacter (sets dirty:false + new base)', async () => {
+    const local = makeChar({ dirty: true, baseUpdatedAt: 1000, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, 2000)
+
+    expect(mockImportCharacter).toHaveBeenCalledTimes(1)
+    const imported = mockImportCharacter.mock.calls[0]![0] as Character
+    expect(imported.id).toBe('char_001')
+    // importCharacter receives the winning snapshot (updatedAt = winTs)
+    expect(imported.updatedAt).toBeGreaterThan(2000)
+  })
+
+  it('refreshes the character store after resolution', async () => {
+    const local = makeChar({ dirty: true, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, 2000)
+
+    expect(mockFetchCharacters).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT call markCharacterSynced (importCharacter handles persistence)', async () => {
+    const local = makeChar({ dirty: true, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, 2000)
+
+    expect(mockMarkCharacterSynced).not.toHaveBeenCalled()
   })
 })
 
