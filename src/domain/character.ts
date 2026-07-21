@@ -199,4 +199,8 @@ export interface Character {
   updatedAt: number
 
   locked?: boolean        // when true: permanent fields read-only; transients still editable
+
+  // Local sync metadata (IndexedDB only — stripped before upload to cloud)
+  dirty?: boolean         // true = has local edits not yet synced; undefined treated as true (legacy)
+  baseUpdatedAt?: number  // updatedAt of the cloud snapshot last reconciled; used by Sync.2 conflict detection
 }

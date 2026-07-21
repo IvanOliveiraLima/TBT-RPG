@@ -26,7 +26,7 @@ vi.mock('idb', () => ({
   }),
 }))
 
-import { listCharacters, getCharacter, saveCharacter, deleteCharacter } from '@/data/db'
+import { listCharacters, getCharacter, saveCharacter, deleteCharacter, importCharacter, markCharacterSynced } from '@/data/db'
 
 function makeChar(overrides: Partial<Character> = {}): Character {
   return {
@@ -383,6 +383,80 @@ describe('v2-native db (Character persisted directly)', () => {
       const result = await listCharacters()
       expect(result[0]!.inventory).toEqual([])
       expect(result[0]!.currency).toEqual({ pp: 0, gp: 0, sp: 0, cp: 0 })
+    })
+  })
+})
+
+// ── Dirty flag ───────────────────────────────────────────────────────────────
+
+describe('dirty flag and sync metadata', () => {
+  beforeEach(() => {
+    store.clear()
+    vi.clearAllMocks()
+  })
+
+  describe('saveCharacter', () => {
+    it('sets dirty: true on save', async () => {
+      await saveCharacter(makeChar())
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(true)
+    })
+
+    it('overwrites dirty: false with dirty: true on re-save', async () => {
+      store.set('char_001', makeChar({ dirty: false }))
+      await saveCharacter(makeChar())
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(true)
+    })
+  })
+
+  describe('importCharacter', () => {
+    it('sets dirty: false on import', async () => {
+      await importCharacter(makeChar({ updatedAt: 1700000000000 }))
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(false)
+    })
+
+    it('sets baseUpdatedAt to the character updatedAt on import', async () => {
+      await importCharacter(makeChar({ updatedAt: 1700000000000 }))
+      const stored = store.get('char_001') as Character
+      expect(stored.baseUpdatedAt).toBe(1700000000000)
+    })
+
+    it('overwrites dirty: true with dirty: false on import', async () => {
+      store.set('char_001', makeChar({ dirty: true }))
+      await importCharacter(makeChar({ updatedAt: 1700000000000 }))
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(false)
+    })
+  })
+
+  describe('markCharacterSynced', () => {
+    it('sets dirty: false when updatedAt matches syncedAt', async () => {
+      store.set('char_001', makeChar({ dirty: true, updatedAt: 1700000000000 }))
+      await markCharacterSynced('char_001', 1700000000000)
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(false)
+    })
+
+    it('sets baseUpdatedAt to syncedAt', async () => {
+      store.set('char_001', makeChar({ dirty: true, updatedAt: 1700000000000 }))
+      await markCharacterSynced('char_001', 1700000000000)
+      const stored = store.get('char_001') as Character
+      expect(stored.baseUpdatedAt).toBe(1700000000000)
+    })
+
+    it('does NOT clear dirty when updatedAt differs (concurrent edit)', async () => {
+      // Char was edited concurrently — updatedAt advanced beyond syncedAt
+      store.set('char_001', makeChar({ dirty: true, updatedAt: 1700000001000 }))
+      await markCharacterSynced('char_001', 1700000000000)
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(true)
+      expect(stored.updatedAt).toBe(1700000001000)  // preserved
+    })
+
+    it('does nothing when character does not exist', async () => {
+      await expect(markCharacterSynced('nonexistent', 1700000000000)).resolves.toBeUndefined()
     })
   })
 })

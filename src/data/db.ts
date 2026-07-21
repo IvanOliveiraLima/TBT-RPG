@@ -581,7 +581,7 @@ export async function getCharacter(id: string): Promise<Character | null> {
 export async function saveCharacter(character: Character): Promise<void> {
   const db = await openV2()
   try {
-    await db.put(V2_STORE, { ...character, updatedAt: Date.now() })
+    await db.put(V2_STORE, { ...character, updatedAt: Date.now(), dirty: true })
   } finally {
     db.close()
   }
@@ -685,7 +685,24 @@ export async function clearAllLocalData(): Promise<void> {
 export async function importCharacter(character: Character): Promise<void> {
   const db = await openV2()
   try {
-    await db.put(V2_STORE, character)
+    await db.put(V2_STORE, { ...character, dirty: false, baseUpdatedAt: character.updatedAt })
+  } finally {
+    db.close()
+  }
+}
+
+/**
+ * After a successful cloud upload, mark the local copy as clean.
+ * Only clears dirty if updatedAt still matches the uploaded snapshot —
+ * if the user edited concurrently, updatedAt will have advanced and we
+ * leave dirty: true so the next sync cycle picks it up.
+ */
+export async function markCharacterSynced(id: string, syncedAt: number): Promise<void> {
+  const db = await openV2()
+  try {
+    const existing = await db.get(V2_STORE, id) as Character | undefined
+    if (!existing || existing.updatedAt !== syncedAt) return
+    await db.put(V2_STORE, { ...existing, dirty: false, baseUpdatedAt: syncedAt })
   } finally {
     db.close()
   }

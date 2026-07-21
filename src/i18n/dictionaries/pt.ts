@@ -910,6 +910,18 @@ const pt: Record<keyof typeof en, string> = {
   'pwa.reload':           'Atualizar',
   'pwa.dismiss':          'Agora não',
   'pwa.offline_ready':    'Pronto para uso offline',
+
+  // ── Sync conflict ─────────────────────────────────────────────────────────────
+  'sync_conflict.banner':      '{n} conflito(s) de sincronização — Resolver',
+  'sync_conflict.resolve':     'Resolver',
+  'sync_conflict.title':       'Conflito de Sincronização',
+  'sync_conflict.body':        'Alterado em outro dispositivo enquanto você tinha mudanças não sincronizadas.',
+  'sync_conflict.this_device': 'Este aparelho',
+  'sync_conflict.cloud':       'Nuvem',
+  'sync_conflict.keep_mine':   'Manter deste aparelho',
+  'sync_conflict.keep_cloud':  'Manter da nuvem',
+  'sync_conflict.keep_both':   'Manter as duas',
+  'sync_conflict.copy_suffix': '(conflito)',
 };
 
 export default pt;
