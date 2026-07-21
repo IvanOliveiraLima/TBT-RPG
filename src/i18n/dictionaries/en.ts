@@ -906,6 +906,18 @@ const en = {
   'pwa.reload':           'Reload',
   'pwa.dismiss':          'Dismiss',
   'pwa.offline_ready':    'Ready to work offline',
+
+  // ── Sync conflict ─────────────────────────────────────────────────────────────
+  'sync_conflict.banner':      '{n} sync conflict(s) — Resolve',
+  'sync_conflict.resolve':     'Resolve',
+  'sync_conflict.title':       'Sync Conflict',
+  'sync_conflict.body':        'Edited on another device while you had unsynced changes.',
+  'sync_conflict.this_device': 'This device',
+  'sync_conflict.cloud':       'Cloud',
+  'sync_conflict.keep_mine':   "Keep this device's version",
+  'sync_conflict.keep_cloud':  'Keep cloud version',
+  'sync_conflict.keep_both':   'Keep both',
+  'sync_conflict.copy_suffix': '(conflict)',
 } as const;
 
 export default en;
