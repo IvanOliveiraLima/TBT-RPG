@@ -622,6 +622,18 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
+  // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
+  // On desktop, surfaces can coexist in different screen regions — no reset.
+  const selectSurface = useCallback((next: 'rolls' | 'initiative' | 'tools') => {
+    if (isMobile) {
+      setPanelOpen(false)
+      setAreaPanelOpen(false)
+      setAreaMode(false)
+      setFogMode(false)
+      setArmedPresetId(null)
+    }
+    setActivePanel(prev => (prev === next ? null : next))
+  }, [isMobile])
   // BroadcastChannel refs (owner emitter)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
   const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker })
@@ -1794,7 +1806,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           <button
             type="button"
             data-testid="roll-log-toggle"
-            onClick={() => setActivePanel(p => p === 'rolls' ? null : 'rolls')}
+            onClick={() => selectSurface('rolls')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
@@ -1809,7 +1821,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           <button
             type="button"
             data-testid="initiative-toggle"
-            onClick={() => setActivePanel(p => p === 'initiative' ? null : 'initiative')}
+            onClick={() => selectSurface('initiative')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
@@ -1826,7 +1838,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             <button
               type="button"
               data-testid="tools-menu-toggle"
-              onClick={() => setActivePanel(p => p === 'tools' ? null : 'tools')}
+              onClick={() => selectSurface('tools')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '6px 10px', borderRadius: 8, cursor: 'pointer',

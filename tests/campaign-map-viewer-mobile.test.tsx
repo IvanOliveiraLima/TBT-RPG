@@ -284,6 +284,60 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 })
 
+describe('CampaignMapViewer — mobile single surface (no overlapping bottom sheets)', () => {
+  beforeEach(() => { vi.clearAllMocks(); _isMobileValue = true })
+
+  it('opening roll-log-toggle closes an open grid sheet (Grade → ⚄)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('tools-menu-toggle'))
+    // Open grid via Ferramentas → Grade
+    fireEvent.click(screen.getByTestId('tools-menu-toggle'))
+    await waitFor(() => screen.getByTestId('tools-grid-btn'))
+    fireEvent.click(screen.getByTestId('tools-grid-btn'))
+    await waitFor(() => screen.getByTestId('grid-config-panel'))
+    // Now open roll log via the toggle bar
+    fireEvent.click(screen.getByTestId('roll-log-toggle'))
+    await waitFor(() => screen.getByTestId('viewer-roll-log-panel'))
+    // Grid sheet must be gone; roll log must be present
+    expect(screen.queryByTestId('grid-config-panel')).toBeNull()
+    expect(screen.getByTestId('viewer-roll-log-panel')).toBeDefined()
+  })
+
+  it('opening initiative-toggle closes an open area sheet (Áreas → ⚔)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('tools-menu-toggle'))
+    // Open area panel via Ferramentas → Áreas
+    fireEvent.click(screen.getByTestId('tools-menu-toggle'))
+    await waitFor(() => screen.getByTestId('tools-areas-btn'))
+    fireEvent.click(screen.getByTestId('tools-areas-btn'))
+    await waitFor(() => screen.getByTestId('area-panel'))
+    // Now open initiative via the toggle bar
+    fireEvent.click(screen.getByTestId('initiative-toggle'))
+    await waitFor(() => screen.getByTestId('viewer-initiative-panel'))
+    // Area sheet must be gone; initiative must be present
+    expect(screen.queryByTestId('area-panel')).toBeNull()
+    expect(screen.getByTestId('viewer-initiative-panel')).toBeDefined()
+  })
+})
+
+describe('CampaignMapViewer — desktop single surface unchanged (coexistence)', () => {
+  beforeEach(() => { vi.clearAllMocks(); _isMobileValue = false })
+
+  it('on desktop, roll-log-toggle does NOT close the grid panel (both coexist)', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    // Open grid via desktop toolbar
+    fireEvent.click(screen.getByTestId('grid-panel-toggle'))
+    await waitFor(() => screen.getByTestId('grid-config-panel'))
+    // Open roll log via toggle bar
+    fireEvent.click(screen.getByTestId('roll-log-toggle'))
+    await waitFor(() => screen.getByTestId('viewer-roll-log-panel'))
+    // On desktop both surfaces must remain visible simultaneously
+    expect(screen.getByTestId('grid-config-panel')).toBeDefined()
+    expect(screen.getByTestId('viewer-roll-log-panel')).toBeDefined()
+  })
+})
+
 describe('CampaignMapViewer — mobile broadcast (no tools, no Ferramentas)', () => {
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = true })
 
