@@ -7,6 +7,7 @@
  * - rollExpr: free notation (normal mode always)
  */
 import { roll, doubleDiceCount } from '@/domain/dice'
+import type { RollKind } from '@/domain/dice'
 import { useDiceStore } from '@/store/useDiceStore'
 
 interface CritDamage {
@@ -25,10 +26,12 @@ export function useSheetRoll() {
    * Roll a d20 check with the global rollMode.
    * If the result is a crit hit AND critDamage is provided, stores critContext.
    */
-  function rollCheck(label: string, bonus: number, critDamage?: CritDamage): void {
+  function rollCheck(label: string, bonus: number, critDamage?: CritDamage, kind?: RollKind): void {
     const bonusPart = bonus !== 0 ? (bonus > 0 ? `+${bonus}` : `${bonus}`) : ''
     const notation = `d20${bonusPart}`
-    const result = roll(notation, { mode: rollMode, label })
+    const opts: Parameters<typeof roll>[1] = { mode: rollMode, label }
+    if (kind !== undefined) opts.kind = kind
+    const result = roll(notation, opts)
     addRoll(result)
     clearCritContext()
     if (result.crit === 'hit' && critDamage !== undefined) {
@@ -61,5 +64,9 @@ export function useSheetRoll() {
     open()
   }
 
-  return { rollCheck, rollDamage, rollExpr }
+  function rollInitiative(label: string, bonus: number): void {
+    rollCheck(label, bonus, undefined, 'initiative')
+  }
+
+  return { rollCheck, rollDamage, rollExpr, rollInitiative }
 }

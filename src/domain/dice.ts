@@ -18,10 +18,13 @@ interface DieRoll {
 
 export type RollMode = 'normal' | 'advantage' | 'disadvantage'
 
+export type RollKind = 'initiative'
+
 export interface RollResult {
   id: string
   notation: string
   label?: string
+  kind?: RollKind
   dice: DieRoll[]
   modifier: number
   total: number
@@ -90,6 +93,7 @@ function makeId(): string {
 export interface RollOptions {
   mode?: RollMode
   label?: string
+  kind?: RollKind
   rng?: RngFn
 }
 
@@ -104,7 +108,7 @@ export interface RollOptions {
  * Crit: if exactly one d20 is kept, natural 20 → 'hit', natural 1 → 'miss'.
  */
 export function roll(notation: string, opts: RollOptions = {}): RollResult {
-  const { mode = 'normal', label, rng = defaultRng } = opts
+  const { mode = 'normal', label, kind, rng = defaultRng } = opts
   const parsed = parseNotation(notation)
   if (!parsed) throw new Error(`Invalid notation: "${notation}"`)
 
@@ -154,6 +158,7 @@ export function roll(notation: string, opts: RollOptions = {}): RollResult {
     at: Date.now(),
   }
   if (label !== undefined) result.label = label
+  if (kind !== undefined) result.kind = kind
   return result
 }
 
