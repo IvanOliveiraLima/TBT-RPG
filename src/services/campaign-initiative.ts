@@ -35,3 +35,31 @@ export async function saveInitiative(campaignId: string, t: InitiativeTracker): 
   })
   if (error) console.error('[campaign-initiative] save error', error)
 }
+
+/**
+ * Best-effort: chama a RPC register_initiative para cada campanha vinculada.
+ * A RPC valida membro + vínculo + toggle server-side; o client não decide nada.
+ * Nunca lança (fire-and-forget).
+ */
+export async function registerInitiative(
+  campaignIds: string[],
+  characterId: string,
+  value: number,
+  name: string,
+): Promise<void> {
+  if (!supabase || campaignIds.length === 0) return
+  await Promise.all(
+    campaignIds.map(id =>
+      supabase!
+        .rpc('register_initiative', {
+          p_campaign_id: id,
+          p_character_id: characterId,
+          p_value: value,
+          p_name: name,
+        })
+        .then(({ error }) => {
+          if (error) console.error('[campaign-initiative] register error', error)
+        }),
+    ),
+  )
+}
