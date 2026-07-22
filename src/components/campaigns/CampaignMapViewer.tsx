@@ -42,6 +42,7 @@ import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
 import { fetchCampaignCharacterImages, fetchLinkedCharactersDetails } from '@/services/campaign-view'
 import { getInitiative, saveInitiative } from '@/services/campaign-initiative'
+import { getAutoInitiative, updateAutoInitiative } from '@/services/campaign'
 import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
 import { emptyTracker, sortCombatants } from '@/domain/initiative'
 import type { InitiativeTracker } from '@/domain/initiative'
@@ -620,6 +621,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
   // Quick-add linked chars for initiative panel (owner only)
   const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
+  // Auto-initiative toggle state (owner only, fetched once on mount)
+  const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
   // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
@@ -858,6 +861,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       .catch(() => {})
     return () => { cancelled = true }
   }, [isOwner, broadcast, map.campaignId])
+
+  // Fetch auto-initiative flag on mount (owner only, not broadcast)
+  useEffect(() => {
+    if (!isOwner || broadcast) return
+    let cancelled = false
+    getAutoInitiative(map.campaignId)
+      .then(v => { if (!cancelled) setAutoInitiative(v) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.campaignId, isOwner, broadcast])
+
+  function handleToggleAutoInitiative(next: boolean) {
+    setAutoInitiative(next)
+    void updateAutoInitiative(map.campaignId, next)
+  }
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -1892,6 +1910,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             tracker={tracker}
             linkedChars={linkedChars}
             onUpdate={(t) => { void handleUpdateTracker(t) }}
+            autoInitiative={autoInitiative}
+            onToggleAutoInitiative={handleToggleAutoInitiative}
           />
         </div>
       )}
@@ -1908,6 +1928,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             tracker={tracker}
             linkedChars={linkedChars}
             onUpdate={(t) => { void handleUpdateTracker(t) }}
+            autoInitiative={autoInitiative}
+            onToggleAutoInitiative={handleToggleAutoInitiative}
           />
         </div>
       )}

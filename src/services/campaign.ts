@@ -299,6 +299,17 @@ export async function updateAutoInitiative(campaignId: string, value: boolean): 
   if (error) console.error('[campaign] updateAutoInitiative error', error)
 }
 
+export async function getAutoInitiative(campaignId: string): Promise<boolean> {
+  if (!supabase) return false
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('auto_initiative')
+    .eq('id', campaignId)
+    .single()
+  if (error || !data) return false
+  return (data.auto_initiative as boolean) ?? false
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapMemberRow(row: any): CampaignMember {
   return {

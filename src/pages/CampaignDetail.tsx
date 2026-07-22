@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getCampaign, listCampaignMembers, removeMember, updateAutoInitiative } from '@/services/campaign'
+import { getCampaign, listCampaignMembers, removeMember } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
 import { unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { fetchLinkedCharactersDetails } from '@/services/campaign-view'
@@ -383,52 +383,6 @@ export default function CampaignDetail() {
             }}
             onCancel={() => setLinkModalOpen(false)}
           />
-        )}
-
-        {/* Auto-initiative toggle — owner only */}
-        {isOwner && campaign && (
-          <div style={{
-            gridColumn: '1 / -1',
-            background: T.elevated,
-            border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 10,
-            padding: '14px 18px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-          }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              cursor: 'pointer',
-              fontFamily: T.sans,
-              color: T.textPrimary,
-              fontSize: 14,
-            }}>
-              <input
-                type="checkbox"
-                data-testid="auto-initiative-toggle"
-                checked={campaign.autoInitiative}
-                onChange={e => {
-                  const next = e.target.checked
-                  setCampaign(c => c ? { ...c, autoInitiative: next } : c)
-                  void updateAutoInitiative(campaign.id, next)
-                }}
-                style={{ width: 16, height: 16, accentColor: T.purple, cursor: 'pointer' }}
-              />
-              {t('campaign_detail.auto_initiative_label')}
-            </label>
-            <p style={{
-              margin: 0,
-              fontFamily: T.sans,
-              fontSize: 12,
-              color: T.textMuted,
-              paddingLeft: 28,
-            }}>
-              {t('campaign_detail.auto_initiative_hint')}
-            </p>
-          </div>
         )}
 
         {/* Token presets section — owner only */}

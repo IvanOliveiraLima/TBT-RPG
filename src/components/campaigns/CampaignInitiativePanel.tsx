@@ -54,9 +54,11 @@ interface Props {
   tracker: InitiativeTracker
   linkedChars: LinkedChar[]
   onUpdate: (t: InitiativeTracker) => void
+  autoInitiative?: boolean
+  onToggleAutoInitiative?: (v: boolean) => void
 }
 
-export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdate }: Props) {
+export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdate, autoInitiative, onToggleAutoInitiative }: Props) {
   const { t } = useTranslation()
   const [monsterName, setMonsterName] = useState('')
   const [monsterInit, setMonsterInit] = useState('0')
@@ -137,15 +139,29 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
             ? t('initiative.round', { n: tracker.round })
             : t('initiative.title')}
         </div>
-        {isOwner && (
-          <button
-            data-testid={tracker.active ? 'initiative-end-btn' : 'initiative-start-btn'}
-            onClick={() => onUpdate(tracker.active ? endCombat(tracker) : startCombat(tracker))}
-            style={btnBase}
-          >
-            {tracker.active ? t('initiative.end') : t('initiative.start')}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isOwner && onToggleAutoInitiative && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' }}>
+              <input
+                type="checkbox"
+                data-testid="auto-initiative-toggle"
+                checked={autoInitiative ?? false}
+                onChange={e => onToggleAutoInitiative(e.target.checked)}
+                style={{ width: 13, height: 13, accentColor: T.accent, cursor: 'pointer' }}
+              />
+              {t('initiative.auto_initiative')}
+            </label>
+          )}
+          {isOwner && (
+            <button
+              data-testid={tracker.active ? 'initiative-end-btn' : 'initiative-start-btn'}
+              onClick={() => onUpdate(tracker.active ? endCombat(tracker) : startCombat(tracker))}
+              style={btnBase}
+            >
+              {tracker.active ? t('initiative.end') : t('initiative.start')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Turn controls (owner, during active combat) ─────────── */}

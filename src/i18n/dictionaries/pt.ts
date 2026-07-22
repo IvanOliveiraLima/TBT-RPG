@@ -775,10 +775,6 @@ const pt: Record<keyof typeof en, string> = {
   'leave_campaign.leaving':       'Saindo…',
   'leave_campaign.error':         'Não foi possível sair da campanha. Tente novamente.',
 
-  // Campaign detail — auto initiative toggle (master only)
-  'campaign_detail.auto_initiative_label': 'Auto-iniciativa das rolagens dos jogadores',
-  'campaign_detail.auto_initiative_hint':  'Quando ligado, a rolagem de iniciativa do jogador atualiza o combatente dele no tracker.',
-
   // Campaign detail — actions section
   'campaign_detail.actions':       'Ações',
   'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',
@@ -926,8 +922,9 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.add_monster': 'Adicionar monstro',
   'initiative.name':        'Nome',
   'initiative.value':       'Init',
-  'initiative.turn_of':     'Turno: {name}',
-  'initiative.empty':       'Nenhum combatente ainda',
+  'initiative.turn_of':         'Turno: {name}',
+  'initiative.empty':           'Nenhum combatente ainda',
+  'initiative.auto_initiative': 'Auto-iniciativa',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',

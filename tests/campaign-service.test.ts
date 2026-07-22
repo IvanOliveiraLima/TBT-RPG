@@ -77,6 +77,7 @@ import {
   leaveCampaign,
   listCampaignMembers,
   updateAutoInitiative,
+  getAutoInitiative,
   CampaignServiceError,
 } from '@/services/campaign'
 
@@ -473,5 +474,38 @@ describe('getCampaign — autoInitiative mapping', () => {
 
     const result = await getCampaign('c1')
     expect(result?.autoInitiative).toBe(false)
+  })
+})
+
+// ── getAutoInitiative ─────────────────────────────────────────────────────────
+
+describe('getAutoInitiative', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('returns false when supabase is null', async () => {
+    resetAuth()
+    await expect(getAutoInitiative('c1')).resolves.toBe(false)
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('returns true when auto_initiative is true', async () => {
+    setupAuth()
+    const chain = makeChain({ data: { auto_initiative: true }, error: null })
+    mockFrom.mockReturnValue(chain)
+    await expect(getAutoInitiative('c1')).resolves.toBe(true)
+  })
+
+  it('returns false when auto_initiative is false', async () => {
+    setupAuth()
+    const chain = makeChain({ data: { auto_initiative: false }, error: null })
+    mockFrom.mockReturnValue(chain)
+    await expect(getAutoInitiative('c1')).resolves.toBe(false)
+  })
+
+  it('returns false on supabase error', async () => {
+    setupAuth()
+    const chain = makeChain({ data: null, error: { message: 'not found' } })
+    mockFrom.mockReturnValue(chain)
+    await expect(getAutoInitiative('c1')).resolves.toBe(false)
   })
 })

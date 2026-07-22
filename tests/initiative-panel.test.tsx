@@ -10,7 +10,7 @@
  *  - PT / EN titles
  */
 import { describe, it, expect, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, fireEvent } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
 import type { InitiativeTracker } from '@/domain/initiative'
@@ -207,5 +207,139 @@ describe('CampaignInitiativePanel — title i18n', () => {
       'pt',
     )
     expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Rodada 3')
+  })
+})
+
+// ── auto-initiative toggle ────────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — auto-initiative toggle', () => {
+  it('renders toggle for owner when onToggleAutoInitiative is provided', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={false}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    const toggle = screen.getByTestId('auto-initiative-toggle') as HTMLInputElement
+    expect(toggle).toBeDefined()
+    expect(toggle.checked).toBe(false)
+  })
+
+  it('renders toggle checked when autoInitiative=true', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={true}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    const toggle = screen.getByTestId('auto-initiative-toggle') as HTMLInputElement
+    expect(toggle.checked).toBe(true)
+  })
+
+  it('does NOT render toggle when onToggleAutoInitiative is absent (member view)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner={false}
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('auto-initiative-toggle')).toBeNull()
+  })
+
+  it('does NOT render toggle for non-owner even when callback provided', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner={false}
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={false}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('auto-initiative-toggle')).toBeNull()
+  })
+
+  it('calls onToggleAutoInitiative(true) when checkbox clicked from false', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={false}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('auto-initiative-toggle'))
+    expect(onToggle).toHaveBeenCalledWith(true)
+  })
+
+  it('calls onToggleAutoInitiative(false) when checkbox clicked from true', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={true}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('auto-initiative-toggle'))
+    expect(onToggle).toHaveBeenCalledWith(false)
+  })
+
+  it('shows "Auto initiative" label in EN', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={false}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Auto initiative')
+  })
+
+  it('shows "Auto-iniciativa" label in PT', () => {
+    const onToggle = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isOwner
+        tracker={makeTracker()}
+        linkedChars={[]}
+        onUpdate={noOp}
+        autoInitiative={false}
+        onToggleAutoInitiative={onToggle}
+      />,
+      'pt',
+    )
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Auto-iniciativa')
   })
 })

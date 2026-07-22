@@ -771,10 +771,6 @@ const en = {
   'leave_campaign.leaving':       'Leaving…',
   'leave_campaign.error':         'Could not leave campaign. Please try again.',
 
-  // Campaign detail — auto initiative toggle (master only)
-  'campaign_detail.auto_initiative_label': 'Auto initiative from player rolls',
-  'campaign_detail.auto_initiative_hint':  'When on, a player\'s initiative roll updates their combatant in the tracker.',
-
   // Campaign detail — actions section
   'campaign_detail.actions':       'Actions',
   'campaign_detail.delete_warning': 'Permanently deletes the campaign and removes all members.',
@@ -922,8 +918,9 @@ const en = {
   'initiative.add_monster': 'Add monster',
   'initiative.name':        'Name',
   'initiative.value':       'Init',
-  'initiative.turn_of':     'Turn: {name}',
-  'initiative.empty':       'No combatants yet',
+  'initiative.turn_of':         'Turn: {name}',
+  'initiative.empty':           'No combatants yet',
+  'initiative.auto_initiative': 'Auto initiative',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',
