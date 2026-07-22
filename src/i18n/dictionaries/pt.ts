@@ -775,6 +775,10 @@ const pt: Record<keyof typeof en, string> = {
   'leave_campaign.leaving':       'Saindo…',
   'leave_campaign.error':         'Não foi possível sair da campanha. Tente novamente.',
 
+  // Campaign detail — auto initiative toggle (master only)
+  'campaign_detail.auto_initiative_label': 'Auto-iniciativa das rolagens dos jogadores',
+  'campaign_detail.auto_initiative_hint':  'Quando ligado, a rolagem de iniciativa do jogador atualiza o combatente dele no tracker.',
+
   // Campaign detail — actions section
   'campaign_detail.actions':       'Ações',
   'campaign_detail.delete_warning': 'Exclui permanentemente a campanha e remove todos os membros.',

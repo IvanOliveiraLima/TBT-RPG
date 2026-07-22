@@ -4,6 +4,7 @@ export interface Campaign {
   description: string | null
   ownerId: string
   inviteCode: string
+  autoInitiative: boolean
   createdAt: number
   updatedAt: number
 }
