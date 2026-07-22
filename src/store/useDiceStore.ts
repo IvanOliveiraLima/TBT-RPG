@@ -11,6 +11,7 @@ interface CritContext {
 interface CampaignContext {
   campaignTargets: string[]
   actorName: string
+  characterId?: string
 }
 
 interface DiceState {
@@ -33,6 +34,7 @@ interface DiceState {
 
   campaignTargets: string[]
   actorName: string
+  characterId: string
   setCampaignContext: (ctx: CampaignContext) => void
   clearCampaignContext: () => void
 }
@@ -42,7 +44,7 @@ export const useDiceStore = create<DiceState>((set, get) => ({
   lastResult: null,
 
   addRoll: (result) => {
-    const { campaignTargets, actorName } = get()
+    const { campaignTargets, actorName, characterId } = get()
     if (campaignTargets.length > 0) {
       // fire-and-forget: import lazily to avoid circular dep at module load time
       void import('@/services/campaign-dice-log').then(({ logRoll }) =>
@@ -50,6 +52,13 @@ export const useDiceStore = create<DiceState>((set, get) => ({
           console.error('[dice-store] logRoll failed', err)
         })
       )
+      if (result.kind === 'initiative' && characterId) {
+        void import('@/services/campaign-initiative').then(({ registerInitiative }) =>
+          registerInitiative(campaignTargets, characterId, result.total, actorName).catch(err => {
+            console.error('[dice-store] registerInitiative failed', err)
+          })
+        )
+      }
     }
     set((state) => ({
       history: [result, ...state.history].slice(0, HISTORY_CAP),
@@ -73,7 +82,8 @@ export const useDiceStore = create<DiceState>((set, get) => ({
 
   campaignTargets: [],
   actorName: '',
-  setCampaignContext: ({ campaignTargets, actorName }) =>
-    set({ campaignTargets, actorName }),
-  clearCampaignContext: () => set({ campaignTargets: [], actorName: '' }),
+  characterId: '',
+  setCampaignContext: ({ campaignTargets, actorName, characterId }) =>
+    set({ campaignTargets, actorName, characterId: characterId ?? '' }),
+  clearCampaignContext: () => set({ campaignTargets: [], actorName: '', characterId: '' }),
 }))

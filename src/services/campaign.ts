@@ -284,9 +284,30 @@ function mapCampaignRow(row: any): Campaign {
     description: (row.description ?? null) as string | null,
     ownerId: row.owner_id as string,
     inviteCode: (row.invite_code ?? '') as string,
+    autoInitiative: (row.auto_initiative as boolean) ?? false,
     createdAt: new Date(row.created_at as string).getTime(),
     updatedAt: new Date(row.updated_at as string).getTime(),
   }
+}
+
+export async function updateAutoInitiative(campaignId: string, value: boolean): Promise<void> {
+  if (!supabase) return
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ auto_initiative: value })
+    .eq('id', campaignId)
+  if (error) console.error('[campaign] updateAutoInitiative error', error)
+}
+
+export async function getAutoInitiative(campaignId: string): Promise<boolean> {
+  if (!supabase) return false
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('auto_initiative')
+    .eq('id', campaignId)
+    .single()
+  if (error || !data) return false
+  return (data.auto_initiative as boolean) ?? false
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

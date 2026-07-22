@@ -922,8 +922,9 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.add_monster': 'Adicionar monstro',
   'initiative.name':        'Nome',
   'initiative.value':       'Init',
-  'initiative.turn_of':     'Turno: {name}',
-  'initiative.empty':       'Nenhum combatente ainda',
+  'initiative.turn_of':         'Turno: {name}',
+  'initiative.empty':           'Nenhum combatente ainda',
+  'initiative.auto_initiative': 'Auto-iniciativa',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',

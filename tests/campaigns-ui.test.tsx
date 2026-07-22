@@ -49,7 +49,7 @@ function renderWithProviders(ui: React.ReactElement, lang: 'pt' | 'en' = 'pt') {
 function makeCampaign(overrides: Partial<Campaign> = {}): Campaign {
   return {
     id: 'c1', name: 'Test Campaign', description: null,
-    ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+    ownerId: 'u1', inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     ...overrides,
   }
 }
