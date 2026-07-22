@@ -264,6 +264,7 @@ This order matters: components built on a broken adapter produce invisible data 
 - **Tailwind** is available for other components but CharSelect/Login use inline styles for pixel-perfect fidelity
 - **exactOptionalPropertyTypes + noUncheckedIndexedAccess** enabled — be careful with optional chaining
 - `vite-plugin-pwa` installed with `--legacy-peer-deps` (Vite 8 not yet in peer dep range of v1.2.0)
+- **Responsividade do viewer (mobile):** breakpoint centralizado no hook `useIsMobile`; UI mobile sempre atrás de `isMobile` (desktop nunca muda). Painéis viram bottom sheets `fixed` full-width e há **uma superfície ativa por vez** — todo ponto de entrada de superfície no mobile passa por um helper que zera as demais antes de abrir a nova (`selectSurface` + coordenação no menu Ferramentas).
 
 ### internationalization (i18n)
 
@@ -939,6 +940,25 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   `updatedAt = max(now, cloud+1)` em `data` e coluna, pra vencer/propagar em qualquer relógio),
   **manter da nuvem** (importa o snapshot), **manter as duas** (nuvem fica no id; edição local vira ficha nova
   `"(conflito)"`, `dirty`). Store de conflito em memória, re-detectável no próximo sync.
+
+### VTT — iniciativa & turn tracker (COMPLETED — PR #227)
+- Lista de combatentes por campanha, **gerenciada pelo mestre**, com valor de iniciativa e destaque do
+  turno atual (próximo/anterior); compartilhada com os jogadores via polling (modo leitura).
+- Introduziu o refactor de **`activePanel` único** no `CampaignMapViewer`: os painéis do viewer
+  (rolagens / presets / iniciativa) passaram a ser **mutuamente exclusivos**, substituindo três booleans
+  independentes. Base pro comportamento mobile de #228/#229.
+
+### VTT — viewer responsivo no mobile (COMPLETED — PR #228)
+- Novo hook **`useIsMobile`** (matchMedia + listener de resize).
+- No mobile: a toolbar lateral direita colapsa num menu **☰ Ferramentas** e os painéis renderizam como
+  **bottom sheets**. Todo o caminho **desktop fica atrás de `!isMobile` — inalterado**.
+- Chaves de i18n novas (EN/PT). Testes: hook + layout do viewer.
+
+### VTT — superfície única no mobile (COMPLETED — PR #229)
+- Helper **`selectSurface(next)`**: no mobile, abrir uma superfície da barra de toggles
+  (rolagens / iniciativa / ferramentas) **fecha os painéis de ferramenta** (grade / áreas / névoa /
+  preset armado) para **nunca haver duas bottom sheets sobrepostas**.
+- No desktop, sem reset: superfícies podem coexistir (comportamento do #228 preservado).
 
 ---
 
@@ -1662,6 +1682,9 @@ function buildInviteLink(): string {
 | **Higiene de código morto (knip):** projeto usa `knip` (`npm run knip`) pra barrar arquivos/exports/deps órfãos; baseline verde; suíte auditada (sem skip/only/trivial/resíduo v1). | PRs #219–#220 | Impede novo acúmulo de código/teste morto |
 | **Sync — sobe só o que foi editado (`dirty`):** upload apenas de fichas com edição local não sincronizada; `undefined⇒dirty` (legado); metadados (`dirty`/`baseUpdatedAt`) são locais (removidos antes do upsert). Cópia velha só reaberta nunca sobrescreve a nuvem. | PR #223 | Blinda multi-dispositivo contra clock skew; base pra detecção de conflito |
 | **Sync — conflito nunca é LWW silencioso:** `dirty` + `cloud.updated_at > baseUpdatedAt` → segura (não sobe, download pula) e pede resolução no modal (manter deste aparelho / da nuvem / as duas), sem perder dado; "manter deste aparelho" carimba `updatedAt = max(now, cloud+1)` pra vencer em todos os dispositivos. | PR #224 | Edição sobre base velha vira escolha consciente, não perda |
+| Painéis do viewer mutuamente exclusivos via `activePanel` único | #227 | Uma superfície de narração aberta por vez (rolagens/presets/iniciativa/ferramentas); substituiu três booleans; evita painéis empilhados |
+| Layout mobile do viewer atrás de `useIsMobile`; render desktop inalterado | #228 | Layout responsivo opt-in (toolbar→menu Ferramentas, painéis→bottom sheets) sem regressão no desktop |
+| Superfície única no mobile (barra de toggles reseta painéis de ferramenta) | #229 | Bottom sheets são `fixed` full-width; duas abertas ao mesmo tempo se sobrepõem |
 
 ---
 
@@ -1825,7 +1848,7 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Marcador por duplo-clique.**~~ *Resolved (PR #171).* Marcador criado por duplo-clique (`dblclick`); `doubleClickZoom={false}` evita zoom no duplo-clique.
 - **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
 - **OQ — Biblioteca de tokens por-usuário (global).** Hoje os presets são por campanha; permitir uma biblioteca pessoal do mestre reutilizável entre campanhas (exige repensar storage/RLS por-usuário). Deferred.
-- **OQ — Iniciativa / turnos.** Lista ordenada de combatentes com valor de iniciativa e destaque do turno atual (próximo/anterior); painel, compartilhado com os jogadores. Bloco maior, não mexe em coordenada. Deferred.
+- ~~**OQ — Iniciativa / turnos.**~~ *Resolved (PR #227).* Lista ordenada de combatentes por campanha, gerenciada pelo mestre, com destaque do turno atual (próximo/anterior), compartilhada com os jogadores via polling. Introduziu o `activePanel` único (painéis do viewer mutuamente exclusivos).
 - **OQ — Régua / medir distância.** Medir distância em células/pés entre dois pontos; pode ser efêmera e só do mestre (sem tabela/sync). Extra barato. Deferred.
 - **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
 - **OQ — Rolagem secreta do mestre.** Hoje toda rolagem em campanha é pública pra mesa; permitir que o mestre role escondido (só ele vê). Deferred.
