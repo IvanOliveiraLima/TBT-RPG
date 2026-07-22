@@ -53,6 +53,8 @@ PWA instalável.
 - **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
 - **Dados** — motor de rolagem com vantagem/desvantagem e crítico; tocar em perícias/testes/ataques rola com o bônus certo; em campanha, as rolagens aparecem num log compartilhado que a mesa vê (o mestre rola como "Mestre")
 - **HP ao vivo** — o mestre vê o HP (e outros stats) de cada personagem vinculado atualizar automaticamente a cada ~10s, sem precisar recarregar a página
+- **Iniciativa e turnos** — o mestre monta a ordem de iniciativa dos combatentes e avança/retrocede o turno; os jogadores acompanham o turno atual em modo leitura
+- **Viewer responsivo no celular** — no mobile a barra de ferramentas vira um menu ☰ e os painéis viram bottom sheets, com uma superfície aberta por vez; no desktop nada muda
 
 **Sincronização (opcional):**
 

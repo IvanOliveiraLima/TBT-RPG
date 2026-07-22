@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import type React from 'react'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { MapContainer, ImageOverlay, Marker, Popup, useMap, useMapEvents, SVGOverlay } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -39,7 +40,11 @@ import {
 } from '@/services/campaign-token-presets'
 import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
-import { fetchCampaignCharacterImages } from '@/services/campaign-view'
+import { fetchCampaignCharacterImages, fetchLinkedCharactersDetails } from '@/services/campaign-view'
+import { getInitiative, saveInitiative } from '@/services/campaign-initiative'
+import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
+import { emptyTracker, sortCombatants } from '@/domain/initiative'
+import type { InitiativeTracker } from '@/domain/initiative'
 import { snapToGrid } from '@/utils/snap-to-grid'
 import { tokenDiameterPx } from '@/utils/token-size'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
@@ -536,8 +541,35 @@ const GRID_INPUT: React.CSSProperties = {
   fontSize: 16,
 }
 
+// Mobile bottom-sheet container — position:fixed, anchored to bottom, full width
+const BOTTOM_SHEET: React.CSSProperties = {
+  position:     'fixed',
+  bottom:       0,
+  left:         0,
+  right:        0,
+  zIndex:       2001,
+  background:   'rgba(21,18,28,0.97)',
+  borderTop:    '1px solid #4A3A6B',
+  borderRadius: '16px 16px 0 0',
+  padding:      '12px 16px 28px',
+  display:      'flex',
+  flexDirection:'column',
+  gap:          10,
+  maxHeight:    '58vh',
+  overflowY:    'auto',
+  fontFamily:   "'Inter', system-ui, sans-serif",
+}
+
+const BOTTOM_SHEET_HDR: React.CSSProperties = {
+  display:        'flex',
+  alignItems:     'center',
+  justifyContent: 'space-between',
+  marginBottom:   4,
+}
+
 export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGridSaved, broadcast = false }: Props) {
   const { t } = useTranslation()
+  const isMobile = useIsMobile()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
   const [error, setError] = useState(false)
   const [markers, setMarkers] = useState<CampaignMapMarker[]>([])
@@ -566,7 +598,9 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [presets, setPresets] = useState<CampaignTokenPreset[]>([])
   const [presetUrls, setPresetUrls] = useState<Record<string, string>>({})
   const [armedPresetId, setArmedPresetId] = useState<string | null>(null)
-  const [presetPanelOpen, setPresetPanelOpen] = useState(false)
+  // Single active panel — mutually exclusive (rolls | presets | initiative)
+  // 'tools' = mobile Ferramentas bottom-sheet menu
+  const [activePanel, setActivePanel] = useState<'rolls' | 'presets' | 'initiative' | 'tools' | null>(null)
   // Area drawing state (owner only)
   const [areas, setAreas] = useState<CampaignMapArea[]>([])
   const [areaMode, setAreaMode] = useState(false)
@@ -582,14 +616,28 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   useEffect(() => { fogRef.current = fog }, [fog])
   // Tracks the last painted cell key so drag-paint skips redundant setFog calls for the same cell
   const lastPaintedCellRef = useRef<string | null>(null)
-  // BroadcastChannel refs (owner emitter)
-  const broadcastChRef       = useRef<BroadcastChannel | null>(null)
-  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid })
-  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid } }, [tokens, fog, areas, localGrid])
+  // Initiative tracker state + panel toggle (declared before broadcastSnapshotRef to avoid TDZ)
+  const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
+  // Quick-add linked chars for initiative panel (owner only)
+  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
-  // Roll log panel (all members, not broadcast)
-  const [rollLogOpen, setRollLogOpen] = useState(false)
+  // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
+  // On desktop, surfaces can coexist in different screen regions — no reset.
+  const selectSurface = useCallback((next: 'rolls' | 'initiative' | 'tools') => {
+    if (isMobile) {
+      setPanelOpen(false)
+      setAreaPanelOpen(false)
+      setAreaMode(false)
+      setFogMode(false)
+      setArmedPresetId(null)
+    }
+    setActivePanel(prev => (prev === next ? null : next))
+  }, [isMobile])
+  // BroadcastChannel refs (owner emitter)
+  const broadcastChRef       = useRef<BroadcastChannel | null>(null)
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker } }, [tokens, fog, areas, localGrid, tracker])
 
   useEffect(() => {
     let cancelled = false
@@ -729,8 +777,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     if (!isOwner || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
-    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid })
-  }, [isOwner, broadcast, tokens, fog, areas, localGrid])
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker })
+  }, [isOwner, broadcast, tokens, fog, areas, localGrid, tracker])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
@@ -739,13 +787,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     ch.onmessage = (e: MessageEvent) => {
       if (e.data?.type === 'snapshot') {
-        const { tokens: t, fog: f, areas: a, grid: g } = e.data as {
-          tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid
+        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini } = e.data as {
+          tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
         }
         if (Array.isArray(t)) setTokens(t)
         if (f) setFog(f)
         if (Array.isArray(a)) setAreas(a)
         if (g) setLocalGrid(g)
+        if (ini) setTracker(ini)
       }
     }
     ch.postMessage({ type: 'hello' })
@@ -770,6 +819,45 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       .catch(() => undefined)
     return () => { cancelled = true }
   }, [isOwner, map.campaignId])
+
+  // Fetch initiative on mount (not broadcast)
+  useEffect(() => {
+    if (broadcast) return
+    let cancelled = false
+    getInitiative(map.campaignId)
+      .then(tr => { if (!cancelled) setTracker(tr) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [map.campaignId, broadcast])
+
+  // Poll initiative every 5 s for non-owners
+  useEffect(() => {
+    if (isOwner || broadcast) return
+    let cancelled = false
+    const id = setInterval(() => {
+      getInitiative(map.campaignId)
+        .then(tr => { if (!cancelled) setTracker(tr) })
+        .catch(() => {})
+    }, TOKEN_POLL_MS)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [map.campaignId, isOwner, broadcast])
+
+  // Fetch linked char names for initiative quick-add (owner only)
+  useEffect(() => {
+    if (!isOwner || broadcast) return
+    let cancelled = false
+    fetchLinkedCharactersDetails(map.campaignId)
+      .then(details => {
+        if (cancelled) return
+        setLinkedChars(
+          details
+            .filter(d => d.character !== null)
+            .map(d => ({ characterId: d.characterId, name: d.character!.name }))
+        )
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isOwner, broadcast, map.campaignId])
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -978,6 +1066,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     }
   }
 
+  async function handleUpdateTracker(t: InitiativeTracker) {
+    setTracker(t)
+    await saveInitiative(map.campaignId, t)
+  }
+
   async function handleSaveGrid() {
     setSavingGrid(true)
     try {
@@ -1136,7 +1229,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
     >
       {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
-      {isOwner && (
+      {/* ── Owner toolbar — desktop only (hidden on mobile; tools menu replaces it) ── */}
+      {isOwner && !isMobile && (
         <div
           style={{
             position: 'absolute', top: 8, right: 8, zIndex: 1000,
@@ -1285,11 +1379,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </button>
 
           {/* Preset palette — toggle button or panel */}
-          {!presetPanelOpen && (
+          {activePanel !== 'presets' && (
             <button
               type="button"
               data-testid="preset-palette-toggle"
-              onClick={() => setPresetPanelOpen(true)}
+              onClick={() => setActivePanel('presets')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
@@ -1302,7 +1396,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               ⬡ {t('token_presets.palette')}
             </button>
           )}
-          {presetPanelOpen && (
+          {activePanel === 'presets' && (
             <div
               data-testid="preset-palette-panel"
               style={{
@@ -1324,7 +1418,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                 <button
                   type="button"
                   data-testid="preset-palette-close"
-                  onClick={() => { setPresetPanelOpen(false); setArmedPresetId(null) }}
+                  onClick={() => { setActivePanel(null); setArmedPresetId(null) }}
                   style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
                 >×</button>
               </div>
@@ -1706,28 +1800,62 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         </div>
       )}
 
-      {/* Roll log toggle — all members, not in broadcast */}
+      {/* Top-left toggle bar — roll log + initiative + Ferramentas (mobile owner); not in broadcast */}
       {!broadcast && (
-        <button
-          type="button"
-          data-testid="roll-log-toggle"
-          onClick={() => setRollLogOpen(v => !v)}
-          style={{
-            position: 'absolute', top: 8, left: 56, zIndex: 999,
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-            background: rollLogOpen ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
-            color: rollLogOpen ? T.textPrimary : T.textMuted,
-            border: `1px solid ${rollLogOpen ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
-            fontSize: 12, fontWeight: 600, fontFamily: T.sans,
-          }}
-        >
-          ⚄ {t('dice_log.rolls_toggle')}
-        </button>
+        <div style={{ position: 'absolute', top: 8, left: 56, zIndex: 999, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            data-testid="roll-log-toggle"
+            onClick={() => selectSurface('rolls')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: activePanel === 'rolls' ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: activePanel === 'rolls' ? T.textPrimary : T.textMuted,
+              border: `1px solid ${activePanel === 'rolls' ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ⚄ {t('dice_log.rolls_toggle')}
+          </button>
+          <button
+            type="button"
+            data-testid="initiative-toggle"
+            onClick={() => selectSurface('initiative')}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: activePanel === 'initiative' ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+              color: activePanel === 'initiative' ? T.textPrimary : T.textMuted,
+              border: `1px solid ${activePanel === 'initiative' ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ⚔ {t('initiative.title')}
+          </button>
+          {/* Ferramentas button — mobile owner only; replaces the hidden right-side toolbar */}
+          {isOwner && isMobile && (
+            <button
+              type="button"
+              data-testid="tools-menu-toggle"
+              onClick={() => selectSurface('tools')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                background: activePanel === 'tools' ? '#5B3FA8' : 'rgba(21,18,28,0.85)',
+                color: activePanel === 'tools' ? T.textPrimary : T.textMuted,
+                border: `1px solid ${activePanel === 'tools' ? '#5B3FA8' : 'rgba(255,255,255,0.12)'}`,
+                fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+              }}
+            >
+              ☰ {t('campaign_maps.tools_menu_btn')}
+            </button>
+          )}
+        </div>
       )}
 
-      {/* Roll log panel (collapsible) */}
-      {!broadcast && rollLogOpen && (
+      {/* Roll log panel — desktop: floating box; mobile: bottom sheet */}
+      {!broadcast && activePanel === 'rolls' && !isMobile && (
         <div
           data-testid="viewer-roll-log-panel"
           style={{
@@ -1736,6 +1864,318 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           }}
         >
           <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+        </div>
+      )}
+      {!broadcast && activePanel === 'rolls' && isMobile && (
+        <div data-testid="viewer-roll-log-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {t('dice_log.rolls_toggle')}
+            </span>
+            <button type="button" onClick={() => setActivePanel(null)} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>×</button>
+          </div>
+          <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+        </div>
+      )}
+
+      {/* Initiative panel — desktop: floating box; mobile: bottom sheet */}
+      {!broadcast && activePanel === 'initiative' && !isMobile && (
+        <div
+          data-testid="viewer-initiative-panel"
+          style={{
+            position: 'absolute', top: 48, left: 56, zIndex: 997,
+            width: 300, maxHeight: '80%', overflowY: 'auto',
+          }}
+        >
+          <CampaignInitiativePanel
+            isOwner={isOwner}
+            tracker={tracker}
+            linkedChars={linkedChars}
+            onUpdate={(t) => { void handleUpdateTracker(t) }}
+          />
+        </div>
+      )}
+      {!broadcast && activePanel === 'initiative' && isMobile && (
+        <div data-testid="viewer-initiative-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {t('initiative.title')}
+            </span>
+            <button type="button" onClick={() => setActivePanel(null)} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>×</button>
+          </div>
+          <CampaignInitiativePanel
+            isOwner={isOwner}
+            tracker={tracker}
+            linkedChars={linkedChars}
+            onUpdate={(t) => { void handleUpdateTracker(t) }}
+          />
+        </div>
+      )}
+
+      {/* Current turn banner — broadcast screen only */}
+      {broadcast && tracker.active && tracker.activeCombatantId && (
+        <div
+          data-testid="broadcast-turn-banner"
+          style={{
+            position:      'absolute',
+            bottom:        24,
+            left:          '50%',
+            transform:     'translateX(-50%)',
+            zIndex:        1000,
+            background:    'rgba(21,18,28,0.88)',
+            border:        '1px solid rgba(91,63,168,0.5)',
+            borderRadius:  10,
+            padding:       '10px 24px',
+            color:         T.textPrimary,
+            fontFamily:    T.sans,
+            fontSize:      15,
+            fontWeight:    700,
+            whiteSpace:    'nowrap',
+            pointerEvents: 'none',
+          }}
+        >
+          {t('initiative.turn_of', { name: sortCombatants(tracker.combatants).find(c => c.id === tracker.activeCombatantId)?.name ?? '?' })} · {t('initiative.round', { n: tracker.round })}
+        </div>
+      )}
+
+      {/* ── Mobile owner tool panels as bottom sheets ────────────────────────── */}
+
+      {/* Ferramentas menu — list of tool actions (mobile owner, activePanel === 'tools') */}
+      {isOwner && isMobile && activePanel === 'tools' && (
+        <div data-testid="tools-bottom-sheet" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+              {t('campaign_maps.tools_menu_btn')}
+            </span>
+            <button type="button" onClick={() => setActivePanel(null)} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>×</button>
+          </div>
+          {/* Grade */}
+          <button type="button" data-testid="tools-grid-btn"
+            onClick={() => { setPanelOpen(true); setAreaPanelOpen(false); setFogMode(false); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            ⊞ {t('campaign_maps.grid_title')}
+          </button>
+          {/* Adicionar token */}
+          <button type="button" data-testid="tools-add-token-btn"
+            onClick={() => { void handleAddToken(); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            + {t('campaign_maps.token_add')}
+          </button>
+          {/* Tokens prontos */}
+          <button type="button" data-testid="tools-presets-btn"
+            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets') }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armedPresetId ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armedPresetId ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armedPresetId ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            ⬡ {t('token_presets.palette')}
+          </button>
+          {/* Áreas */}
+          <button type="button" data-testid="tools-areas-btn"
+            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmedPresetId(null); setPanelOpen(false); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            ◎ {t('areas.title')}
+          </button>
+          {/* Névoa */}
+          <button type="button" data-testid="tools-fog-btn"
+            disabled={!localGrid.enabled}
+            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: !localGrid.enabled ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left', opacity: !localGrid.enabled ? 0.5 : 1 }}
+          >
+            ◎ {t('campaign_maps.fog_title')}
+          </button>
+          {/* Transmissão */}
+          <button type="button" data-testid="tools-broadcast-btn"
+            onClick={() => {
+              const base = import.meta.env.PROD ? '/TBT-RPG' : ''
+              window.open(`${base}/campaigns/${map.campaignId}/maps/${map.id}/broadcast`, 'tbt-broadcast', 'width=1280,height=800')
+              setActivePanel(null)
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            ⊡ {t('broadcast.open')}
+          </button>
+        </div>
+      )}
+
+      {/* Grid panel — mobile bottom sheet */}
+      {isOwner && isMobile && panelOpen && (
+        <div data-testid="grid-config-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('campaign_maps.grid_title')}
+            </span>
+            <button type="button" data-testid="grid-collapse-btn" onClick={() => setPanelOpen(false)} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
+            <input type="checkbox" data-testid="grid-enable-toggle" checked={localGrid.enabled} onChange={e => setLocalGrid(g => ({ ...g, enabled: e.target.checked }))} />
+            {t('campaign_maps.grid_enable')}
+          </label>
+          {localGrid.enabled && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_cell_size')}</label>
+                <input type="number" data-testid="grid-size-input" value={localGrid.size ?? ''} min={4}
+                  onChange={e => { const v = parseFloat(e.target.value); setLocalGrid(g => ({ ...g, size: isNaN(v) ? null : v })) }}
+                  style={GRID_INPUT} />
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_x')}</label>
+                  <input type="number" data-testid="grid-offset-x-input" value={localGrid.offsetX}
+                    onChange={e => { const v = parseFloat(e.target.value); setLocalGrid(g => ({ ...g, offsetX: isNaN(v) ? 0 : v })) }}
+                    style={GRID_INPUT} />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_offset_y')}</label>
+                  <input type="number" data-testid="grid-offset-y-input" value={localGrid.offsetY}
+                    onChange={e => { const v = parseFloat(e.target.value); setLocalGrid(g => ({ ...g, offsetY: isNaN(v) ? 0 : v })) }}
+                    style={GRID_INPUT} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: T.textMuted }}>{t('campaign_maps.grid_color')}</label>
+                <input type="color" data-testid="grid-color-input" value={localGrid.color}
+                  onChange={e => setLocalGrid(g => ({ ...g, color: e.target.value }))}
+                  style={{ height: 30, width: '100%', cursor: 'pointer', borderRadius: 4, border: 'none' }} />
+              </div>
+            </>
+          )}
+          <button type="button" data-testid="grid-save-btn" onClick={() => void handleSaveGrid()} disabled={savingGrid}
+            style={{ background: '#5B3FA8', border: 'none', borderRadius: 8, padding: '8px 0', color: T.textPrimary, fontFamily: T.sans, fontSize: 13, fontWeight: 600, cursor: savingGrid ? 'default' : 'pointer', opacity: savingGrid ? 0.6 : 1 }}
+          >
+            {t('campaign_maps.grid_save')}
+          </button>
+        </div>
+      )}
+
+      {/* Preset palette — mobile bottom sheet */}
+      {isOwner && isMobile && activePanel === 'presets' && (
+        <div data-testid="preset-palette-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('token_presets.palette')}
+            </span>
+            <button type="button" data-testid="preset-palette-close" onClick={() => { setActivePanel(null); setArmedPresetId(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+          </div>
+          {presets.length === 0 ? (
+            <p data-testid="preset-palette-empty" style={{ fontSize: 12, color: T.textMuted, margin: 0, fontStyle: 'italic' }}>
+              {t('token_presets.palette_empty')}
+            </p>
+          ) : (
+            presets.map(preset => {
+              const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
+              const isArmed = armedPresetId === preset.id
+              return (
+                <button key={preset.id} type="button" data-testid={`preset-palette-item-${preset.id}`}
+                  onClick={() => setArmedPresetId(isArmed ? null : preset.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                >
+                  <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: imgUrl ? undefined : preset.color, backgroundImage: imgUrl ? `url(${imgUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
+                  <span style={{ fontSize: 13, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.label || '—'}</span>
+                </button>
+              )
+            })
+          )}
+          {armedPresetId && (
+            <>
+              <p style={{ fontSize: 12, color: '#D4A017', margin: 0 }}>
+                {t('token_presets.place_hint').replace('{name}', presets.find(p => p.id === armedPresetId)?.label ?? '')}
+              </p>
+              <button type="button" data-testid="preset-place-done" onClick={() => setArmedPresetId(null)}
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: T.textPrimary, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: T.sans, alignSelf: 'flex-end' }}
+              >
+                {t('token_presets.place_done')}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Area panel — mobile bottom sheet */}
+      {isOwner && isMobile && (areaPanelOpen || areaMode) && (
+        <div data-testid="area-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('areas.title')}
+            </span>
+            <button type="button" data-testid="area-panel-close" onClick={() => { setAreaPanelOpen(false); setAreaMode(false); setAreaPreview(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {(['circle', 'square', 'line', 'cone'] as const).map(sh => (
+              <button key={sh} type="button" data-testid={`area-shape-${sh}`} onClick={() => setAreaShape(sh)}
+                style={{ flex: '1 1 calc(50% - 3px)', padding: '6px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, background: areaShape === sh ? '#5B3FA8' : 'transparent', color: areaShape === sh ? T.textPrimary : T.textMuted, border: areaShape === sh ? '1px solid #5B3FA8' : '1px solid rgba(255,255,255,0.12)', fontFamily: T.sans }}
+              >
+                {t(`areas.shape_${sh}` as 'areas.shape_circle')}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 11, color: T.textMuted }}>{t('areas.color')}</label>
+            <input type="color" data-testid="area-color-input" value={areaColor} onChange={e => setAreaColor(e.target.value)} style={{ height: 36, width: '100%', cursor: 'pointer', borderRadius: 4, border: 'none' }} />
+          </div>
+          {areaMode && <p style={{ fontSize: 12, color: '#D4A017', margin: 0 }}>{t('areas.draw_hint')}</p>}
+          {areas.length > 0 && (
+            <div data-testid="area-list" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {areas.map(area => (
+                <div key={area.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 10, height: 10, flexShrink: 0, borderRadius: area.shape === 'circle' ? '50%' : area.shape === 'cone' ? 0 : 2, background: area.color, clipPath: area.shape === 'cone' ? 'polygon(50% 0%,100% 100%,0% 100%)' : undefined }} />
+                  <span style={{ fontSize: 12, color: T.textMuted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(`areas.shape_${area.shape}` as 'areas.shape_circle')}</span>
+                  <button type="button" data-testid={`area-remove-${area.id}`} aria-label={t('areas.remove_one')} onClick={() => void handleRemoveArea(area.id)} style={{ background: 'transparent', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {areas.length > 0 && (
+            <button type="button" data-testid="area-clear-btn" onClick={() => void handleClearAreas()}
+              style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: T.danger, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans }}
+            >{t('areas.clear')}</button>
+          )}
+          {!areaMode ? (
+            <button type="button" data-testid="area-draw-start" onClick={() => { setAreaMode(true); setAreaPanelOpen(true) }}
+              style={{ background: '#5B3FA8', border: 'none', borderRadius: 6, color: T.textPrimary, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600 }}
+            >{t('areas.draw_hint')}</button>
+          ) : (
+            <button type="button" data-testid="area-draw-done" onClick={() => { setAreaMode(false); setAreaPreview(null) }}
+              style={{ background: '#5B3FA8', border: 'none', borderRadius: 6, color: T.textPrimary, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600 }}
+            >{t('areas.done')}</button>
+          )}
+        </div>
+      )}
+
+      {/* Fog panel — mobile bottom sheet */}
+      {isOwner && isMobile && fogMode && (
+        <div data-testid="fog-config-panel" style={BOTTOM_SHEET}>
+          <div style={BOTTOM_SHEET_HDR}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+              {t('campaign_maps.fog_title')}
+            </span>
+            <button type="button" data-testid="fog-done-btn" onClick={() => setFogMode(false)} style={{ background: 'transparent', border: 'none', color: T.textPrimary, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: T.sans }}>
+              {t('campaign_maps.fog_done')}
+            </button>
+          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 14, cursor: 'pointer' }}>
+            <input type="checkbox" data-testid="fog-enable-toggle" checked={fog.enabled} onChange={() => handleToggleFogEnabled()} />
+            {t('campaign_maps.fog_enable')}
+          </label>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button type="button" data-testid="fog-brush-reveal" onClick={() => setBrush('reveal')}
+              style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600, background: brush === 'reveal' ? '#5B3FA8' : 'transparent', color: brush === 'reveal' ? T.textPrimary : T.textMuted, border: '1px solid rgba(255,255,255,0.15)' }}
+            >{t('campaign_maps.fog_brush_reveal')}</button>
+            <button type="button" data-testid="fog-brush-hide" onClick={() => setBrush('hide')}
+              style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600, background: brush === 'hide' ? '#5B3FA8' : 'transparent', color: brush === 'hide' ? T.textPrimary : T.textMuted, border: '1px solid rgba(255,255,255,0.15)' }}
+            >{t('campaign_maps.fog_brush_hide')}</button>
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button type="button" data-testid="fog-reveal-all" onClick={() => handleRevealAll()}
+              style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+            >{t('campaign_maps.fog_reveal_all')}</button>
+            <button type="button" data-testid="fog-hide-all" onClick={() => handleHideAll()}
+              style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
+            >{t('campaign_maps.fog_hide_all')}</button>
+          </div>
+          <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>{t('campaign_maps.fog_paint_hint')}</p>
         </div>
       )}
 

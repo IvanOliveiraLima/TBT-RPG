@@ -907,6 +907,23 @@ const en = {
   'pwa.dismiss':          'Dismiss',
   'pwa.offline_ready':    'Ready to work offline',
 
+  // ── Initiative tracker ────────────────────────────────────────────────────────
+  'initiative.title':       'Initiative',
+  'initiative.round':       'Round {n}',
+  'initiative.start':       'Start combat',
+  'initiative.end':         'End combat',
+  'initiative.next':        'Next ▶',
+  'initiative.prev':        '◀ Prev',
+  'initiative.quick_add':   'Add linked',
+  'initiative.add_monster': 'Add monster',
+  'initiative.name':        'Name',
+  'initiative.value':       'Init',
+  'initiative.turn_of':     'Turn: {name}',
+  'initiative.empty':       'No combatants yet',
+
+  // ── Mobile viewer ─────────────────────────────────────────────────────────────
+  'campaign_maps.tools_menu_btn': 'Tools',
+
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} sync conflict(s) — Resolve',
   'sync_conflict.resolve':     'Resolve',

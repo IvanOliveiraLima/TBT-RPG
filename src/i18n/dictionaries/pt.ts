@@ -911,6 +911,23 @@ const pt: Record<keyof typeof en, string> = {
   'pwa.dismiss':          'Agora não',
   'pwa.offline_ready':    'Pronto para uso offline',
 
+  // ── Initiative tracker ────────────────────────────────────────────────────────
+  'initiative.title':       'Iniciativa',
+  'initiative.round':       'Rodada {n}',
+  'initiative.start':       'Iniciar combate',
+  'initiative.end':         'Encerrar combate',
+  'initiative.next':        'Próximo ▶',
+  'initiative.prev':        '◀ Anterior',
+  'initiative.quick_add':   'Adicionar vinculado',
+  'initiative.add_monster': 'Adicionar monstro',
+  'initiative.name':        'Nome',
+  'initiative.value':       'Init',
+  'initiative.turn_of':     'Turno: {name}',
+  'initiative.empty':       'Nenhum combatente ainda',
+
+  // ── Mobile viewer ─────────────────────────────────────────────────────────────
+  'campaign_maps.tools_menu_btn': 'Ferramentas',
+
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} conflito(s) de sincronização — Resolver',
   'sync_conflict.resolve':     'Resolver',
