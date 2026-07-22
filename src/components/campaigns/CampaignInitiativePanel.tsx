@@ -126,7 +126,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       }}
     >
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isOwner && onToggleAutoInitiative ? 6 : 12 }}>
         <div style={{
           fontFamily:    T.serif,
           fontSize:      11,
@@ -139,30 +139,32 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
             ? t('initiative.round', { n: tracker.round })
             : t('initiative.title')}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {isOwner && onToggleAutoInitiative && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' }}>
-              <input
-                type="checkbox"
-                data-testid="auto-initiative-toggle"
-                checked={autoInitiative ?? false}
-                onChange={e => onToggleAutoInitiative(e.target.checked)}
-                style={{ width: 13, height: 13, accentColor: T.accent, cursor: 'pointer' }}
-              />
-              {t('initiative.auto_initiative')}
-            </label>
-          )}
-          {isOwner && (
-            <button
-              data-testid={tracker.active ? 'initiative-end-btn' : 'initiative-start-btn'}
-              onClick={() => onUpdate(tracker.active ? endCombat(tracker) : startCombat(tracker))}
-              style={btnBase}
-            >
-              {tracker.active ? t('initiative.end') : t('initiative.start')}
-            </button>
-          )}
-        </div>
+        {isOwner && (
+          <button
+            data-testid={tracker.active ? 'initiative-end-btn' : 'initiative-start-btn'}
+            onClick={() => onUpdate(tracker.active ? endCombat(tracker) : startCombat(tracker))}
+            style={btnBase}
+          >
+            {tracker.active ? t('initiative.end') : t('initiative.start')}
+          </button>
+        )}
       </div>
+
+      {/* ── Auto-initiative toggle (owner only) ─────────────────── */}
+      {isOwner && onToggleAutoInitiative && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: T.textMuted }}>
+            <input
+              type="checkbox"
+              data-testid="auto-initiative-toggle"
+              checked={autoInitiative ?? false}
+              onChange={e => onToggleAutoInitiative(e.target.checked)}
+              style={{ width: 13, height: 13, accentColor: T.accent, cursor: 'pointer' }}
+            />
+            {t('initiative.auto_initiative')}
+          </label>
+        </div>
+      )}
 
       {/* ── Turn controls (owner, during active combat) ─────────── */}
       {isOwner && tracker.active && sorted.length > 0 && (

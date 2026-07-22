@@ -71,9 +71,10 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
-const MAP_POLL_MS   = 15_000
-const TOKEN_POLL_MS = 5_000
-const FOG_POLL_MS   = 5_000
+const MAP_POLL_MS              = 15_000
+const TOKEN_POLL_MS            = 5_000
+const FOG_POLL_MS              = 5_000
+const INITIATIVE_EDIT_GRACE_MS = 4_000
 
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
@@ -619,6 +620,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const lastPaintedCellRef = useRef<string | null>(null)
   // Initiative tracker state + panel toggle (declared before broadcastSnapshotRef to avoid TDZ)
   const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
+  // Timestamp of the last local tracker edit; suppresses remote poll adoption within grace period
+  const lastTrackerEditRef = useRef(0)
   // Quick-add linked chars for initiative panel (owner only)
   const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
   // Auto-initiative toggle state (owner only, fetched once on mount)
@@ -833,17 +836,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     return () => { cancelled = true }
   }, [map.campaignId, broadcast])
 
-  // Poll initiative every 5 s for non-owners
+  // Poll initiative every 5 s (owner + members); broadcast receives via channel only
   useEffect(() => {
-    if (isOwner || broadcast) return
+    if (broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       getInitiative(map.campaignId)
-        .then(tr => { if (!cancelled) setTracker(tr) })
+        .then(tr => {
+          if (cancelled) return
+          if (Date.now() - lastTrackerEditRef.current < INITIATIVE_EDIT_GRACE_MS) return
+          setTracker(tr)
+        })
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.campaignId, isOwner, broadcast])
+  }, [map.campaignId, broadcast])
 
   // Fetch linked char names for initiative quick-add (owner only)
   useEffect(() => {
@@ -1085,6 +1092,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   }
 
   async function handleUpdateTracker(t: InitiativeTracker) {
+    lastTrackerEditRef.current = Date.now()
     setTracker(t)
     await saveInitiative(map.campaignId, t)
   }
