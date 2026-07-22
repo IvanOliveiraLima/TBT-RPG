@@ -124,6 +124,7 @@ const CAMPAIGN: Campaign = {
   description: 'A great campaign',
   ownerId: 'owner1',
   inviteCode: 'ABCD1234',
+  autoInitiative: false,
   createdAt: 0,
   updatedAt: 0,
 }

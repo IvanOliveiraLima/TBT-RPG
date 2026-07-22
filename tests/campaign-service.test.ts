@@ -76,6 +76,7 @@ import {
   deleteCampaign,
   leaveCampaign,
   listCampaignMembers,
+  updateAutoInitiative,
   CampaignServiceError,
 } from '@/services/campaign'
 
@@ -381,5 +382,96 @@ describe('leaveCampaign', () => {
     const okChain = { delete: vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue(okEq) }) }
     mockFrom.mockReturnValue(okChain)
     await expect(leaveCampaign('c1')).resolves.toBeUndefined()
+  })
+})
+
+// ── updateAutoInitiative ──────────────────────────────────────────────────────
+
+describe('updateAutoInitiative', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('returns without error when supabase is null', async () => {
+    resetAuth()
+    await expect(updateAutoInitiative('c1', true)).resolves.toBeUndefined()
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('calls supabase.from("campaigns").update({auto_initiative}).eq("id", id)', async () => {
+    setupAuth()
+    const eqMock = vi.fn().mockResolvedValue({ error: null })
+    const updateMock = vi.fn().mockReturnValue({ eq: eqMock })
+    mockFrom.mockReturnValue({ update: updateMock })
+
+    await updateAutoInitiative('camp-1', true)
+
+    expect(mockFrom).toHaveBeenCalledWith('campaigns')
+    expect(updateMock).toHaveBeenCalledWith({ auto_initiative: true })
+    expect(eqMock).toHaveBeenCalledWith('id', 'camp-1')
+  })
+
+  it('passes false correctly', async () => {
+    setupAuth()
+    const eqMock = vi.fn().mockResolvedValue({ error: null })
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue({ eq: eqMock }) })
+
+    await updateAutoInitiative('camp-2', false)
+    // Should resolve without error
+    await expect(updateAutoInitiative('camp-2', false)).resolves.toBeUndefined()
+  })
+
+  it('logs error on supabase failure but does not throw', async () => {
+    setupAuth()
+    const eqMock = vi.fn().mockResolvedValue({ error: { message: 'db error' } })
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue({ eq: eqMock }) })
+
+    await expect(updateAutoInitiative('c1', true)).resolves.toBeUndefined()
+  })
+})
+
+// ── mapCampaignRow — autoInitiative ───────────────────────────────────────────
+
+describe('getCampaign — autoInitiative mapping', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('maps auto_initiative=true to autoInitiative=true', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'Camp', description: null, owner_id: 'u1',
+      invite_code: 'CODE1234', auto_initiative: true,
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const chain = makeChain({ data: row, error: null })
+    mockFrom.mockReturnValue(chain)
+
+    const result = await getCampaign('c1')
+    expect(result?.autoInitiative).toBe(true)
+  })
+
+  it('maps auto_initiative=false to autoInitiative=false', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'Camp', description: null, owner_id: 'u1',
+      invite_code: 'CODE1234', auto_initiative: false,
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const chain = makeChain({ data: row, error: null })
+    mockFrom.mockReturnValue(chain)
+
+    const result = await getCampaign('c1')
+    expect(result?.autoInitiative).toBe(false)
+  })
+
+  it('defaults autoInitiative=false when auto_initiative is absent', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'Camp', description: null, owner_id: 'u1',
+      invite_code: 'CODE1234',
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const chain = makeChain({ data: row, error: null })
+    mockFrom.mockReturnValue(chain)
+
+    const result = await getCampaign('c1')
+    expect(result?.autoInitiative).toBe(false)
   })
 })

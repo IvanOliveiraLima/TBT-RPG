@@ -97,7 +97,7 @@ vi.mock('@/components/campaigns/CreateCampaignModal', () => ({
       <div data-testid="create-campaign-modal">
         <button
           data-testid="create-campaign-submit-stub"
-          onClick={() => onCreated({ id: 'camp_01', name: 'Test Campaign', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 0, updatedAt: 0 })}
+          onClick={() => onCreated({ id: 'camp_01', name: 'Test Campaign', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 0, updatedAt: 0 })}
         >
           Create
         </button>
@@ -273,8 +273,8 @@ describe('CharSelect — campaigns section — authenticated, no campaigns', () 
 })
 
 describe('CharSelect — campaigns section — authenticated, with campaigns', () => {
-  const CAMP_A: Campaign = { id: 'ca1', name: 'Mines of Moria', description: 'A dangerous dungeon', ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 0, updatedAt: 0 }
-  const CAMP_B: Campaign = { id: 'ca2', name: 'Icewind Dale', description: null, ownerId: 'u2', inviteCode: 'EFGH5678', createdAt: 0, updatedAt: 0 }
+  const CAMP_A: Campaign = { id: 'ca1', name: 'Mines of Moria', description: 'A dangerous dungeon', ownerId: 'u1', inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 0, updatedAt: 0 }
+  const CAMP_B: Campaign = { id: 'ca2', name: 'Icewind Dale', description: null, ownerId: 'u2', inviteCode: 'EFGH5678', autoInitiative: false, createdAt: 0, updatedAt: 0 }
 
   beforeEach(() => {
     vi.clearAllMocks()

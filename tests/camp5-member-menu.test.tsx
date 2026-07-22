@@ -406,7 +406,7 @@ describe('CampaignDetail — no footer actions section', () => {
   it('does NOT render campaign-detail-actions anymore', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'u1',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([])
     render(
@@ -429,7 +429,7 @@ describe('CampaignDetail — owner own row kebab', () => {
   it('owner sees kebab on own row', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'u1',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'master', joinedAt: 1000 },
@@ -450,7 +450,7 @@ describe('CampaignDetail — owner own row kebab', () => {
   it('clicking Delete in own kebab opens ConfirmDeleteCampaignModal', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'u1',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'master', joinedAt: 1000 },
@@ -477,7 +477,7 @@ describe('CampaignDetail — player own row kebab', () => {
   it('player sees Leave in own kebab', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'other-owner',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'player', joinedAt: 1000 },
@@ -499,7 +499,7 @@ describe('CampaignDetail — player own row kebab', () => {
   it('clicking Leave in own kebab opens ConfirmLeaveCampaignModal', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'other-owner',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'player', joinedAt: 1000 },
@@ -526,7 +526,7 @@ describe('CampaignDetail — owner removes player', () => {
   it('owner sees Remove in player row kebab', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'u1',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'master', joinedAt: 1000 },
@@ -549,7 +549,7 @@ describe('CampaignDetail — owner removes player', () => {
   it('clicking Remove on player row opens ConfirmRemoveMemberModal', async () => {
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'u1',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'master', joinedAt: 1000 },
@@ -574,7 +574,7 @@ describe('CampaignDetail — owner removes player', () => {
     // When current user is player, other player rows have no menu
     mockGetCampaign.mockResolvedValue({
       id: 'c1', name: 'Test', description: null, ownerId: 'other-owner',
-      inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+      inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
     })
     mockListCampaignMembers.mockResolvedValue([
       { campaignId: 'c1', userId: 'u1', role: 'player', joinedAt: 1000 },

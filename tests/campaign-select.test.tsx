@@ -178,8 +178,8 @@ describe('CampaignSelect — with campaigns', () => {
     mockFetchCampaigns.mockResolvedValue(undefined)
     mockCampaigns.length = 0
     mockCampaigns.push(
-      { id: 'c1', name: 'Campaign A', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000 },
-      { id: 'c2', name: 'Campaign B', description: 'A desc', ownerId: 'other', inviteCode: 'EFGH5678', createdAt: 1000, updatedAt: 1500 }
+      { id: 'c1', name: 'Campaign A', description: null, ownerId: 'u1', inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000 },
+      { id: 'c2', name: 'Campaign B', description: 'A desc', ownerId: 'other', inviteCode: 'EFGH5678', autoInitiative: false, createdAt: 1000, updatedAt: 1500 }
     )
     mockCampaignsLoading = false
   })
