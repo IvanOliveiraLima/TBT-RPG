@@ -141,7 +141,7 @@ vi.mock('@/components/campaigns/LinkedCharCard', () => ({
 
 const CAMPAIGN: Campaign = {
   id: 'c1', name: 'Poll Test Campaign', description: '',
-  ownerId: 'owner1', inviteCode: 'ABCD1234',
+  ownerId: 'owner1', inviteCode: 'ABCD1234', autoInitiative: false,
   createdAt: 0, updatedAt: 0,
 }
 

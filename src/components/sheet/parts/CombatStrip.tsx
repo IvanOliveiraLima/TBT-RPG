@@ -20,7 +20,7 @@ interface CombatStripProps {
 export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
-  const { rollCheck } = useSheetRoll()
+  const { rollInitiative } = useSheetRoll()
 
   // AC and speed are permanent — read-only when locked or no onUpdate
   const acReadOnly = !onUpdate || locked
@@ -120,7 +120,7 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
               key="init"
               type="button"
               data-testid="combat-stat-init"
-              onClick={() => rollCheck(t('combat.initiative'), initiative)}
+              onClick={() => rollInitiative(t('combat.initiative'), initiative)}
               aria-label={t('aria.roll', { label: t('combat.initiative') })}
               className="hover:bg-white/[0.08] active:bg-white/[0.12] transition-colors"
               style={{ ...statCard, cursor: 'pointer', width: '100%', fontFamily: 'inherit', color: 'inherit' }}

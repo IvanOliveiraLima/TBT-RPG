@@ -918,8 +918,9 @@ const en = {
   'initiative.add_monster': 'Add monster',
   'initiative.name':        'Name',
   'initiative.value':       'Init',
-  'initiative.turn_of':     'Turn: {name}',
-  'initiative.empty':       'No combatants yet',
+  'initiative.turn_of':         'Turn: {name}',
+  'initiative.empty':           'No combatants yet',
+  'initiative.auto_initiative': 'Auto initiative',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',

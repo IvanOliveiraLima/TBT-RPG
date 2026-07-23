@@ -148,6 +148,16 @@ describe('CombatStrip — initiative roll', () => {
       expect(call?.[0]).toMatch(/^d20/)
     })
   })
+
+  it('clicking initiative passes kind="initiative" to roll()', async () => {
+    renderWithI18n(<CombatStrip character={baseChar} />, 'en')
+    fireEvent.click(screen.getByTestId('combat-stat-init'))
+    await waitFor(() => {
+      expect(mockRoll).toHaveBeenCalledOnce()
+      const opts = mockRoll.mock.calls[0]?.[1]
+      expect(opts).toMatchObject({ kind: 'initiative' })
+    })
+  })
 })
 
 // ── AttacksList ───────────────────────────────────────────────────────────────

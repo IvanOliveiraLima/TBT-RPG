@@ -229,6 +229,20 @@ describe('roll — id', () => {
   })
 })
 
+// ── roll — kind field ─────────────────────────────────────────────────────────
+
+describe('roll — kind', () => {
+  it('kind is set when passed in opts', () => {
+    const r = roll('d20', { kind: 'initiative', rng: seqRng([10]) })
+    expect(r.kind).toBe('initiative')
+  })
+
+  it('kind is absent (not undefined-keyed) when not passed', () => {
+    const r = roll('d20', { rng: seqRng([10]) })
+    expect('kind' in r).toBe(false)
+  })
+})
+
 // ── doubleDiceCount ───────────────────────────────────────────────────────────
 
 import { doubleDiceCount } from '@/domain/dice'

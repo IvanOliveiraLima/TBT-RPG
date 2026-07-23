@@ -200,8 +200,8 @@ export default function CampaignSelect() {
                 campaign={c}
                 currentUserId={user.id}
                 onOpen={() => navigate(`/campaigns/${c.id}`)}
-                onRequestDelete={(id, name) => setPendingDelete(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: user.id, inviteCode: '', createdAt: 0, updatedAt: 0 })}
-              onRequestLeave={(id, name) => setPendingLeave(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: '', inviteCode: '', createdAt: 0, updatedAt: 0 })}
+                onRequestDelete={(id, name) => setPendingDelete(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: user.id, inviteCode: '', autoInitiative: false, createdAt: 0, updatedAt: 0 })}
+              onRequestLeave={(id, name) => setPendingLeave(campaigns.find(x => x.id === id) ?? { id, name, description: null, ownerId: '', inviteCode: '', autoInitiative: false, createdAt: 0, updatedAt: 0 })}
               />
             ))}
           </div>

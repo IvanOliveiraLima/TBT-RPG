@@ -131,7 +131,7 @@ vi.mock('@/components/campaigns/CampaignRollLog', () => ({
 
 const CAMPAIGN_OWNER = {
   id: 'camp-1', name: 'Test Campaign', description: null,
-  ownerId: 'u-owner', inviteCode: 'ABCD1234', createdAt: 1000, updatedAt: 2000,
+  ownerId: 'u-owner', inviteCode: 'ABCD1234', autoInitiative: false, createdAt: 1000, updatedAt: 2000,
 }
 
 function renderDetail(lang: 'en' | 'pt' = 'en') {

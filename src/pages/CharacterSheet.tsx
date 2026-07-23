@@ -47,7 +47,7 @@ export default function CharacterSheet() {
     void listCampaignIdsForCharacter(character.id).then(ids => {
       if (cancelled) return
       if (ids.length > 0) {
-        setCampaignContext({ campaignTargets: ids, actorName: character.name })
+        setCampaignContext({ campaignTargets: ids, actorName: character.name, characterId: character.id })
       } else {
         clearCampaignContext()
       }
