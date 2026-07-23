@@ -960,6 +960,27 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   preset armado) para **nunca haver duas bottom sheets sobrepostas**.
 - No desktop, sem reset: superfícies podem coexistir (comportamento do #228 preservado).
 
+### VTT — auto-registro de iniciativa: kind semântico (COMPLETED — PR #232)
+- `RollResult`/`RollOptions` ganham `kind?: RollKind` (`'initiative'`); `roll()` atribui condicional.
+- `useSheetRoll` expõe `rollInitiative` (wrapper que marca `kind='initiative'`); `CombatStrip` usa.
+- Preparatório e inerte: `kind` é carregado mas não consumido em runtime.
+
+### VTT — auto-registro: RPC + serviço (COMPLETED — PR #233)
+- Coluna `campaigns.auto_initiative` + RPC `register_initiative(uuid, text, int, text)` `SECURITY DEFINER`:
+  autoriza pelo vínculo do char (`campaign_characters`) + membership, checa o toggle, e faz merge cirúrgico
+  de **um** combatente no JSONB do tracker com `FOR UPDATE` (sem clobber; casa por `linkedCharacterId`).
+- Serviço `registerInitiative` (best-effort, fan-out por campanha). `character_id` é TEXTO (`char_...`),
+  não uuid — pegadinha descoberta na validação.
+- Definido mas não fiado em runtime.
+
+### VTT — auto-registro live + toggle no painel (COMPLETED — PR #234)
+- `addRoll` dispara `registerInitiative` quando `result.kind === 'initiative'` e há `characterId` no
+  contexto de dados (setado pelo `CharacterSheet`; contexto "Mestre" não dispara).
+- Toggle `auto_initiative` **só do dono** dentro do `CampaignInitiativePanel` (não na CampaignDetail);
+  lido/gravado por `map.campaignId` no viewer (`getAutoInitiative`/`updateAutoInitiative`).
+- Refresh live: o poll do tracker passou a rodar pra **dono + membro** (menos broadcast), com janela de
+  carência (`INITIATIVE_EDIT_GRACE_MS = 4000`) que suprime a adoção do remoto logo após edição local.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1685,6 +1706,11 @@ function buildInviteLink(): string {
 | Painéis do viewer mutuamente exclusivos via `activePanel` único | #227 | Uma superfície de narração aberta por vez (rolagens/presets/iniciativa/ferramentas); substituiu três booleans; evita painéis empilhados |
 | Layout mobile do viewer atrás de `useIsMobile`; render desktop inalterado | #228 | Layout responsivo opt-in (toolbar→menu Ferramentas, painéis→bottom sheets) sem regressão no desktop |
 | Superfície única no mobile (barra de toggles reseta painéis de ferramenta) | #229 | Bottom sheets são `fixed` full-width; duas abertas ao mesmo tempo se sobrepõem |
+| Iniciativa auto-registrada via RPC `SECURITY DEFINER` (merge por `linkedCharacterId`, `FOR UPDATE`) | #233 | Jogador não escreve o JSONB direto; merge de um combatente evita clobber e duplicação |
+| Autorização do auto-registro pelo vínculo do char (`campaign_characters`) | #233 | Dono de char vinculado é participante legítimo; `character_id` é TEXTO (`char_...`), não uuid |
+| Auto-registro gated por `kind==='initiative'` + `characterId` no contexto | #234 | Só rolagem da ficha registra; rolagem "Mestre" (sem char) nunca cria combatente |
+| Toggle `auto_initiative` no painel de Iniciativa, só do dono | #234 | Contexto certo; não polui a CampaignDetail |
+| Poll do tracker pra dono+membro com janela de carência de edição | #234 | Mestre vê auto-registro ao vivo sem reabrir; carência evita clobber de edição em andamento |
 
 ---
 
@@ -1852,6 +1878,12 @@ New from Auth signup + Camp.1-5:
 - **OQ — Régua / medir distância.** Medir distância em células/pés entre dois pontos; pode ser efêmera e só do mestre (sem tabela/sync). Extra barato. Deferred.
 - **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
 - **OQ — Rolagem secreta do mestre.** Hoje toda rolagem em campanha é pública pra mesa; permitir que o mestre role escondido (só ele vê). Deferred.
+- **OQ — Realtime para o tracker de iniciativa (e ping).** O refresh do tracker é por polling de 5s com
+  janela de carência (não Realtime). Consequência: mestre editando sem parar só vê a rolagem do jogador ao
+  pausar >4s. Candidato a Supabase Realtime channels no futuro, junto do ping (mesma dependência).
+- **OQ — Padrão global de tooltip de ajuda.** Componente reutilizável (ex.: `<HelpHint text="…" />`): um
+  ícone discreto ao lado de controles que, ao clicar, abre um balão com a explicação. Substituiria hints
+  inline (como o que foi removido do toggle de auto-iniciativa). A desenhar num Q-round próprio.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
