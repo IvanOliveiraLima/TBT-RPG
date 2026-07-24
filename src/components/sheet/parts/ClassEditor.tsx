@@ -4,7 +4,7 @@ import type { Character, ClassEntry } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
-import { getHitDie } from '@/domain/classes'
+import { getHitDie, subclassSuggestions } from '@/domain/classes'
 import { ClassSelect } from './ClassSelect'
 
 const COLUMN_LABEL: React.CSSProperties = {
@@ -13,6 +13,17 @@ const COLUMN_LABEL: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: 1,
   color: '#7A7788',
+}
+
+const SUBCLASS_INPUT: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid #2A2537',
+  borderRadius: 6,
+  padding: '4px 6px',
+  color: '#F4EFE0',
+  fontSize: 13,
+  flex: '1 1 auto',
+  minWidth: 0,
 }
 
 // Fixed width: 2 digits (1–20) always fit; flex-shrink: 0 prevents squeezing on narrow viewports
@@ -98,6 +109,9 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
         data-testid="class-level-header"
       >
         <span style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }} />
+        <span style={{ ...COLUMN_LABEL, flex: '1 1 auto', minWidth: 0 }}>
+          {t('identity.subclass_label')}
+        </span>
         <span style={{ ...COLUMN_LABEL, width: 64, textAlign: 'center' }}>
           {t('identity.class_level_label')}
         </span>
@@ -116,6 +130,22 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
             index={i}
             style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }}
           />
+          <input
+            type="text"
+            list={`subclass-dl-${i}`}
+            value={cls.subclass ?? ''}
+            onChange={e => updateClass(i, { subclass: e.target.value })}
+            placeholder={t('identity.subclass_placeholder')}
+            aria-label={t('identity.subclass_label')}
+            style={SUBCLASS_INPUT}
+            readOnly={locked}
+            data-testid={`class-subclass-${i}`}
+          />
+          <datalist id={`subclass-dl-${i}`}>
+            {subclassSuggestions(cls.name).map(s => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
           <NumberField
             value={cls.level}
             min={1}

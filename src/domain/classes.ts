@@ -114,3 +114,13 @@ for (const c of CANONICAL_CLASSES) {
 export function getCanonicalClass(name: string): CanonicalClass | null {
   return CANONICAL_SYNONYM_SOURCE[normalizeClassName(name)] ?? null
 }
+
+import { SUBCLASSES_BY_CLASS } from '@/data/canonical/subclasses'
+
+/**
+ * Subclass suggestions for a class (resolving PT/EN → canonical). [] if unknown.
+ */
+export function subclassSuggestions(className: string): string[] {
+  const canon = getCanonicalClass(className)
+  return canon ? (SUBCLASSES_BY_CLASS[canon] ?? []) : []
+}

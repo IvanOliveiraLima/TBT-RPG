@@ -421,6 +421,8 @@ const en = {
   'identity.class_level_label':       'Level',
   'identity.class_name_placeholder':  'Class name',
   'identity.add_class_button':        '+ Add class',
+  'identity.subclass_label':          'Subclass',
+  'identity.subclass_placeholder':    'Subclass…',
   'identity.class_default_name':      'New class',
   'identity.class_name_unselected':   'Select class…',
   'identity.class_custom_label':      'Custom: {value}',
