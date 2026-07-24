@@ -24,6 +24,7 @@ PWA instalável.
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
 - **Classe** — lista fixa traduzida (PT/EN); o dado de vida sai sempre correto pela classe escolhida
+- **Subclasse por classe** — campo livre com sugestões do PHB por classe (multiclasse: cada classe tem a sua)
 
 **Lock (modo leitura):**
 
@@ -97,7 +98,7 @@ PWA instalável.
 - **Delete multi-device pode falhar em propagar.** Char deletado em Device A
   pode voltar em Device B após sync. Workaround: deletar manualmente em cada
   device. Investigação futura quando virar prioridade.
-- **Worker AI não gera items nem spells** — campos ficam vazios.
+- **Worker AI não gera items** — inventário fica vazio (spells já são gerados).
 - **Items importados ganham category "misc"** — user reclassifica manualmente.
 - **Race, classe, antecedente, alinhamento são free-text** com sugestões — não
   traduzidos automaticamente entre PT/EN.
