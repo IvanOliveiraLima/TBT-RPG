@@ -981,6 +981,13 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - Refresh live: o poll do tracker passou a rodar pra **dono + membro** (menos broadcast), com janela de
   carência (`INITIATIVE_EDIT_GRACE_MS = 4000`) que suprime a adoção do remoto logo após edição local.
 
+### Ficha — subclasse por classe (COMPLETED — PR #237)
+- Campo de subclasse **por classe** (`ClassEntry.subclass?`, já existia no modelo — sem migration).
+- Free-text + `datalist` de sugestões por classe (`SUBCLASSES_BY_CLASS` + `subclassSuggestions`,
+  resolvendo PT/EN→canônica); nome **não traduzido**; **não** entra em cálculo.
+- `formatClassesShort` anexa `· Subclasse` quando preenchida (sem mudar assinatura). Layout responsivo no
+  `ClassEditor` (desktop inline; mobile em coluna com rótulos NÍVEL/SUBCLASSE).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1711,6 +1718,7 @@ function buildInviteLink(): string {
 | Auto-registro gated por `kind==='initiative'` + `characterId` no contexto | #234 | Só rolagem da ficha registra; rolagem "Mestre" (sem char) nunca cria combatente |
 | Toggle `auto_initiative` no painel de Iniciativa, só do dono | #234 | Contexto certo; não polui a CampaignDetail |
 | Poll do tracker pra dono+membro com janela de carência de edição | #234 | Mestre vê auto-registro ao vivo sem reabrir; carência evita clobber de edição em andamento |
+| Subclasse é free-text + sugestões (datalist) por classe, não traduzida | #237 | Não entra em cálculo; traduzir exigiria lista fixa como em classes (#211); homebrew livre |
 
 ---
 
@@ -1727,8 +1735,8 @@ function buildInviteLink(): string {
 
 - **OQ — Tooltip "HP not auto-recalculated with CON".** Deferred.
 
-- **OQ — Spell save DC editor.** Will surface in C.1.e (Spells); needs spellcasting
-  ability selector to be modeled first.
+- ~~**OQ — Spell save DC editor.**~~ *Resolved.* CD derivada e read-only no `SpellHeader`, com seletor de
+  habilidade de conjuração modelado (mantém `spellSaveDC` em sync). Sem override manual, por design.
 
 - **OQ — Initiative override field.** For builds with Alert feat or manual override.
   Not modeled yet; current policy is DEX-always-derived. Requires a separate bonus
@@ -1738,9 +1746,8 @@ function buildInviteLink(): string {
   canônica e exibe rótulo traduzido (PT/EN), com `getCanonicalClass` reconhecendo legados. **Raça e
   antecedente seguem free-text** (localização deferida — mesma complexidade de valores custom/reverse lookup).
 
-- **OQ — Character creation flow.** "Meus Personagens" screen still requires migrating
-  from v1 or editing existing characters. Requires defaults definition and creation UI
-  (blank-sheet flow).
+- ~~**OQ — Character creation flow.**~~ *Resolved.* Criação do zero via `createEmptyCharacter()` +
+  `addCharacter` no `CharSelect` (além do fluxo por IA).
 
 New from C.1.d / C.1.e / C.1.f:
 
@@ -1778,11 +1785,12 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   when locked; transients always editable. DB schema v10. PR #122.*
 - **OQ — Auth status interactive.** Click on badge could open a menu (logout, account
   info). Deferred per Q4.1 (visual-only decision).
-- **OQ — Worker AI expansion (items + spells).** Worker template currently doesn't
-  include these fields. Fields stay empty on AI creation for user to fill manually.
-- **OQ — Worker AI `sleight_hand` normalization.** Worker returns `sleight_hand` but
-  domain uses `sleight_of_hand`. Mapped in merge function as workaround; worker-side
-  fix would be cleaner.
+- ~~**OQ — Worker AI expansion: spells.**~~ *Resolved.* O worker gera `spellcasting_ability`,
+  `spellcasting_class` e `spells[]`; `ai-generate.ts` aplica e deriva a CD.
+- **OQ — Worker AI expansion: items/inventário.** O schema do worker ainda não gera items; campos ficam
+  vazios. Deferred.
+- ~~**OQ — Worker AI `sleight_hand` normalization.**~~ *Resolved.* Mapa `sleight_hand → sleight_of_hand`
+  em `ai-generate.ts`.
 - **OQ — Cloudflare Workers AI: deprecação em batches + reasoning silencioso + variabilidade de envelope.** Three intertwined risks discovered the hard way:
 
   **Risk 1 — Family deprecation:** Cloudflare deprecates entire model FAMILIES in

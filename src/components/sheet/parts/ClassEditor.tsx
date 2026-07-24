@@ -4,7 +4,8 @@ import type { Character, ClassEntry } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { NumberField } from '@/components/primitives/NumberField'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
-import { getHitDie } from '@/domain/classes'
+import { getHitDie, subclassSuggestions } from '@/domain/classes'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { ClassSelect } from './ClassSelect'
 
 const COLUMN_LABEL: React.CSSProperties = {
@@ -13,6 +14,17 @@ const COLUMN_LABEL: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: 1,
   color: '#7A7788',
+}
+
+const SUBCLASS_INPUT: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid #2A2537',
+  borderRadius: 6,
+  padding: '4px 6px',
+  color: '#F4EFE0',
+  fontSize: 13,
+  flex: '1 1 auto',
+  minWidth: 0,
 }
 
 // Fixed width: 2 digits (1–20) always fit; flex-shrink: 0 prevents squeezing on narrow viewports
@@ -36,6 +48,7 @@ interface ClassEditorProps {
 
 export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
   const { t } = useTranslation()
+  const isMobile = useIsMobile()
   const newlyAddedIndexRef = useRef<number | null>(null)
 
   function updateClass(index: number, partial: Partial<ClassEntry>) {
@@ -92,49 +105,123 @@ export function ClassEditor({ character, onUpdate, locked }: ClassEditorProps) {
 
   return (
     <div data-testid="class-editor">
-      <div
-        style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}
-        aria-hidden="true"
-        data-testid="class-level-header"
-      >
-        <span style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }} />
-        <span style={{ ...COLUMN_LABEL, width: 64, textAlign: 'center' }}>
-          {t('identity.class_level_label')}
-        </span>
-        <span style={{ width: 28, flexShrink: 0 }} />
-      </div>
-      {character.classes.map((cls, i) => (
+      {!isMobile && (
         <div
-          key={i}
-          style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, minWidth: 0 }}
-          data-testid={`class-row-${i}`}
+          style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 2 }}
+          aria-hidden="true"
+          data-testid="class-level-header"
         >
-          <ClassSelect
-            value={cls.name}
-            onChange={name => updateClass(i, { name })}
-            {...(locked ? { disabled: true } : {})}
-            index={i}
-            style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }}
-          />
-          <NumberField
-            value={cls.level}
-            min={1}
-            max={20}
-            onChange={n => updateClass(i, { level: n })}
-            aria-label={t('aria.class_level_input', { index: String(i + 1) })}
-            style={CLASS_LEVEL_INPUT}
-            data-testid={`class-level-${i}`}
-            {...(locked ? { readOnly: true } : {})}
-          />
-          <ConfirmableRemoveButton
-            onConfirm={() => removeClass(i)}
-            disabled={character.classes.length === 1 || locked}
-            ariaLabel={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
-            testId={`remove-class-${i}`}
-            size="sm"
-          />
+          <span style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }} />
+          <span style={{ ...COLUMN_LABEL, flex: '1 1 auto', minWidth: 0 }}>
+            {t('identity.subclass_label')}
+          </span>
+          <span style={{ ...COLUMN_LABEL, width: 64, textAlign: 'center' }}>
+            {t('identity.class_level_label')}
+          </span>
+          <span style={{ width: 28, flexShrink: 0 }} />
         </div>
-      ))}
+      )}
+      {character.classes.map((cls, i) => {
+        const subclassInput = (
+          <>
+            <input
+              type="text"
+              list={`subclass-dl-${i}`}
+              value={cls.subclass ?? ''}
+              onChange={e => updateClass(i, { subclass: e.target.value })}
+              placeholder={t('identity.subclass_placeholder')}
+              aria-label={t('identity.subclass_label')}
+              style={isMobile ? { ...SUBCLASS_INPUT, flex: 'none', width: '100%', maxWidth: '100%' } : SUBCLASS_INPUT}
+              readOnly={locked}
+              data-testid={`class-subclass-${i}`}
+            />
+            <datalist id={`subclass-dl-${i}`}>
+              {subclassSuggestions(cls.name).map(s => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </>
+        )
+
+        if (isMobile) {
+          return (
+            <div
+              key={i}
+              data-testid={`class-row-${i}`}
+              style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10, minWidth: 0 }}
+            >
+              <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', minWidth: 0 }}>
+                <ClassSelect
+                  value={cls.name}
+                  onChange={name => updateClass(i, { name })}
+                  {...(locked ? { disabled: true } : {})}
+                  index={i}
+                  style={{ flex: '1 1 auto', minWidth: 0 }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                  <span style={COLUMN_LABEL} aria-hidden="true">{t('identity.class_level_label')}</span>
+                  <NumberField
+                    value={cls.level}
+                    min={1}
+                    max={20}
+                    onChange={n => updateClass(i, { level: n })}
+                    aria-label={t('aria.class_level_input', { index: String(i + 1) })}
+                    style={CLASS_LEVEL_INPUT}
+                    data-testid={`class-level-${i}`}
+                    {...(locked ? { readOnly: true } : {})}
+                  />
+                </div>
+                <ConfirmableRemoveButton
+                  onConfirm={() => removeClass(i)}
+                  disabled={character.classes.length === 1 || locked}
+                  ariaLabel={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
+                  testId={`remove-class-${i}`}
+                  size="sm"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                <span style={COLUMN_LABEL} aria-hidden="true">{t('identity.subclass_label')}</span>
+                {subclassInput}
+              </div>
+            </div>
+          )
+        }
+
+        // Desktop — flat row, children direct (aligns with column header)
+        return (
+          <div
+            key={i}
+            data-testid={`class-row-${i}`}
+            style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4, minWidth: 0 }}
+          >
+            <ClassSelect
+              value={cls.name}
+              onChange={name => updateClass(i, { name })}
+              {...(locked ? { disabled: true } : {})}
+              index={i}
+              style={{ flex: '1 1 auto', minWidth: 0, maxWidth: 240 }}
+            />
+            {subclassInput}
+            <NumberField
+              value={cls.level}
+              min={1}
+              max={20}
+              onChange={n => updateClass(i, { level: n })}
+              aria-label={t('aria.class_level_input', { index: String(i + 1) })}
+              style={CLASS_LEVEL_INPUT}
+              data-testid={`class-level-${i}`}
+              {...(locked ? { readOnly: true } : {})}
+            />
+            <ConfirmableRemoveButton
+              onConfirm={() => removeClass(i)}
+              disabled={character.classes.length === 1 || locked}
+              ariaLabel={t('aria.remove_class', { name: cls.name || `#${i + 1}` })}
+              testId={`remove-class-${i}`}
+              size="sm"
+            />
+          </div>
+        )
+      })}
       <button
         type="button"
         onClick={addClass}

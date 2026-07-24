@@ -23,7 +23,10 @@ export function formatClassesShort(
 ): string {
   return character.classes
     .filter(c => c.name)
-    .map(c => `${resolveLabel ? resolveLabel(c.name) : c.name} ${c.level}`)
+    .map(c => {
+      const base = `${resolveLabel ? resolveLabel(c.name) : c.name} ${c.level}`
+      return c.subclass?.trim() ? `${base} · ${c.subclass.trim()}` : base
+    })
     .join(' / ')
 }
 

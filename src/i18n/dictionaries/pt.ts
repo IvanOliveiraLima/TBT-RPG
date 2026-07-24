@@ -423,6 +423,8 @@ const pt: Record<keyof typeof en, string> = {
   'identity.class_level_label':       'Nível',
   'identity.class_name_placeholder':  'Nome da classe',
   'identity.add_class_button':        '+ Adicionar classe',
+  'identity.subclass_label':          'Subclasse',
+  'identity.subclass_placeholder':    'Subclasse…',
   'identity.class_default_name':      'Nova classe',
   'identity.class_name_unselected':   'Selecione uma classe…',
   'identity.class_custom_label':      'Customizado: {value}',
