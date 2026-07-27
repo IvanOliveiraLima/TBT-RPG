@@ -27,6 +27,14 @@ vi.mock('@/services/campaign-view', () => ({
   fetchCampaignCharacterImages: (...args: unknown[]) => mockFetchCampaignCharacterImages(...args),
 }))
 
+// ── Mock useIsMobile ──────────────────────────────────────────────────────────
+
+let mockIsMobile = false
+
+vi.mock('@/hooks/useIsMobile', () => ({
+  useIsMobile: () => mockIsMobile,
+}))
+
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const CHARACTER_ARAGORN: Character = {
@@ -283,5 +291,28 @@ describe('LinkedCharCard — lazy image loading', () => {
     await waitFor(() => expect(screen.getByText('Aragorn')).toBeDefined())
     // No skeleton after failure (imagesLoaded set to true)
     await waitFor(() => expect(screen.queryByTestId('char-card-visual-hp-skeleton')).toBeNull())
+  })
+})
+
+describe('LinkedCharCard — mobile layout', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockIsMobile = true
+    mockFetchCampaignCharacterImages.mockResolvedValue({ portraitData: null, symbolData: null })
+  })
+
+  it('unlink button is still present on mobile (testid preserved)', async () => {
+    renderCard({ isCurrentUserOwner: true })
+    await waitFor(() =>
+      expect(screen.getByTestId('unlink-char-char1')).toBeDefined()
+    )
+  })
+
+  it('linked-char card testid still present on mobile', async () => {
+    renderCard()
+    await waitFor(() =>
+      expect(screen.getByTestId('linked-char-char1')).toBeDefined()
+    )
   })
 })
