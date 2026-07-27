@@ -109,10 +109,10 @@ export function CharCardVisual({
         {(raceLabel || classLabel) && (
           <div style={{
             fontSize: 11, color: T.textTertiary, marginTop: 3,
-            display: 'flex', gap: 5, alignItems: 'center',
+            minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {raceLabel && <span>{raceLabel}</span>}
-            {raceLabel && classLabel && <span style={{ color: T.borderDefault }}>·</span>}
+            {raceLabel && classLabel && <span style={{ color: T.borderDefault, margin: '0 5px' }}>·</span>}
             {classLabel && <span style={{ color: T.textSecondary }}>{classLabel}</span>}
           </div>
         )}

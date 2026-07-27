@@ -53,6 +53,12 @@ export function HelpHint({ textKey, ariaLabelKey }: HelpHintProps) {
     globalClose = close
   }
 
+  // If the component unmounts while open, release the global close reference
+  // so it doesn't point to a dead instance.
+  useEffect(() => {
+    return () => { if (globalClose === close) globalClose = null }
+  }, [close])
+
   // Register close listeners only when open — prevents the opening click from
   // immediately triggering close-outside
   useEffect(() => {

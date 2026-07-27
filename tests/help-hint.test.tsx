@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { screen, fireEvent, render } from '@testing-library/react'
+import { I18nProvider } from '@/i18n'
 import { HelpHint } from '@/components/HelpHint'
 import { renderWithI18n } from './helpers/render'
 
@@ -119,5 +120,32 @@ describe('HelpHint — aria attributes', () => {
     renderWithI18n(<HelpHint textKey="initiative.auto_initiative_hint" />, 'en')
     const btn = screen.getByTestId('help-hint-trigger')
     expect(btn.getAttribute('aria-describedby')).toBeNull()
+  })
+})
+
+describe('HelpHint — unmount cleanup', () => {
+  it('unmounting with hint open does not block a new hint from opening', () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'en')
+
+    // Mount first hint, open it
+    const { unmount } = render(
+      <I18nProvider>
+        <HelpHint textKey="initiative.auto_initiative_hint" />
+      </I18nProvider>
+    )
+    fireEvent.click(screen.getByTestId('help-hint-trigger'))
+    expect(document.body.querySelector('[role="tooltip"]')).not.toBeNull()
+
+    // Unmount (simulates panel close with hint still open)
+    unmount()
+
+    // Mount a second hint — should open normally (globalClose was cleared on unmount)
+    render(
+      <I18nProvider>
+        <HelpHint textKey="initiative.auto_initiative_hint" />
+      </I18nProvider>
+    )
+    fireEvent.click(screen.getByTestId('help-hint-trigger'))
+    expect(document.body.querySelector('[role="tooltip"]')).not.toBeNull()
   })
 })
