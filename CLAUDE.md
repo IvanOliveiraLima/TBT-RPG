@@ -265,6 +265,9 @@ This order matters: components built on a broken adapter produce invisible data 
 - **exactOptionalPropertyTypes + noUncheckedIndexedAccess** enabled — be careful with optional chaining
 - `vite-plugin-pwa` installed with `--legacy-peer-deps` (Vite 8 not yet in peer dep range of v1.2.0)
 - **Responsividade do viewer (mobile):** breakpoint centralizado no hook `useIsMobile`; UI mobile sempre atrás de `isMobile` (desktop nunca muda). Painéis viram bottom sheets `fixed` full-width e há **uma superfície ativa por vez** — todo ponto de entrada de superfície no mobile passa por um helper que zera as demais antes de abrir a nova (`selectSurface` + coordenação no menu Ferramentas).
+- **Instruções na UI (`HelpHint`):** pra explicar qualquer controle, colocar
+  `<HelpHint textKey="ns.key" />` ao lado do rótulo e adicionar a chave em `en/pt`. Não usar texto de ajuda
+  inline fixo — o balão (portal + fixed) não recorta e mantém a cópia centralizada no i18n.
 
 ### internationalization (i18n)
 
@@ -987,6 +990,21 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   resolvendo PT/EN→canônica); nome **não traduzido**; **não** entra em cálculo.
 - `formatClassesShort` anexa `· Subclasse` quando preenchida (sem mudar assinatura). Layout responsivo no
   `ClassEditor` (desktop inline; mobile em coluna com rótulos NÍVEL/SUBCLASSE).
+
+### UI — primitiva de instruções HelpHint (COMPLETED — PR #240)
+- `<HelpHint textKey="..." />` (`src/components/HelpHint.tsx`): ícone `?` (`HelpIcon`) que, ao tap/click,
+  abre um balão de ajuda. **Portal pro `document.body` + `position: fixed`** posicionado por
+  `getBoundingClientRect` (flip pra cima + clamp horizontal) — escapa de recorte por `overflow`/
+  `backdrop-filter`. Conteúdo por **chave i18n** (`textKey`). Fecha por clique-fora/Esc/scroll/resize;
+  "um aberto por vez" via `globalClose` module-level.
+- Primeiro consumidor: hint do toggle de auto-iniciativa no `CampaignInitiativePanel`.
+
+### UI — polish pré-master (COMPLETED — PR #241)
+- `HelpHint` limpa `globalClose` no unmount (sem ref morta).
+- `CharCardVisual`: linha de raça·classe trunca (nowrap+ellipsis) em vez de quebrar — corrige a colisão no
+  card de personagem vinculado (agravada pela subclasse).
+- `LinkedCharCard`: no mobile o botão "Desvincular" vai pra uma linha abaixo (info ganha largura);
+  desktop intacto.
 
 ---
 
@@ -1719,6 +1737,7 @@ function buildInviteLink(): string {
 | Toggle `auto_initiative` no painel de Iniciativa, só do dono | #234 | Contexto certo; não polui a CampaignDetail |
 | Poll do tracker pra dono+membro com janela de carência de edição | #234 | Mestre vê auto-registro ao vivo sem reabrir; carência evita clobber de edição em andamento |
 | Subclasse é free-text + sugestões (datalist) por classe, não traduzida | #237 | Não entra em cálculo; traduzir exigiria lista fixa como em classes (#211); homebrew livre |
+| Instruções via `<HelpHint textKey>` — portal pro body + fixed, tap-only, conteúdo i18n | #240 | Balão nunca recortado (containers com overflow/backdrop-filter); mobile-first (sem hover); cópia no i18n |
 
 ---
 
@@ -1889,9 +1908,9 @@ New from Auth signup + Camp.1-5:
 - **OQ — Realtime para o tracker de iniciativa (e ping).** O refresh do tracker é por polling de 5s com
   janela de carência (não Realtime). Consequência: mestre editando sem parar só vê a rolagem do jogador ao
   pausar >4s. Candidato a Supabase Realtime channels no futuro, junto do ping (mesma dependência).
-- **OQ — Padrão global de tooltip de ajuda.** Componente reutilizável (ex.: `<HelpHint text="…" />`): um
-  ícone discreto ao lado de controles que, ao clicar, abre um balão com a explicação. Substituiria hints
-  inline (como o que foi removido do toggle de auto-iniciativa). A desenhar num Q-round próprio.
+- ~~**OQ — Padrão global de tooltip de ajuda.**~~ *Resolved (PR #240).* `<HelpHint textKey="..." />` —
+  ícone `?` com balão via portal (fixed, tap-to-open). Primeiro uso no toggle de auto-iniciativa. Pra
+  instruir qualquer controle: `<HelpHint textKey="..." />` + chave em `en/pt`.
 - ~~**OQ — Tokens sob a névoa.**~~ *Resolved (PR #166).* Pros jogadores, token em célula não-revelada fica oculto (regra do centro, mesmo flip `height - y` do fog); mestre sempre vê; frescor no polling de 5s.
 
 New from production feedback (observed bugs):
