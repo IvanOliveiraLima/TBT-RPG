@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from '@/i18n'
+import { HelpHint } from '@/components/HelpHint'
 import {
   sortCombatants,
   startCombat,
@@ -162,6 +163,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
               style={{ width: 13, height: 13, accentColor: T.accent, cursor: 'pointer' }}
             />
             {t('initiative.auto_initiative')}
+            <HelpHint textKey="initiative.auto_initiative_hint" />
           </label>
         </div>
       )}
