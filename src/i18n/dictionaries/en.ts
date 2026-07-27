@@ -922,10 +922,15 @@ const en = {
   'initiative.value':       'Init',
   'initiative.turn_of':         'Turn: {name}',
   'initiative.empty':           'No combatants yet',
-  'initiative.auto_initiative': 'Auto initiative',
+  'initiative.auto_initiative':      'Auto initiative',
+  'initiative.auto_initiative_hint': "When on, a player's initiative roll updates their combatant in the tracker.",
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',
+
+  // ── Sync conflict ─────────────────────────────────────────────────────────────
+  // ── Help hints ───────────────────────────────────────────────────────────────
+  'help.aria_open': 'Show help',
 
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} sync conflict(s) — Resolve',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/i18n'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { CharCardVisual } from '@/components/character/CharCardVisual'
 import { deriveTotalLevel, formatClassesShort } from '@/domain/derived'
 import { classLabel as resolveClassLabel } from '@/utils/classLabel'
@@ -31,6 +32,7 @@ export function LinkedCharCard({
 }: LinkedCharCardProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const isMobile = useIsMobile()
   const [unlinking, setUnlinking] = useState(false)
 
   // Lazy image state — images load in background after card renders
@@ -97,6 +99,26 @@ export function LinkedCharCard({
     if (e.key === 'Enter' || e.key === ' ') handleCardClick()
   }
 
+  const unlinkButton = (
+    <button
+      onClick={handleUnlinkClick}
+      disabled={unlinking}
+      data-testid={`unlink-char-${detail.characterId}`}
+      aria-label={t('aria.unlink_character', { name })}
+      style={{
+        background: 'transparent',
+        border: `1px solid ${T.borderSubtle}`,
+        borderRadius: 8, padding: '5px 10px',
+        color: T.textMuted, fontFamily: T.sans,
+        fontSize: 11, cursor: unlinking ? 'default' : 'pointer',
+        opacity: unlinking ? 0.5 : 1,
+        flexShrink: 0,
+      }}
+    >
+      {unlinking ? t('campaign_chars.unlinking') : t('campaign_chars.unlink')}
+    </button>
+  )
+
   return (
     <div
       data-testid={`linked-char-${detail.characterId}`}
@@ -106,13 +128,14 @@ export function LinkedCharCard({
       tabIndex={0}
       aria-label={t('aria.linked_char_view', { name })}
       style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 12px',
+        display: 'flex', gap: 12, padding: '10px 12px',
         background: T.elevated,
         border: `1px solid ${T.borderSubtle}`,
         borderRadius: 10,
-        gap: 12,
         cursor: char ? 'pointer' : 'default',
+        ...(isMobile
+          ? { flexDirection: 'column', alignItems: 'stretch' }
+          : { alignItems: 'center', justifyContent: 'space-between' }),
       }}
     >
       <CharCardVisual
@@ -128,23 +151,9 @@ export function LinkedCharCard({
       />
 
       {canUnlink && (
-        <button
-          onClick={handleUnlinkClick}
-          disabled={unlinking}
-          data-testid={`unlink-char-${detail.characterId}`}
-          aria-label={t('aria.unlink_character', { name })}
-          style={{
-            background: 'transparent',
-            border: `1px solid ${T.borderSubtle}`,
-            borderRadius: 8, padding: '5px 10px',
-            color: T.textMuted, fontFamily: T.sans,
-            fontSize: 11, cursor: unlinking ? 'default' : 'pointer',
-            opacity: unlinking ? 0.5 : 1,
-            flexShrink: 0,
-          }}
-        >
-          {unlinking ? t('campaign_chars.unlinking') : t('campaign_chars.unlink')}
-        </button>
+        isMobile
+          ? <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{unlinkButton}</div>
+          : unlinkButton
       )}
     </div>
   )
