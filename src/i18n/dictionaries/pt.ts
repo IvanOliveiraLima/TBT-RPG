@@ -926,10 +926,14 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.value':       'Init',
   'initiative.turn_of':         'Turno: {name}',
   'initiative.empty':           'Nenhum combatente ainda',
-  'initiative.auto_initiative': 'Auto-iniciativa',
+  'initiative.auto_initiative':      'Auto-iniciativa',
+  'initiative.auto_initiative_hint': 'Quando ligado, a rolagem de iniciativa do jogador atualiza o combatente dele no tracker.',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',
+
+  // ── Help hints ───────────────────────────────────────────────────────────────
+  'help.aria_open': 'Mostrar ajuda',
 
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   'sync_conflict.banner':      '{n} conflito(s) de sincronização — Resolver',
