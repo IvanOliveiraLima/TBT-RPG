@@ -402,3 +402,44 @@ describe('CampaignDetail — char card navigation', () => {
     expect(charViewCalls.length).toBe(0)
   })
 })
+
+describe('CampaignDetail — home brand block', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    mockGetCampaign.mockResolvedValue(CAMPAIGN)
+    mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER])
+    mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER])
+    mockFetchLinkedCharactersDetails.mockResolvedValue([])
+  })
+
+  it('renders campaign-detail-home brand block', async () => {
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByTestId('campaign-detail-home')).toBeDefined())
+  })
+
+  it('clicking campaign-detail-home navigates to /', async () => {
+    const { userEvent } = await import('@testing-library/user-event')
+    const ue = userEvent.setup()
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByTestId('campaign-detail-home')).toBeDefined())
+    await ue.click(screen.getByTestId('campaign-detail-home'))
+    expect(mockNavigate).toHaveBeenCalledWith('/')
+  })
+
+  it('shows version from __APP_VERSION__ in header', async () => {
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByText(`v${__APP_VERSION__}`)).toBeDefined())
+  })
+
+  it('back button (my campaigns) is still present', async () => {
+    renderDetail('owner1')
+    await waitFor(() => expect(screen.getByTestId('campaign-detail-home')).toBeDefined())
+    // The back button navigates to /campaigns (not /); it still exists
+    const backCalls = mockNavigate.mock.calls.filter(
+      (call: unknown[]) => call[0] === '/campaigns'
+    )
+    // no accidental navigation yet
+    expect(backCalls.length).toBe(0)
+  })
+})

@@ -178,6 +178,30 @@ export default function CampaignDetail() {
     }}>
       <div style={{ maxWidth: 1080, margin: '0 auto' }}>
 
+        {/* Brand block — home shortcut */}
+        <div
+          data-testid="campaign-detail-home"
+          onClick={() => navigate('/')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            cursor: 'pointer', marginBottom: 16,
+          }}
+        >
+          <div style={{
+            width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+            background: `linear-gradient(135deg, ${T.purple}, ${T.ruby})`,
+            boxShadow: `0 0 12px ${T.purple}60`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: T.serif, fontWeight: 700, color: '#fff', fontSize: 16,
+          }}>T</div>
+          <div>
+            <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: T.textPrimary, letterSpacing: 1 }}>
+              TBT-RPG
+            </div>
+            <div style={{ fontSize: 10, color: T.textMuted }}>{`v${__APP_VERSION__}`}</div>
+          </div>
+        </div>
+
         {/* Back */}
         <button
           onClick={() => navigate('/campaigns')}
