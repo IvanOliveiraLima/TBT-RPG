@@ -76,12 +76,46 @@ export function CampaignMobileShell({
               display: 'flex', flexDirection: 'column', gap: 4,
             }}
           >
-            <div style={{
-              fontFamily: T.sans, fontSize: 16, fontWeight: 600,
-              color: T.textPrimary, marginBottom: 14,
-            }}>
-              TBT-RPG
+            {/* Brand block — home shortcut */}
+            <div style={{ marginBottom: 14 }}>
+              <button
+                data-testid="campaign-mobile-home"
+                onClick={() => { navigate('/'); setDrawerOpen(false) }}
+                style={{
+                  background: 'transparent', border: 'none',
+                  padding: 0, cursor: 'pointer', textAlign: 'left',
+                }}
+              >
+                <div style={{
+                  fontFamily: T.sans, fontSize: 16, fontWeight: 600,
+                  color: T.textPrimary,
+                }}>
+                  TBT-RPG
+                </div>
+                <div style={{ fontSize: 10, color: T.textMuted }}>{`v${__APP_VERSION__}`}</div>
+              </button>
             </div>
+
+            {/* My characters — home shortcut (mobile discoverability) */}
+            <button
+              data-testid="campaign-mobile-my-characters"
+              onClick={() => { navigate('/'); setDrawerOpen(false) }}
+              style={{
+                background: 'transparent', border: 'none',
+                color: T.textSecondary,
+                padding: '10px 12px', borderRadius: 8,
+                fontSize: 13, fontWeight: 500,
+                textAlign: 'left', cursor: 'pointer',
+                fontFamily: T.sans,
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M19 12H5M5 12l7 7M5 12l7-7"
+                  stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('nav.my_characters')}
+            </button>
 
             {/* Back to campaign */}
             <button

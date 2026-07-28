@@ -11,6 +11,7 @@ const T = {
   textPrimary:  '#F4EFE0',
   textTertiary: '#A09DB0',
   textMuted:    '#7A7788',
+  ruby:         '#8B1A2E',
   purple:       '#5B3FA8',
   purpleDim:    'rgba(91,63,168,0.15)',
   purpleBorder: 'rgba(91,63,168,0.35)',
@@ -51,6 +52,38 @@ export function CampaignSidebar({
       height: '100%',
       fontFamily: T.sans,
     }}>
+      {/* Brand block — home shortcut */}
+      <div
+        data-testid="campaign-sidebar-home"
+        onClick={() => navigate('/')}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '4px 8px 18px',
+          borderBottom: `1px solid ${T.borderSubtle}`,
+          marginBottom: 10,
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{
+          width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+          background: `linear-gradient(135deg, ${T.purple}, ${T.ruby})`,
+          boxShadow: `0 0 12px ${T.purple}60`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: T.serif, fontWeight: 700, color: '#fff', fontSize: 16,
+        }}>
+          T
+        </div>
+        <div>
+          <div style={{
+            fontFamily: T.serif, fontSize: 13, fontWeight: 600,
+            color: T.textPrimary, letterSpacing: 1,
+          }}>
+            TBT-RPG
+          </div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{`v${__APP_VERSION__}`}</div>
+        </div>
+      </div>
+
       {/* Back to campaign */}
       <button
         data-testid="campaign-sidebar-back"
