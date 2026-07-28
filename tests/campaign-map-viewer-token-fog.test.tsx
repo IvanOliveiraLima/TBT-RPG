@@ -110,7 +110,7 @@ vi.mock('@/services/campaign-map-areas', () => ({
 const MAP: CampaignMap = {
   id: 'map-1', campaignId: 'camp-1', name: 'Dungeon',
   imagePath: 'camp-1/map-1.png', width: 2048, height: 1024, createdAt: 0,
-  gridEnabled: true, gridSize: 50, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  gridEnabled: true, gridSize: 50, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5', published: false,
 }
 
 const TOKEN_A: CampaignMapToken = {
