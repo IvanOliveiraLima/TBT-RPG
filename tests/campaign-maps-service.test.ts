@@ -9,6 +9,7 @@ import {
   deleteCampaignMap,
   getCampaignMapSignedUrl,
   updateCampaignMapGrid,
+  setCampaignMapPublished,
 } from '@/services/campaign-maps'
 import type { CampaignMap, GridConfig } from '@/services/campaign-maps'
 
@@ -108,6 +109,7 @@ const DB_ROW = {
   grid_offset_x: 0,
   grid_offset_y: 0,
   grid_color: '#5DCAA5',
+  published: false,
 }
 
 const EXPECTED_MAP: CampaignMap = {
@@ -123,6 +125,7 @@ const EXPECTED_MAP: CampaignMap = {
   gridOffsetX: 0,
   gridOffsetY: 0,
   gridColor: '#5DCAA5',
+  published: false,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -145,6 +148,19 @@ describe('listCampaignMaps', () => {
   it('throws on error', async () => {
     mockSelect.mockResolvedValue({ data: null, error: { message: 'RLS denied' } })
     await expect(listCampaignMaps(CAMPAIGN_ID)).rejects.toBeDefined()
+  })
+
+  it('maps published:true from row', async () => {
+    mockSelect.mockResolvedValue({ data: [{ ...DB_ROW, published: true }], error: null })
+    const result = await listCampaignMaps(CAMPAIGN_ID)
+    expect(result[0].published).toBe(true)
+  })
+
+  it('defaults published to false when field absent from row', async () => {
+    const { published: _p, ...rowWithout } = DB_ROW
+    mockSelect.mockResolvedValue({ data: [rowWithout], error: null })
+    const result = await listCampaignMaps(CAMPAIGN_ID)
+    expect(result[0].published).toBe(false)
   })
 })
 
@@ -273,5 +289,26 @@ describe('updateCampaignMapGrid', () => {
     mockUpdate.mockResolvedValue({ error: { message: 'update failed' } })
     const grid: GridConfig = { enabled: false, size: null, offsetX: 0, offsetY: 0, color: '#5DCAA5' }
     await expect(updateCampaignMapGrid('map-1', grid)).rejects.toBeDefined()
+  })
+})
+
+describe('setCampaignMapPublished', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('calls update with {published:true} and eq on map id', async () => {
+    mockUpdate.mockResolvedValue({ error: null })
+    await setCampaignMapPublished('map-1', true)
+    expect(mockUpdate).toHaveBeenCalledWith('map-1', { published: true })
+  })
+
+  it('calls update with {published:false}', async () => {
+    mockUpdate.mockResolvedValue({ error: null })
+    await setCampaignMapPublished('map-1', false)
+    expect(mockUpdate).toHaveBeenCalledWith('map-1', { published: false })
+  })
+
+  it('resolves without throwing when supabase returns an error (logs only)', async () => {
+    mockUpdate.mockResolvedValue({ error: { message: 'update failed' } })
+    await expect(setCampaignMapPublished('map-1', true)).resolves.toBeUndefined()
   })
 })

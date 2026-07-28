@@ -12,12 +12,14 @@ import type { CampaignMap } from '@/services/campaign-maps'
 const mockListCampaignMaps = vi.fn()
 const mockUploadCampaignMap = vi.fn()
 const mockDeleteCampaignMap = vi.fn()
+const mockSetCampaignMapPublished = vi.fn()
 
 vi.mock('@/services/campaign-maps', () => ({
-  listCampaignMaps:      (...args: unknown[]) => mockListCampaignMaps(...args),
-  uploadCampaignMap:     (...args: unknown[]) => mockUploadCampaignMap(...args),
-  deleteCampaignMap:     (...args: unknown[]) => mockDeleteCampaignMap(...args),
-  getCampaignMapSignedUrl: vi.fn(),
+  listCampaignMaps:         (...args: unknown[]) => mockListCampaignMaps(...args),
+  uploadCampaignMap:        (...args: unknown[]) => mockUploadCampaignMap(...args),
+  deleteCampaignMap:        (...args: unknown[]) => mockDeleteCampaignMap(...args),
+  getCampaignMapSignedUrl:  vi.fn(),
+  setCampaignMapPublished:  (...args: unknown[]) => mockSetCampaignMapPublished(...args),
 }))
 
 // ── Mock CampaignMapViewer (Leaflet doesn't work in jsdom) ────────────────────
@@ -47,12 +49,14 @@ const MAP_1: CampaignMap = {
   id: 'map-1', campaignId: CAMPAIGN_ID, name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 1024, height: 768, createdAt: 0,
   gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  published: false,
 }
 
 const MAP_2: CampaignMap = {
   id: 'map-2', campaignId: CAMPAIGN_ID, name: 'World Map',
   imagePath: 'camp-1/map-2.png', width: 2048, height: 1024, createdAt: 1,
   gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  published: false,
 }
 
 function renderSection(isOwner = false) {
@@ -329,5 +333,105 @@ describe('CampaignMapsSection — onGridSaved cache propagation', () => {
       // The map passed to the viewer stub should now have the patched grid values reflected in maps list
       expect(stub.getAttribute('data-map-id')).toBe(MAP_1.id)
     })
+  })
+})
+
+describe('CampaignMapsSection — publish toggle', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignMaps.mockResolvedValue([MAP_1, MAP_2])
+    mockSetCampaignMapPublished.mockResolvedValue(undefined)
+  })
+
+  it('owner sees publish toggle for each map', async () => {
+    renderSection(true)
+    await waitFor(() => expect(screen.getByTestId(`map-publish-toggle-${MAP_1.id}`)).toBeDefined())
+    expect(screen.getByTestId(`map-publish-toggle-${MAP_2.id}`)).toBeDefined()
+  })
+
+  it('player does NOT see publish toggle', async () => {
+    renderSection(false)
+    await waitFor(() => expect(screen.getByTestId(`map-row-${MAP_1.id}`)).toBeDefined())
+    expect(screen.queryByTestId(`map-publish-toggle-${MAP_1.id}`)).toBeNull()
+  })
+
+  it('toggle shows "Hidden" when map is not published (EN)', async () => {
+    renderSection(true)
+    await waitFor(() => {
+      const btn = screen.getByTestId(`map-publish-toggle-${MAP_1.id}`)
+      expect(btn.textContent).toBe('Hidden')
+    })
+  })
+
+  it('toggle shows "Published" after optimistic update', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    fireEvent.click(screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    await waitFor(() =>
+      expect(screen.getByTestId(`map-publish-toggle-${MAP_1.id}`).textContent).toBe('Published')
+    )
+  })
+
+  it('clicking toggle calls setCampaignMapPublished with (mapId, true)', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    fireEvent.click(screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    await waitFor(() =>
+      expect(mockSetCampaignMapPublished).toHaveBeenCalledWith(MAP_1.id, true)
+    )
+  })
+
+  it('player empty state shows empty_player text (EN)', async () => {
+    mockListCampaignMaps.mockResolvedValue([])
+    renderSection(false)
+    await waitFor(() =>
+      expect(screen.getByTestId('maps-empty-state').textContent).toContain("The GM hasn't shared any maps yet.")
+    )
+  })
+
+  it('owner empty state shows generic empty text', async () => {
+    mockListCampaignMaps.mockResolvedValue([])
+    renderSection(true)
+    await waitFor(() =>
+      expect(screen.getByTestId('maps-empty-state').textContent).toContain('No maps yet.')
+    )
+  })
+
+  it('player empty state in PT', async () => {
+    mockListCampaignMaps.mockResolvedValue([])
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={false} />, 'pt')
+    await waitFor(() =>
+      expect(screen.getByTestId('maps-empty-state').textContent).toContain('O mestre ainda não liberou nenhum mapa.')
+    )
+  })
+})
+
+describe('CampaignMapsSection — publish help hint', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignMaps.mockResolvedValue([MAP_1])
+    mockSetCampaignMapPublished.mockResolvedValue(undefined)
+    localStorage.setItem('tbt-rpg-v2-lang', 'en')
+  })
+
+  it('owner sees the HelpHint trigger next to the publish toggle', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    expect(screen.getByTestId('help-hint-trigger')).toBeDefined()
+  })
+
+  it('player does NOT see the HelpHint trigger (no toggle rendered)', async () => {
+    renderSection(false)
+    await waitFor(() => screen.getByTestId(`map-row-${MAP_1.id}`))
+    expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+  })
+
+  it('clicking HelpHint opens tooltip with publish help text (EN)', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId('help-hint-trigger'))
+    fireEvent.click(screen.getByTestId('help-hint-trigger'))
+    const tooltip = document.body.querySelector('[role="tooltip"]')
+    expect(tooltip).not.toBeNull()
+    expect(tooltip!.textContent).toContain('Published maps appear to players')
   })
 })

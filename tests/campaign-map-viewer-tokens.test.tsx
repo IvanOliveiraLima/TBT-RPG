@@ -157,6 +157,7 @@ const MAP: CampaignMap = {
   id: 'map-1', campaignId: 'camp-1', name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 2048, height: 1024, createdAt: 0,
   gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  published: false,
 }
 
 const TOKEN_1: CampaignMapToken = {
@@ -441,13 +442,14 @@ describe('ZoomScaleTracker — zoom scale', () => {
 
   it('registers a zoomend listener on mount', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function))
+    await waitFor(() =>
+      expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function)),
+    )
   })
 
   it('calls latLngToLayerPoint([0,0]) and ([0,1]) after zoomend', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    await waitFor(() => expect(capturedZoomHandlers.length).toBeGreaterThan(0))
     mockLeafletMap.latLngToLayerPoint.mockClear()
 
     // Simulate a zoom event

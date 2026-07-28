@@ -122,6 +122,7 @@ const MAP: CampaignMap = {
   id: 'map-1', campaignId: 'camp-1', name: 'Dungeon Level 1',
   imagePath: 'camp-1/map-1.png', width: 2048, height: 1024, createdAt: 0,
   gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  published: false,
 }
 
 const MARKER_1 = { id: 'mk-1', mapId: 'map-1', x: 400, y: 300, label: 'Boss Chamber', createdAt: 0 }
