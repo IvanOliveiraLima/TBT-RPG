@@ -20,6 +20,7 @@ export interface CampaignMap {
   gridOffsetX: number
   gridOffsetY: number
   gridColor: string
+  published: boolean
 }
 
 export interface GridConfig {
@@ -43,6 +44,7 @@ type Row = {
   grid_offset_x: number
   grid_offset_y: number
   grid_color: string
+  published: boolean
 }
 
 function toMap(row: Row): CampaignMap {
@@ -59,6 +61,7 @@ function toMap(row: Row): CampaignMap {
     gridOffsetX: row.grid_offset_x ?? 0,
     gridOffsetY: row.grid_offset_y ?? 0,
     gridColor: row.grid_color ?? '#5DCAA5',
+    published: row.published ?? false,
   }
 }
 
@@ -182,6 +185,12 @@ export async function getCampaignMap(mapId: string): Promise<CampaignMap | null>
     .single()
   if (error) return null
   return toMap(data as Row)
+}
+
+export async function setCampaignMapPublished(mapId: string, value: boolean): Promise<void> {
+  if (!supabase) return
+  const { error } = await supabase.from('campaign_maps').update({ published: value }).eq('id', mapId)
+  if (error) console.error('[campaign-maps] setPublished error', error)
 }
 
 export async function getCampaignMapSignedUrl(imagePath: string): Promise<string> {
