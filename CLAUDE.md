@@ -1006,6 +1006,24 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - `LinkedCharCard`: no mobile o botão "Desvincular" vai pra uma linha abaixo (info ganha largura);
   desktop intacto.
 
+### VTT — régua / medir distância (COMPLETED — PR #244)
+- Modo régua no map viewer (mestre): arrastar dois pontos → linha + label "X ft (N□)". Efêmero (persiste
+  até nova medição/sair/Esc); **não** persiste no Supabase. Reusa a medição da área-linha (Euclidiana,
+  `round(px/cellSize)×5`; label só com grid). Espelhado na tela de broadcast (`BroadcastChannel` local, sem
+  backend). Entra na coordenação de superfície única (mútua exclusão com área/névoa/grade).
+
+### VTT — visibilidade de mapa por mapa (COMPLETED — PR #245)
+- Coluna `campaign_maps.published` (default `false` — novos e existentes nascem ocultos). Toggle por mapa só
+  do dono; jogador vê só publicados. **RLS de SELECT refinada** (substituiu `campaign_maps_select`): dono vê
+  todos, membro só `published=true`. Despublicar some da lista do jogador no próximo poll (mapa aberto segue
+  até fechar). Estado vazio próprio pro jogador. Etapa manual: coluna + policy no Supabase.
+
+### Chrome — versão real + atalho home (COMPLETED — PR #246)
+- `package.json` `0.1.0` → **2.0.0**; `__APP_VERSION__` injetado via `define` (vite + vitest); badge mostra
+  `v{versão}` em todos os shells (removido o rótulo "beta"/`sidebar.version_badge`).
+- Atalho home: logo→`/` no `CampaignSidebar` (visão de ficha), no header da `CampaignDetail`
+  (`campaign-detail-home`) e no drawer mobile de campanha (+ item "Meus personagens").
+
 ---
 
 ## Patterns established during C.1.c
@@ -1738,6 +1756,9 @@ function buildInviteLink(): string {
 | Poll do tracker pra dono+membro com janela de carência de edição | #234 | Mestre vê auto-registro ao vivo sem reabrir; carência evita clobber de edição em andamento |
 | Subclasse é free-text + sugestões (datalist) por classe, não traduzida | #237 | Não entra em cálculo; traduzir exigiria lista fixa como em classes (#211); homebrew livre |
 | Instruções via `<HelpHint textKey>` — portal pro body + fixed, tap-only, conteúdo i18n | #240 | Balão nunca recortado (containers com overflow/backdrop-filter); mobile-first (sem hover); cópia no i18n |
+| Régua efêmera reusa a medição da área-linha; broadcast via BroadcastChannel local | #244 | Sem persistência/backend; consistente com áreas; espelha na tela compartilhada de graça |
+| Visibilidade de mapa por RLS (dono todos / membro só published), default oculto | #245 | Fonte da verdade no banco (não filtro client); mestre prepara antes de revelar |
+| Versão do app vinda do package.json via `__APP_VERSION__` (vite+vitest define) | #246 | Versão real controlada por bump; sem rótulo manual/"beta" |
 
 ---
 
@@ -1879,8 +1900,9 @@ New from C.1.x, delete, cut-v1, polish, auth-badge:
   simultaneously; no locking. Best-effort via debounced saves.
 - **OQ — Tombstone cleanup TTL.** Tombstones accumulate indefinitely. Decision:
   no TTL (permanent) — revisit if storage becomes an issue.
-- **OQ — Versionamento futuro do app.** Atualmente sem versioning visível ao usuário.
-  Considerar `/about` page com versão, links, créditos quando fizer sentido.
+- ~~**OQ — Versionamento futuro do app.**~~ *Resolved (PR #246).* Versão real do `package.json`
+  (`__APP_VERSION__` via define do vite/vitest), exibida como `v{versão}` em todos os shells; controlada por
+  bump. (`/about` com créditos segue como ideia futura opcional.)
 
 New from Auth signup + Camp.1-5:
 
@@ -1899,10 +1921,12 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Puxar imagem do token do personagem vinculado.**~~ *Resolved (PR #172).* Retrato do personagem vinculado copiado como imagem do token (data URL → blob → `image_path`), reusando todo o pipeline de imagem de token; personagem sem retrato não selecionável. Cópia (não referência ao vivo).
 - ~~**OQ — Tokens escalam com o zoom.**~~ *Resolved (PR #165).* `<Marker>` + divIcon com tamanho recomputado no `zoomend` via `pxPerUnit`; helper `tokenDiameterPx`.
 - ~~**OQ — Marcador por duplo-clique.**~~ *Resolved (PR #171).* Marcador criado por duplo-clique (`dblclick`); `doubleClickZoom={false}` evita zoom no duplo-clique.
-- **OQ — Visibilidade de mapa por mapa (publicar).** Mestre habilitar/desabilitar um mapa na lista da campanha, pra preparar mapa + grid antes de os jogadores verem. Deferred.
+- ~~**OQ — Visibilidade de mapa por mapa (publicar).**~~ *Resolved (PR #245).* Coluna `published` + RLS
+  (dono todos / membro só published); toggle por mapa só do dono; default oculto.
 - **OQ — Biblioteca de tokens por-usuário (global).** Hoje os presets são por campanha; permitir uma biblioteca pessoal do mestre reutilizável entre campanhas (exige repensar storage/RLS por-usuário). Deferred.
 - ~~**OQ — Iniciativa / turnos.**~~ *Resolved (PR #227).* Lista ordenada de combatentes por campanha, gerenciada pelo mestre, com destaque do turno atual (próximo/anterior), compartilhada com os jogadores via polling. Introduziu o `activePanel` único (painéis do viewer mutuamente exclusivos).
-- **OQ — Régua / medir distância.** Medir distância em células/pés entre dois pontos; pode ser efêmera e só do mestre (sem tabela/sync). Extra barato. Deferred.
+- ~~**OQ — Régua / medir distância.**~~ *Resolved (PR #244).* Modo régua efêmero (mestre), reusando a
+  medição da área-linha; espelhado no broadcast local.
 - **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
 - **OQ — Rolagem secreta do mestre.** Hoje toda rolagem em campanha é pública pra mesa; permitir que o mestre role escondido (só ele vê). Deferred.
 - **OQ — Realtime para o tracker de iniciativa (e ping).** O refresh do tracker é por polling de 5s com
