@@ -442,13 +442,14 @@ describe('ZoomScaleTracker — zoom scale', () => {
 
   it('registers a zoomend listener on mount', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function))
+    await waitFor(() =>
+      expect(mockLeafletMap.on).toHaveBeenCalledWith('zoomend', expect.any(Function)),
+    )
   })
 
   it('calls latLngToLayerPoint([0,0]) and ([0,1]) after zoomend', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    await waitFor(() => expect(capturedZoomHandlers.length).toBeGreaterThan(0))
     mockLeafletMap.latLngToLayerPoint.mockClear()
 
     // Simulate a zoom event
