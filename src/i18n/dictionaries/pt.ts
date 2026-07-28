@@ -932,6 +932,9 @@ const pt: Record<keyof typeof en, string> = {
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',
 
+  // ── Ruler ─────────────────────────────────────────────────────────────────────
+  'ruler.title': 'Régua',
+
   // ── Help hints ───────────────────────────────────────────────────────────────
   'help.aria_open': 'Mostrar ajuda',
 
