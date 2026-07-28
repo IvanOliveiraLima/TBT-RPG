@@ -21,9 +21,6 @@ const pt: Record<keyof typeof en, string> = {
   'nav.spells': 'Magias',
   'nav.inventory': 'Inventário',
   'nav.lore': 'História',
-  // Sidebar version badge
-  'sidebar.version_badge': 'v2 · beta',
-
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combate',
