@@ -149,11 +149,14 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               marginBottom: 14,
             }}>
-              <div style={{
-                fontFamily: T.serif, fontSize: 16, fontWeight: 600,
-                color: T.textPrimary,
-              }}>
-                TBT-RPG
+              <div>
+                <div style={{
+                  fontFamily: T.serif, fontSize: 16, fontWeight: 600,
+                  color: T.textPrimary,
+                }}>
+                  TBT-RPG
+                </div>
+                <div style={{ fontSize: 10, color: T.textMuted }}>{`v${__APP_VERSION__}`}</div>
               </div>
               {authStatus === 'authenticated_idle' && (
                 <StatusBadge variant="success">{t('auth.connected')}</StatusBadge>

@@ -19,9 +19,6 @@ const en = {
   'nav.spells': 'Spells',
   'nav.inventory': 'Inventory',
   'nav.lore': 'Lore',
-  // Sidebar version badge
-  'sidebar.version_badge': 'v2 · beta',
-
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combat',
