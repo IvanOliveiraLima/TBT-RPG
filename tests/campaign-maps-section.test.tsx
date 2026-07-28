@@ -405,3 +405,33 @@ describe('CampaignMapsSection — publish toggle', () => {
     )
   })
 })
+
+describe('CampaignMapsSection — publish help hint', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockListCampaignMaps.mockResolvedValue([MAP_1])
+    mockSetCampaignMapPublished.mockResolvedValue(undefined)
+    localStorage.setItem('tbt-rpg-v2-lang', 'en')
+  })
+
+  it('owner sees the HelpHint trigger next to the publish toggle', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId(`map-publish-toggle-${MAP_1.id}`))
+    expect(screen.getByTestId('help-hint-trigger')).toBeDefined()
+  })
+
+  it('player does NOT see the HelpHint trigger (no toggle rendered)', async () => {
+    renderSection(false)
+    await waitFor(() => screen.getByTestId(`map-row-${MAP_1.id}`))
+    expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+  })
+
+  it('clicking HelpHint opens tooltip with publish help text (EN)', async () => {
+    renderSection(true)
+    await waitFor(() => screen.getByTestId('help-hint-trigger'))
+    fireEvent.click(screen.getByTestId('help-hint-trigger'))
+    const tooltip = document.body.querySelector('[role="tooltip"]')
+    expect(tooltip).not.toBeNull()
+    expect(tooltip!.textContent).toContain('Published maps appear to players')
+  })
+})

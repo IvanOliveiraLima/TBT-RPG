@@ -693,6 +693,7 @@ const en = {
   'campaign_maps.published':         'Published',
   'campaign_maps.hidden':            'Hidden',
   'campaign_maps.toggle_publish_aria': 'Toggle map visibility',
+  'campaign_maps.publish_help':        "Published maps appear to players. Hidden maps are only visible to you — publish one when you're ready to reveal it.",
   'campaign_maps.upload_error_type': 'Use a PNG, JPG or WebP image.',
   'campaign_maps.upload_error_size':  'Image is too large (max 10 MB).',
   'campaign_maps.upload_error_quota': 'Map limit reached (max 20 per campaign).',

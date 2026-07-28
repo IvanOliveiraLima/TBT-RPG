@@ -17,6 +17,7 @@ import {
 } from '@/services/campaign-maps'
 import type { CampaignMap } from '@/services/campaign-maps'
 import { CampaignMapViewer } from './CampaignMapViewer'
+import { HelpHint } from '@/components/HelpHint'
 
 const T = {
   surface:       '#15121C',
@@ -259,20 +260,23 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
 
                 {isOwner && (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      data-testid={`map-publish-toggle-${m.id}`}
-                      onClick={(e) => { e.stopPropagation(); void handleTogglePublished(m.id, !m.published) }}
-                      aria-label={t('campaign_maps.toggle_publish_aria')}
-                      style={{
-                        ...SMALL_BTN,
-                        fontSize: 11,
-                        color: m.published ? '#5DCAA5' : T.textMuted,
-                        border: m.published ? '1px solid rgba(93,202,165,0.3)' : `1px solid ${T.borderSubtle}`,
-                      }}
-                    >
-                      {m.published ? t('campaign_maps.published') : t('campaign_maps.hidden')}
-                    </button>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <button
+                        type="button"
+                        data-testid={`map-publish-toggle-${m.id}`}
+                        onClick={(e) => { e.stopPropagation(); void handleTogglePublished(m.id, !m.published) }}
+                        aria-label={t('campaign_maps.toggle_publish_aria')}
+                        style={{
+                          ...SMALL_BTN,
+                          fontSize: 11,
+                          color: m.published ? '#5DCAA5' : T.textMuted,
+                          border: m.published ? '1px solid rgba(93,202,165,0.3)' : `1px solid ${T.borderSubtle}`,
+                        }}
+                      >
+                        {m.published ? t('campaign_maps.published') : t('campaign_maps.hidden')}
+                      </button>
+                      <HelpHint textKey="campaign_maps.publish_help" />
+                    </span>
 
                     {confirmRemoveId === m.id ? (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>

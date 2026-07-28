@@ -697,6 +697,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.published':         'Publicado',
   'campaign_maps.hidden':            'Oculto',
   'campaign_maps.toggle_publish_aria': 'Alternar visibilidade do mapa',
+  'campaign_maps.publish_help':        'Mapas publicados aparecem para os jogadores. Mapas ocultos só você vê — publique quando quiser revelar.',
   'campaign_maps.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
   'campaign_maps.upload_error_size':  'Imagem muito grande (máx. 10 MB).',
   'campaign_maps.upload_error_quota': 'Limite de mapas atingido (máx. 20 por campanha).',
