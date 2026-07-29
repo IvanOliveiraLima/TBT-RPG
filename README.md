@@ -57,6 +57,8 @@ PWA instalável.
 - **Iniciativa e turnos** — o mestre monta a ordem de iniciativa dos combatentes e avança/retrocede o turno; os jogadores acompanham o turno atual em modo leitura
 - **Auto-iniciativa** — o mestre pode ligar, por campanha, o registro automático: quando um jogador rola iniciativa na ficha, o combatente dele entra/atualiza na ordem de iniciativa sozinho
 - **Viewer responsivo no celular** — no mobile a barra de ferramentas vira um menu ☰ e os painéis viram bottom sheets, com uma superfície aberta por vez; no desktop nada muda
+- **Régua** — o mestre mede distância no mapa (arrasta dois pontos; mostra pés/quadrados)
+- **Visibilidade de mapas** — o mestre prepara mapas ocultos e publica um a um quando quiser revelá-los aos jogadores
 
 **Sincronização (opcional):**
 
