@@ -19,9 +19,6 @@ const en = {
   'nav.spells': 'Spells',
   'nav.inventory': 'Inventory',
   'nav.lore': 'Lore',
-  // Sidebar version badge
-  'sidebar.version_badge': 'v2 · beta',
-
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combat',
@@ -689,6 +686,11 @@ const en = {
   'campaign_maps.add':              'Add map',
   'campaign_maps.name_label':       'Map name',
   'campaign_maps.empty':            'No maps yet.',
+  'campaign_maps.empty_player':      "The GM hasn't shared any maps yet.",
+  'campaign_maps.published':         'Published',
+  'campaign_maps.hidden':            'Hidden',
+  'campaign_maps.toggle_publish_aria': 'Toggle map visibility',
+  'campaign_maps.publish_help':        "Published maps appear to players. Hidden maps are only visible to you — publish one when you're ready to reveal it.",
   'campaign_maps.upload_error_type': 'Use a PNG, JPG or WebP image.',
   'campaign_maps.upload_error_size':  'Image is too large (max 10 MB).',
   'campaign_maps.upload_error_quota': 'Map limit reached (max 20 per campaign).',
@@ -927,6 +929,9 @@ const en = {
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',
+
+  // ── Ruler ─────────────────────────────────────────────────────────────────────
+  'ruler.title': 'Ruler',
 
   // ── Sync conflict ─────────────────────────────────────────────────────────────
   // ── Help hints ───────────────────────────────────────────────────────────────

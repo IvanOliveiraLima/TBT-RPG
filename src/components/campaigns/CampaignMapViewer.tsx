@@ -290,6 +290,62 @@ function AreaInteraction({
   return null
 }
 
+// Inner component — handles ruler measurement via drag; disables pan and sets crosshair in rulerMode.
+// onStart(latlng) called on pointerdown, onMove(latlng) on pointermove, onEnd() on pointerup.
+function RulerDragHandler({
+  rulerMode,
+  onStart,
+  onMove,
+  onEnd,
+}: {
+  rulerMode: boolean
+  onStart: (latlng: L.LatLng) => void
+  onMove:  (latlng: L.LatLng) => void
+  onEnd:   () => void
+}) {
+  const leafletMap = useMap()
+
+  useEffect(() => {
+    const container = leafletMap.getContainer()
+    if (!rulerMode) {
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+      return
+    }
+    leafletMap.dragging.disable()
+    container.style.cursor = 'crosshair'
+    container.style.touchAction = 'none'
+    let dragging = false
+    const down = (e: Event) => {
+      const pe = e as PointerEvent
+      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      dragging = true
+      try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
+      onStart(leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent))
+    }
+    const move = (e: Event) => {
+      if (dragging) onMove(leafletMap.mouseEventToLatLng(e as unknown as MouseEvent))
+    }
+    const end = () => { if (dragging) { dragging = false; onEnd() } }
+    container.addEventListener('pointerdown', down)
+    container.addEventListener('pointermove', move)
+    container.addEventListener('pointerup', end)
+    container.addEventListener('pointercancel', end)
+    return () => {
+      container.removeEventListener('pointerdown', down)
+      container.removeEventListener('pointermove', move)
+      container.removeEventListener('pointerup', end)
+      container.removeEventListener('pointercancel', end)
+      leafletMap.dragging.enable()
+      container.style.cursor = ''
+      container.style.touchAction = ''
+    }
+  }, [rulerMode, leafletMap, onStart, onMove, onEnd])
+
+  return null
+}
+
 // Inner component — owner popup for editing a token's label, color, size, and image
 function TokenPopupContent({
   token,
@@ -628,6 +684,10 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
+  // Ruler mode state (ephemeral — never persisted to Supabase)
+  const [rulerMode, setRulerMode] = useState(false)
+  const [rulerSegment, setRulerSegment] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
+  const rulerStartRef = useRef<{ x: number; y: number } | null>(null)
   // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
   // On desktop, surfaces can coexist in different screen regions — no reset.
   const selectSurface = useCallback((next: 'rolls' | 'initiative' | 'tools') => {
@@ -637,13 +697,15 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       setAreaMode(false)
       setFogMode(false)
       setArmedPresetId(null)
+      setRulerMode(false)
+      setRulerSegment(null)
     }
     setActivePanel(prev => (prev === next ? null : next))
   }, [isMobile])
   // BroadcastChannel refs (owner emitter)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
-  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker })
-  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker } }, [tokens, fog, areas, localGrid, tracker])
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment } }, [tokens, fog, areas, localGrid, tracker, rulerSegment])
 
   useEffect(() => {
     let cancelled = false
@@ -783,8 +845,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     if (!isOwner || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
-    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker })
-  }, [isOwner, broadcast, tokens, fog, areas, localGrid, tracker])
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
+  }, [isOwner, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
@@ -793,14 +855,16 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     ch.onmessage = (e: MessageEvent) => {
       if (e.data?.type === 'snapshot') {
-        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini } = e.data as {
+        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r } = e.data as {
           tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
+          ruler?: typeof rulerSegment
         }
         if (Array.isArray(t)) setTokens(t)
         if (f) setFog(f)
         if (Array.isArray(a)) setAreas(a)
         if (g) setLocalGrid(g)
         if (ini) setTracker(ini)
+        if ('ruler' in e.data) setRulerSegment(r ?? null)
       }
     }
     ch.postMessage({ type: 'hello' })
@@ -883,6 +947,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     setAutoInitiative(next)
     void updateAutoInitiative(map.campaignId, next)
   }
+
+  // Esc clears ruler segment (stays in ruler mode for next measurement)
+  useEffect(() => {
+    if (!rulerMode) return
+    const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') setRulerSegment(null) }
+    document.addEventListener('keydown', handle)
+    return () => document.removeEventListener('keydown', handle)
+  }, [rulerMode])
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -1216,6 +1288,26 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     setAreas(prev => prev.filter(a => a.id !== id))
   }
 
+  const handleRulerStart = useCallback((latlng: L.LatLng) => {
+    const cx = latlng.lng
+    const cy = map.height - latlng.lat
+    rulerStartRef.current = { x: cx, y: cy }
+    setRulerSegment({ x1: cx, y1: cy, x2: cx, y2: cy })
+  }, [map.height])
+
+  const handleRulerMove = useCallback((latlng: L.LatLng) => {
+    const start = rulerStartRef.current
+    if (!start) return
+    const x2 = latlng.lng
+    const y2 = map.height - latlng.lat
+    setRulerSegment({ x1: start.x, y1: start.y, x2, y2 })
+  }, [map.height])
+
+  const handleRulerEnd = useCallback(() => {
+    rulerStartRef.current = null
+    // Segment persists — Q1=B
+  }, [])
+
   const viewerHeight = expanded ? '100%' : '70vh'
 
   if (error) {
@@ -1268,7 +1360,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             <button
               type="button"
               data-testid="grid-panel-toggle"
-              onClick={() => setPanelOpen(true)}
+              onClick={() => { setPanelOpen(true); setRulerMode(false); setRulerSegment(null) }}
               aria-label={t('campaign_maps.grid_title')}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -1527,6 +1619,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                 setAreaPanelOpen(true)
                 setFogMode(false)
                 setArmedPresetId(null)
+                setRulerMode(false)
+                setRulerSegment(null)
               }}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -1685,7 +1779,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             <button
               type="button"
               data-testid="fog-panel-toggle"
-              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false) }}
+              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null) }}
               disabled={!localGrid.enabled}
               {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
               aria-label={t('campaign_maps.fog_title')}
@@ -1790,6 +1884,36 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               </p>
             </div>
           )}
+
+          {/* Ruler / measure distance */}
+          <button
+            type="button"
+            data-testid="ruler-toggle"
+            onClick={() => {
+              if (rulerMode) {
+                setRulerMode(false)
+                setRulerSegment(null)
+              } else {
+                setRulerMode(true)
+                setAreaMode(false)
+                setAreaPanelOpen(false)
+                setFogMode(false)
+                setPanelOpen(false)
+                setArmedPresetId(null)
+                setActivePanel(null)
+              }
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
+              color: rulerMode ? '#D4A017' : T.textMuted,
+              border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            ↔ {t('ruler.title')}
+          </button>
 
           {/* Broadcast screen button */}
           <button
@@ -1981,7 +2105,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </div>
           {/* Grade */}
           <button type="button" data-testid="tools-grid-btn"
-            onClick={() => { setPanelOpen(true); setAreaPanelOpen(false); setFogMode(false); setActivePanel(null) }}
+            onClick={() => { setPanelOpen(true); setAreaPanelOpen(false); setFogMode(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⊞ {t('campaign_maps.grid_title')}
@@ -2002,7 +2126,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </button>
           {/* Áreas */}
           <button type="button" data-testid="tools-areas-btn"
-            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmedPresetId(null); setPanelOpen(false); setActivePanel(null) }}
+            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmedPresetId(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ◎ {t('areas.title')}
@@ -2010,10 +2134,17 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           {/* Névoa */}
           <button type="button" data-testid="tools-fog-btn"
             disabled={!localGrid.enabled}
-            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null) }}
+            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: !localGrid.enabled ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left', opacity: !localGrid.enabled ? 0.5 : 1 }}
           >
             ◎ {t('campaign_maps.fog_title')}
+          </button>
+          {/* Régua */}
+          <button type="button" data-testid="tools-ruler-btn"
+            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmedPresetId(null); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: rulerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            ↔ {t('ruler.title')}
           </button>
           {/* Transmissão */}
           <button type="button" data-testid="tools-broadcast-btn"
@@ -2408,6 +2539,56 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           </SVGOverlay>
         )}
 
+        {/* Ruler overlay — pointer-events:none; owner + broadcast */}
+        {rulerSegment && (
+          <SVGOverlay
+            bounds={bounds}
+            attributes={{
+              viewBox: `0 0 ${map.width} ${map.height}`,
+              style: 'pointer-events: none',
+              'data-testid': 'ruler-overlay',
+            }}
+          >
+            <line
+              x1={rulerSegment.x1} y1={rulerSegment.y1}
+              x2={rulerSegment.x2} y2={rulerSegment.y2}
+              stroke="#D4A017"
+              strokeOpacity={0.9}
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              vectorEffect="non-scaling-stroke"
+            />
+            {(() => {
+              const cellPx = localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : null
+              if (!cellPx) return null
+              const dx = rulerSegment.x2 - rulerSegment.x1
+              const dy = rulerSegment.y2 - rulerSegment.y1
+              const len = Math.hypot(dx, dy)
+              const cells = Math.round(len / cellPx)
+              const feet = cells * 5
+              const labelText = `${feet} ft (${cells}\u25a1)`
+              const fontSize = 12 / pxPerUnit
+              const lx = (rulerSegment.x1 + rulerSegment.x2) / 2
+              const ly = (rulerSegment.y1 + rulerSegment.y2) / 2
+              return (
+                <text
+                  x={lx} y={ly}
+                  fontSize={fontSize}
+                  fill="white"
+                  stroke="#15121C"
+                  strokeWidth={fontSize * 0.15}
+                  paintOrder="stroke"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  data-testid="ruler-label"
+                >
+                  {labelText}
+                </text>
+              )
+            })()}
+          </SVGOverlay>
+        )}
+
         {/* Fog of war mask — pointer-events:none so it never blocks pan/markers */}
         {fog.enabled && (
           <SVGOverlay
@@ -2442,6 +2623,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               onDblClick={latlng => {
                 if (fogMode) return  // fog painting handled by FogInteraction
                 if (areaMode) return  // area drawing handled by AreaInteraction
+                if (rulerMode) return  // ruler drawing handled by RulerDragHandler
                 if (armedPresetId) return  // dblclick ignored while preset is armed
                 setPendingLatLng(latlng)
                 setPendingLabel('')
@@ -2472,6 +2654,15 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             onStart={handleAreaStart}
             onMove={handleAreaMove}
             onEnd={handleAreaEnd}
+          />
+        )}
+
+        {isOwner && (
+          <RulerDragHandler
+            rulerMode={rulerMode}
+            onStart={handleRulerStart}
+            onMove={handleRulerMove}
+            onEnd={handleRulerEnd}
           />
         )}
 
@@ -2599,7 +2790,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               key={tok.id}
               position={[tok.y, tok.x]}
               icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
-              draggable={isOwner && !areaMode && !fogMode}
+              draggable={isOwner && !areaMode && !fogMode && !rulerMode}
               {...(isOwner ? {
                 eventHandlers: {
                   dragend(e: L.DragEndEvent) {

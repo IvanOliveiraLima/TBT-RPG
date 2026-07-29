@@ -21,9 +21,6 @@ const pt: Record<keyof typeof en, string> = {
   'nav.spells': 'Magias',
   'nav.inventory': 'Inventário',
   'nav.lore': 'História',
-  // Sidebar version badge
-  'sidebar.version_badge': 'v2 · beta',
-
   // Bottom tab bar (short labels)
   'tab.status': 'Status',
   'tab.combat': 'Combate',
@@ -693,6 +690,11 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.add':              'Adicionar mapa',
   'campaign_maps.name_label':       'Nome do mapa',
   'campaign_maps.empty':            'Nenhum mapa ainda.',
+  'campaign_maps.empty_player':      'O mestre ainda não liberou nenhum mapa.',
+  'campaign_maps.published':         'Publicado',
+  'campaign_maps.hidden':            'Oculto',
+  'campaign_maps.toggle_publish_aria': 'Alternar visibilidade do mapa',
+  'campaign_maps.publish_help':        'Mapas publicados aparecem para os jogadores. Mapas ocultos só você vê — publique quando quiser revelar.',
   'campaign_maps.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
   'campaign_maps.upload_error_size':  'Imagem muito grande (máx. 10 MB).',
   'campaign_maps.upload_error_quota': 'Limite de mapas atingido (máx. 20 por campanha).',
@@ -931,6 +933,9 @@ const pt: Record<keyof typeof en, string> = {
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',
+
+  // ── Ruler ─────────────────────────────────────────────────────────────────────
+  'ruler.title': 'Régua',
 
   // ── Help hints ───────────────────────────────────────────────────────────────
   'help.aria_open': 'Mostrar ajuda',

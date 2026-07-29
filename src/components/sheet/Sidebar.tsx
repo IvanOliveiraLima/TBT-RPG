@@ -79,7 +79,7 @@ export function Sidebar({ character, activeTab, onTabChange }: SidebarProps) {
           }}>
             TBT-RPG
           </div>
-          <div style={{ fontSize: 10, color: T.textMuted }}>{t('sidebar.version_badge')}</div>
+          <div style={{ fontSize: 10, color: T.textMuted }}>{`v${__APP_VERSION__}`}</div>
         </div>
       </Link>
 

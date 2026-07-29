@@ -132,6 +132,7 @@ const MAP: CampaignMap = {
   id: 'map-1', campaignId: 'camp-1', name: 'Dungeon',
   imagePath: 'camp-1/map-1.png', width: 2048, height: 1024, createdAt: 0,
   gridEnabled: false, gridSize: null, gridOffsetX: 0, gridOffsetY: 0, gridColor: '#5DCAA5',
+  published: false,
 }
 
 const AREA_CIRCLE: CampaignMapArea = {

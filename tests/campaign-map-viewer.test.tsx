@@ -121,6 +121,7 @@ const MAP: CampaignMap = {
   gridOffsetX: 0,
   gridOffsetY: 0,
   gridColor: '#5DCAA5',
+  published: false,
 }
 
 const MAP_WITH_GRID: CampaignMap = {
@@ -130,6 +131,7 @@ const MAP_WITH_GRID: CampaignMap = {
   gridOffsetX: 5,
   gridOffsetY: 3,
   gridColor: '#FF0000',
+  published: false,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

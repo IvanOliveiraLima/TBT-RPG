@@ -13,9 +13,11 @@ import {
   listCampaignMaps,
   uploadCampaignMap,
   deleteCampaignMap,
+  setCampaignMapPublished,
 } from '@/services/campaign-maps'
 import type { CampaignMap } from '@/services/campaign-maps'
 import { CampaignMapViewer } from './CampaignMapViewer'
+import { HelpHint } from '@/components/HelpHint'
 
 const T = {
   surface:       '#15121C',
@@ -115,6 +117,11 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
       }))
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  async function handleTogglePublished(mapId: string, next: boolean) {
+    setMaps(prev => prev.map(m => m.id === mapId ? { ...m, published: next } : m))
+    await setCampaignMapPublished(mapId, next)
   }
 
   async function handleRemoveConfirm() {
@@ -219,7 +226,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             data-testid="maps-empty-state"
             style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}
           >
-            {t('campaign_maps.empty')}
+            {isOwner ? t('campaign_maps.empty') : t('campaign_maps.empty_player')}
           </div>
         )}
 
@@ -235,6 +242,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
                   background: T.elevated,
                   border: `1px solid ${T.borderSubtle}`,
                   borderRadius: 10, padding: '10px 14px',
+                  opacity: m.published ? 1 : 0.65,
                 }}
               >
                 <button
@@ -251,45 +259,65 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
                 </button>
 
                 {isOwner && (
-                  confirmRemoveId === m.id ? (
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, color: T.textMuted }}>
-                        {t('campaign_maps.remove_confirm')}
-                      </span>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <button
                         type="button"
-                        data-testid={`confirm-remove-map-${m.id}`}
-                        onClick={() => void handleRemoveConfirm()}
-                        disabled={removing}
+                        data-testid={`map-publish-toggle-${m.id}`}
+                        onClick={(e) => { e.stopPropagation(); void handleTogglePublished(m.id, !m.published) }}
+                        aria-label={t('campaign_maps.toggle_publish_aria')}
                         style={{
                           ...SMALL_BTN,
-                          border: `1px solid ${T.danger}`,
-                          color: T.danger,
                           fontSize: 11,
+                          color: m.published ? '#5DCAA5' : T.textMuted,
+                          border: m.published ? '1px solid rgba(93,202,165,0.3)' : `1px solid ${T.borderSubtle}`,
                         }}
                       >
-                        ✓
+                        {m.published ? t('campaign_maps.published') : t('campaign_maps.hidden')}
                       </button>
+                      <HelpHint textKey="campaign_maps.publish_help" />
+                    </span>
+
+                    {confirmRemoveId === m.id ? (
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: T.textMuted }}>
+                          {t('campaign_maps.remove_confirm')}
+                        </span>
+                        <button
+                          type="button"
+                          data-testid={`confirm-remove-map-${m.id}`}
+                          onClick={() => void handleRemoveConfirm()}
+                          disabled={removing}
+                          style={{
+                            ...SMALL_BTN,
+                            border: `1px solid ${T.danger}`,
+                            color: T.danger,
+                            fontSize: 11,
+                          }}
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`cancel-remove-map-${m.id}`}
+                          onClick={() => setConfirmRemoveId(null)}
+                          disabled={removing}
+                          style={{ ...SMALL_BTN, fontSize: 11 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
-                        data-testid={`cancel-remove-map-${m.id}`}
-                        onClick={() => setConfirmRemoveId(null)}
-                        disabled={removing}
-                        style={{ ...SMALL_BTN, fontSize: 11 }}
+                        data-testid={`remove-map-${m.id}`}
+                        onClick={() => setConfirmRemoveId(m.id)}
+                        style={{ ...SMALL_BTN, color: T.danger, border: `1px solid rgba(226,75,74,0.3)`, fontSize: 11 }}
                       >
                         ✕
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      data-testid={`remove-map-${m.id}`}
-                      onClick={() => setConfirmRemoveId(m.id)}
-                      style={{ ...SMALL_BTN, color: T.danger, border: `1px solid rgba(226,75,74,0.3)`, fontSize: 11 }}
-                    >
-                      ✕
-                    </button>
-                  )
+                    )}
+                  </div>
                 )}
               </div>
             ))}
