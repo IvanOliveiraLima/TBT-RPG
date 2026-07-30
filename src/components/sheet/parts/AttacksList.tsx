@@ -49,7 +49,7 @@ const ABILITY_KEYS: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
 interface ImportSpellsPickerProps {
   spells: Spell[]
   spellcastingAbility: Character['spellcastingAbility']
-  onImport: (spell: Spell) => void
+  onImport: (attack: Attack) => void
   onClose: () => void
 }
 
