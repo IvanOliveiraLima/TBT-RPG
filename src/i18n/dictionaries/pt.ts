@@ -260,6 +260,11 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.empty_state_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Ataque {name}, {bonus_or_dc}, {damage}',
+  'attacks.import_spells':       'Importar de magias',
+  'attacks.import_spells_title': 'Importar de magias',
+  'attacks.import_add':          'Adicionar',
+  'attacks.import_empty':        'Nenhuma magia cadastrada',
+  'attacks.import_done':         'Concluir',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',
@@ -306,6 +311,8 @@ const pt: Record<keyof typeof en, string> = {
   'spells.range_label':         'Alcance',
   'spells.description_label':   'Descrição',
   'spells.description_placeholder': 'Efeitos, mecânica...',
+  'spells.damage':      'Dano',
+  'spells.damage_type': 'Tipo de dano',
 
   // SpellRow (legacy keys kept for compatibility)
   'spells.row.unprepared_aria': 'Não preparada',
