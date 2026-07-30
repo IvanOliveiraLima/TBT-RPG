@@ -258,11 +258,14 @@ const en = {
   'attacks.empty_state_hint': 'Add an attack to register your weapons and offensive spells.',
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Attack {name}, {bonus_or_dc}, {damage}',
-  'attacks.import_spells':       'Import from spells',
-  'attacks.import_spells_title': 'Import from spells',
-  'attacks.import_add':          'Add',
-  'attacks.import_empty':        'No spells yet',
-  'attacks.import_done':         'Done',
+  'attacks.import_spells':         'Import from spells',
+  'attacks.import_spells_title':   'Import from spells',
+  'attacks.import_add':            'Add',
+  'attacks.import_empty':          'No spells yet',
+  'attacks.import_done':           'Done',
+  'attacks.import_weapons':        'Import from weapons',
+  'attacks.import_weapons_title':  'Import from weapons',
+  'attacks.import_weapons_empty':  'No weapons yet',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
@@ -345,6 +348,11 @@ const en = {
   'inventory.category_label':          'Category',
   'inventory.description_label':       'Description',
   'inventory.description_placeholder': 'Effects, special properties…',
+
+  // Item categories
+  'inventory.attack_kind':             'Attack type',
+  'inventory.melee':                   'Melee',
+  'inventory.ranged':                  'Ranged',
 
   // Item categories
   'inventory.category_weapon':         'Weapons',

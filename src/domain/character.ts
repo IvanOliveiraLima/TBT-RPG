@@ -94,6 +94,11 @@ export interface InventoryItem {
   category: ItemCategory
   description: string
   equipped: boolean
+  damage?: string          // optional — only for weapons; used when importing to attacks
+  damageType?: string      // optional — only for weapons
+  properties?: string      // optional — only for weapons, e.g. "Finesse, Light"
+  range?: string           // optional — only for weapons
+  attackKind?: 'melee' | 'ranged' // optional — only for weapons
 }
 
 export interface Feature {

@@ -260,11 +260,14 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.empty_state_hint': 'Adicione um ataque para registrar suas armas e magias ofensivas.',
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Ataque {name}, {bonus_or_dc}, {damage}',
-  'attacks.import_spells':       'Importar de magias',
-  'attacks.import_spells_title': 'Importar de magias',
-  'attacks.import_add':          'Adicionar',
-  'attacks.import_empty':        'Nenhuma magia cadastrada',
-  'attacks.import_done':         'Concluir',
+  'attacks.import_spells':         'Importar de magias',
+  'attacks.import_spells_title':   'Importar de magias',
+  'attacks.import_add':            'Adicionar',
+  'attacks.import_empty':          'Nenhuma magia cadastrada',
+  'attacks.import_done':           'Concluir',
+  'attacks.import_weapons':        'Importar de armas',
+  'attacks.import_weapons_title':  'Importar de armas',
+  'attacks.import_weapons_empty':  'Nenhuma arma cadastrada',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',
@@ -347,6 +350,10 @@ const pt: Record<keyof typeof en, string> = {
   'inventory.category_label':          'Categoria',
   'inventory.description_label':       'Descrição',
   'inventory.description_placeholder': 'Efeitos, propriedades especiais…',
+
+  'inventory.attack_kind':             'Tipo de ataque',
+  'inventory.melee':                   'Corpo a corpo',
+  'inventory.ranged':                  'À distância',
 
   // Item categories
   'inventory.category_weapon':         'Armas',
