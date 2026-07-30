@@ -21,6 +21,7 @@ PWA instalável.
   classe, nível, atributos. Modal com toggle de idioma e estados de erro traduzidos
 - **Edição completa** — Status, Combate, Magias, Inventário, Lore, todas com
   expand/collapse, datalists canônicos, UUIDs estáveis
+- **Importar para o combate** — magias e armas já cadastradas podem ser importadas como ataques (com dano e alcance), sem digitar tudo de novo
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
 - **Classe** — lista fixa traduzida (PT/EN); o dado de vida sai sempre correto pela classe escolhida
