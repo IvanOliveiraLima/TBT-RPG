@@ -258,6 +258,11 @@ const en = {
   'attacks.empty_state_hint': 'Add an attack to register your weapons and offensive spells.',
   'attacks.count_label': '({count})',
   'attacks.row_aria': 'Attack {name}, {bonus_or_dc}, {damage}',
+  'attacks.import_spells':       'Import from spells',
+  'attacks.import_spells_title': 'Import from spells',
+  'attacks.import_add':          'Add',
+  'attacks.import_empty':        'No spells yet',
+  'attacks.import_done':         'Done',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
@@ -304,6 +309,8 @@ const en = {
   'spells.range_label':         'Range',
   'spells.description_label':   'Description',
   'spells.description_placeholder': 'Effects, mechanics...',
+  'spells.damage':      'Damage',
+  'spells.damage_type': 'Damage type',
 
   // SpellRow (legacy keys kept for compatibility)
   'spells.row.unprepared_aria': 'Not prepared',

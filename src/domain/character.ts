@@ -75,6 +75,8 @@ export interface Spell {
   range: string           // "60 ft", "Touch", "Self" — free-text with datalist
   description: string     // free-text, textarea
   prepared: boolean       // marked for use today (ignored for cantrips)
+  damage?: string         // optional, e.g. "8d6" — used when importing to attacks
+  damageType?: string     // optional, e.g. "Fire" — used when importing to attacks
 }
 
 export type ItemCategory =
