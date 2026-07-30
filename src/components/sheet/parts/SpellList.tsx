@@ -11,6 +11,7 @@ import type { Character, Spell, SpellSchool } from '@/domain/character'
 import { SPELL_SCHOOLS, SCHOOL_COLORS } from '@/data/canonical/spell-schools'
 import { CANONICAL_CASTING_TIMES } from '@/data/canonical/casting-times'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
+import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
@@ -111,6 +112,8 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
       range:       '',
       description: '',
       prepared:    false,
+      damage:      '',
+      damageType:  '',
     }
     onUpdate?.({ spells: [...spells, newSpell] })
     setOpenId(newId)
@@ -256,6 +259,9 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
         </datalist>
         <datalist id="canonical-spell-ranges">
           {CANONICAL_RANGES.map(r => <option key={r} value={r} />)}
+        </datalist>
+        <datalist id="canonical-damage-types">
+          {CANONICAL_DAMAGE_TYPES.map(dt => <option key={dt} value={dt} />)}
         </datalist>
       </Card>
     </div>
@@ -467,6 +473,36 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
                 onChange={e => onUpdate({ range: e.target.value })}
                 list="canonical-spell-ranges"
                 data-testid={`spell-range-${spell.id}`}
+                style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
+                className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                readOnly={locked}
+              />
+            </div>
+          </div>
+
+          {/* Row: damage + damageType */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.damage')}</Label>
+              <input
+                type="text"
+                value={spell.damage ?? ''}
+                onChange={e => onUpdate({ damage: e.target.value })}
+                placeholder="8d6"
+                data-testid={`spell-damage-${spell.id}`}
+                style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
+                className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                readOnly={locked}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.damage_type')}</Label>
+              <input
+                type="text"
+                value={spell.damageType ?? ''}
+                onChange={e => onUpdate({ damageType: e.target.value })}
+                list="canonical-damage-types"
+                data-testid={`spell-damage-type-${spell.id}`}
                 style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
                 className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
                 readOnly={locked}
