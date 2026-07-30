@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import type React from 'react'
-import type { Character, Attack, AbilityKey, Spell } from '@/domain/character'
+import type { Character, Attack, AbilityKey, Spell, InventoryItem } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
@@ -234,6 +234,182 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
                     </button>
                   </div>
                 ))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── ImportWeaponsPicker ─────────────────────────────────────────────────── */
+
+interface ImportWeaponsPickerProps {
+  items: InventoryItem[]
+  onImport: (attack: Attack) => void
+  onClose: () => void
+}
+
+function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerProps) {
+  const { t } = useTranslation()
+
+  const weapons = useMemo(() => {
+    const ws = items.filter(item => item.category === 'weapon')
+    // Equipped first, then unequipped
+    return [
+      ...ws.filter(w => w.equipped),
+      ...ws.filter(w => !w.equipped),
+    ]
+  }, [items])
+
+  return (
+    <div
+      data-testid="import-weapons-picker"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)',
+      }}
+    >
+      <div
+        style={{
+          background: T.elevated,
+          border: `1px solid ${T.borderDefault}`,
+          borderRadius: 12,
+          width: 'min(460px, 92vw)',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '14px 16px 10px',
+            borderBottom: `1px solid ${T.borderSubtle}`,
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              fontSize: 13,
+              fontWeight: 600,
+              color: T.textPrimary,
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_weapons_title')}
+          </span>
+          <button
+            type="button"
+            data-testid="import-weapons-done"
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${T.borderDefault}`,
+              borderRadius: 6,
+              color: T.textPrimary,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '4px 12px',
+              cursor: 'pointer',
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_done')}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: 'auto', padding: '10px 16px 16px', flex: 1 }}>
+          {weapons.length === 0 ? (
+            <p
+              data-testid="import-weapons-empty"
+              style={{
+                textAlign: 'center',
+                color: T.textMuted,
+                fontSize: 13,
+                fontFamily: T.sans,
+                marginTop: 20,
+              }}
+            >
+              {t('attacks.import_weapons_empty')}
+            </p>
+          ) : (
+            weapons.map(item => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 0',
+                  borderBottom: `1px solid ${T.borderSubtle}`,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: T.textPrimary,
+                      fontFamily: T.sans,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.name || '(unnamed)'}
+                    {item.equipped && (
+                      <span style={{ fontSize: 9, color: T.textMuted, marginLeft: 6 }}>●</span>
+                    )}
+                  </div>
+                  {(item.damage || item.damageType) && (
+                    <div style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
+                      {[item.damage, item.damageType].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  data-testid={`import-weapon-${item.id}`}
+                  onClick={() => {
+                    const snapshot: Attack = {
+                      id: crypto.randomUUID(),
+                      name: item.name,
+                      kind: item.attackKind ?? 'melee',
+                      ability: '',
+                      attackBonus: 0,
+                      damage: item.damage ?? '',
+                      damageType: item.damageType ?? '',
+                      range: item.range ?? '',
+                      properties: item.properties ?? '',
+                      notes: item.description,
+                    }
+                    onImport(snapshot)
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: `1px solid ${T.borderDefault}`,
+                    borderRadius: 6,
+                    color: T.accent,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '3px 10px',
+                    cursor: 'pointer',
+                    fontFamily: T.sans,
+                    flexShrink: 0,
+                  }}
+                >
+                  + {t('attacks.import_add')}
+                </button>
               </div>
             ))
           )}
@@ -625,6 +801,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [weaponPickerOpen, setWeaponPickerOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
   // Close open card on outside pointerdown (covers mouse + touch)
@@ -671,6 +848,11 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     onUpdate({ attacks: [...attacks, snapshot] })
   }
 
+  function importWeapon(snapshot: Attack) {
+    if (!onUpdate) return
+    onUpdate({ attacks: [...attacks, snapshot] })
+  }
+
   return (
     <div ref={listRef} data-testid="attacks-list">
       {/* Header */}
@@ -694,6 +876,25 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
         </span>
         {onUpdate && !locked && (
           <>
+            <button
+              type="button"
+              data-testid="import-weapons-btn"
+              onClick={() => setWeaponPickerOpen(true)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderDefault}`,
+                borderRadius: 6,
+                color: T.textMuted,
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                fontFamily: T.sans,
+                marginRight: 4,
+              }}
+            >
+              {t('attacks.import_weapons')}
+            </button>
             <button
               type="button"
               data-testid="import-spells-btn"
@@ -779,6 +980,15 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
           spellcastingAbility={character.spellcastingAbility}
           onImport={importSpell}
           onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* Import weapons picker */}
+      {weaponPickerOpen && (
+        <ImportWeaponsPicker
+          items={character.inventory}
+          onImport={importWeapon}
+          onClose={() => setWeaponPickerOpen(false)}
         />
       )}
     </div>
