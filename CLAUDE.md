@@ -268,6 +268,13 @@ This order matters: components built on a broken adapter produce invisible data 
 - **Instruções na UI (`HelpHint`):** pra explicar qualquer controle, colocar
   `<HelpHint textKey="ns.key" />` ao lado do rótulo e adicionar a chave em `en/pt`. Não usar texto de ajuda
   inline fixo — o balão (portal + fixed) não recorta e mantém a cópia centralizada no i18n.
+- **Padrão de import pro combate:** pra permitir que algo cadastrado em outra aba vire ataque: (1) adicionar
+  campos de combate **opcionais** na fonte (`damage`, `damageType`, …) e exibi-los no editor da fonte
+  (condicional por tipo/categoria quando fizer sentido); (2) criar um picker interno no `AttacksList` que lê
+  `character.<fonte>` **do estado** (sem Supabase), agrupa/ordena de forma útil (magias por nível; armas
+  equipadas primeiro) e monta a `Attack` completa; (3) tipar o callback como `(attack: Attack) => void` — o
+  picker entrega a `Attack` pronta, o `AttacksList` só faz o append. O resultado é **snapshot** (editar o
+  ataque não altera a fonte).
 
 ### internationalization (i18n)
 
@@ -1024,6 +1031,18 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - Atalho home: logo→`/` no `CampaignSidebar` (visão de ficha), no header da `CampaignDetail`
   (`campaign-detail-home`) e no drawer mobile de campanha (+ item "Meus personagens").
 
+### Combate — importar magias para ataques (COMPLETED — PR #249)
+- `Spell` ganha `damage?`/`damageType?` (opcionais, free-text) + campos no editor de magias.
+- `AttacksList` ganha "Importar de magias": picker interno lista `character.spells` **agrupado por nível**
+  (truques primeiro) e cria uma `Attack` **snapshot** (name, kind='spell', range, damage, damageType,
+  notes←description, ability←`spellcastingAbility`). Consulta **100% em memória — sem Supabase**.
+
+### Combate — importar armas para ataques (COMPLETED — PR #250)
+- `InventoryItem` ganha `damage?`, `damageType?`, `properties?`, `range?`, `attackKind?: 'melee'|'ranged'`
+  (opcionais); campos aparecem no editor **só** quando `category === 'weapon'`.
+- "Importar de armas": picker filtra armas (**equipadas primeiro**) e cria `Attack` snapshot
+  (`kind←attackKind ?? 'melee'`, `ability=''` — usuário escolhe STR/DES). Também **sem Supabase**.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1759,6 +1778,8 @@ function buildInviteLink(): string {
 | Régua efêmera reusa a medição da área-linha; broadcast via BroadcastChannel local | #244 | Sem persistência/backend; consistente com áreas; espelha na tela compartilhada de graça |
 | Visibilidade de mapa por RLS (dono todos / membro só published), default oculto | #245 | Fonte da verdade no banco (não filtro client); mestre prepara antes de revelar |
 | Versão do app vinda do package.json via `__APP_VERSION__` (vite+vitest define) | #246 | Versão real controlada por bump; sem rótulo manual/"beta" |
+| Import de combate = enriquecer a fonte + snapshot local (sem vínculo vivo) | #249, #250 | Magia/arma guardam dano opcional; o ataque importado é cópia independente e editável |
+| Consulta de magias/armas no combate é 100% em memória (`character.*`), sem Supabase | #249, #250 | O JSON da ficha já está no cliente; import não faz I/O de rede |
 
 ---
 

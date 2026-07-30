@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type React from 'react'
-import type { Character, Attack, AbilityKey } from '@/domain/character'
+import type { Character, Attack, AbilityKey, Spell, InventoryItem } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
@@ -43,6 +43,381 @@ const SEAMLESS_INPUT: React.CSSProperties = {
 /* ── Ability keys in select order ─────────────────────────────────────────── */
 
 const ABILITY_KEYS: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+
+/* ── ImportSpellsPicker ──────────────────────────────────────────────────── */
+
+interface ImportSpellsPickerProps {
+  spells: Spell[]
+  spellcastingAbility: Character['spellcastingAbility']
+  onImport: (attack: Attack) => void
+  onClose: () => void
+}
+
+function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: ImportSpellsPickerProps) {
+  const { t } = useTranslation()
+
+  const spellsByLevel = useMemo(() => {
+    const grouped: Record<number, Spell[]> = {}
+    for (let i = 0; i <= 9; i++) grouped[i] = []
+    for (const spell of spells) {
+      grouped[spell.level]?.push(spell)
+    }
+    return grouped
+  }, [spells])
+
+  const visibleLevels = useMemo(() => {
+    const levels: number[] = []
+    for (let i = 0; i <= 9; i++) {
+      if ((spellsByLevel[i]?.length ?? 0) > 0) levels.push(i)
+    }
+    return levels
+  }, [spellsByLevel])
+
+  return (
+    <div
+      data-testid="import-spells-picker"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)',
+      }}
+    >
+      <div
+        style={{
+          background: T.elevated,
+          border: `1px solid ${T.borderDefault}`,
+          borderRadius: 12,
+          width: 'min(460px, 92vw)',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '14px 16px 10px',
+            borderBottom: `1px solid ${T.borderSubtle}`,
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              fontSize: 13,
+              fontWeight: 600,
+              color: T.textPrimary,
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_spells_title')}
+          </span>
+          <button
+            type="button"
+            data-testid="import-spells-done"
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${T.borderDefault}`,
+              borderRadius: 6,
+              color: T.textPrimary,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '4px 12px',
+              cursor: 'pointer',
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_done')}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: 'auto', padding: '10px 16px 16px', flex: 1 }}>
+          {spells.length === 0 ? (
+            <p
+              data-testid="import-spells-empty"
+              style={{
+                textAlign: 'center',
+                color: T.textMuted,
+                fontSize: 13,
+                fontFamily: T.sans,
+                marginTop: 20,
+              }}
+            >
+              {t('attacks.import_empty')}
+            </p>
+          ) : (
+            visibleLevels.map(level => (
+              <div key={level} data-testid={`import-level-group-${level}`} style={{ marginBottom: 14 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 600,
+                    color: T.textMuted,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.5,
+                    fontFamily: T.sans,
+                    marginBottom: 4,
+                  }}
+                >
+                  {level === 0 ? 'Cantrips' : `Level ${level}`}
+                </div>
+                {spellsByLevel[level]!.map(spell => (
+                  <div
+                    key={spell.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '6px 0',
+                      borderBottom: `1px solid ${T.borderSubtle}`,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: T.textPrimary,
+                          fontFamily: T.sans,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {spell.name || '(unnamed)'}
+                      </div>
+                      {(spell.damage || spell.range) && (
+                        <div style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
+                          {[spell.damage, spell.damageType, spell.range].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      data-testid={`import-spell-${spell.id}`}
+                      onClick={() => {
+                        const snapshot: Attack = {
+                          id: crypto.randomUUID(),
+                          name: spell.name,
+                          kind: 'spell',
+                          ability: spellcastingAbility || '',
+                          attackBonus: 0,
+                          damage: spell.damage ?? '',
+                          damageType: spell.damageType ?? '',
+                          range: spell.range,
+                          properties: '',
+                          notes: spell.description,
+                        }
+                        onImport(snapshot)
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: `1px solid ${T.borderDefault}`,
+                        borderRadius: 6,
+                        color: T.accent,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '3px 10px',
+                        cursor: 'pointer',
+                        fontFamily: T.sans,
+                        flexShrink: 0,
+                      }}
+                    >
+                      + {t('attacks.import_add')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── ImportWeaponsPicker ─────────────────────────────────────────────────── */
+
+interface ImportWeaponsPickerProps {
+  items: InventoryItem[]
+  onImport: (attack: Attack) => void
+  onClose: () => void
+}
+
+function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerProps) {
+  const { t } = useTranslation()
+
+  const weapons = useMemo(() => {
+    const ws = items.filter(item => item.category === 'weapon')
+    // Equipped first, then unequipped
+    return [
+      ...ws.filter(w => w.equipped),
+      ...ws.filter(w => !w.equipped),
+    ]
+  }, [items])
+
+  return (
+    <div
+      data-testid="import-weapons-picker"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)',
+      }}
+    >
+      <div
+        style={{
+          background: T.elevated,
+          border: `1px solid ${T.borderDefault}`,
+          borderRadius: 12,
+          width: 'min(460px, 92vw)',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '14px 16px 10px',
+            borderBottom: `1px solid ${T.borderSubtle}`,
+          }}
+        >
+          <span
+            style={{
+              flex: 1,
+              fontSize: 13,
+              fontWeight: 600,
+              color: T.textPrimary,
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_weapons_title')}
+          </span>
+          <button
+            type="button"
+            data-testid="import-weapons-done"
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${T.borderDefault}`,
+              borderRadius: 6,
+              color: T.textPrimary,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '4px 12px',
+              cursor: 'pointer',
+              fontFamily: T.sans,
+            }}
+          >
+            {t('attacks.import_done')}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div style={{ overflowY: 'auto', padding: '10px 16px 16px', flex: 1 }}>
+          {weapons.length === 0 ? (
+            <p
+              data-testid="import-weapons-empty"
+              style={{
+                textAlign: 'center',
+                color: T.textMuted,
+                fontSize: 13,
+                fontFamily: T.sans,
+                marginTop: 20,
+              }}
+            >
+              {t('attacks.import_weapons_empty')}
+            </p>
+          ) : (
+            weapons.map(item => (
+              <div
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '6px 0',
+                  borderBottom: `1px solid ${T.borderSubtle}`,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: T.textPrimary,
+                      fontFamily: T.sans,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.name || '(unnamed)'}
+                    {item.equipped && (
+                      <span style={{ fontSize: 9, color: T.textMuted, marginLeft: 6 }}>●</span>
+                    )}
+                  </div>
+                  {(item.damage || item.damageType) && (
+                    <div style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
+                      {[item.damage, item.damageType].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  data-testid={`import-weapon-${item.id}`}
+                  onClick={() => {
+                    const snapshot: Attack = {
+                      id: crypto.randomUUID(),
+                      name: item.name,
+                      kind: item.attackKind ?? 'melee',
+                      ability: '',
+                      attackBonus: 0,
+                      damage: item.damage ?? '',
+                      damageType: item.damageType ?? '',
+                      range: item.range ?? '',
+                      properties: item.properties ?? '',
+                      notes: item.description,
+                    }
+                    onImport(snapshot)
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: `1px solid ${T.borderDefault}`,
+                    borderRadius: 6,
+                    color: T.accent,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: '3px 10px',
+                    cursor: 'pointer',
+                    fontFamily: T.sans,
+                    flexShrink: 0,
+                  }}
+                >
+                  + {t('attacks.import_add')}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /* ── AttackCard ──────────────────────────────────────────────────────────── */
 
@@ -425,6 +800,8 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
 
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [weaponPickerOpen, setWeaponPickerOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
   // Close open card on outside pointerdown (covers mouse + touch)
@@ -466,6 +843,16 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     setOpenId(cur => (cur === id ? null : cur))
   }
 
+  function importSpell(snapshot: Attack) {
+    if (!onUpdate) return
+    onUpdate({ attacks: [...attacks, snapshot] })
+  }
+
+  function importWeapon(snapshot: Attack) {
+    if (!onUpdate) return
+    onUpdate({ attacks: [...attacks, snapshot] })
+  }
+
   return (
     <div ref={listRef} data-testid="attacks-list">
       {/* Header */}
@@ -488,24 +875,64 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
           {t('attacks.count_label', { count: String(attacks.length) })}
         </span>
         {onUpdate && !locked && (
-          <button
-            type="button"
-            data-testid="add-attack-btn"
-            onClick={addAttack}
-            style={{
-              background: 'transparent',
-              border: `1px solid ${T.borderDefault}`,
-              borderRadius: 6,
-              color: T.textMuted,
-              fontSize: 11,
-              fontWeight: 600,
-              padding: '3px 8px',
-              cursor: 'pointer',
-              fontFamily: T.sans,
-            }}
-          >
-            + {t('attacks.add_button')}
-          </button>
+          <>
+            <button
+              type="button"
+              data-testid="import-weapons-btn"
+              onClick={() => setWeaponPickerOpen(true)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderDefault}`,
+                borderRadius: 6,
+                color: T.textMuted,
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                fontFamily: T.sans,
+                marginRight: 4,
+              }}
+            >
+              {t('attacks.import_weapons')}
+            </button>
+            <button
+              type="button"
+              data-testid="import-spells-btn"
+              onClick={() => setPickerOpen(true)}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderDefault}`,
+                borderRadius: 6,
+                color: T.textMuted,
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                fontFamily: T.sans,
+                marginRight: 4,
+              }}
+            >
+              {t('attacks.import_spells')}
+            </button>
+            <button
+              type="button"
+              data-testid="add-attack-btn"
+              onClick={addAttack}
+              style={{
+                background: 'transparent',
+                border: `1px solid ${T.borderDefault}`,
+                borderRadius: 6,
+                color: T.textMuted,
+                fontSize: 11,
+                fontWeight: 600,
+                padding: '3px 8px',
+                cursor: 'pointer',
+                fontFamily: T.sans,
+              }}
+            >
+              + {t('attacks.add_button')}
+            </button>
+          </>
         )}
       </div>
 
@@ -545,6 +972,25 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
       <datalist id="canonical-ranges">
         {CANONICAL_RANGES.map(r => <option key={r} value={r} />)}
       </datalist>
+
+      {/* Import spells picker */}
+      {pickerOpen && (
+        <ImportSpellsPicker
+          spells={character.spells}
+          spellcastingAbility={character.spellcastingAbility}
+          onImport={importSpell}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {/* Import weapons picker */}
+      {weaponPickerOpen && (
+        <ImportWeaponsPicker
+          items={character.inventory}
+          onImport={importWeapon}
+          onClose={() => setWeaponPickerOpen(false)}
+        />
+      )}
     </div>
   )
 }

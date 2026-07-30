@@ -10,6 +10,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import type { Character, InventoryItem, ItemCategory } from '@/domain/character'
 import { ITEM_CATEGORIES } from '@/data/canonical/item-categories'
+import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
+import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
 import { NumberField } from '@/components/primitives/NumberField'
 import { Card } from '../ui/Card'
@@ -101,6 +103,13 @@ export function InventoryList({ character, onUpdate }: InventoryListProps) {
       category,
       description: '',
       equipped:    false,
+      ...(category === 'weapon' ? {
+        damage:     '',
+        damageType: '',
+        properties: '',
+        range:      '',
+        attackKind: 'melee' as const,
+      } : {}),
     }
     onUpdate?.({ inventory: [...items, newItem] })
     setOpenId(newId)
@@ -480,6 +489,114 @@ function ItemCard({ item, readOnly, expanded, onToggle, onUpdate, onRemove, lock
               </select>
             </div>
           </div>
+
+          {/* Weapon-only combat fields */}
+          {item.category === 'weapon' && (
+            <>
+              {/* Row: attackKind */}
+              <div>
+                <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('inventory.attack_kind')}</Label>
+                <select
+                  value={item.attackKind ?? 'melee'}
+                  onChange={e => onUpdate({ attackKind: e.target.value as 'melee' | 'ranged' })}
+                  disabled={locked}
+                  data-testid={`item-attack-kind-${item.id}`}
+                  className="dark-select"
+                  style={{
+                    ...SEAMLESS,
+                    border:     `1px solid ${T.borderSubtle}`,
+                    cursor:     locked ? 'default' : 'pointer',
+                    appearance: 'none',
+                    width:      'auto',
+                    minWidth:   140,
+                  }}
+                >
+                  <option value="melee">{t('inventory.melee')}</option>
+                  <option value="ranged">{t('inventory.ranged')}</option>
+                </select>
+              </div>
+
+              {/* Row: damage + damageType */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('combat.damage_label')}</Label>
+                  <input
+                    type="text"
+                    value={item.damage ?? ''}
+                    onChange={e => onUpdate({ damage: e.target.value })}
+                    placeholder="1d8+3"
+                    data-testid={`item-damage-${item.id}`}
+                    readOnly={locked}
+                    style={{
+                      ...SEAMLESS,
+                      border: `1px solid ${T.borderSubtle}`,
+                    }}
+                    className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('combat.damage_type_label')}</Label>
+                  <input
+                    type="text"
+                    value={item.damageType ?? ''}
+                    onChange={e => onUpdate({ damageType: e.target.value })}
+                    list="inventory-canonical-damage-types"
+                    data-testid={`item-damage-type-${item.id}`}
+                    readOnly={locked}
+                    style={{
+                      ...SEAMLESS,
+                      border: `1px solid ${T.borderSubtle}`,
+                    }}
+                    className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Row: range + properties */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('combat.range_label')}</Label>
+                  <input
+                    type="text"
+                    value={item.range ?? ''}
+                    onChange={e => onUpdate({ range: e.target.value })}
+                    list="inventory-canonical-ranges"
+                    data-testid={`item-range-${item.id}`}
+                    readOnly={locked}
+                    style={{
+                      ...SEAMLESS,
+                      border: `1px solid ${T.borderSubtle}`,
+                    }}
+                    className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('combat.properties_label')}</Label>
+                  <input
+                    type="text"
+                    value={item.properties ?? ''}
+                    onChange={e => onUpdate({ properties: e.target.value })}
+                    placeholder={t('combat.properties_placeholder')}
+                    data-testid={`item-properties-${item.id}`}
+                    readOnly={locked}
+                    style={{
+                      ...SEAMLESS,
+                      border: `1px solid ${T.borderSubtle}`,
+                    }}
+                    className="hover:border-[#3A3450] focus:border-[#3A3450] outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Datalists for weapon fields */}
+              <datalist id="inventory-canonical-damage-types">
+                {CANONICAL_DAMAGE_TYPES.map(dt => <option key={dt} value={dt} />)}
+              </datalist>
+              <datalist id="inventory-canonical-ranges">
+                {CANONICAL_RANGES.map(r => <option key={r} value={r} />)}
+              </datalist>
+            </>
+          )}
 
           {/* Description */}
           <div>
