@@ -270,6 +270,10 @@ const en = {
   'attacks.other_spells_section':  'Other spells',
   'attacks.save_dc':               'DC {n}',
   'attacks.spell_level_label':     'Spell Level',
+  'attacks.cast':                  'Cast',
+  'attacks.slots_short':           'Slots',
+  'attacks.no_slots_warning':      'No level {n} slots left — cast anyway.',
+  'attacks.restore_slot_aria':     '+1 slot',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
