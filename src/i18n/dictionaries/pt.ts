@@ -268,6 +268,10 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.import_weapons':        'Importar de armas',
   'attacks.import_weapons_title':  'Importar de armas',
   'attacks.import_weapons_empty':  'Nenhuma arma cadastrada',
+  'attacks.weapons_section':       'Ataques',
+  'attacks.other_spells_section':  'Outras magias',
+  'attacks.save_dc':               'CD {n}',
+  'attacks.spell_level_label':     'Nível de magia',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',

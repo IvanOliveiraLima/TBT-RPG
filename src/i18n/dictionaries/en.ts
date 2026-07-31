@@ -266,6 +266,10 @@ const en = {
   'attacks.import_weapons':        'Import from weapons',
   'attacks.import_weapons_title':  'Import from weapons',
   'attacks.import_weapons_empty':  'No weapons yet',
+  'attacks.weapons_section':       'Attacks',
+  'attacks.other_spells_section':  'Other spells',
+  'attacks.save_dc':               'DC {n}',
+  'attacks.spell_level_label':     'Spell Level',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
