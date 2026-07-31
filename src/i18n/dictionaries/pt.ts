@@ -272,6 +272,10 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.other_spells_section':  'Outras magias',
   'attacks.save_dc':               'CD {n}',
   'attacks.spell_level_label':     'Nível de magia',
+  'attacks.cast':                  'Conjurar',
+  'attacks.slots_short':           'Espaços',
+  'attacks.no_slots_warning':      'Sem espaços de nível {n} — conjurada mesmo assim.',
+  'attacks.restore_slot_aria':     '+1 espaço',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',

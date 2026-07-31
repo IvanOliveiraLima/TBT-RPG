@@ -445,11 +445,25 @@ interface AttackCardProps {
   onRemove: () => void
   locked?: boolean
   spellSaveDC?: number
+  spellLevel?: number | null            // resolved level (0 = cantrip, null = indeterminate)
+  slot?: { current: number; max: number }
+  onConsumeSlot?: () => void
+  onRestoreSlot?: () => void
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
+
+  // Inline no-slots warning state
+  const [castWarning, setCastWarning] = useState(false)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+    }
+  }, [])
 
   function handleContainerClick(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest('input, button, textarea, select')) return
@@ -542,55 +556,41 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
 
       {/* ── Action row — large tap targets, left-aligned (clear of FAB) ─── */}
       {!expanded && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <button
-            type="button"
-            data-testid={`attack-bonus-chip-${attack.id}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              rollCheck(
-                `${t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
-                attack.attackBonus,
-                attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
-              )
-            }}
-            aria-label={t('dice.label_attack')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'rgba(232,197,105,0.12)',
-              border: '1px solid rgba(232,197,105,0.3)',
-              color: T.accent,
-              fontSize: 13, fontWeight: 600,
-              fontFamily: T.sans,
-              cursor: 'pointer',
-              minHeight: 36,
-              lineHeight: 1,
-            }}
-          >
-            ⚔ {t('dice.label_attack')} {formatAttackBonus(attack.attackBonus)}
-          </button>
-
-          {attack.damage && (
+        <>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
-              data-testid={`attack-damage-btn-${attack.id}`}
+              data-testid={`attack-bonus-chip-${attack.id}`}
               onClick={(e) => {
                 e.stopPropagation()
-                rollDamage(
-                  `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
-                  attack.damage,
+                // 1. Roll (always)
+                rollCheck(
+                  `${attack.kind === 'spell' ? t('attacks.cast') : t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
+                  attack.attackBonus,
+                  attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
                 )
+                // 2. Consume slot (only for leveled spells with a configured slot)
+                if (attack.kind === 'spell' && typeof spellLevel === 'number' && spellLevel >= 1 && slot && slot.max > 0) {
+                  if (slot.current > 0) {
+                    onConsumeSlot?.()
+                    setCastWarning(false)
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                  } else {
+                    // No slots left — cast anyway, show warning
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                    setCastWarning(true)
+                    warningTimerRef.current = setTimeout(() => setCastWarning(false), 4000)
+                  }
+                }
               }}
-              aria-label={t('dice.label_damage')}
+              aria-label={attack.kind === 'spell' ? t('attacks.cast') : t('dice.label_attack')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${T.borderSubtle}`,
-                color: T.textPrimary,
+                background: 'rgba(232,197,105,0.12)',
+                border: '1px solid rgba(232,197,105,0.3)',
+                color: T.accent,
                 fontSize: 13, fontWeight: 600,
                 fontFamily: T.sans,
                 cursor: 'pointer',
@@ -598,30 +598,129 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                 lineHeight: 1,
               }}
             >
-              🎲 {t('dice.label_damage')} {attack.damage}
+              {attack.kind === 'spell'
+                ? `✨ ${t('attacks.cast')} ${formatAttackBonus(attack.attackBonus)}`
+                : `⚔ ${t('dice.label_attack')} ${formatAttackBonus(attack.attackBonus)}`}
             </button>
-          )}
 
-          {attack.kind === 'spell' && spellSaveDC != null && (
-            <span
-              data-testid={`attack-save-dc-${attack.id}`}
+            {attack.damage && (
+              <button
+                type="button"
+                data-testid={`attack-damage-btn-${attack.id}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  rollDamage(
+                    `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
+                    attack.damage,
+                  )
+                }}
+                aria-label={t('dice.label_damage')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${T.borderSubtle}`,
+                  color: T.textPrimary,
+                  fontSize: 13, fontWeight: 600,
+                  fontFamily: T.sans,
+                  cursor: 'pointer',
+                  minHeight: 36,
+                  lineHeight: 1,
+                }}
+              >
+                🎲 {t('dice.label_damage')} {attack.damage}
+              </button>
+            )}
+
+            {attack.kind === 'spell' && spellSaveDC != null && (
+              <span
+                data-testid={`attack-save-dc-${attack.id}`}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${T.borderSubtle}`,
+                  color: T.textMuted,
+                  fontSize: 13, fontWeight: 600,
+                  fontFamily: T.sans,
+                  minHeight: 36,
+                  lineHeight: 1,
+                }}
+              >
+                {t('attacks.save_dc', { n: String(spellSaveDC) })}
+              </span>
+            )}
+
+            {/* Slot readout + restore (+1): only for leveled spells with configured slots */}
+            {attack.kind === 'spell' && typeof spellLevel === 'number' && spellLevel >= 1 && slot && slot.max > 0 && (
+              <>
+                <span
+                  data-testid={`attack-slot-readout-${attack.id}`}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${T.borderSubtle}`,
+                    color: slot.current === 0 ? T.textMuted : T.textPrimary,
+                    fontSize: 12, fontWeight: 600,
+                    fontFamily: T.sans,
+                    minHeight: 28,
+                    lineHeight: 1,
+                    opacity: slot.current === 0 ? 0.6 : 1,
+                  }}
+                >
+                  {slot.current}/{slot.max} {t('attacks.slots_short')}
+                </span>
+                {!locked && (
+                  <button
+                    type="button"
+                    data-testid={`attack-restore-slot-${attack.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRestoreSlot?.()
+                    }}
+                    disabled={slot.current >= slot.max}
+                    aria-label={t('attacks.restore_slot_aria')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 28, height: 28,
+                      borderRadius: 6,
+                      background: 'transparent',
+                      border: `1px solid ${T.borderDefault}`,
+                      color: slot.current >= slot.max ? T.textMuted : T.textPrimary,
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: T.sans,
+                      cursor: slot.current >= slot.max ? 'not-allowed' : 'pointer',
+                      opacity: slot.current >= slot.max ? 0.4 : 1,
+                    }}
+                  >
+                    +1
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* No-slots warning */}
+          {castWarning && (
+            <div
+              data-testid={`attack-no-slots-${attack.id}`}
               style={{
-                display: 'flex', alignItems: 'center',
-                padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(255,255,255,0.04)',
-                border: `1px solid ${T.borderSubtle}`,
-                color: T.textMuted,
-                fontSize: 13, fontWeight: 600,
+                marginTop: 4,
+                paddingLeft: 4,
+                fontSize: 11,
+                color: '#E8A069',
                 fontFamily: T.sans,
-                minHeight: 36,
-                lineHeight: 1,
+                fontStyle: 'italic',
               }}
             >
-              {t('attacks.save_dc', { n: String(spellSaveDC) })}
-            </span>
+              {t('attacks.no_slots_warning', { n: String(spellLevel) })}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* ── Expanded: edit form ──────────────────────────────────────────── */}
@@ -989,6 +1088,22 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     onUpdate({ attacks: [...attacks, snapshot] })
   }
 
+  function consumeSlot(level: number) {
+    if (!onUpdate) return
+    const slots = character.spellSlots ?? {}
+    const s = slots[String(level)]
+    if (!s) return
+    onUpdate({ spellSlots: { ...slots, [String(level)]: { ...s, current: Math.max(0, s.current - 1) } } })
+  }
+
+  function restoreSlot(level: number) {
+    if (!onUpdate) return
+    const slots = character.spellSlots ?? {}
+    const s = slots[String(level)]
+    if (!s) return
+    onUpdate({ spellSlots: { ...slots, [String(level)]: { ...s, current: Math.min(s.max, s.current + 1) } } })
+  }
+
   return (
     <div ref={listRef} data-testid="attacks-list">
       {/* Header */}
@@ -1119,18 +1234,24 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                   ? t('spells.cantrips_section')
                   : t('spells.level_section', { level: String(lvl) })}
               </div>
-              {(byLevel[lvl] ?? []).map(attack => (
-                <AttackCard
-                  key={attack.id}
-                  attack={attack}
-                  expanded={openId === attack.id}
-                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
-                  onUpdate={partial => updateAttack(attack.id, partial)}
-                  onRemove={() => removeAttack(attack.id)}
-                  {...(locked ? { locked: true } : {})}
-                  {...(spellSaveDC != null ? { spellSaveDC } : {})}
-                />
-              ))}
+              {(byLevel[lvl] ?? []).map(attack => {
+                const slotForLevel = lvl >= 1 ? (character.spellSlots ?? {})[String(lvl)] : undefined
+                return (
+                  <AttackCard
+                    key={attack.id}
+                    attack={attack}
+                    expanded={openId === attack.id}
+                    onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                    onUpdate={partial => updateAttack(attack.id, partial)}
+                    onRemove={() => removeAttack(attack.id)}
+                    {...(locked ? { locked: true } : {})}
+                    {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                    spellLevel={lvl}
+                    {...(slotForLevel ? { slot: slotForLevel } : {})}
+                    {...(lvl >= 1 && !locked ? { onConsumeSlot: () => consumeSlot(lvl), onRestoreSlot: () => restoreSlot(lvl) } : {})}
+                  />
+                )
+              })}
             </Fragment>
           ))}
 
@@ -1150,6 +1271,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                   onRemove={() => removeAttack(attack.id)}
                   {...(locked ? { locked: true } : {})}
                   {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                  spellLevel={null}
                 />
               ))}
             </>
