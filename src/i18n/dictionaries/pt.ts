@@ -281,6 +281,9 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.ammo_short':            '{n} restantes',
   'attacks.no_ammo_warning':       'Sem munição — atacou mesmo assim.',
   'attacks.restore_ammo_aria':     '+1 munição',
+  'attacks.bonus_suggestion':      'Sugerir {n}',
+  'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
+  'attacks.bonus_suggest_aria':    'Aplicar bônus sugerido {n}',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',

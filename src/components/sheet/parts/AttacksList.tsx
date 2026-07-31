@@ -12,7 +12,7 @@ import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
-import { deriveSpellSaveDC } from '@/domain/calculations'
+import { deriveSpellSaveDC, abilityModifier, deriveSpellAttackBonus } from '@/domain/calculations'
 import { ammoCandidates } from '@/domain/inventory'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
@@ -438,6 +438,8 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
 
 /* ── AttackCard ──────────────────────────────────────────────────────────── */
 
+type BonusSuggestion = { value: number; abilityMod: number; prof: number; abilityKey: AbilityKey }
+
 interface AttackCardProps {
   attack: Attack
   expanded: boolean
@@ -454,9 +456,10 @@ interface AttackCardProps {
   ammoItem?: InventoryItem              // resolved linked ammo item (undefined if deleted or unlinked)
   onConsumeAmmo?: () => void
   onRestoreAmmo?: () => void
+  bonusSuggestion?: BonusSuggestion | null
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo, bonusSuggestion }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
 
@@ -909,6 +912,37 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
             </div>
           </div>
 
+          {/* Bonus suggestion chip (shown when suggestion differs from current and not locked) */}
+          {bonusSuggestion != null && !locked && bonusSuggestion.value !== attack.attackBonus && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <button
+                type="button"
+                data-testid={`attack-bonus-suggest-${attack.id}`}
+                onClick={() => onUpdate({ attackBonus: bonusSuggestion.value })}
+                aria-label={t('attacks.bonus_suggest_aria', { n: formatAttackBonus(bonusSuggestion.value) })}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${T.borderSubtle}`,
+                  borderRadius: 4,
+                  color: T.textMuted,
+                  fontSize: 11,
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  fontFamily: T.sans,
+                }}
+              >
+                {t('attacks.bonus_suggestion', { n: formatAttackBonus(bonusSuggestion.value) })}
+              </button>
+              <span style={{ fontSize: 11, color: T.textMuted, opacity: 0.7, fontFamily: T.sans }}>
+                {t('attacks.bonus_breakdown', {
+                  ability: t(`ability.${bonusSuggestion.abilityKey}` as TranslationKey),
+                  mod: formatAttackBonus(bonusSuggestion.abilityMod),
+                  prof: formatAttackBonus(bonusSuggestion.prof),
+                })}
+              </span>
+            </div>
+          )}
+
           {/* Spell level (only when kind === 'spell') */}
           {attack.kind === 'spell' && (
             <div style={{ marginBottom: 8 }}>
@@ -1107,12 +1141,27 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
+  const profBonus = character.proficiencyBonus
+
   // Derived save DC for spell attacks
   const spellSaveDC = deriveSpellSaveDC(
     character.abilities,
     character.spellcastingAbility,
-    character.proficiencyBonus,
+    profBonus,
   )
+
+  function bonusSuggestionFor(a: Attack): BonusSuggestion | null {
+    if (a.kind === 'spell') {
+      const key = character.spellcastingAbility
+      if (!key) return null
+      const v = deriveSpellAttackBonus(character.abilities, key, profBonus)
+      if (v === null) return null
+      return { value: v, abilityMod: abilityModifier(character.abilities[key]), prof: profBonus, abilityKey: key }
+    }
+    if (!a.ability) return null
+    const mod = abilityModifier(character.abilities[a.ability])
+    return { value: mod + profBonus, abilityMod: mod, prof: profBonus, abilityKey: a.ability }
+  }
 
   // Grouping: separate weapon attacks from spell attacks, group spells by level
   const weaponAttacks = useMemo(() => attacks.filter(a => a.kind !== 'spell'), [attacks])
@@ -1366,6 +1415,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
                     {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                     {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+                    bonusSuggestion={bonusSuggestionFor(attack)}
                   />
                 )
               })}
@@ -1398,6 +1448,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     spellLevel={lvl}
                     {...(slotForLevel ? { slot: slotForLevel } : {})}
                     {...(lvl >= 1 && !locked ? { onConsumeSlot: () => consumeSlot(lvl), onRestoreSlot: () => restoreSlot(lvl) } : {})}
+                    bonusSuggestion={bonusSuggestionFor(attack)}
                   />
                 )
               })}
@@ -1421,6 +1472,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                   {...(locked ? { locked: true } : {})}
                   {...(spellSaveDC != null ? { spellSaveDC } : {})}
                   spellLevel={null}
+                  bonusSuggestion={bonusSuggestionFor(attack)}
                 />
               ))}
             </>
@@ -1445,6 +1497,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                 {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
                 {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                 {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+                bonusSuggestion={bonusSuggestionFor(attack)}
               />
             )
           })}

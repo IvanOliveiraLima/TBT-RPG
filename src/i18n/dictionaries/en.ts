@@ -279,6 +279,9 @@ const en = {
   'attacks.ammo_short':            '{n} left',
   'attacks.no_ammo_warning':       'Out of ammo — attacked anyway.',
   'attacks.restore_ammo_aria':     '+1 ammo',
+  'attacks.bonus_suggestion':      'Suggest {n}',
+  'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
+  'attacks.bonus_suggest_aria':    'Apply suggested bonus {n}',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
