@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, Fragment } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type React from 'react'
 import type { Character, Attack, AbilityKey, Spell, InventoryItem } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -892,19 +892,19 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const spellAttacks  = useMemo(() => attacks.filter(a => a.kind === 'spell'),  [attacks])
   const hasSpells     = spellAttacks.length > 0
 
+  // Extracted so both the grouping memo and openSectionKey share the same rule
+  const resolveSpellLevel = useCallback((a: Attack): number | null => {
+    if (typeof a.spellLevel === 'number') return a.spellLevel
+    const key   = a.name.trim().toLowerCase()
+    const match = character.spells.find(s => s.name.trim().toLowerCase() === key)
+    return match != null ? match.level : null
+  }, [character.spells])
+
   const { byLevel, unknownSpells } = useMemo(() => {
     const byLevel: Record<number, Attack[]> = {}
     const unknownSpells: Attack[] = []
     for (const a of spellAttacks) {
-      // Prefer explicit spellLevel; fall back to name-matching against character.spells
-      let lvl: number | null = null
-      if (typeof a.spellLevel === 'number') {
-        lvl = a.spellLevel
-      } else {
-        const key   = a.name.trim().toLowerCase()
-        const match = character.spells.find(s => s.name.trim().toLowerCase() === key)
-        if (match != null) lvl = match.level
-      }
+      const lvl = resolveSpellLevel(a)
       if (lvl === null) {
         unknownSpells.push(a)
       } else {
@@ -913,13 +913,32 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
       }
     }
     return { byLevel, unknownSpells }
-  }, [spellAttacks, character.spells])
+  }, [spellAttacks, resolveSpellLevel])
 
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [weaponPickerOpen, setWeaponPickerOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
+
+  // Section key of the open card — changes when the card moves between sections
+  const openSectionKey = useMemo(() => {
+    if (!openId) return null
+    const a = attacks.find(x => x.id === openId)
+    if (!a) return null
+    if (a.kind !== 'spell') return 'weapons'
+    const lvl = resolveSpellLevel(a)
+    return lvl === null ? 'other' : `level-${lvl}`
+  }, [openId, attacks, resolveSpellLevel])
+
+  // Scroll the open card into view whenever it opens or moves to a different section
+  useEffect(() => {
+    if (!openId) return
+    const el = listRef.current?.querySelector(`[data-testid="attack-card-${openId}"]`)
+    if (!el || typeof el.scrollIntoView !== 'function') return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+  }, [openId, openSectionKey])
 
   // Close open card on outside pointerdown (covers mouse + touch)
   useEffect(() => {

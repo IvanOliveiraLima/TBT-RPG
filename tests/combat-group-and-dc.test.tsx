@@ -11,6 +11,7 @@
  * - Unknown spells (no level resolved) go to "other spells" section
  * - Save DC badge: shown when spellcastingAbility set; absent when not; correct value
  * - PT/EN label coverage
+ * - scroll-into-view when open card changes section (polish fix)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -563,5 +564,56 @@ describe('AttacksList — accordion preserved in grouped view', () => {
     fireEvent.click(screen.getByTestId('attack-card-a2'))
     expect(screen.queryByTestId('attack-name-input-a1')).toBeNull()
     expect(screen.getByTestId('attack-name-input-a2')).toBeDefined()
+  })
+})
+
+// ── Scroll-into-view when card changes section (polish) ───────────────────────
+
+describe('AttacksList — scroll-into-view when open card moves between sections', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+    // jsdom does not implement scrollIntoView; mock it so assertions work
+    Element.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('scrollIntoView is called when a card is opened', () => {
+    const attack = makeAttack({ id: 'a1', name: 'Fireball', kind: 'spell', spellLevel: 3 })
+    const char = { ...BASE, attacks: [attack] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('attack-card-a1'))
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
+  })
+
+  it('scrollIntoView is called again when opening a second card (new openId)', () => {
+    const attacks = [
+      makeAttack({ id: 'a1', name: 'Fireball', kind: 'spell', spellLevel: 3 }),
+      makeAttack({ id: 'a2', name: 'Fire Bolt', kind: 'spell', spellLevel: 0 }),
+    ]
+    const char = { ...BASE, attacks }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+
+    fireEvent.click(screen.getByTestId('attack-card-a1'))
+    const callsAfterFirst = (Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>).mock.calls.length
+    expect(callsAfterFirst).toBeGreaterThan(0)
+
+    fireEvent.click(screen.getByTestId('attack-card-a2'))
+    const callsAfterSecond = (Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>).mock.calls.length
+    expect(callsAfterSecond).toBeGreaterThan(callsAfterFirst)
+  })
+
+  it('scrollIntoView uses block:nearest', () => {
+    const attack = makeAttack({ id: 'a1', name: 'Fire Bolt', kind: 'spell', spellLevel: 0 })
+    const char = { ...BASE, attacks: [attack] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('attack-card-a1'))
+    const calls = (Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>).mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    const options = calls[calls.length - 1]![0] as ScrollIntoViewOptions
+    expect(options.block).toBe('nearest')
   })
 })
