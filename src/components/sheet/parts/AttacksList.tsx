@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, Fragment } from 'react'
 import type React from 'react'
 import type { Character, Attack, AbilityKey, Spell, InventoryItem } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -12,6 +12,7 @@ import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { deriveSpellSaveDC } from '@/domain/calculations'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
 
@@ -43,6 +44,20 @@ const SEAMLESS_INPUT: React.CSSProperties = {
 /* ── Ability keys in select order ─────────────────────────────────────────── */
 
 const ABILITY_KEYS: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+
+/* ── Section header style (used when grouping by kind/level) ─────────────── */
+
+const SECTION_HEADER_STYLE: React.CSSProperties = {
+  fontSize:        9,
+  fontWeight:      600,
+  color:           T.textMuted,
+  textTransform:   'uppercase',
+  letterSpacing:   1.5,
+  fontFamily:      T.sans,
+  marginTop:       8,
+  paddingBottom:   4,
+  borderBottom:    `1px solid ${T.borderSubtle}`,
+}
 
 /* ── ImportSpellsPicker ──────────────────────────────────────────────────── */
 
@@ -214,6 +229,7 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
                           range: spell.range,
                           properties: '',
                           notes: spell.description,
+                          spellLevel: spell.level,
                         }
                         onImport(snapshot)
                       }}
@@ -428,9 +444,10 @@ interface AttackCardProps {
   onUpdate: (partial: Partial<Attack>) => void
   onRemove: () => void
   locked?: boolean
+  spellSaveDC?: number
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
 
@@ -584,6 +601,26 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
               🎲 {t('dice.label_damage')} {attack.damage}
             </button>
           )}
+
+          {attack.kind === 'spell' && spellSaveDC != null && (
+            <span
+              data-testid={`attack-save-dc-${attack.id}`}
+              style={{
+                display: 'flex', alignItems: 'center',
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${T.borderSubtle}`,
+                color: T.textMuted,
+                fontSize: 13, fontWeight: 600,
+                fontFamily: T.sans,
+                minHeight: 36,
+                lineHeight: 1,
+              }}
+            >
+              {t('attacks.save_dc', { n: String(spellSaveDC) })}
+            </span>
+          )}
         </div>
       )}
 
@@ -691,6 +728,51 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
             </div>
           </div>
 
+          {/* Spell level (only when kind === 'spell') */}
+          {attack.kind === 'spell' && (
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
+                {t('attacks.spell_level_label')}
+              </label>
+              <select
+                value={typeof attack.spellLevel === 'number' ? attack.spellLevel : ''}
+                onChange={e => {
+                  const v = e.target.value
+                  if (v !== '') onUpdate({ spellLevel: Number(v) })
+                }}
+                disabled={locked}
+                data-testid={`attack-spell-level-${attack.id}`}
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  borderRadius: 6,
+                  padding: '4px 28px 4px 6px',
+                  color: T.textPrimary,
+                  fontSize: 13,
+                  fontFamily: T.sans,
+                  width: '100%',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%237A7788' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '1em',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">—</option>
+                <option value={0}>{t('spells.cantrips_section')}</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <option key={lvl} value={lvl}>
+                    {t('spells.level_section', { level: String(lvl) })}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Row 2: damage, damageType, range */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <div style={{ flex: 1 }}>
@@ -797,6 +879,41 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
+
+  // Derived save DC for spell attacks
+  const spellSaveDC = deriveSpellSaveDC(
+    character.abilities,
+    character.spellcastingAbility,
+    character.proficiencyBonus,
+  )
+
+  // Grouping: separate weapon attacks from spell attacks, group spells by level
+  const weaponAttacks = useMemo(() => attacks.filter(a => a.kind !== 'spell'), [attacks])
+  const spellAttacks  = useMemo(() => attacks.filter(a => a.kind === 'spell'),  [attacks])
+  const hasSpells     = spellAttacks.length > 0
+
+  const { byLevel, unknownSpells } = useMemo(() => {
+    const byLevel: Record<number, Attack[]> = {}
+    const unknownSpells: Attack[] = []
+    for (const a of spellAttacks) {
+      // Prefer explicit spellLevel; fall back to name-matching against character.spells
+      let lvl: number | null = null
+      if (typeof a.spellLevel === 'number') {
+        lvl = a.spellLevel
+      } else {
+        const key   = a.name.trim().toLowerCase()
+        const match = character.spells.find(s => s.name.trim().toLowerCase() === key)
+        if (match != null) lvl = match.level
+      }
+      if (lvl === null) {
+        unknownSpells.push(a)
+      } else {
+        if (!byLevel[lvl]) byLevel[lvl] = []
+        byLevel[lvl]!.push(a)
+      }
+    }
+    return { byLevel, unknownSpells }
+  }, [spellAttacks, character.spells])
 
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
@@ -949,7 +1066,78 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
             {t('attacks.empty_state_hint')}
           </p>
         </div>
+      ) : hasSpells ? (
+        /* ── Grouped view: weapons section + spells by level ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Weapons section (only if any non-spell attacks) */}
+          {weaponAttacks.length > 0 && (
+            <>
+              <div data-testid="attacks-section-weapons" style={SECTION_HEADER_STYLE}>
+                {t('attacks.weapons_section')}
+              </div>
+              {weaponAttacks.map(attack => (
+                <AttackCard
+                  key={attack.id}
+                  attack={attack}
+                  expanded={openId === attack.id}
+                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                  onUpdate={partial => updateAttack(attack.id, partial)}
+                  onRemove={() => removeAttack(attack.id)}
+                  {...(locked ? { locked: true } : {})}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Spell sections: cantrips (0) then levels 1–9 */}
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(lvl => (byLevel[lvl]?.length ?? 0) > 0).map(lvl => (
+            <Fragment key={lvl}>
+              <div
+                data-testid={`attacks-section-level-${lvl}`}
+                style={SECTION_HEADER_STYLE}
+              >
+                {lvl === 0
+                  ? t('spells.cantrips_section')
+                  : t('spells.level_section', { level: String(lvl) })}
+              </div>
+              {(byLevel[lvl] ?? []).map(attack => (
+                <AttackCard
+                  key={attack.id}
+                  attack={attack}
+                  expanded={openId === attack.id}
+                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                  onUpdate={partial => updateAttack(attack.id, partial)}
+                  onRemove={() => removeAttack(attack.id)}
+                  {...(locked ? { locked: true } : {})}
+                  {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                />
+              ))}
+            </Fragment>
+          ))}
+
+          {/* Other spells (no level resolved) */}
+          {unknownSpells.length > 0 && (
+            <>
+              <div data-testid="attacks-section-other" style={SECTION_HEADER_STYLE}>
+                {t('attacks.other_spells_section')}
+              </div>
+              {unknownSpells.map(attack => (
+                <AttackCard
+                  key={attack.id}
+                  attack={attack}
+                  expanded={openId === attack.id}
+                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                  onUpdate={partial => updateAttack(attack.id, partial)}
+                  onRemove={() => removeAttack(attack.id)}
+                  {...(locked ? { locked: true } : {})}
+                  {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                />
+              ))}
+            </>
+          )}
+        </div>
       ) : (
+        /* ── Flat view: no spells — render as before ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {attacks.map(attack => (
             <AttackCard
