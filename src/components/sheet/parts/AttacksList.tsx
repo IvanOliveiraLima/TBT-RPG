@@ -13,6 +13,7 @@ import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { deriveSpellSaveDC } from '@/domain/calculations'
+import { ammoCandidates } from '@/domain/inventory'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
 
@@ -449,14 +450,18 @@ interface AttackCardProps {
   slot?: { current: number; max: number }
   onConsumeSlot?: () => void
   onRestoreSlot?: () => void
+  ammoCandidates?: InventoryItem[]      // full candidate list for the ammo select in expanded form
+  ammoItem?: InventoryItem              // resolved linked ammo item (undefined if deleted or unlinked)
+  onConsumeAmmo?: () => void
+  onRestoreAmmo?: () => void
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
 
-  // Inline no-slots warning state
-  const [castWarning, setCastWarning] = useState(false)
+  // Inline action warning state: 'slots' = no spell slots, 'ammo' = out of ammo, null = none
+  const [actionWarning, setActionWarning] = useState<'slots' | 'ammo' | null>(null)
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -573,13 +578,26 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                 if (attack.kind === 'spell' && typeof spellLevel === 'number' && spellLevel >= 1 && slot && slot.max > 0) {
                   if (slot.current > 0) {
                     onConsumeSlot?.()
-                    setCastWarning(false)
+                    setActionWarning(null)
                     if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
                   } else {
                     // No slots left — cast anyway, show warning
                     if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
-                    setCastWarning(true)
-                    warningTimerRef.current = setTimeout(() => setCastWarning(false), 4000)
+                    setActionWarning('slots')
+                    warningTimerRef.current = setTimeout(() => setActionWarning(null), 4000)
+                  }
+                }
+                // 3. Consume ammo (only for ranged attacks with a linked ammo item)
+                if (attack.kind === 'ranged' && ammoItem) {
+                  if (ammoItem.quantity > 0) {
+                    onConsumeAmmo?.()
+                    setActionWarning(null)
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                  } else {
+                    // Out of ammo — attack anyway, show warning
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                    setActionWarning('ammo')
+                    warningTimerRef.current = setTimeout(() => setActionWarning(null), 4000)
                   }
                 }
               }}
@@ -702,10 +720,57 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                 )}
               </>
             )}
+            {/* Ammo count chip + restore (+1): only for ranged attacks with a linked item */}
+            {attack.kind === 'ranged' && ammoItem && (
+              <>
+                <span
+                  data-testid={`attack-ammo-count-${attack.id}`}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${T.borderSubtle}`,
+                    color: ammoItem.quantity === 0 ? T.textMuted : T.textPrimary,
+                    fontSize: 12, fontWeight: 600,
+                    fontFamily: T.sans,
+                    minHeight: 28,
+                    lineHeight: 1,
+                    opacity: ammoItem.quantity === 0 ? 0.6 : 1,
+                  }}
+                >
+                  {t('attacks.ammo_short', { n: String(ammoItem.quantity) })}
+                </span>
+                {!locked && (
+                  <button
+                    type="button"
+                    data-testid={`attack-restore-ammo-${attack.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRestoreAmmo?.()
+                    }}
+                    aria-label={t('attacks.restore_ammo_aria')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 28, height: 28,
+                      borderRadius: 6,
+                      background: 'transparent',
+                      border: `1px solid ${T.borderDefault}`,
+                      color: T.textPrimary,
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: T.sans,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    +1
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {/* No-slots warning */}
-          {castWarning && (
+          {actionWarning === 'slots' && (
             <div
               data-testid={`attack-no-slots-${attack.id}`}
               style={{
@@ -718,6 +783,23 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
               }}
             >
               {t('attacks.no_slots_warning', { n: String(spellLevel) })}
+            </div>
+          )}
+
+          {/* No-ammo warning */}
+          {actionWarning === 'ammo' && (
+            <div
+              data-testid={`attack-no-ammo-${attack.id}`}
+              style={{
+                marginTop: 4,
+                paddingLeft: 4,
+                fontSize: 11,
+                color: '#E8A069',
+                fontFamily: T.sans,
+                fontStyle: 'italic',
+              }}
+            >
+              {t('attacks.no_ammo_warning')}
             </div>
           )}
         </>
@@ -866,6 +948,50 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
                   <option key={lvl} value={lvl}>
                     {t('spells.level_section', { level: String(lvl) })}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Ammunition select (only when kind === 'ranged') */}
+          {attack.kind === 'ranged' && (
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
+                {t('attacks.ammo_label')}
+              </label>
+              <select
+                value={attack.ammoItemId ?? ''}
+                onChange={e => {
+                  const v = e.target.value
+                  onUpdate({ ammoItemId: v || undefined } as Partial<Attack>)
+                }}
+                disabled={locked}
+                data-testid={`attack-ammo-select-${attack.id}`}
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  borderRadius: 6,
+                  padding: '4px 28px 4px 6px',
+                  color: T.textPrimary,
+                  fontSize: 13,
+                  fontFamily: T.sans,
+                  width: '100%',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%237A7788' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '1em',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">{t('attacks.ammo_none')}</option>
+                {(ammoCands ?? []).map(item => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} (×{item.quantity})
                   </option>
                 ))}
               </select>
@@ -1104,6 +1230,19 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     onUpdate({ spellSlots: { ...slots, [String(level)]: { ...s, current: Math.min(s.max, s.current + 1) } } })
   }
 
+  function adjustAmmo(itemId: string, delta: number) {
+    if (!onUpdate) return
+    const inv = character.inventory ?? []
+    const idx = inv.findIndex(i => i.id === itemId)
+    if (idx < 0) return
+    const item = inv[idx]!
+    const next = [...inv]
+    next[idx] = { ...item, quantity: Math.max(0, item.quantity + delta) }
+    onUpdate({ inventory: next })
+  }
+
+  const ammoCands = ammoCandidates(character.inventory ?? [])
+
   return (
     <div ref={listRef} data-testid="attacks-list">
       {/* Header */}
@@ -1209,17 +1348,25 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
               <div data-testid="attacks-section-weapons" style={SECTION_HEADER_STYLE}>
                 {t('attacks.weapons_section')}
               </div>
-              {weaponAttacks.map(attack => (
-                <AttackCard
-                  key={attack.id}
-                  attack={attack}
-                  expanded={openId === attack.id}
-                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
-                  onUpdate={partial => updateAttack(attack.id, partial)}
-                  onRemove={() => removeAttack(attack.id)}
-                  {...(locked ? { locked: true } : {})}
-                />
-              ))}
+              {weaponAttacks.map(attack => {
+                const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
+                  ? character.inventory.find(i => i.id === attack.ammoItemId)
+                  : undefined
+                return (
+                  <AttackCard
+                    key={attack.id}
+                    attack={attack}
+                    expanded={openId === attack.id}
+                    onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                    onUpdate={partial => updateAttack(attack.id, partial)}
+                    onRemove={() => removeAttack(attack.id)}
+                    {...(locked ? { locked: true } : {})}
+                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                    {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
+                    {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+                  />
+                )
+              })}
             </>
           )}
 
@@ -1280,17 +1427,25 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
       ) : (
         /* ── Flat view: no spells — render as before ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {attacks.map(attack => (
-            <AttackCard
-              key={attack.id}
-              attack={attack}
-              expanded={openId === attack.id}
-              onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
-              onUpdate={partial => updateAttack(attack.id, partial)}
-              onRemove={() => removeAttack(attack.id)}
-              {...(locked ? { locked: true } : {})}
-            />
-          ))}
+          {attacks.map(attack => {
+            const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
+              ? character.inventory.find(i => i.id === attack.ammoItemId)
+              : undefined
+            return (
+              <AttackCard
+                key={attack.id}
+                attack={attack}
+                expanded={openId === attack.id}
+                onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                onUpdate={partial => updateAttack(attack.id, partial)}
+                onRemove={() => removeAttack(attack.id)}
+                {...(locked ? { locked: true } : {})}
+                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
+                {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+              />
+            )
+          })}
         </div>
       )}
 

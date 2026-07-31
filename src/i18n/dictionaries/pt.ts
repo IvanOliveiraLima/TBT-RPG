@@ -276,6 +276,11 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.slots_short':           'Espaços',
   'attacks.no_slots_warning':      'Sem espaços de nível {n} — conjurada mesmo assim.',
   'attacks.restore_slot_aria':     '+1 espaço',
+  'attacks.ammo_label':            'Munição',
+  'attacks.ammo_none':             'Nenhuma',
+  'attacks.ammo_short':            '{n} restantes',
+  'attacks.no_ammo_warning':       'Sem munição — atacou mesmo assim.',
+  'attacks.restore_ammo_aria':     '+1 munição',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',
