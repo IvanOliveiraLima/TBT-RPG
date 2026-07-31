@@ -274,6 +274,11 @@ const en = {
   'attacks.slots_short':           'Slots',
   'attacks.no_slots_warning':      'No level {n} slots left — cast anyway.',
   'attacks.restore_slot_aria':     '+1 slot',
+  'attacks.ammo_label':            'Ammunition',
+  'attacks.ammo_none':             'None',
+  'attacks.ammo_short':            '{n} left',
+  'attacks.no_ammo_warning':       'Out of ammo — attacked anyway.',
+  'attacks.restore_ammo_aria':     '+1 ammo',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
