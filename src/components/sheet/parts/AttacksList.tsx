@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type React from 'react'
 import type { Character, Attack, AbilityKey, Spell, InventoryItem } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -12,6 +12,9 @@ import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
 import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { deriveSpellSaveDC, abilityModifier, deriveSpellAttackBonus } from '@/domain/calculations'
+import { ammoCandidates } from '@/domain/inventory'
+import { HelpHint } from '@/components/HelpHint'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
 
@@ -43,6 +46,20 @@ const SEAMLESS_INPUT: React.CSSProperties = {
 /* ── Ability keys in select order ─────────────────────────────────────────── */
 
 const ABILITY_KEYS: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha']
+
+/* ── Section header style (used when grouping by kind/level) ─────────────── */
+
+const SECTION_HEADER_STYLE: React.CSSProperties = {
+  fontSize:        9,
+  fontWeight:      600,
+  color:           T.textMuted,
+  textTransform:   'uppercase',
+  letterSpacing:   1.5,
+  fontFamily:      T.sans,
+  marginTop:       8,
+  paddingBottom:   4,
+  borderBottom:    `1px solid ${T.borderSubtle}`,
+}
 
 /* ── ImportSpellsPicker ──────────────────────────────────────────────────── */
 
@@ -214,6 +231,7 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
                           range: spell.range,
                           properties: '',
                           notes: spell.description,
+                          spellLevel: spell.level,
                         }
                         onImport(snapshot)
                       }}
@@ -421,6 +439,8 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
 
 /* ── AttackCard ──────────────────────────────────────────────────────────── */
 
+type BonusSuggestion = { value: number; abilityMod: number; prof: number; abilityKey: AbilityKey }
+
 interface AttackCardProps {
   attack: Attack
   expanded: boolean
@@ -428,11 +448,31 @@ interface AttackCardProps {
   onUpdate: (partial: Partial<Attack>) => void
   onRemove: () => void
   locked?: boolean
+  spellSaveDC?: number
+  spellLevel?: number | null            // resolved level (0 = cantrip, null = indeterminate)
+  slot?: { current: number; max: number }
+  onConsumeSlot?: () => void
+  onRestoreSlot?: () => void
+  ammoCandidates?: InventoryItem[]      // full candidate list for the ammo select in expanded form
+  ammoItem?: InventoryItem              // resolved linked ammo item (undefined if deleted or unlinked)
+  onConsumeAmmo?: () => void
+  onRestoreAmmo?: () => void
+  bonusSuggestion?: BonusSuggestion | null
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo, bonusSuggestion }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
+
+  // Inline action warning state: 'slots' = no spell slots, 'ammo' = out of ammo, null = none
+  const [actionWarning, setActionWarning] = useState<'slots' | 'ammo' | null>(null)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+    }
+  }, [])
 
   function handleContainerClick(e: React.MouseEvent) {
     if ((e.target as HTMLElement).closest('input, button, textarea, select')) return
@@ -525,55 +565,54 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
 
       {/* ── Action row — large tap targets, left-aligned (clear of FAB) ─── */}
       {!expanded && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <button
-            type="button"
-            data-testid={`attack-bonus-chip-${attack.id}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              rollCheck(
-                `${t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
-                attack.attackBonus,
-                attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
-              )
-            }}
-            aria-label={t('dice.label_attack')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'rgba(232,197,105,0.12)',
-              border: '1px solid rgba(232,197,105,0.3)',
-              color: T.accent,
-              fontSize: 13, fontWeight: 600,
-              fontFamily: T.sans,
-              cursor: 'pointer',
-              minHeight: 36,
-              lineHeight: 1,
-            }}
-          >
-            ⚔ {t('dice.label_attack')} {formatAttackBonus(attack.attackBonus)}
-          </button>
-
-          {attack.damage && (
+        <>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               type="button"
-              data-testid={`attack-damage-btn-${attack.id}`}
+              data-testid={`attack-bonus-chip-${attack.id}`}
               onClick={(e) => {
                 e.stopPropagation()
-                rollDamage(
-                  `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
-                  attack.damage,
+                // 1. Roll (always)
+                rollCheck(
+                  `${attack.kind === 'spell' ? t('attacks.cast') : t('dice.label_attack')}: ${attack.name || t('combat.unnamed_attack')}`,
+                  attack.attackBonus,
+                  attack.damage ? { label: `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`, damage: attack.damage } : undefined,
                 )
+                // 2. Consume slot (only for leveled spells with a configured slot)
+                if (attack.kind === 'spell' && typeof spellLevel === 'number' && spellLevel >= 1 && slot && slot.max > 0) {
+                  if (slot.current > 0) {
+                    onConsumeSlot?.()
+                    setActionWarning(null)
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                  } else {
+                    // No slots left — cast anyway, show warning
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                    setActionWarning('slots')
+                    warningTimerRef.current = setTimeout(() => setActionWarning(null), 4000)
+                  }
+                }
+                // 3. Consume ammo (only for ranged attacks with a linked ammo item)
+                if (attack.kind === 'ranged' && ammoItem) {
+                  if (ammoItem.quantity > 0) {
+                    onConsumeAmmo?.()
+                    setActionWarning(null)
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                  } else {
+                    // Out of ammo — attack anyway, show warning
+                    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+                    setActionWarning('ammo')
+                    warningTimerRef.current = setTimeout(() => setActionWarning(null), 4000)
+                  }
+                }
               }}
-              aria-label={t('dice.label_damage')}
+              aria-label={attack.kind === 'spell' ? t('attacks.cast') : t('dice.label_attack')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '8px 12px',
                 borderRadius: 8,
-                background: 'rgba(255,255,255,0.06)',
-                border: `1px solid ${T.borderSubtle}`,
-                color: T.textPrimary,
+                background: 'rgba(232,197,105,0.12)',
+                border: '1px solid rgba(232,197,105,0.3)',
+                color: T.accent,
                 fontSize: 13, fontWeight: 600,
                 fontFamily: T.sans,
                 cursor: 'pointer',
@@ -581,10 +620,193 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
                 lineHeight: 1,
               }}
             >
-              🎲 {t('dice.label_damage')} {attack.damage}
+              {attack.kind === 'spell'
+                ? `✨ ${t('attacks.cast')} ${formatAttackBonus(attack.attackBonus)}`
+                : `⚔ ${t('dice.label_attack')} ${formatAttackBonus(attack.attackBonus)}`}
             </button>
+
+            {attack.damage && (
+              <button
+                type="button"
+                data-testid={`attack-damage-btn-${attack.id}`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  rollDamage(
+                    `${t('dice.label_damage')}: ${attack.name || t('combat.unnamed_attack')}`,
+                    attack.damage,
+                  )
+                }}
+                aria-label={t('dice.label_damage')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${T.borderSubtle}`,
+                  color: T.textPrimary,
+                  fontSize: 13, fontWeight: 600,
+                  fontFamily: T.sans,
+                  cursor: 'pointer',
+                  minHeight: 36,
+                  lineHeight: 1,
+                }}
+              >
+                🎲 {t('dice.label_damage')} {attack.damage}
+              </button>
+            )}
+
+            {attack.kind === 'spell' && spellSaveDC != null && (
+              <span
+                data-testid={`attack-save-dc-${attack.id}`}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${T.borderSubtle}`,
+                  color: T.textMuted,
+                  fontSize: 13, fontWeight: 600,
+                  fontFamily: T.sans,
+                  minHeight: 36,
+                  lineHeight: 1,
+                }}
+              >
+                {t('attacks.save_dc', { n: String(spellSaveDC) })}
+              </span>
+            )}
+
+            {/* Slot readout + restore (+1): only for leveled spells with configured slots */}
+            {attack.kind === 'spell' && typeof spellLevel === 'number' && spellLevel >= 1 && slot && slot.max > 0 && (
+              <>
+                <span
+                  data-testid={`attack-slot-readout-${attack.id}`}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${T.borderSubtle}`,
+                    color: slot.current === 0 ? T.textMuted : T.textPrimary,
+                    fontSize: 12, fontWeight: 600,
+                    fontFamily: T.sans,
+                    minHeight: 28,
+                    lineHeight: 1,
+                    opacity: slot.current === 0 ? 0.6 : 1,
+                  }}
+                >
+                  {slot.current}/{slot.max} {t('attacks.slots_short')}
+                </span>
+                {!locked && (
+                  <button
+                    type="button"
+                    data-testid={`attack-restore-slot-${attack.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRestoreSlot?.()
+                    }}
+                    disabled={slot.current >= slot.max}
+                    aria-label={t('attacks.restore_slot_aria')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 28, height: 28,
+                      borderRadius: 6,
+                      background: 'transparent',
+                      border: `1px solid ${T.borderDefault}`,
+                      color: slot.current >= slot.max ? T.textMuted : T.textPrimary,
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: T.sans,
+                      cursor: slot.current >= slot.max ? 'not-allowed' : 'pointer',
+                      opacity: slot.current >= slot.max ? 0.4 : 1,
+                    }}
+                  >
+                    +1
+                  </button>
+                )}
+              </>
+            )}
+            {/* Ammo count chip + restore (+1): only for ranged attacks with a linked item */}
+            {attack.kind === 'ranged' && ammoItem && (
+              <>
+                <span
+                  data-testid={`attack-ammo-count-${attack.id}`}
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${T.borderSubtle}`,
+                    color: ammoItem.quantity === 0 ? T.textMuted : T.textPrimary,
+                    fontSize: 12, fontWeight: 600,
+                    fontFamily: T.sans,
+                    minHeight: 28,
+                    lineHeight: 1,
+                    opacity: ammoItem.quantity === 0 ? 0.6 : 1,
+                  }}
+                >
+                  {t('attacks.ammo_short', { n: String(ammoItem.quantity) })}
+                </span>
+                {!locked && (
+                  <button
+                    type="button"
+                    data-testid={`attack-restore-ammo-${attack.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onRestoreAmmo?.()
+                    }}
+                    aria-label={t('attacks.restore_ammo_aria')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 28, height: 28,
+                      borderRadius: 6,
+                      background: 'transparent',
+                      border: `1px solid ${T.borderDefault}`,
+                      color: T.textPrimary,
+                      fontSize: 13, fontWeight: 700,
+                      fontFamily: T.sans,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    +1
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* No-slots warning */}
+          {actionWarning === 'slots' && (
+            <div
+              data-testid={`attack-no-slots-${attack.id}`}
+              style={{
+                marginTop: 4,
+                paddingLeft: 4,
+                fontSize: 11,
+                color: '#E8A069',
+                fontFamily: T.sans,
+                fontStyle: 'italic',
+              }}
+            >
+              {t('attacks.no_slots_warning', { n: String(spellLevel) })}
+            </div>
           )}
-        </div>
+
+          {/* No-ammo warning */}
+          {actionWarning === 'ammo' && (
+            <div
+              data-testid={`attack-no-ammo-${attack.id}`}
+              style={{
+                marginTop: 4,
+                paddingLeft: 4,
+                fontSize: 11,
+                color: '#E8A069',
+                fontFamily: T.sans,
+                fontStyle: 'italic',
+              }}
+            >
+              {t('attacks.no_ammo_warning')}
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Expanded: edit form ──────────────────────────────────────────── */}
@@ -690,6 +912,129 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked }: 
               />
             </div>
           </div>
+
+          {/* Bonus suggestion chip (shown when suggestion differs from current and not locked) */}
+          {bonusSuggestion != null && !locked && bonusSuggestion.value !== attack.attackBonus && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <button
+                type="button"
+                data-testid={`attack-bonus-suggest-${attack.id}`}
+                onClick={() => onUpdate({ attackBonus: bonusSuggestion.value })}
+                aria-label={t('attacks.bonus_suggest_aria', { n: formatAttackBonus(bonusSuggestion.value) })}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${T.borderSubtle}`,
+                  borderRadius: 4,
+                  color: T.textMuted,
+                  fontSize: 11,
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                  fontFamily: T.sans,
+                }}
+              >
+                {t('attacks.bonus_suggestion', { n: formatAttackBonus(bonusSuggestion.value) })}
+              </button>
+              <span style={{ fontSize: 11, color: T.textMuted, opacity: 0.7, fontFamily: T.sans }}>
+                {t('attacks.bonus_breakdown', {
+                  ability: t(`ability.${bonusSuggestion.abilityKey}` as TranslationKey),
+                  mod: formatAttackBonus(bonusSuggestion.abilityMod),
+                  prof: formatAttackBonus(bonusSuggestion.prof),
+                })}
+              </span>
+              <HelpHint textKey="attacks.bonus_suggestion_help" />
+            </div>
+          )}
+
+          {/* Spell level (only when kind === 'spell') */}
+          {attack.kind === 'spell' && (
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
+                {t('attacks.spell_level_label')}
+              </label>
+              <select
+                value={typeof attack.spellLevel === 'number' ? attack.spellLevel : ''}
+                onChange={e => {
+                  const v = e.target.value
+                  if (v !== '') onUpdate({ spellLevel: Number(v) })
+                }}
+                disabled={locked}
+                data-testid={`attack-spell-level-${attack.id}`}
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  borderRadius: 6,
+                  padding: '4px 28px 4px 6px',
+                  color: T.textPrimary,
+                  fontSize: 13,
+                  fontFamily: T.sans,
+                  width: '100%',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%237A7788' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '1em',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">—</option>
+                <option value={0}>{t('spells.cantrips_section')}</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <option key={lvl} value={lvl}>
+                    {t('spells.level_section', { level: String(lvl) })}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Ammunition select (only when kind === 'ranged') */}
+          {attack.kind === 'ranged' && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+            <div style={{ flex: '0 1 calc(33.333% - 6px)', minWidth: 160 }}>
+              <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
+                {t('attacks.ammo_label')}
+              </label>
+              <select
+                value={attack.ammoItemId ?? ''}
+                onChange={e => {
+                  const v = e.target.value
+                  onUpdate({ ammoItemId: v || undefined } as Partial<Attack>)
+                }}
+                disabled={locked}
+                data-testid={`attack-ammo-select-${attack.id}`}
+                className="dark-select hover:border-[#2A2537] focus:border-[#2A2537] transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  borderRadius: 6,
+                  padding: '4px 28px 4px 6px',
+                  color: T.textPrimary,
+                  fontSize: 13,
+                  fontFamily: T.sans,
+                  width: '100%',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%237A7788' d='M5.5 7.5l4.5 5 4.5-5z'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '1em',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="">{t('attacks.ammo_none')}</option>
+                {(ammoCands ?? []).map(item => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} (×{item.quantity})
+                  </option>
+                ))}
+              </select>
+            </div>
+            </div>
+          )}
 
           {/* Row 2: damage, damageType, range */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -798,11 +1143,80 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
+  const profBonus = character.proficiencyBonus
+
+  // Derived save DC for spell attacks
+  const spellSaveDC = deriveSpellSaveDC(
+    character.abilities,
+    character.spellcastingAbility,
+    profBonus,
+  )
+
+  function bonusSuggestionFor(a: Attack): BonusSuggestion | null {
+    if (a.kind === 'spell') {
+      const key = character.spellcastingAbility
+      if (!key) return null
+      const v = deriveSpellAttackBonus(character.abilities, key, profBonus)
+      if (v === null) return null
+      return { value: v, abilityMod: abilityModifier(character.abilities[key]), prof: profBonus, abilityKey: key }
+    }
+    if (!a.ability) return null
+    const mod = abilityModifier(character.abilities[a.ability])
+    return { value: mod + profBonus, abilityMod: mod, prof: profBonus, abilityKey: a.ability }
+  }
+
+  // Grouping: separate weapon attacks from spell attacks, group spells by level
+  const weaponAttacks = useMemo(() => attacks.filter(a => a.kind !== 'spell'), [attacks])
+  const spellAttacks  = useMemo(() => attacks.filter(a => a.kind === 'spell'),  [attacks])
+  const hasSpells     = spellAttacks.length > 0
+
+  // Extracted so both the grouping memo and openSectionKey share the same rule
+  const resolveSpellLevel = useCallback((a: Attack): number | null => {
+    if (typeof a.spellLevel === 'number') return a.spellLevel
+    const key   = a.name.trim().toLowerCase()
+    const match = character.spells.find(s => s.name.trim().toLowerCase() === key)
+    return match != null ? match.level : null
+  }, [character.spells])
+
+  const { byLevel, unknownSpells } = useMemo(() => {
+    const byLevel: Record<number, Attack[]> = {}
+    const unknownSpells: Attack[] = []
+    for (const a of spellAttacks) {
+      const lvl = resolveSpellLevel(a)
+      if (lvl === null) {
+        unknownSpells.push(a)
+      } else {
+        if (!byLevel[lvl]) byLevel[lvl] = []
+        byLevel[lvl]!.push(a)
+      }
+    }
+    return { byLevel, unknownSpells }
+  }, [spellAttacks, resolveSpellLevel])
+
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [weaponPickerOpen, setWeaponPickerOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
+
+  // Section key of the open card — changes when the card moves between sections
+  const openSectionKey = useMemo(() => {
+    if (!openId) return null
+    const a = attacks.find(x => x.id === openId)
+    if (!a) return null
+    if (a.kind !== 'spell') return 'weapons'
+    const lvl = resolveSpellLevel(a)
+    return lvl === null ? 'other' : `level-${lvl}`
+  }, [openId, attacks, resolveSpellLevel])
+
+  // Scroll the open card into view whenever it opens or moves to a different section
+  useEffect(() => {
+    if (!openId) return
+    const el = listRef.current?.querySelector(`[data-testid="attack-card-${openId}"]`)
+    if (!el || typeof el.scrollIntoView !== 'function') return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+  }, [openId, openSectionKey])
 
   // Close open card on outside pointerdown (covers mouse + touch)
   useEffect(() => {
@@ -852,6 +1266,35 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     if (!onUpdate) return
     onUpdate({ attacks: [...attacks, snapshot] })
   }
+
+  function consumeSlot(level: number) {
+    if (!onUpdate) return
+    const slots = character.spellSlots ?? {}
+    const s = slots[String(level)]
+    if (!s) return
+    onUpdate({ spellSlots: { ...slots, [String(level)]: { ...s, current: Math.max(0, s.current - 1) } } })
+  }
+
+  function restoreSlot(level: number) {
+    if (!onUpdate) return
+    const slots = character.spellSlots ?? {}
+    const s = slots[String(level)]
+    if (!s) return
+    onUpdate({ spellSlots: { ...slots, [String(level)]: { ...s, current: Math.min(s.max, s.current + 1) } } })
+  }
+
+  function adjustAmmo(itemId: string, delta: number) {
+    if (!onUpdate) return
+    const inv = character.inventory ?? []
+    const idx = inv.findIndex(i => i.id === itemId)
+    if (idx < 0) return
+    const item = inv[idx]!
+    const next = [...inv]
+    next[idx] = { ...item, quantity: Math.max(0, item.quantity + delta) }
+    onUpdate({ inventory: next })
+  }
+
+  const ammoCands = ammoCandidates(character.inventory ?? [])
 
   return (
     <div ref={listRef} data-testid="attacks-list">
@@ -949,19 +1392,117 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
             {t('attacks.empty_state_hint')}
           </p>
         </div>
-      ) : (
+      ) : hasSpells ? (
+        /* ── Grouped view: weapons section + spells by level ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {attacks.map(attack => (
-            <AttackCard
-              key={attack.id}
-              attack={attack}
-              expanded={openId === attack.id}
-              onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
-              onUpdate={partial => updateAttack(attack.id, partial)}
-              onRemove={() => removeAttack(attack.id)}
-              {...(locked ? { locked: true } : {})}
-            />
+          {/* Weapons section (only if any non-spell attacks) */}
+          {weaponAttacks.length > 0 && (
+            <>
+              <div data-testid="attacks-section-weapons" style={SECTION_HEADER_STYLE}>
+                {t('attacks.weapons_section')}
+              </div>
+              {weaponAttacks.map(attack => {
+                const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
+                  ? character.inventory.find(i => i.id === attack.ammoItemId)
+                  : undefined
+                return (
+                  <AttackCard
+                    key={attack.id}
+                    attack={attack}
+                    expanded={openId === attack.id}
+                    onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                    onUpdate={partial => updateAttack(attack.id, partial)}
+                    onRemove={() => removeAttack(attack.id)}
+                    {...(locked ? { locked: true } : {})}
+                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                    {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
+                    {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+                    bonusSuggestion={bonusSuggestionFor(attack)}
+                  />
+                )
+              })}
+            </>
+          )}
+
+          {/* Spell sections: cantrips (0) then levels 1–9 */}
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].filter(lvl => (byLevel[lvl]?.length ?? 0) > 0).map(lvl => (
+            <Fragment key={lvl}>
+              <div
+                data-testid={`attacks-section-level-${lvl}`}
+                style={SECTION_HEADER_STYLE}
+              >
+                {lvl === 0
+                  ? t('spells.cantrips_section')
+                  : t('spells.level_section', { level: String(lvl) })}
+              </div>
+              {(byLevel[lvl] ?? []).map(attack => {
+                const slotForLevel = lvl >= 1 ? (character.spellSlots ?? {})[String(lvl)] : undefined
+                return (
+                  <AttackCard
+                    key={attack.id}
+                    attack={attack}
+                    expanded={openId === attack.id}
+                    onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                    onUpdate={partial => updateAttack(attack.id, partial)}
+                    onRemove={() => removeAttack(attack.id)}
+                    {...(locked ? { locked: true } : {})}
+                    {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                    spellLevel={lvl}
+                    {...(slotForLevel ? { slot: slotForLevel } : {})}
+                    {...(lvl >= 1 && !locked ? { onConsumeSlot: () => consumeSlot(lvl), onRestoreSlot: () => restoreSlot(lvl) } : {})}
+                    bonusSuggestion={bonusSuggestionFor(attack)}
+                  />
+                )
+              })}
+            </Fragment>
           ))}
+
+          {/* Other spells (no level resolved) */}
+          {unknownSpells.length > 0 && (
+            <>
+              <div data-testid="attacks-section-other" style={SECTION_HEADER_STYLE}>
+                {t('attacks.other_spells_section')}
+              </div>
+              {unknownSpells.map(attack => (
+                <AttackCard
+                  key={attack.id}
+                  attack={attack}
+                  expanded={openId === attack.id}
+                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                  onUpdate={partial => updateAttack(attack.id, partial)}
+                  onRemove={() => removeAttack(attack.id)}
+                  {...(locked ? { locked: true } : {})}
+                  {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                  spellLevel={null}
+                  bonusSuggestion={bonusSuggestionFor(attack)}
+                />
+              ))}
+            </>
+          )}
+        </div>
+      ) : (
+        /* ── Flat view: no spells — render as before ── */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {attacks.map(attack => {
+            const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
+              ? character.inventory.find(i => i.id === attack.ammoItemId)
+              : undefined
+            return (
+              <AttackCard
+                key={attack.id}
+                attack={attack}
+                expanded={openId === attack.id}
+                onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                onUpdate={partial => updateAttack(attack.id, partial)}
+                onRemove={() => removeAttack(attack.id)}
+                {...(locked ? { locked: true } : {})}
+                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
+                {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
+                bonusSuggestion={bonusSuggestionFor(attack)}
+              />
+            )
+          })}
         </div>
       )}
 

@@ -54,6 +54,8 @@ export interface Attack {
   range: string            // free-text with datalist, e.g. "5 ft"
   properties: string       // free-text, e.g. "Versatile, Finesse"
   notes: string            // free-text, special mechanics or effects
+  spellLevel?: number      // optional; 0 = cantrip; only meaningful when kind === 'spell'
+  ammoItemId?: string      // optional; links to an InventoryItem id; only meaningful when kind === 'ranged'
 }
 
 export type SpellSchool =
