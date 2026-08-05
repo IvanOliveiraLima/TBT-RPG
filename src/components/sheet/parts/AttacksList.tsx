@@ -14,6 +14,7 @@ import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { deriveSpellSaveDC, abilityModifier, deriveSpellAttackBonus } from '@/domain/calculations'
 import { ammoCandidates } from '@/domain/inventory'
+import { HelpHint } from '@/components/HelpHint'
 
 /* ── Design tokens (matches rest of Combat tab) ─────────────────────────── */
 
@@ -940,6 +941,7 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                   prof: formatAttackBonus(bonusSuggestion.prof),
                 })}
               </span>
+              <HelpHint textKey="attacks.bonus_suggestion_help" />
             </div>
           )}
 

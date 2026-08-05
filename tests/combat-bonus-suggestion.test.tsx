@@ -362,4 +362,50 @@ describe('Combat.6 — Attack bonus suggestion chip', () => {
       expect(screen.getByTestId('attack-card-w3').textContent).toContain('STR -2 · prof +3')
     })
   })
+
+  /* ── HelpHint ── */
+
+  describe('HelpHint on bonus suggestion chip', () => {
+    it('renders help-hint-trigger alongside the chip', () => {
+      const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      openCard('w1')
+      expect(screen.getByTestId('help-hint-trigger')).toBeDefined()
+    })
+
+    it('clicking trigger opens balloon with EN explanation text', () => {
+      const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      openCard('w1')
+      fireEvent.click(screen.getByTestId('help-hint-trigger'))
+      const tooltip = document.body.querySelector('[role="tooltip"]')
+      expect(tooltip).not.toBeNull()
+      expect(tooltip!.textContent).toContain('ability modifier + proficiency bonus')
+    })
+
+    it('clicking trigger opens balloon with PT explanation text', () => {
+      const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'pt')
+      openCard('w1')
+      fireEvent.click(screen.getByTestId('help-hint-trigger'))
+      const tooltip = document.body.querySelector('[role="tooltip"]')
+      expect(tooltip).not.toBeNull()
+      expect(tooltip!.textContent).toContain('modificador da habilidade')
+    })
+
+    it('hint trigger absent when chip is hidden (attackBonus already matches suggestion)', () => {
+      // DEX 16 + profBonus 3 = +6; chip not shown → HelpHint not rendered
+      const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 6 })])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      openCard('w1')
+      expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+    })
+
+    it('hint trigger absent when locked', () => {
+      const char = makeLocked(makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })]))
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      openCard('w1')
+      expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+    })
+  })
 })
