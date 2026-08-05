@@ -275,6 +275,11 @@ This order matters: components built on a broken adapter produce invisible data 
   equipadas primeiro) e monta a `Attack` completa; (3) tipar o callback como `(attack: Attack) => void` — o
   picker entrega a `Attack` pronta, o `AttacksList` só faz o append. O resultado é **snapshot** (editar o
   ataque não altera a fonte).
+- **Sugerir vs. derivar:** se um campo **já é preenchido pelo usuário**, não o converta em derivado — ofereça
+  um chip de sugestão com o **detalhamento do cálculo** e aplique só no clique (padrão do bônus de ataque,
+  #256). Derivar direto (como a CD de magia) só quando o campo nunca foi editável. Quando a premissa não é
+  verificável (ex.: proficiência com arma é texto livre), **assuma o caso comum e mostre as parcelas** — mais
+  um `HelpHint` explicando a premissa.
 
 ### internationalization (i18n)
 
@@ -1043,6 +1048,39 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - "Importar de armas": picker filtra armas (**equipadas primeiro**) e cria `Attack` snapshot
   (`kind←attackKind ?? 'melee'`, `ability=''` — usuário escolhe STR/DES). Também **sem Supabase**.
 
+### Combate — magias agrupadas por nível + CD no card (COMPLETED — PR #253)
+- `Attack.spellLevel?` (0 = truque) capturado no import; seletor de nível nos cards de magia.
+- Lista de ataques passa a ter **seções**: "Ataques" (armas) → truques → níveis 1–9 → "Outras magias".
+  Sem ataques de magia, a lista continua **plana** (personagem só de arma não muda).
+- **Retrofit sem migração:** ataque de magia sem `spellLevel` tem o nível **inferido por nome** contra
+  `character.spells` — **só no render**, nada é reescrito.
+- Card de magia mostra a **CD de salvaguarda** derivada (mesma fonte do `SpellHeader`).
+- Polish: o card aberto é rolado pra vista (`block:'nearest'`) quando muda de seção, pra não "desaparecer".
+
+### Combate — botão Conjurar consome espaço de magia (COMPLETED — PR #254)
+- Em `kind==='spell'`, o botão de ação vira **"Conjurar"**: **rola igual** e consome 1 espaço do nível.
+- Truque (0), nível indeterminado ou nível sem espaços configurados (`max === 0`) → **só rola**.
+- Sem espaço (`current === 0`) → conjura e **avisa inline** (nunca negativo). Chip `current/max` + **"+1"**
+  para devolver.
+- **Fonte única:** `character.spellSlots` — o mesmo campo da aba Magias, então os dois lados ficam em sync
+  sem estado paralelo.
+
+### Combate — munição em ataques à distância (COMPLETED — PR #255)
+- `Attack.ammoItemId?` liga um ataque `ranged` a um item do inventário; atacar decrementa a `quantity`
+  **do item** → inventário e **peso total** acompanham sozinhos (fonte única).
+- Sem munição → ataca e avisa; **"+1"** devolve (sem teto); item vinculado inexistente = sem vínculo.
+- Candidatos centralizados em `ammoCandidates()` (`src/domain/inventory.ts`) — hoje devolve todos os itens;
+  virar filtro por categoria é **uma linha** (ver OQ).
+- Aviso de magia e de munição compartilham **um único timer** (`actionWarning: 'slots' | 'ammo' | null`).
+
+### Combate — sugestão de bônus de ataque (COMPLETED — PR #256)
+- Chip no form expandido com `mod da habilidade + proficiência`; **um toque preenche** o campo.
+  `attackBonus` segue **manual e fonte da verdade** — nada é derivado à força, **nenhum campo novo** no domínio.
+- Magia usa a **habilidade de conjuração** (`deriveSpellAttackBonus`, mesma fonte da CD) — proficiência
+  sempre se aplica. Arma **assume** proficiência e mostra o detalhamento ("DES +3 · prof +3"), já que
+  `proficiencies.weapons` é texto livre e não é inferível.
+- Chip oculto quando o valor já coincide ou a ficha está travada; `HelpHint` explica o cálculo e a premissa.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1780,6 +1818,9 @@ function buildInviteLink(): string {
 | Versão do app vinda do package.json via `__APP_VERSION__` (vite+vitest define) | #246 | Versão real controlada por bump; sem rótulo manual/"beta" |
 | Import de combate = enriquecer a fonte + snapshot local (sem vínculo vivo) | #249, #250 | Magia/arma guardam dano opcional; o ataque importado é cópia independente e editável |
 | Consulta de magias/armas no combate é 100% em memória (`character.*`), sem Supabase | #249, #250 | O JSON da ficha já está no cliente; import não faz I/O de rede |
+| Retrofit de dado ausente por inferência **só no render** (nunca reescrever a ficha) | #253 | Nível de magia inferido por nome; sem migração e sem alterar dado que o jogador ajustou |
+| Recursos de combate têm fonte única compartilhada (`spellSlots`, `quantity` do item) | #254, #255 | Combate e abas Magias/Inventário leem e escrevem o mesmo campo — sync de graça, sem estado paralelo |
+| Sugerir em vez de derivar quando o campo já é editado pelo usuário | #256 | `attackBonus` continua manual; a sugestão só aplica por clique, preservando ajustes existentes |
 
 ---
 
@@ -1978,6 +2019,17 @@ New from production feedback (observed bugs):
   *Resolved (PR #147).* Header de coluna "NÍVEL" sobre o input de nível por classe (`ClassEditor`,
   `LABEL_STYLE`, `aria-hidden`); o nível total no `HeroCard` passou a "Nível Total"
   (`hero.total_level_label`) pra diferenciar. `LoreHero` mantém "Nível {n}" via `hero.level_label`.
+
+New from Combat polish (#253–#256):
+
+- **OQ — Categoria "munição" no inventário.** Hoje `ammoCandidates()` devolve **todos** os itens porque não
+  existe `ItemCategory` 'ammunition'. Criar a categoria (+ i18n, + editor) e trocar o helper por um filtro —
+  ponto único de mudança já isolado (`src/domain/inventory.ts`). Deferred.
+- **OQ — Conjurar em nível superior (upcasting).** O botão "Conjurar" consome o espaço do **próprio** nível
+  da magia. Falta decidir a UX: seletor de nível na hora de conjurar vs. nível de conjuração fixo por
+  ataque. Deferred (decisão pendente).
+- **OQ — Reordenar/duplicar ataques.** Reordenar cards (setas ou drag) e duplicar um ataque (mesma arma com
+  variação). A pensar melhor. Deferred.
 
 ---
 

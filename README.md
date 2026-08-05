@@ -22,6 +22,7 @@ PWA instalável.
 - **Edição completa** — Status, Combate, Magias, Inventário, Lore, todas com
   expand/collapse, datalists canônicos, UUIDs estáveis
 - **Importar para o combate** — magias e armas já cadastradas podem ser importadas como ataques (com dano e alcance), sem digitar tudo de novo
+- **Combate prático** — magias agrupadas por nível com CD, botão Conjurar que gasta o espaço de magia, controle de munição e sugestão do bônus de ataque
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
 - **Classe** — lista fixa traduzida (PT/EN); o dado de vida sai sempre correto pela classe escolhida
