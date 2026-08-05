@@ -281,6 +281,10 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.ammo_short':            '{n} restantes',
   'attacks.no_ammo_warning':       'Sem munição — atacou mesmo assim.',
   'attacks.restore_ammo_aria':     '+1 munição',
+  'attacks.bonus_suggestion':      'Sugerir {n}',
+  'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
+  'attacks.bonus_suggest_aria':    'Aplicar bônus sugerido {n}',
+  'attacks.bonus_suggestion_help': 'Bônus sugerido = modificador da habilidade + bônus de proficiência. Toque para preencher o campo; você pode editar depois. Em armas, assume que você é proficiente — se não for, use só o modificador da habilidade mostrado. Em magias, a proficiência sempre se aplica.',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',

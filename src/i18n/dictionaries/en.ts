@@ -279,6 +279,10 @@ const en = {
   'attacks.ammo_short':            '{n} left',
   'attacks.no_ammo_warning':       'Out of ammo — attacked anyway.',
   'attacks.restore_ammo_aria':     '+1 ammo',
+  'attacks.bonus_suggestion':      'Suggest {n}',
+  'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
+  'attacks.bonus_suggest_aria':    'Apply suggested bonus {n}',
+  'attacks.bonus_suggestion_help': "Suggested bonus = ability modifier + proficiency bonus. Tap to fill the field; you can always edit it. For weapons it assumes you're proficient — if you aren't, use just the ability modifier shown. For spells proficiency always applies.",
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
