@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/i18n'
 import { roll, doubleDiceCount } from '@/domain/dice'
 import type { RollResult } from '@/domain/dice'
@@ -127,6 +127,20 @@ function RollSummary({ result }: { result: RollResult }) {
 
 export function DicePanel({ onClose }: DicePanelProps) {
   const { t } = useTranslation()
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onDocMouseDown(e: MouseEvent) {
+      const t = e.target as HTMLElement | null
+      if (!t) return
+      if (panelRef.current?.contains(t)) return          // click inside the panel
+      if (t.closest('[data-dice-toggle]')) return        // click on the toggle trigger
+      onClose()
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [onClose])
+
   const history = useDiceStore(s => s.history)
   const addRoll = useDiceStore(s => s.addRoll)
   const clear = useDiceStore(s => s.clear)
@@ -169,6 +183,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
 
   return (
     <div
+      ref={panelRef}
       data-testid="dice-panel"
       style={{
         width: 300,

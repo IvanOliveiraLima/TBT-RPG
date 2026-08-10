@@ -2839,6 +2839,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         <button
           type="button"
           data-testid="viewer-dice-fab"
+          data-dice-toggle
           onClick={() => setDiceOpen(v => !v)}
           title={t('dice.title')}
           style={{
