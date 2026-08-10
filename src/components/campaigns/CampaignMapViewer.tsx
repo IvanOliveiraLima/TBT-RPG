@@ -60,6 +60,7 @@ import {
   clearMapAreas,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
+import { HelpHint } from '@/components/HelpHint'
 import { DicePanel } from '@/components/dice/DicePanel'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
 
@@ -1014,10 +1015,22 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     popupAnchor: [0, -20],
   }), [])
 
+  /**
+   * Snap a token position from Leaflet lat/lng to image space and back.
+   *
+   * Tokens are stored and positioned in Leaflet coords (y = lat, 0 at image bottom).
+   * The grid is defined in image/SVG space (y = 0 at top).
+   * Flipping before snapping and flipping back after aligns the token with visible grid lines.
+   */
+  const snapTokenPos = useCallback((lng: number, lat: number, sizeCells: number) => {
+    const s = snapToGrid(lng, map.height - lat, sizeCells, localGrid)
+    return { x: s.x, y: map.height - s.y }
+  }, [localGrid, map.height])
+
   async function handleAddToken() {
     const cx = map.width / 2
     const cy = map.height / 2
-    const snapped = snapToGrid(cx, cy, 1, localGrid)
+    const snapped = snapTokenPos(cx, cy, 1)
     try {
       const token = await createMapToken(map.id, snapped.x, snapped.y)
       setTokens(prev => [...prev, token])
@@ -1026,10 +1039,21 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     }
   }
 
+  async function realignTokens() {
+    const updated = tokens.map(t => {
+      const s = snapTokenPos(t.x, t.y, t.size)
+      return { ...t, x: s.x, y: s.y }
+    })
+    setTokens(updated)
+    await Promise.all(updated.map(t =>
+      updateMapToken(t.id, { x: t.x, y: t.y }).catch(() => {}),
+    ))
+  }
+
   async function placePreset(latlng: L.LatLng) {
     const preset = presets.find(p => p.id === armedPresetId)
     if (!preset) return
-    const snapped = snapToGrid(latlng.lng, latlng.lat, preset.size, localGrid)
+    const snapped = snapTokenPos(latlng.lng, latlng.lat, preset.size)
     try {
       const tok = await createMapToken(map.id, snapped.x, snapped.y, {
         label: preset.label,
@@ -1387,9 +1411,12 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               }}
             >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-              {t('campaign_maps.grid_title')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                {t('campaign_maps.grid_title')}
+              </span>
+              <HelpHint textKey="campaign_maps.grid_fields_help" />
+            </div>
             <button
               type="button"
               data-testid="grid-collapse-btn"
@@ -1477,6 +1504,23 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           >
             {t('campaign_maps.grid_save')}
           </button>
+          {localGrid.enabled && localGrid.size && tokens.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="button"
+                data-testid="realign-tokens-btn"
+                onClick={() => void realignTokens()}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid #3A3450', borderRadius: 8,
+                  padding: '5px 0', color: '#C8C4D6', fontFamily: T.sans,
+                  fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {t('campaign_maps.grid_realign_tokens')}
+              </button>
+              <HelpHint textKey="campaign_maps.grid_realign_help" />
+            </div>
+          )}
         </div>
           )}
 
@@ -2164,9 +2208,12 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       {isOwner && isMobile && panelOpen && (
         <div data-testid="grid-config-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-              {t('campaign_maps.grid_title')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                {t('campaign_maps.grid_title')}
+              </span>
+              <HelpHint textKey="campaign_maps.grid_fields_help" />
+            </div>
             <button type="button" data-testid="grid-collapse-btn" onClick={() => setPanelOpen(false)} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
@@ -2208,6 +2255,23 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           >
             {t('campaign_maps.grid_save')}
           </button>
+          {localGrid.enabled && localGrid.size && tokens.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="button"
+                data-testid="realign-tokens-btn"
+                onClick={() => void realignTokens()}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid #3A3450', borderRadius: 8,
+                  padding: '6px 0', color: '#C8C4D6', fontFamily: T.sans,
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {t('campaign_maps.grid_realign_tokens')}
+              </button>
+              <HelpHint textKey="campaign_maps.grid_realign_help" />
+            </div>
+          )}
         </div>
       )}
 
@@ -2795,7 +2859,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                 eventHandlers: {
                   dragend(e: L.DragEndEvent) {
                     const latlng = (e.target as L.Marker).getLatLng()
-                    const snapped = snapToGrid(latlng.lng, latlng.lat, tok.size, localGrid)
+                    const snapped = snapTokenPos(latlng.lng, latlng.lat, tok.size)
                     setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, x: snapped.x, y: snapped.y } : tk))
                     void updateMapToken(tok.id, { x: snapped.x, y: snapped.y }).catch(() => {})
                   },
@@ -2839,6 +2903,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         <button
           type="button"
           data-testid="viewer-dice-fab"
+          data-dice-toggle
           onClick={() => setDiceOpen(v => !v)}
           title={t('dice.title')}
           style={{

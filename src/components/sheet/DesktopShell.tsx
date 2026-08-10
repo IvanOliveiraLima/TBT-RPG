@@ -162,6 +162,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
         </div>
         <button
           data-testid="dice-fab"
+          data-dice-toggle
           onClick={toggle}
           title={t('dice.title')}
           style={{

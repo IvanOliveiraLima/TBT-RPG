@@ -107,6 +107,7 @@ export function MobileShell({ character, activeTab, onTabChange, children }: Mob
         </div>
         <button
           data-testid="dice-fab"
+          data-dice-toggle
           onClick={toggle}
           title={t('dice.title')}
           style={{

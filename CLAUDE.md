@@ -280,6 +280,11 @@ This order matters: components built on a broken adapter produce invisible data 
   #256). Derivar direto (como a CD de magia) só quando o campo nunca foi editável. Quando a premissa não é
   verificável (ex.: proficiência com arma é texto livre), **assuma o caso comum e mostre as parcelas** — mais
   um `HelpHint` explicando a premissa.
+- **Espaço de coordenadas único:** o mapa mistura dois sistemas — Leaflet/CRS.Simple (lat com y=0 na base) e
+  o `viewBox` da imagem (y=0 no topo). Qualquer conversão ponto↔célula deve acontecer **em espaço de
+  imagem**; converta na fronteira (ex.: `snapTokenPos`, `pointToCell(x, map.height - y)`) e centralize num
+  helper único, nunca chamando o utilitário de snap direto. Testes de alinhamento devem usar
+  `height`/`size`/`offset` que **não** coincidam por acidente, senão o bug passa despercebido.
 
 ### internationalization (i18n)
 
@@ -1081,6 +1086,22 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   `proficiencies.weapons` é texto livre e não é inferível.
 - Chip oculto quando o valor já coincide ou a ficha está travada; `HelpHint` explica o cálculo e a premissa.
 
+### Polimento — token no grid, clique-fora e ajuda da grade (COMPLETED — PRs #259, #260)
+- **Tamanho do token:** `TOKEN_FILL_RATIO = 0.9` — o token ocupa 90% da célula (deixa as linhas visíveis) e
+  o piso mínimo nunca excede o footprint em células (antes, com célula < 8px na tela, o token invadia as
+  linhas).
+- **Alinhamento (bug de espaço de coordenadas):** `tok.y` é **lat** do Leaflet (y=0 na base da imagem), mas a
+  grade é desenhada em **espaço de imagem** (y=0 no topo). O `snapToGrid` vinha recebendo o Y em lat, então
+  o alinhamento vertical só acertava quando `map.height ≡ 2·offsetY (mod size)` — daí "depender do tamanho
+  da célula". Agora **todas** as chamadas passam por `snapTokenPos`, que inverte antes e depois de snapar.
+  `snap-to-grid.ts` e `token-size.ts` seguem intocados.
+- **Alinhar tokens à grade:** ação explícita do dono no painel de grade (tokens já colocados não se movem
+  sozinhos ao mudar a grade), com `HelpHint`. Disponível nos painéis desktop e mobile bottom-sheet.
+- **Clique-fora:** pickers de import (magias/armas) fecham por backdrop e Esc; a bandeja de dados fecha ao
+  clicar fora — implementado **uma vez** no `DicePanel` (vale nos 4 pontos de montagem), ignorando cliques
+  em `[data-dice-toggle]` pra o botão de abrir não fechar-e-reabrir.
+- `HelpHint` explicando tamanho da célula e offsets X/Y nos dois painéis de grade (desktop e mobile).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1821,6 +1842,8 @@ function buildInviteLink(): string {
 | Retrofit de dado ausente por inferência **só no render** (nunca reescrever a ficha) | #253 | Nível de magia inferido por nome; sem migração e sem alterar dado que o jogador ajustou |
 | Recursos de combate têm fonte única compartilhada (`spellSlots`, `quantity` do item) | #254, #255 | Combate e abas Magias/Inventário leem e escrevem o mesmo campo — sync de graça, sem estado paralelo |
 | Sugerir em vez de derivar quando o campo já é editado pelo usuário | #256 | `attackBonus` continua manual; a sugestão só aplica por clique, preservando ajustes existentes |
+| Snap de token sempre em espaço de imagem (`snapTokenPos`), nunca em lat | #259 | Grade é desenhada em espaço de imagem; misturar espaços quebra o alinhamento em Y de forma dependente do tamanho da célula |
+| Mudar a grade não reposiciona tokens; realinhar é ação explícita do dono | #259 | Nunca mover peças do mestre sem que ele peça |
 
 ---
 
