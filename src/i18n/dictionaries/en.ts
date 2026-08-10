@@ -745,6 +745,7 @@ const en = {
   'campaign_maps.grid_collapse':       'Collapse',
   'campaign_maps.grid_realign_tokens': 'Align tokens to grid',
   'campaign_maps.grid_realign_help':   'Repositions all tokens to the centre of their nearest grid cell. Useful after changing the grid size.',
+  'campaign_maps.grid_fields_help':    'Cell size sets the square width in image pixels — match it to the map\'s own grid. Offset X/Y shift the whole grid so the lines land on the drawn squares. Adjust, save, then use "Align tokens to grid".',
   'campaign_maps.token_add':    'Add token',
   'campaign_maps.token_label':  'Token label',
   'campaign_maps.token_color':  'Token color',
