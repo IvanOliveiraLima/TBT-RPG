@@ -748,6 +748,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.grid_collapse':       'Recolher',
   'campaign_maps.grid_realign_tokens': 'Alinhar tokens à grade',
   'campaign_maps.grid_realign_help':   'Reposiciona todos os tokens no centro da célula mais próxima. Útil após mudar o tamanho da grade.',
+  'campaign_maps.grid_fields_help':    'Tamanho da célula define a largura do quadrado em pixels da imagem — ajuste até bater com a grade desenhada no mapa. Offset X/Y deslocam a grade inteira para as linhas caírem em cima dos quadrados. Ajuste, salve e use "Alinhar tokens à grade".',
   'campaign_maps.token_add':    'Adicionar token',
   'campaign_maps.token_label':  'Rótulo do token',
   'campaign_maps.token_color':  'Cor do token',

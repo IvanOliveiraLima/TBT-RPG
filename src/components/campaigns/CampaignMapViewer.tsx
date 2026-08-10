@@ -1411,9 +1411,12 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               }}
             >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-              {t('campaign_maps.grid_title')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                {t('campaign_maps.grid_title')}
+              </span>
+              <HelpHint textKey="campaign_maps.grid_fields_help" />
+            </div>
             <button
               type="button"
               data-testid="grid-collapse-btn"
@@ -2205,9 +2208,12 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       {isOwner && isMobile && panelOpen && (
         <div data-testid="grid-config-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
-              {t('campaign_maps.grid_title')}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
+                {t('campaign_maps.grid_title')}
+              </span>
+              <HelpHint textKey="campaign_maps.grid_fields_help" />
+            </div>
             <button type="button" data-testid="grid-collapse-btn" onClick={() => setPanelOpen(false)} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: T.textPrimary, fontSize: 13, cursor: 'pointer' }}>
@@ -2249,6 +2255,23 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           >
             {t('campaign_maps.grid_save')}
           </button>
+          {localGrid.enabled && localGrid.size && tokens.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="button"
+                data-testid="realign-tokens-btn"
+                onClick={() => void realignTokens()}
+                style={{
+                  flex: 1, background: 'transparent', border: '1px solid #3A3450', borderRadius: 8,
+                  padding: '6px 0', color: '#C8C4D6', fontFamily: T.sans,
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                {t('campaign_maps.grid_realign_tokens')}
+              </button>
+              <HelpHint textKey="campaign_maps.grid_realign_help" />
+            </div>
+          )}
         </div>
       )}
 
