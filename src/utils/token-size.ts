@@ -1,5 +1,10 @@
 const DEFAULT_CELL_UNITS = 40 // cell size in image units when no grid is active
 
+/** Fraction of the cell the token occupies — leaves breathing room for grid lines. */
+const TOKEN_FILL_RATIO = 0.9
+/** Legibility floor in px — never applied above the cell's own footprint. */
+const MIN_TOKEN_PX = 8
+
 /**
  * Diameter of a token in screen px, proportional to the grid cell at the current zoom.
  *
@@ -12,6 +17,9 @@ export function tokenDiameterPx(
   cellImageUnits: number | null,
   pxPerUnit: number,
 ): number {
-  const imageDiameter = sizeCells * (cellImageUnits ?? DEFAULT_CELL_UNITS)
-  return Math.max(8, imageDiameter * pxPerUnit)
+  const cellPx = (cellImageUnits ?? DEFAULT_CELL_UNITS) * pxPerUnit
+  const footprint = sizeCells * cellPx
+  const d = footprint * TOKEN_FILL_RATIO
+  // The floor never exceeds the footprint (otherwise the token would overlap grid lines)
+  return Math.max(Math.min(MIN_TOKEN_PX, footprint), d)
 }
