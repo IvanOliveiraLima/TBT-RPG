@@ -73,6 +73,12 @@ interface ImportSpellsPickerProps {
 function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: ImportSpellsPickerProps) {
   const { t } = useTranslation()
 
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   const spellsByLevel = useMemo(() => {
     const grouped: Record<number, Spell[]> = {}
     for (let i = 0; i <= 9; i++) grouped[i] = []
@@ -93,6 +99,7 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
   return (
     <div
       data-testid="import-spells-picker"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -272,6 +279,12 @@ interface ImportWeaponsPickerProps {
 function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerProps) {
   const { t } = useTranslation()
 
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
   const weapons = useMemo(() => {
     const ws = items.filter(item => item.category === 'weapon')
     // Equipped first, then unequipped
@@ -284,6 +297,7 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
   return (
     <div
       data-testid="import-weapons-picker"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
       style={{
         position: 'fixed',
         inset: 0,
