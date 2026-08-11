@@ -4,6 +4,7 @@ import {
   passivePerception,
   initiativeBonus,
   formatSigned,
+  deriveSpellSaveDC,
 } from '@/domain/calculations'
 import { deriveTotalLevel } from '@/domain/derived'
 import { useTranslation } from '@/i18n'
@@ -37,12 +38,17 @@ export function CombatStrip({ character, cols = 3, onUpdate }: CombatStripProps)
   )
   const initiative = initiativeBonus(character.abilities.dex)
 
+  // Derive spell save DC live — ignores stale stored spellSaveDC
+  const derivedDC = character.spellcastingAbility
+    ? (deriveSpellSaveDC(character.abilities, character.spellcastingAbility, profBonus) ?? 0)
+    : 0
+
   const displayItems: { key: string; label: string; value: string }[] = [
     { key: 'init', label: t('combat.initiative'),         value: formatSigned(initiative) },
     { key: 'spd',  label: t('combat.speed'),              value: `${character.speed} ft` },
     { key: 'pp',   label: t('combat.passive_perception'), value: String(pp) },
-    ...(character.spellSaveDC > 0
-      ? [{ key: 'dc', label: t('combat.spell_save_dc'), value: String(character.spellSaveDC) }]
+    ...(derivedDC > 0
+      ? [{ key: 'dc', label: t('combat.spell_save_dc'), value: String(derivedDC) }]
       : []),
     { key: 'prof', label: t('combat.proficiency_bonus'),  value: formatSigned(profBonus) },
   ]

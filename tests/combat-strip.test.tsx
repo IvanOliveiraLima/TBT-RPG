@@ -101,8 +101,15 @@ describe('CombatStrip', () => {
     expect(screen.queryByTestId('combat-stat-dc')).toBeNull()
   })
 
-  it('shows DC when spellSaveDC is defined', () => {
-    renderWithI18n(<CombatStrip character={{ ...BASE, spellSaveDC: 14 }} />, 'pt')
+  it('shows DC when spellcasting ability and abilities produce a non-zero DC', () => {
+    // int=18 → mod +4; level 4 → profBonus +2; DC = 8 + 2 + 4 = 14
+    const spellcaster = {
+      ...BASE,
+      spellcastingAbility: 'int' as const,
+      abilities: { ...BASE.abilities, int: 18 },
+      spellSaveDC: 0, // stored field is stale/zero — DC must derive live
+    }
+    renderWithI18n(<CombatStrip character={spellcaster} />, 'pt')
     expect(screen.getByTestId('combat-stat-dc').textContent).toContain('14')
   })
 

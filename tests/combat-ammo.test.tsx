@@ -15,7 +15,7 @@
  * - Slot consume from Combat.4 remains intact alongside ammo
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { screen, fireEvent, act } from '@testing-library/react'
+import { screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { AttacksList } from '@/components/sheet/parts/AttacksList'
 import { ammoCandidates } from '@/domain/inventory'
@@ -45,7 +45,7 @@ function makeArrow(overrides?: Partial<InventoryItem>): InventoryItem {
     name: 'Arrows',
     quantity: 20,
     weight: 0.05,
-    category: 'misc',
+    category: 'ammunition',
     description: '',
     equipped: false,
     ...overrides,
@@ -181,13 +181,28 @@ describe('Combat.5 — Ammunition tracking', () => {
   /* ── ammoCandidates helper ── */
 
   describe('ammoCandidates', () => {
-    it('returns all inventory items today', () => {
-      const items = [makeArrow(), makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })]
-      expect(ammoCandidates(items)).toHaveLength(2)
+    it('returns only ammunition-category items', () => {
+      const arrow = makeArrow()
+      const sword = makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })
+      expect(ammoCandidates([arrow, sword])).toHaveLength(1)
+      expect(ammoCandidates([arrow, sword])[0]!.id).toBe('arrow1')
     })
 
     it('returns empty array for empty inventory', () => {
       expect(ammoCandidates([])).toHaveLength(0)
+    })
+
+    it('includes linked item from another category to preserve existing attacks', () => {
+      const sword = makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })
+      const result = ammoCandidates([sword], 'sword1')
+      expect(result).toHaveLength(1)
+      expect(result[0]!.id).toBe('sword1')
+    })
+
+    it('does not duplicate linked item that is already in ammunition category', () => {
+      const arrow = makeArrow()
+      const result = ammoCandidates([arrow], 'arrow1')
+      expect(result).toHaveLength(1)
     })
   })
 
@@ -201,6 +216,47 @@ describe('Combat.5 — Ammunition tracking', () => {
       // Expand the card
       fireEvent.click(screen.getByTestId('attack-card-r1'))
       expect(screen.getByTestId('attack-ammo-select-r1')).toBeInTheDocument()
+    })
+
+    it('HelpHint trigger appears next to the ammo label when ranged attack is expanded (EN)', () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      expect(screen.getAllByTestId('help-hint-trigger').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('clicking ammo HelpHint opens tooltip with EN text', async () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      // triggers[0] = bonus suggestion hint; triggers[1] = ammo hint
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      act(() => { fireEvent.click(triggers[1]!) })
+      await waitFor(() =>
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Link an inventory item'),
+      )
+    })
+
+    it('clicking ammo HelpHint opens tooltip with PT text', async () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'pt')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      act(() => { fireEvent.click(triggers[1]!) })
+      await waitFor(() =>
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Vincule um item'),
+      )
+    })
+
+    it('melee attack has no ammo HelpHint (only the bonus-suggestion hint)', () => {
+      const char = makeChar([makeMelee()])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-m1'))
+      // melee has no ammo block → exactly 1 hint (bonus suggestion)
+      expect(screen.getAllByTestId('help-hint-trigger')).toHaveLength(1)
     })
 
     it('ammo select lists all inventory items', () => {

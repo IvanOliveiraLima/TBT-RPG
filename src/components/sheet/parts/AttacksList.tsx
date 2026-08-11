@@ -10,7 +10,7 @@ import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
-import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
+import { formatAttackBonus, formatAttackSummary, deriveProficiencyBonus } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { deriveSpellSaveDC, abilityModifier, deriveSpellAttackBonus } from '@/domain/calculations'
 import { ammoCandidates } from '@/domain/inventory'
@@ -1009,7 +1009,10 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
             <div style={{ flex: '0 1 calc(33.333% - 6px)', minWidth: 160 }}>
               <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
-                {t('attacks.ammo_label')}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {t('attacks.ammo_label')}
+                  <HelpHint textKey="attacks.ammo_help" />
+                </span>
               </label>
               <select
                 value={attack.ammoItemId ?? ''}
@@ -1046,6 +1049,11 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                   </option>
                 ))}
               </select>
+              {(ammoCands ?? []).length === 0 && (
+                <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans, marginTop: 3, display: 'block' }}>
+                  {t('attacks.ammo_empty_hint')}
+                </span>
+              )}
             </div>
             </div>
           )}
@@ -1157,7 +1165,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
-  const profBonus = character.proficiencyBonus
+  const profBonus = deriveProficiencyBonus(character)
 
   // Derived save DC for spell attacks
   const spellSaveDC = deriveSpellSaveDC(
@@ -1308,7 +1316,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     onUpdate({ inventory: next })
   }
 
-  const ammoCands = ammoCandidates(character.inventory ?? [])
+  // ammoCands is computed per-attack below (preserves current link even if not 'ammunition')
 
   return (
     <div ref={listRef} data-testid="attacks-list">
@@ -1428,7 +1436,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     onUpdate={partial => updateAttack(attack.id, partial)}
                     onRemove={() => removeAttack(attack.id)}
                     {...(locked ? { locked: true } : {})}
-                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCandidates(character.inventory ?? [], attack.ammoItemId) } : {})}
                     {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                     {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                     bonusSuggestion={bonusSuggestionFor(attack)}
@@ -1510,7 +1518,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                 onUpdate={partial => updateAttack(attack.id, partial)}
                 onRemove={() => removeAttack(attack.id)}
                 {...(locked ? { locked: true } : {})}
-                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCandidates(character.inventory ?? [], attack.ammoItemId) } : {})}
                 {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                 {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                 bonusSuggestion={bonusSuggestionFor(attack)}

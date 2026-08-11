@@ -83,6 +83,7 @@ export interface Spell {
 
 export type ItemCategory =
   | 'weapon'
+  | 'ammunition'
   | 'armor'
   | 'consumable'
   | 'tool'
@@ -134,7 +135,7 @@ export interface Character {
 
   // Core stats
   abilities: Abilities
-  proficiencyBonus: number   // derived from sum of class levels
+  proficiencyBonus: number   // LEGADO: derivado e NÃO mantido — use deriveProficiencyBonus(character)
 
   // Status
   hp: {
@@ -150,7 +151,7 @@ export interface Character {
   initiative: number         // stored as is from v1; ideally dex mod + misc
   speed: number
   passivePerception: number  // derived: 10 + perception skill bonus
-  spellSaveDC: number        // derived: 8 + profBonus + spellcasting ability modifier (0 if no ability)
+  spellSaveDC: number        // LEGADO: derivado e NÃO mantido — use deriveSpellSaveDC(...)
   inspiration: boolean       // v1 stores as string in top_bar.insperation (typo preserved in raw)
 
   // Saving throws & skills

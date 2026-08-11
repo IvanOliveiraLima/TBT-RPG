@@ -285,6 +285,11 @@ This order matters: components built on a broken adapter produce invisible data 
   imagem**; converta na fronteira (ex.: `snapTokenPos`, `pointToCell(x, map.height - y)`) e centralize num
   helper único, nunca chamando o utilitário de snap direto. Testes de alinhamento devem usar
   `height`/`size`/`offset` que **não** coincidam por acidente, senão o bug passa despercebido.
+- **Derivado armazenado é armadilha:** o domínio ainda tem campos derivados persistidos
+  (`proficiencyBonus`, `spellSaveDC`, `bonus` de perícia/resistência) por herança do schema v1. **Nunca
+  leia esses campos na UI** — use os helpers (`deriveProficiencyBonus`, `deriveSpellSaveDC`, …). Ao escrever
+  teste de valor derivado, monte a fixture com o campo armazenado **deliberadamente errado**: é o único jeito
+  de o teste falhar se alguém voltar a ler o campo.
 
 ### internationalization (i18n)
 
@@ -1102,6 +1107,26 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   em `[data-dice-toggle]` pra o botão de abrir não fechar-e-reabrir.
 - `HelpHint` explicando tamanho da célula e offsets X/Y nos dois painéis de grade (desktop e mobile).
 
+### Inventário — categoria "Munição" (COMPLETED — PR #263)
+- Nova `ItemCategory` `'ammunition'` (após `'weapon'`), com seção própria no inventário e i18n.
+  **Não** é equipável.
+- O seletor de munição do combate passa a filtrar por essa categoria, **sempre incluindo o item já
+  vinculado** mesmo em outra categoria — vínculos criados antes da categoria continuam visíveis e válidos.
+  Nada é reclassificado automaticamente.
+- Hint de lista vazia + `HelpHint` explicando o campo (vincula item, gasta 1 por ataque, `+1` devolve, só
+  itens de Munição são listados).
+
+### Correção — bônus de proficiência e CD de magia derivados (COMPLETED — PR #264)
+- **Bug:** `character.proficiencyBonus` e `character.spellSaveDC` são derivados **armazenados**, gravados só
+  na criação e **nunca atualizados** ao subir de nível. Componentes que os liam mostravam valores obsoletos:
+  CD de salvaguarda e bônus de ataque de magia (aba Magias e faixa de combate), badge de CD nos cards de
+  ataque e o chip de sugestão de bônus (relato: PROF +4 na ficha, "prof +2" no chip).
+- **Fix:** helper `deriveProficiencyBonus(character)` (= `proficiencyBonus(deriveTotalLevel(character))`) e
+  remoção de **todas** as leituras dos campos armazenados na UI; a CD passou a ser derivada ao vivo também
+  no `CombatStrip`. Campos marcados como **LEGADO** no domínio.
+- Regressão coberta com fixture de nível 9 e valores armazenados propositalmente obsoletos
+  (`proficiencyBonus: 2`, `spellSaveDC: 12`).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1844,6 +1869,8 @@ function buildInviteLink(): string {
 | Sugerir em vez de derivar quando o campo já é editado pelo usuário | #256 | `attackBonus` continua manual; a sugestão só aplica por clique, preservando ajustes existentes |
 | Snap de token sempre em espaço de imagem (`snapTokenPos`), nunca em lat | #259 | Grade é desenhada em espaço de imagem; misturar espaços quebra o alinhamento em Y de forma dependente do tamanho da célula |
 | Mudar a grade não reposiciona tokens; realinhar é ação explícita do dono | #259 | Nunca mover peças do mestre sem que ele peça |
+| Filtro de munição preserva o item já vinculado (fora da categoria) | #263 | Trocar o critério de um seletor não pode invalidar dados configurados antes |
+| Valores derivados são sempre recalculados; campos derivados armazenados são LEGADO e não podem ser lidos na UI | #264 | Eles não são atualizados ao subir de nível — leram obsoleto e quebraram CD de magia e sugestão de bônus |
 
 ---
 
@@ -2045,14 +2072,20 @@ New from production feedback (observed bugs):
 
 New from Combat polish (#253–#256):
 
-- **OQ — Categoria "munição" no inventário.** Hoje `ammoCandidates()` devolve **todos** os itens porque não
-  existe `ItemCategory` 'ammunition'. Criar a categoria (+ i18n, + editor) e trocar o helper por um filtro —
-  ponto único de mudança já isolado (`src/domain/inventory.ts`). Deferred.
+- ~~**OQ — Categoria "munição" no inventário.**~~ *Resolved (PR #263).* `ItemCategory 'ammunition'` criada;
+  `ammoCandidates()` filtra por ela preservando o item já vinculado.
 - **OQ — Conjurar em nível superior (upcasting).** O botão "Conjurar" consome o espaço do **próprio** nível
   da magia. Falta decidir a UX: seletor de nível na hora de conjurar vs. nível de conjuração fixo por
   ataque. Deferred (decisão pendente).
 - **OQ — Reordenar/duplicar ataques.** Reordenar cards (setas ou drag) e duplicar um ataque (mesma arma com
   variação). A pensar melhor. Deferred.
+- **OQ — Remover os campos derivados armazenados do domínio.** `proficiencyBonus`, `spellSaveDC`,
+  `passivePerception` e os `bonus` de perícia/resistência são derivados persistidos (LEGADO). Removê-los
+  exige tocar `factories`, `ai-generate`, adapter/persistência e fixtures — mas elimina de vez a classe de bug
+  do #264. Deferred.
+- **OQ — Auto-vínculo de munição.** Ao importar arma à distância (ou trocar o tipo para "à distância"),
+  vincular automaticamente quando existir **exatamente um** item na categoria Munição; com dois ou mais,
+  manter "Nenhuma". Deferred.
 
 ---
 

@@ -1,4 +1,5 @@
 import type { Character, Attack, InventoryItem, ItemCategory } from './character'
+import { proficiencyBonus } from './calculations'
 
 /**
  * Sum of all class levels. Derived from `classes` — never stored.
@@ -8,6 +9,13 @@ import type { Character, Attack, InventoryItem, ItemCategory } from './character
  */
 export function deriveTotalLevel(character: Character): number {
   return character.classes.reduce((sum, c) => sum + (c.level || 0), 0)
+}
+
+/**
+ * Proficiency bonus always derived from total level — never read the stored field.
+ */
+export function deriveProficiencyBonus(character: Character): number {
+  return proficiencyBonus(deriveTotalLevel(character))
 }
 
 /**
@@ -88,7 +96,7 @@ export function getWeightLoadLevel(current: number, max: number): WeightLoadLeve
  */
 export function groupItemsByCategory(items: InventoryItem[]): Record<ItemCategory, InventoryItem[]> {
   const groups: Record<ItemCategory, InventoryItem[]> = {
-    weapon: [], armor: [], consumable: [], tool: [], misc: [],
+    weapon: [], ammunition: [], armor: [], consumable: [], tool: [], misc: [],
   }
   for (const item of items) {
     groups[item.category]?.push(item)
