@@ -284,6 +284,7 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.bonus_suggestion':      'Sugerir {n}',
   'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
   'attacks.bonus_suggest_aria':    'Aplicar bônus sugerido {n}',
+  'attacks.ammo_empty_hint':       'Cadastre um item na categoria Munição no inventário.',
   'attacks.bonus_suggestion_help': 'Bônus sugerido = modificador da habilidade + bônus de proficiência. Toque para preencher o campo; você pode editar depois. Em armas, assume que você é proficiente — se não for, use só o modificador da habilidade mostrado. Em magias, a proficiência sempre se aplica.',
 
   // SpellcastingHeader (editable)
@@ -374,6 +375,7 @@ const pt: Record<keyof typeof en, string> = {
 
   // Item categories
   'inventory.category_weapon':         'Armas',
+  'inventory.category_ammunition':     'Munição',
   'inventory.category_armor':          'Armaduras',
   'inventory.category_consumable':     'Consumíveis',
   'inventory.category_tool':           'Ferramentas',
@@ -381,6 +383,7 @@ const pt: Record<keyof typeof en, string> = {
 
   // Per-category add buttons
   'inventory.add_weapon':              '+ Adicionar arma',
+  'inventory.add_ammunition':          '+ Adicionar munição',
   'inventory.add_armor':               '+ Adicionar armadura',
   'inventory.add_consumable':          '+ Adicionar consumível',
   'inventory.add_tool':                '+ Adicionar ferramenta',
