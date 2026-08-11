@@ -370,14 +370,17 @@ describe('Combat.6 — Attack bonus suggestion chip', () => {
       const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
       renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
       openCard('w1')
-      expect(screen.getByTestId('help-hint-trigger')).toBeDefined()
+      // ranged card has 2 hints (bonus + ammo); at least one must be present
+      expect(screen.getAllByTestId('help-hint-trigger').length).toBeGreaterThanOrEqual(1)
     })
 
     it('clicking trigger opens balloon with EN explanation text', () => {
       const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
       renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
       openCard('w1')
-      fireEvent.click(screen.getByTestId('help-hint-trigger'))
+      // bonus hint is the first trigger rendered
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      fireEvent.click(triggers[0]!)
       const tooltip = document.body.querySelector('[role="tooltip"]')
       expect(tooltip).not.toBeNull()
       expect(tooltip!.textContent).toContain('ability modifier + proficiency bonus')
@@ -387,25 +390,28 @@ describe('Combat.6 — Attack bonus suggestion chip', () => {
       const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })])
       renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'pt')
       openCard('w1')
-      fireEvent.click(screen.getByTestId('help-hint-trigger'))
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      fireEvent.click(triggers[0]!)
       const tooltip = document.body.querySelector('[role="tooltip"]')
       expect(tooltip).not.toBeNull()
       expect(tooltip!.textContent).toContain('modificador da habilidade')
     })
 
-    it('hint trigger absent when chip is hidden (attackBonus already matches suggestion)', () => {
-      // DEX 16 + profBonus 3 = +6; chip not shown → HelpHint not rendered
+    it('bonus hint absent when chip is hidden (attackBonus already matches suggestion)', () => {
+      // DEX 16 + profBonus 3 = +6; chip not shown → bonus HelpHint not rendered
+      // ranged attack still shows the ammo hint, so exactly 1 trigger remains
       const char = makeChar([makeWeapon({ ability: 'dex', attackBonus: 6 })])
       renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
       openCard('w1')
-      expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+      expect(screen.getAllByTestId('help-hint-trigger')).toHaveLength(1)
     })
 
-    it('hint trigger absent when locked', () => {
+    it('bonus hint absent when locked (ammo hint still present on ranged attack)', () => {
       const char = makeLocked(makeChar([makeWeapon({ ability: 'dex', attackBonus: 0 })]))
       renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
       openCard('w1')
-      expect(screen.queryByTestId('help-hint-trigger')).toBeNull()
+      // locked hides the bonus chip → only ammo hint remains
+      expect(screen.getAllByTestId('help-hint-trigger')).toHaveLength(1)
     })
   })
 })

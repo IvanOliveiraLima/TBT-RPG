@@ -15,7 +15,7 @@
  * - Slot consume from Combat.4 remains intact alongside ammo
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { screen, fireEvent, act } from '@testing-library/react'
+import { screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { renderWithI18n } from './helpers/render'
 import { AttacksList } from '@/components/sheet/parts/AttacksList'
 import { ammoCandidates } from '@/domain/inventory'
@@ -216,6 +216,47 @@ describe('Combat.5 — Ammunition tracking', () => {
       // Expand the card
       fireEvent.click(screen.getByTestId('attack-card-r1'))
       expect(screen.getByTestId('attack-ammo-select-r1')).toBeInTheDocument()
+    })
+
+    it('HelpHint trigger appears next to the ammo label when ranged attack is expanded (EN)', () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      expect(screen.getAllByTestId('help-hint-trigger').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('clicking ammo HelpHint opens tooltip with EN text', async () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      // triggers[0] = bonus suggestion hint; triggers[1] = ammo hint
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      act(() => { fireEvent.click(triggers[1]!) })
+      await waitFor(() =>
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Link an inventory item'),
+      )
+    })
+
+    it('clicking ammo HelpHint opens tooltip with PT text', async () => {
+      const arrow = makeArrow()
+      const char = makeChar([makeRanged()], [arrow])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'pt')
+      fireEvent.click(screen.getByTestId('attack-card-r1'))
+      const triggers = screen.getAllByTestId('help-hint-trigger')
+      act(() => { fireEvent.click(triggers[1]!) })
+      await waitFor(() =>
+        expect(screen.getByRole('tooltip')).toHaveTextContent('Vincule um item'),
+      )
+    })
+
+    it('melee attack has no ammo HelpHint (only the bonus-suggestion hint)', () => {
+      const char = makeChar([makeMelee()])
+      renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+      fireEvent.click(screen.getByTestId('attack-card-m1'))
+      // melee has no ammo block → exactly 1 hint (bonus suggestion)
+      expect(screen.getAllByTestId('help-hint-trigger')).toHaveLength(1)
     })
 
     it('ammo select lists all inventory items', () => {

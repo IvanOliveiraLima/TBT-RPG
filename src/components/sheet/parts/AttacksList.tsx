@@ -1009,7 +1009,10 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
             <div style={{ flex: '0 1 calc(33.333% - 6px)', minWidth: 160 }}>
               <label style={{ display: 'block', fontSize: 10, color: T.textMuted, marginBottom: 2, fontFamily: T.sans }}>
-                {t('attacks.ammo_label')}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {t('attacks.ammo_label')}
+                  <HelpHint textKey="attacks.ammo_help" />
+                </span>
               </label>
               <select
                 value={attack.ammoItemId ?? ''}

@@ -285,6 +285,7 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
   'attacks.bonus_suggest_aria':    'Aplicar bônus sugerido {n}',
   'attacks.ammo_empty_hint':       'Cadastre um item na categoria Munição no inventário.',
+  'attacks.ammo_help':             'Vincule um item do inventário para usar como munição. Cada ataque gasta 1 e o contador ao lado do ataque mostra o que resta — use o +1 para devolver. Só itens da categoria Munição aparecem na lista (além do que já estiver vinculado).',
   'attacks.bonus_suggestion_help': 'Bônus sugerido = modificador da habilidade + bônus de proficiência. Toque para preencher o campo; você pode editar depois. Em armas, assume que você é proficiente — se não for, use só o modificador da habilidade mostrado. Em magias, a proficiência sempre se aplica.',
 
   // SpellcastingHeader (editable)
