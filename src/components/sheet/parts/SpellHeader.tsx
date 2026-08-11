@@ -6,8 +6,8 @@
  */
 
 import type { Character, AbilityKey } from '@/domain/character'
-import { formatSigned } from '@/domain/calculations'
-import { deriveSpellSaveDC, deriveSpellAttackBonus } from '@/domain/calculations'
+import { formatSigned, deriveSpellSaveDC, deriveSpellAttackBonus } from '@/domain/calculations'
+import { deriveProficiencyBonus } from '@/domain/derived'
 import { CANONICAL_CLASSES } from '@/data/canonical'
 import { Card } from '../ui/Card'
 import { Label } from '../ui/Label'
@@ -46,8 +46,9 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
   const { t } = useTranslation()
   const locked = useCharacterLocked(character.id)
 
-  const saveDC     = deriveSpellSaveDC(character.abilities, character.spellcastingAbility, character.proficiencyBonus)
-  const atkBonus   = deriveSpellAttackBonus(character.abilities, character.spellcastingAbility, character.proficiencyBonus)
+  const profBonus  = deriveProficiencyBonus(character)
+  const saveDC     = deriveSpellSaveDC(character.abilities, character.spellcastingAbility, profBonus)
+  const atkBonus   = deriveSpellAttackBonus(character.abilities, character.spellcastingAbility, profBonus)
 
   function handleClassChange(value: string) {
     if (locked) return
@@ -59,7 +60,7 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
     const ability = value as AbilityKey | ''
     // Derive new DC for CombatStrip (keep spellSaveDC in sync)
     const newDC = ability
-      ? (deriveSpellSaveDC(character.abilities, ability, character.proficiencyBonus) ?? 0)
+      ? (deriveSpellSaveDC(character.abilities, ability, profBonus) ?? 0)
       : 0
     onUpdate?.({ spellcastingAbility: ability, spellSaveDC: newDC })
   }
