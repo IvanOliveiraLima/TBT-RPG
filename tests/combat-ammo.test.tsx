@@ -45,7 +45,7 @@ function makeArrow(overrides?: Partial<InventoryItem>): InventoryItem {
     name: 'Arrows',
     quantity: 20,
     weight: 0.05,
-    category: 'misc',
+    category: 'ammunition',
     description: '',
     equipped: false,
     ...overrides,
@@ -181,13 +181,28 @@ describe('Combat.5 — Ammunition tracking', () => {
   /* ── ammoCandidates helper ── */
 
   describe('ammoCandidates', () => {
-    it('returns all inventory items today', () => {
-      const items = [makeArrow(), makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })]
-      expect(ammoCandidates(items)).toHaveLength(2)
+    it('returns only ammunition-category items', () => {
+      const arrow = makeArrow()
+      const sword = makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })
+      expect(ammoCandidates([arrow, sword])).toHaveLength(1)
+      expect(ammoCandidates([arrow, sword])[0]!.id).toBe('arrow1')
     })
 
     it('returns empty array for empty inventory', () => {
       expect(ammoCandidates([])).toHaveLength(0)
+    })
+
+    it('includes linked item from another category to preserve existing attacks', () => {
+      const sword = makeArrow({ id: 'sword1', name: 'Sword', category: 'weapon' })
+      const result = ammoCandidates([sword], 'sword1')
+      expect(result).toHaveLength(1)
+      expect(result[0]!.id).toBe('sword1')
+    })
+
+    it('does not duplicate linked item that is already in ammunition category', () => {
+      const arrow = makeArrow()
+      const result = ammoCandidates([arrow], 'arrow1')
+      expect(result).toHaveLength(1)
     })
   })
 

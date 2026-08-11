@@ -183,9 +183,9 @@ describe('getWeightLoadLevel', () => {
 // ── groupItemsByCategory ──────────────────────────────────────────────────────
 
 describe('groupItemsByCategory', () => {
-  it('returns all 5 categories even when empty', () => {
+  it('returns all 6 categories even when empty', () => {
     const result = groupItemsByCategory([])
-    expect(Object.keys(result)).toEqual(['weapon', 'armor', 'consumable', 'tool', 'misc'])
+    expect(Object.keys(result)).toEqual(['weapon', 'ammunition', 'armor', 'consumable', 'tool', 'misc'])
   })
 
   it('all groups are empty arrays for empty input', () => {
@@ -242,7 +242,7 @@ describe('groupItemsByCategory', () => {
 // ── isValidCategory ───────────────────────────────────────────────────────────
 
 describe('isValidCategory', () => {
-  it('returns true for all 5 valid categories', () => {
+  it('returns true for all valid categories', () => {
     for (const cat of ITEM_CATEGORIES) {
       expect(isValidCategory(cat)).toBe(true)
     }
@@ -264,8 +264,8 @@ describe('isValidCategory', () => {
     expect(isValidCategory(42)).toBe(false)
   })
 
-  it('ITEM_CATEGORIES has exactly 5 entries', () => {
-    expect(ITEM_CATEGORIES).toHaveLength(5)
+  it('ITEM_CATEGORIES has exactly 6 entries', () => {
+    expect(ITEM_CATEGORIES).toHaveLength(6)
   })
 })
 
