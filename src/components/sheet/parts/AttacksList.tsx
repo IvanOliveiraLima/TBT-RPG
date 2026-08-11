@@ -10,7 +10,7 @@ import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { useSheetRoll } from '@/hooks/useSheetRoll'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
-import { formatAttackBonus, formatAttackSummary } from '@/domain/derived'
+import { formatAttackBonus, formatAttackSummary, deriveProficiencyBonus } from '@/domain/derived'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
 import { deriveSpellSaveDC, abilityModifier, deriveSpellAttackBonus } from '@/domain/calculations'
 import { ammoCandidates } from '@/domain/inventory'
@@ -1165,7 +1165,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
   const locked = useCharacterLocked(character.id)
   const attacks = character.attacks
 
-  const profBonus = character.proficiencyBonus
+  const profBonus = deriveProficiencyBonus(character)
 
   // Derived save DC for spell attacks
   const spellSaveDC = deriveSpellSaveDC(

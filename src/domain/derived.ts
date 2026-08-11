@@ -1,4 +1,5 @@
 import type { Character, Attack, InventoryItem, ItemCategory } from './character'
+import { proficiencyBonus } from './calculations'
 
 /**
  * Sum of all class levels. Derived from `classes` — never stored.
@@ -8,6 +9,13 @@ import type { Character, Attack, InventoryItem, ItemCategory } from './character
  */
 export function deriveTotalLevel(character: Character): number {
   return character.classes.reduce((sum, c) => sum + (c.level || 0), 0)
+}
+
+/**
+ * Proficiency bonus always derived from total level — never read the stored field.
+ */
+export function deriveProficiencyBonus(character: Character): number {
+  return proficiencyBonus(deriveTotalLevel(character))
 }
 
 /**
