@@ -88,7 +88,7 @@ export function getWeightLoadLevel(current: number, max: number): WeightLoadLeve
  */
 export function groupItemsByCategory(items: InventoryItem[]): Record<ItemCategory, InventoryItem[]> {
   const groups: Record<ItemCategory, InventoryItem[]> = {
-    weapon: [], armor: [], consumable: [], tool: [], misc: [],
+    weapon: [], ammunition: [], armor: [], consumable: [], tool: [], misc: [],
   }
   for (const item of items) {
     groups[item.category]?.push(item)

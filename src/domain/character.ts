@@ -83,6 +83,7 @@ export interface Spell {
 
 export type ItemCategory =
   | 'weapon'
+  | 'ammunition'
   | 'armor'
   | 'consumable'
   | 'tool'

@@ -282,6 +282,8 @@ const en = {
   'attacks.bonus_suggestion':      'Suggest {n}',
   'attacks.bonus_breakdown':       '{ability} {mod} · prof {prof}',
   'attacks.bonus_suggest_aria':    'Apply suggested bonus {n}',
+  'attacks.ammo_empty_hint':       'Add an item in the Ammunition category in your inventory.',
+  'attacks.ammo_help':             'Link an inventory item to use as ammunition. Each attack spends 1 and the counter next to the attack shows what\'s left — use +1 to give one back. Only items in the Ammunition category are listed (plus the one already linked).',
   'attacks.bonus_suggestion_help': "Suggested bonus = ability modifier + proficiency bonus. Tap to fill the field; you can always edit it. For weapons it assumes you're proficient — if you aren't, use just the ability modifier shown. For spells proficiency always applies.",
 
   // SpellcastingHeader (editable)
@@ -373,6 +375,7 @@ const en = {
 
   // Item categories
   'inventory.category_weapon':         'Weapons',
+  'inventory.category_ammunition':     'Ammunition',
   'inventory.category_armor':          'Armor',
   'inventory.category_consumable':     'Consumables',
   'inventory.category_tool':           'Tools',
@@ -380,6 +383,7 @@ const en = {
 
   // Per-category add buttons
   'inventory.add_weapon':              '+ Add weapon',
+  'inventory.add_ammunition':          '+ Add ammunition',
   'inventory.add_armor':               '+ Add armor',
   'inventory.add_consumable':          '+ Add consumable',
   'inventory.add_tool':                '+ Add tool',

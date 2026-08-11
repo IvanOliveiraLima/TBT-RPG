@@ -2,6 +2,7 @@ import type { ItemCategory } from '@/domain/character'
 
 export const ITEM_CATEGORIES: ItemCategory[] = [
   'weapon',
+  'ammunition',
   'armor',
   'consumable',
   'tool',
