@@ -1046,6 +1046,11 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
                   </option>
                 ))}
               </select>
+              {(ammoCands ?? []).length === 0 && (
+                <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans, marginTop: 3, display: 'block' }}>
+                  {t('attacks.ammo_empty_hint')}
+                </span>
+              )}
             </div>
             </div>
           )}
@@ -1308,7 +1313,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     onUpdate({ inventory: next })
   }
 
-  const ammoCands = ammoCandidates(character.inventory ?? [])
+  // ammoCands is computed per-attack below (preserves current link even if not 'ammunition')
 
   return (
     <div ref={listRef} data-testid="attacks-list">
@@ -1428,7 +1433,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     onUpdate={partial => updateAttack(attack.id, partial)}
                     onRemove={() => removeAttack(attack.id)}
                     {...(locked ? { locked: true } : {})}
-                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                    {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCandidates(character.inventory ?? [], attack.ammoItemId) } : {})}
                     {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                     {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                     bonusSuggestion={bonusSuggestionFor(attack)}
@@ -1510,7 +1515,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                 onUpdate={partial => updateAttack(attack.id, partial)}
                 onRemove={() => removeAttack(attack.id)}
                 {...(locked ? { locked: true } : {})}
-                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCands } : {})}
+                {...(attack.kind === 'ranged' ? { ammoCandidates: ammoCandidates(character.inventory ?? [], attack.ammoItemId) } : {})}
                 {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                 {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                 bonusSuggestion={bonusSuggestionFor(attack)}
