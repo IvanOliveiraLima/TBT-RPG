@@ -837,6 +837,13 @@ const en = {
   'remove_member.removing': 'Removing…',
   'remove_member.error':    'Could not remove member. Please try again.',
 
+  // Transfer ownership
+  'campaign_detail.transfer_action':  'Transfer ownership',
+  'campaign_detail.transfer_title':   'Transfer ownership?',
+  'campaign_detail.transfer_warning': "{name} will become the campaign owner. You'll become a player and lose master permissions — only the new owner can transfer it back.",
+  'campaign_detail.transfer_confirm': 'Transfer',
+  'campaign_detail.transfer_error':   'Could not transfer ownership. Please try again.',
+
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',
   'aria.edit_display_name_input':  'Display name',

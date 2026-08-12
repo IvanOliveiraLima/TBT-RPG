@@ -47,6 +47,7 @@ vi.mock('@/services/campaign', () => ({
   getCampaign: (...args: unknown[]) => mockGetCampaign(...args),
   listCampaignMembers: (...args: unknown[]) => mockListCampaignMembers(...args),
   removeMember: (...args: unknown[]) => mockRemoveMember(...args),
+  transferCampaignOwnership: vi.fn().mockResolvedValue({ ok: true }),
   CampaignServiceError: class CampaignServiceError extends Error {
     constructor(public code: string) { super(code) }
   },
@@ -120,7 +121,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     expect(screen.getByTestId('member-edit-name-u1')).toBeDefined()
@@ -134,7 +135,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     expect(screen.getByTestId('member-edit-name-u1')).toBeDefined()
@@ -148,7 +149,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
     expect(screen.getByTestId('member-remove-u-player')).toBeDefined()
@@ -163,7 +164,7 @@ describe('MemberRowMenu — visibility', () => {
     const { container } = renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     expect(container.firstChild).toBeNull()
   })
@@ -173,7 +174,7 @@ describe('MemberRowMenu — visibility', () => {
     const { container } = renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     expect(container.firstChild).toBeNull()
   })
@@ -183,7 +184,7 @@ describe('MemberRowMenu — visibility', () => {
     const { container } = renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     expect(container.firstChild).toBeNull()
   })
@@ -194,7 +195,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName, onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     await userEvent.click(screen.getByTestId('member-edit-name-u1'))
@@ -207,7 +208,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName: vi.fn(), onLeaveCampaign,
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     await userEvent.click(screen.getByTestId('member-leave-u1'))
@@ -220,7 +221,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign, onRemoveMember: vi.fn(),
+      onDeleteCampaign, onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     await userEvent.click(screen.getByTestId('member-delete-campaign-u1'))
@@ -233,7 +234,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember,
+      onDeleteCampaign: vi.fn(), onRemoveMember, onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
     await userEvent.click(screen.getByTestId('member-remove-u-player'))
@@ -245,7 +246,7 @@ describe('MemberRowMenu — visibility', () => {
     renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: false,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
-      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
     await userEvent.click(screen.getByTestId('member-menu-trigger-u1'))
     await userEvent.click(screen.getByTestId('member-edit-name-u1'))

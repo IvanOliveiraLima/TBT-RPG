@@ -3,7 +3,7 @@
  *
  * Visibility rules:
  *   - Shows on own row (player: Edit name + Leave; owner: Edit name + Delete campaign)
- *   - Owner sees menu on other-player rows (action: Remove member)
+ *   - Owner sees menu on other-player rows (actions: Transfer ownership + Remove member)
  *   - No menu on other-master rows (owner is single, so only edge case is 2 masters — not supported)
  *   - No menu when there are no valid actions
  */
@@ -32,6 +32,7 @@ interface MemberRowMenuProps {
   onLeaveCampaign: () => void
   onDeleteCampaign: () => void
   onRemoveMember: () => void
+  onTransferOwnership: () => void
 }
 
 export function MemberRowMenu({
@@ -42,6 +43,7 @@ export function MemberRowMenu({
   onLeaveCampaign,
   onDeleteCampaign,
   onRemoveMember,
+  onTransferOwnership,
 }: MemberRowMenuProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -152,6 +154,18 @@ export function MemberRowMenu({
               style={menuItemStyle(true)}
             >
               {t('delete_campaign.confirm')}
+            </button>
+          )}
+
+          {/* Transfer ownership — other player row, viewed by owner */}
+          {!isSelf && isCurrentUserOwner && !isMemberMaster && (
+            <button
+              role="menuitem"
+              data-testid={`transfer-ownership-${member.userId}`}
+              onClick={e => { e.stopPropagation(); setOpen(false); onTransferOwnership() }}
+              style={menuItemStyle()}
+            >
+              {t('campaign_detail.transfer_action')}
             </button>
           )}
 

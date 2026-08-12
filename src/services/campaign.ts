@@ -274,6 +274,22 @@ export async function regenerateInviteCode(campaignId: string): Promise<string> 
   return data as string
 }
 
+export async function transferCampaignOwnership(
+  campaignId: string,
+  newOwnerId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: 'offline' }
+  const { error } = await supabase.rpc('transfer_campaign_ownership', {
+    p_campaign_id: campaignId,
+    p_new_owner: newOwnerId,
+  })
+  if (error) {
+    console.error('[campaign] transferOwnership error', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
 // ── Mappers ───────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
