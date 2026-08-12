@@ -164,6 +164,7 @@ describe('CampaignDetail — GM campaign context (owner)', () => {
       expect(mockSetCampaignContext).toHaveBeenCalledWith({
         campaignTargets: ['camp-1'],
         actorName: 'GM',
+        isMaster: true,
       })
     })
   })
@@ -174,6 +175,7 @@ describe('CampaignDetail — GM campaign context (owner)', () => {
       expect(mockSetCampaignContext).toHaveBeenCalledWith({
         campaignTargets: ['camp-1'],
         actorName: 'Mestre',
+        isMaster: true,
       })
     })
   })

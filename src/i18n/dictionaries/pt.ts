@@ -934,6 +934,10 @@ const pt: Record<keyof typeof en, string> = {
   'dice.label_attack':     'Ataque',
   'dice.label_damage':     'Dano',
   'dice.label_death_save': 'Teste de Morte',
+  'dice.secret_toggle':    'Segredo',
+  'dice.secret_badge':     'SEGREDO',
+  'dice.secret_help':      "Rolagens secretas não vão para o log da campanha — os jogadores nunca as veem. Elas não ficam salvas em lugar nenhum, nem para você: o resultado fica só nesta bandeja e some ao recarregar ou fechar a página. O modo continua ligado até você desligar, e é desligado ao sair da campanha.",
+  'dice.secret_roll_marker': 'Rolagem secreta (não registrada)',
 
   // ── Campaign dice log ─────────────────────────────────────────────────────────
   'dice_log.title':        'Log de rolagens',

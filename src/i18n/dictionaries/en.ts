@@ -931,6 +931,10 @@ const en = {
   'dice.label_attack':     'Attack',
   'dice.label_damage':     'Damage',
   'dice.label_death_save': 'Death save',
+  'dice.secret_toggle':    'Secret',
+  'dice.secret_badge':     'SECRET',
+  'dice.secret_help':      "Secret rolls are not sent to the campaign log — players never see them. They are not saved anywhere, not even for you: the result stays in this tray and is lost when you reload or close the page. The toggle stays on until you turn it off, and resets when you leave the campaign.",
+  'dice.secret_roll_marker': 'Secret roll (not logged)',
 
   // ── Campaign dice log ─────────────────────────────────────────────────────────
   'dice_log.title':        'Roll log',

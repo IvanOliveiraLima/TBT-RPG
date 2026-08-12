@@ -111,7 +111,7 @@ export default function CampaignDetail() {
   const isOwnerForContext = !loading && !authLoading && campaign != null && user?.id === campaign.ownerId
   useEffect(() => {
     if (!isOwnerForContext || !id) return
-    setCampaignContext({ campaignTargets: [id], actorName: t('dice_log.master') })
+    setCampaignContext({ campaignTargets: [id], actorName: t('dice_log.master'), isMaster: true })
     return () => { clearCampaignContext() }
   }, [isOwnerForContext, id, setCampaignContext, clearCampaignContext, t])
 

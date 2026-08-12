@@ -55,6 +55,7 @@ PWA instalável.
 - **Condições e áreas no mapa** — o mestre marca condições de status nos tokens e desenha áreas (círculo, quadrado, linha, cone) pra mostrar efeitos (ex.: bola de fogo), com o tamanho em pés durante o desenho; os jogadores veem
 - **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
 - **Dados** — motor de rolagem com vantagem/desvantagem e crítico; tocar em perícias/testes/ataques rola com o bônus certo; em campanha, as rolagens aparecem num log compartilhado que a mesa vê (o mestre rola como "Mestre")
+- **Rolagem secreta do mestre** — o mestre pode rolar sem que os jogadores vejam (fica só na bandeja dele, sem registro)
 - **HP ao vivo** — o mestre vê o HP (e outros stats) de cada personagem vinculado atualizar automaticamente a cada ~10s, sem precisar recarregar a página
 - **Iniciativa e turnos** — o mestre monta a ordem de iniciativa dos combatentes e avança/retrocede o turno; os jogadores acompanham o turno atual em modo leitura
 - **Auto-iniciativa** — o mestre pode ligar, por campanha, o registro automático: quando um jogador rola iniciativa na ficha, o combatente dele entra/atualiza na ordem de iniciativa sozinho
