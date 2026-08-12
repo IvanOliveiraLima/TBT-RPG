@@ -298,6 +298,11 @@ This order matters: components built on a broken adapter produce invisible data 
   leia esses campos na UI** — use os helpers (`deriveProficiencyBonus`, `deriveSpellSaveDC`, …). Ao escrever
   teste de valor derivado, monte a fixture com o campo armazenado **deliberadamente errado**: é o único jeito
   de o teste falhar se alguém voltar a ler o campo.
+- **Permissão que muda ao vivo:** quando uma ação altera as permissões do próprio usuário (transferir
+  propriedade, sair, ser removido), componentes que dependem daquela permissão passam a renderizar caminhos
+  diferentes **sem desmontar**. Garanta que todos os hooks rodem antes de qualquer `return` condicional e
+  teste re-renderizando o mesmo componente com a permissão invertida — é o cenário que os testes de montagem
+  isolada não cobrem.
 
 ### internationalization (i18n)
 
@@ -1145,6 +1150,27 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   recarregar (o histórico da bandeja é em memória). `HelpHint` explica isso explicitamente.
 - `clearCampaignContext` reseta `secretMode` e `isMaster` — sair da campanha nunca deixa o segredo ligado.
 
+### Campanhas — transferir propriedade (COMPLETED — PR #270)
+- RPC `transfer_campaign_ownership(campaign_id, new_owner)` `SECURITY DEFINER`: valida que o chamador é o
+  dono atual, que o alvo é membro e não é ele mesmo, e então atualiza `campaigns.owner_id` + os papéis em
+  `campaign_members` (**atômico**; sempre um único `master`). Ao contrário do `register_initiative`, ela
+  **levanta exceção** — o usuário precisa de feedback.
+- Ação no `MemberRowMenu` (só o dono, em linha de outro membro não-master) + modal de confirmação nomeando o
+  novo dono. Após o sucesso há **refetch**: o `isOwner` vira `false` e as seções de dono somem sem recarregar.
+  O dono antigo permanece na campanha como `player`.
+- **Nenhuma policy foi reescrita** — tudo que checa `owner_id` continua válido, apenas apontando para outra
+  pessoa.
+- Correção acoplada: `MemberRowMenu` tinha um `useEffect` **depois** de um early return (com a regra
+  `react-hooks/rules-of-hooks` silenciada por `eslint-disable`). Como a transferência é o primeiro caso em que
+  o usuário deixa de ser dono **ao vivo**, o componente passava a renderizar menos hooks e a tela quebrava.
+  Hooks movidos para antes do return e o `eslint-disable` removido.
+
+### PWA — legibilidade do aviso de atualização (COMPLETED — PR #271)
+- `DismissibleBanner` ganhou a variante **`solid`** (fundo opaco por tom + sombra) — **opt-in**, para não
+  alterar o banner do `CharSelect`.
+- O aviso de nova versão passou do rodapé para o **topo**, com `env(safe-area-inset-top)` (não fica atrás da
+  barra de status) e fundo opaco.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1891,6 +1917,8 @@ function buildInviteLink(): string {
 | Valores derivados são sempre recalculados; campos derivados armazenados são LEGADO e não podem ser lidos na UI | #264 | Eles não são atualizados ao subir de nível — leram obsoleto e quebraram CD de magia e sugestão de bônus |
 | Rolagem secreta é local: nada é logado (nem para o mestre) | #267 | Zero risco de vazamento e zero backend; o custo (sem histórico) está explicado no HelpHint |
 | Versão da app segue SemVer e é bumpada no `main-dev` antes de cada promoção | #267 | O badge só é útil no suporte se refletir o que está em produção |
+| Transferência de propriedade via RPC atômica; co-mestre continua fora (owner_id único) | #270 | Trocar dono não exige reescrever policy alguma; co-mestre exigiria e é frente própria |
+| Nenhum hook depois de return condicional (regra do lint não pode ser silenciada) | #270 | O `eslint-disable` escondia um crash que só aparece quando a condição muda com o componente montado |
 
 ---
 
@@ -2040,10 +2068,14 @@ New from Auth signup + Camp.1-5:
 
 - ~~**OQ — Auth signup flow quebrado.**~~ *Resolved. Dual mode signin/signup in /login. PR #127.*
 - ~~**OQ — Sistema de Campanhas.**~~ *Resolved. Camp.1-5 delivered (PRs #125–#130). Remaining OQs listed below.*
-- **OQ — Transfer ownership de campanha.** Mestre passa a campanha pra outro membro. Deferred to future sub-phase.
+- ~~**OQ — Transfer ownership de campanha.**~~ *Resolved (PR #270).* RPC atômica + ação no menu de membros; o dono antigo vira `player`.
 - **OQ — Realtime via Supabase Channels.** Upgrade do polling 15s pra subscribe em mudanças de chars vinculados. Deferred.
 - **OQ — QR code do convite.** Geração visual de QR code com o link de convite. Deferred.
-- **OQ — Promote player to master.** Multi-master support. Não modelado.
+- **OQ — Co-mestre (promover jogador a mestre).** Hoje `owner_id` é único e **todas** as policies o usam;
+  o #270 trocou o dono sem tocar em policy alguma, mas suportar **múltiplos** masters exige trocar cada
+  policy por "é membro com `role='master'`" e revisar as ~103 referências a `isOwner` no client.
+  **Pré-requisito:** inventário das policies em produção
+  (`select tablename, policyname, cmd, qual from pg_policies where schemaname='public';`). Deferred.
 - ~~**OQ — Password reset / forgot password.**~~ *Resolved (PR #142).* Modo `forgot` no Login (mensagem neutra anti-enumeração) + página full-screen `ResetPassword` gated por `authCallbackType === 'recovery'` + tratamento de link expirado/usado (`otp_expired`) com banner âmbar e deep link `?mode=forgot`.
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
 - ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.

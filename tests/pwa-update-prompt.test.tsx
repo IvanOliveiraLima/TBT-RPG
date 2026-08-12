@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { I18nProvider } from '@/i18n'
 import { renderWithI18n } from './helpers/render'
 import { PwaUpdatePrompt } from '@/components/PwaUpdatePrompt'
+import { DismissibleBanner } from '@/components/DismissibleBanner'
 
 // Mock the virtual PWA register module — not a real file on disk
 vi.mock('virtual:pwa-register/react', () => ({
@@ -95,5 +98,69 @@ describe('PwaUpdatePrompt', () => {
     renderWithI18n(<PwaUpdatePrompt />)
     const callArg = mockUseRegisterSW.mock.calls[0]![0] as { onRegisteredSW?: unknown }
     expect(typeof callArg.onRegisteredSW).toBe('function')
+  })
+
+  it('container uses top (not bottom) for positioning', () => {
+    mockUseRegisterSW.mockReturnValue(makeHookReturn({ needRefresh: true }))
+    renderWithI18n(<PwaUpdatePrompt />, 'en')
+    const container = screen.getByTestId('pwa-prompt-container')
+    expect(container.style.top).toBeTruthy()
+    expect(container.style.bottom).toBe('')
+  })
+
+  it('passes solid prop to DismissibleBanner on update (opaque background)', () => {
+    mockUseRegisterSW.mockReturnValue(makeHookReturn({ needRefresh: true }))
+    renderWithI18n(<PwaUpdatePrompt />, 'en')
+    const banner = screen.getByRole('status')
+    // Solid variant uses #1E2A24, not the alpha rgba
+    expect(banner.style.background).not.toContain('rgba')
+  })
+
+  it('passes solid prop to DismissibleBanner on offline-ready (opaque background)', () => {
+    mockUseRegisterSW.mockReturnValue(makeHookReturn({ offlineReady: true }))
+    renderWithI18n(<PwaUpdatePrompt />, 'en')
+    const banner = screen.getByRole('status')
+    expect(banner.style.background).not.toContain('rgba')
+  })
+})
+
+// ── DismissibleBanner — solid variant ─────────────────────────────────────────
+
+describe('DismissibleBanner — solid variant', () => {
+  function renderBanner(solid?: boolean, tone: 'success' | 'error' = 'success') {
+    return render(
+      <MemoryRouter>
+        <I18nProvider>
+          <DismissibleBanner
+            title="Title"
+            message="Message"
+            onDismiss={vi.fn()}
+            tone={tone}
+            autoDismissMs={0}
+            solid={solid}
+          />
+        </I18nProvider>
+      </MemoryRouter>
+    )
+  }
+
+  it('uses opaque background when solid=true (success)', () => {
+    renderBanner(true, 'success')
+    expect(screen.getByRole('status').style.background).toBe('rgb(30, 42, 36)') // #1E2A24
+  })
+
+  it('uses opaque background when solid=true (error)', () => {
+    renderBanner(true, 'error')
+    expect(screen.getByRole('status').style.background).toBe('rgb(42, 35, 24)') // #2A2318
+  })
+
+  it('uses alpha background when solid is omitted (default)', () => {
+    renderBanner(undefined)
+    expect(screen.getByRole('status').style.background).toContain('rgba')
+  })
+
+  it('uses alpha background when solid=false', () => {
+    renderBanner(false)
+    expect(screen.getByRole('status').style.background).toContain('rgba')
   })
 })

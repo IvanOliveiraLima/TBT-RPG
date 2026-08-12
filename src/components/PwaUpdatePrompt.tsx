@@ -25,9 +25,10 @@ export function PwaUpdatePrompt() {
 
   return (
     <div
+      data-testid="pwa-prompt-container"
       style={{
         position: 'fixed',
-        bottom: 24,
+        top: 'calc(env(safe-area-inset-top, 0px) + 16px)',
         left: '50%',
         transform: 'translateX(-50%)',
         width: 'min(400px, calc(100vw - 32px))',
@@ -43,6 +44,7 @@ export function PwaUpdatePrompt() {
           onAction={() => { void updateServiceWorker(true) }}
           onDismiss={() => setNeedRefresh(false)}
           autoDismissMs={0}
+          solid
         />
       ) : (
         <DismissibleBanner
@@ -51,6 +53,7 @@ export function PwaUpdatePrompt() {
           message=""
           onDismiss={() => setOfflineReady(false)}
           autoDismissMs={5000}
+          solid
         />
       )}
     </div>

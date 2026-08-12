@@ -3,7 +3,7 @@
  *
  * Visibility rules:
  *   - Shows on own row (player: Edit name + Leave; owner: Edit name + Delete campaign)
- *   - Owner sees menu on other-player rows (action: Remove member)
+ *   - Owner sees menu on other-player rows (actions: Transfer ownership + Remove member)
  *   - No menu on other-master rows (owner is single, so only edge case is 2 masters — not supported)
  *   - No menu when there are no valid actions
  */
@@ -32,6 +32,7 @@ interface MemberRowMenuProps {
   onLeaveCampaign: () => void
   onDeleteCampaign: () => void
   onRemoveMember: () => void
+  onTransferOwnership: () => void
 }
 
 export function MemberRowMenu({
@@ -42,6 +43,7 @@ export function MemberRowMenu({
   onLeaveCampaign,
   onDeleteCampaign,
   onRemoveMember,
+  onTransferOwnership,
 }: MemberRowMenuProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -49,25 +51,21 @@ export function MemberRowMenu({
 
   const isSelf = member.userId === currentUserId
   const isMemberMaster = member.role === 'master'
-
   // Show menu only when there are actionable items
   const showMenu = isSelf || (isCurrentUserOwner && !isMemberMaster)
-  if (!showMenu) return null
 
-  const memberName = member.profile?.displayName ?? '?'
-
-  function handleOutside(e: MouseEvent) {
-    if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-      setOpen(false)
-    }
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!open) return
+    function handleOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false)
+    }
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [open])
+
+  if (!showMenu) return null            // ← after all hooks
+
+  const memberName = member.profile?.displayName ?? '?'
 
   return (
     <div
@@ -152,6 +150,18 @@ export function MemberRowMenu({
               style={menuItemStyle(true)}
             >
               {t('delete_campaign.confirm')}
+            </button>
+          )}
+
+          {/* Transfer ownership — other player row, viewed by owner */}
+          {!isSelf && isCurrentUserOwner && !isMemberMaster && (
+            <button
+              role="menuitem"
+              data-testid={`transfer-ownership-${member.userId}`}
+              onClick={e => { e.stopPropagation(); setOpen(false); onTransferOwnership() }}
+              style={menuItemStyle()}
+            >
+              {t('campaign_detail.transfer_action')}
             </button>
           )}
 

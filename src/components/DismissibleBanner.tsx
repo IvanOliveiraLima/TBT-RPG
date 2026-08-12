@@ -9,20 +9,24 @@ interface Props {
   onAction?: () => void
   /** 0 = no auto-dismiss */
   autoDismissMs?: number
+  /** Opaque background variant — for overlays where transparency would show content beneath */
+  solid?: boolean
 }
 
 const TONES = {
   success: {
-    bg:     'rgba(76,175,125,0.12)',
-    border: 'rgba(76,175,125,0.35)',
-    color:  '#4CAF7D',
-    icon:   '✓',
+    bg:      'rgba(76,175,125,0.12)',
+    bgSolid: '#1E2A24',
+    border:  'rgba(76,175,125,0.35)',
+    color:   '#4CAF7D',
+    icon:    '✓',
   },
   error: {
-    bg:     'rgba(239,159,39,0.12)',
-    border: 'rgba(239,159,39,0.35)',
-    color:  '#EF9F27',
-    icon:   '⚠',
+    bg:      'rgba(239,159,39,0.12)',
+    bgSolid: '#2A2318',
+    border:  'rgba(239,159,39,0.35)',
+    color:   '#EF9F27',
+    icon:    '⚠',
   },
 } as const
 
@@ -34,8 +38,9 @@ export function DismissibleBanner({
   actionLabel,
   onAction,
   autoDismissMs = 10000,
+  solid = false,
 }: Props) {
-  const { bg, border, color, icon } = TONES[tone]
+  const { bg, bgSolid, border, color, icon } = TONES[tone]
 
   useEffect(() => {
     if (autoDismissMs === 0) return
@@ -48,7 +53,7 @@ export function DismissibleBanner({
       role="status"
       onClick={onDismiss}
       style={{
-        background: bg,
+        background: solid ? bgSolid : bg,
         border: `1px solid ${border}`,
         borderRadius: 10,
         padding: '12px 16px',
@@ -56,6 +61,7 @@ export function DismissibleBanner({
         alignItems: 'flex-start',
         gap: 10,
         cursor: 'pointer',
+        ...(solid ? { boxShadow: '0 6px 24px rgba(0,0,0,0.45)' } : {}),
       }}
     >
       <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{icon}</span>
@@ -63,7 +69,7 @@ export function DismissibleBanner({
         <div style={{ fontSize: 14, fontWeight: 600, color, marginBottom: 2 }}>
           {title}
         </div>
-        <div style={{ fontSize: 13, color, opacity: 0.85 }}>
+        <div style={{ fontSize: 13, color, opacity: solid ? 1 : 0.85 }}>
           {message}
         </div>
         {actionLabel && onAction && (
