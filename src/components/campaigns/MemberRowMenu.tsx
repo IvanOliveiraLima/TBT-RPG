@@ -51,25 +51,21 @@ export function MemberRowMenu({
 
   const isSelf = member.userId === currentUserId
   const isMemberMaster = member.role === 'master'
-
   // Show menu only when there are actionable items
   const showMenu = isSelf || (isCurrentUserOwner && !isMemberMaster)
-  if (!showMenu) return null
 
-  const memberName = member.profile?.displayName ?? '?'
-
-  function handleOutside(e: MouseEvent) {
-    if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-      setOpen(false)
-    }
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (!open) return
+    function handleOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false)
+    }
     document.addEventListener('mousedown', handleOutside)
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [open])
+
+  if (!showMenu) return null            // ← after all hooks
+
+  const memberName = member.profile?.displayName ?? '?'
 
   return (
     <div

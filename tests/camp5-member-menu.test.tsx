@@ -254,6 +254,69 @@ describe('MemberRowMenu — visibility', () => {
   })
 })
 
+// ── MemberRowMenu — hooks ordering regression ─────────────────────────────────
+
+describe('MemberRowMenu — hooks before early return (crash regression)', () => {
+  beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
+
+  it('does not throw when isCurrentUserOwner changes from true to false while mounted', () => {
+    // Simulates what happens after ownership transfer: the row that was
+    // actionable (owner viewing another player) becomes non-actionable
+    // because the current user is no longer the owner.
+    const member = makeMember({ userId: 'u-player' })
+    const { rerender } = renderMenu({
+      member, currentUserId: 'u-owner', isCurrentUserOwner: true,
+      onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+    })
+    // Re-render with isCurrentUserOwner=false (transfer happened) — must not throw
+    expect(() =>
+      rerender(
+        <MemoryRouter>
+          <I18nProvider>
+            <MemberRowMenu
+              member={member}
+              currentUserId="u-owner"
+              isCurrentUserOwner={false}
+              onEditName={vi.fn()} onLeaveCampaign={vi.fn()}
+              onDeleteCampaign={vi.fn()} onRemoveMember={vi.fn()} onTransferOwnership={vi.fn()}
+            />
+          </I18nProvider>
+        </MemoryRouter>
+      )
+    ).not.toThrow()
+    // Menu is gone after re-render
+    expect(screen.queryByTestId('member-menu-trigger-u-player')).toBeNull()
+  })
+
+  it('closes an open menu when showMenu becomes false', async () => {
+    const member = makeMember({ userId: 'u-player' })
+    const { rerender } = renderMenu({
+      member, currentUserId: 'u-owner', isCurrentUserOwner: true,
+      onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
+      onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+    })
+    // Open the menu
+    await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
+    expect(screen.getByTestId('member-menu-dropdown-u-player')).toBeDefined()
+    // Lose owner permissions → showMenu becomes false → component returns null
+    rerender(
+      <MemoryRouter>
+        <I18nProvider>
+          <MemberRowMenu
+            member={member}
+            currentUserId="u-owner"
+            isCurrentUserOwner={false}
+            onEditName={vi.fn()} onLeaveCampaign={vi.fn()}
+            onDeleteCampaign={vi.fn()} onRemoveMember={vi.fn()} onTransferOwnership={vi.fn()}
+          />
+        </I18nProvider>
+      </MemoryRouter>
+    )
+    expect(screen.queryByTestId('member-menu-trigger-u-player')).toBeNull()
+  })
+})
+
 // ── EditDisplayNameModal ───────────────────────────────────────────────────────
 
 describe('EditDisplayNameModal', () => {
