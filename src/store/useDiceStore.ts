@@ -12,6 +12,7 @@ interface CampaignContext {
   campaignTargets: string[]
   actorName: string
   characterId?: string
+  isMaster?: boolean
 }
 
 interface DiceState {
@@ -35,6 +36,10 @@ interface DiceState {
   campaignTargets: string[]
   actorName: string
   characterId: string
+  isMaster: boolean
+  secretMode: boolean
+  toggleSecretMode: () => void
+  setSecretMode: (v: boolean) => void
   setCampaignContext: (ctx: CampaignContext) => void
   clearCampaignContext: () => void
 }
@@ -44,8 +49,8 @@ export const useDiceStore = create<DiceState>((set, get) => ({
   lastResult: null,
 
   addRoll: (result) => {
-    const { campaignTargets, actorName, characterId } = get()
-    if (campaignTargets.length > 0) {
+    const { campaignTargets, actorName, characterId, secretMode } = get()
+    if (!secretMode && campaignTargets.length > 0) {
       // fire-and-forget: import lazily to avoid circular dep at module load time
       void import('@/services/campaign-dice-log').then(({ logRoll }) =>
         logRoll(campaignTargets, actorName, result).catch(err => {
@@ -60,9 +65,10 @@ export const useDiceStore = create<DiceState>((set, get) => ({
         )
       }
     }
+    const stored = secretMode ? { ...result, secret: true as const } : result
     set((state) => ({
-      history: [result, ...state.history].slice(0, HISTORY_CAP),
-      lastResult: result,
+      history: [stored, ...state.history].slice(0, HISTORY_CAP),
+      lastResult: stored,
     }))
   },
 
@@ -83,7 +89,11 @@ export const useDiceStore = create<DiceState>((set, get) => ({
   campaignTargets: [],
   actorName: '',
   characterId: '',
-  setCampaignContext: ({ campaignTargets, actorName, characterId }) =>
-    set({ campaignTargets, actorName, characterId: characterId ?? '' }),
-  clearCampaignContext: () => set({ campaignTargets: [], actorName: '', characterId: '' }),
+  isMaster: false,
+  secretMode: false,
+  toggleSecretMode: () => set((state) => ({ secretMode: !state.secretMode })),
+  setSecretMode: (v) => set({ secretMode: v }),
+  setCampaignContext: ({ campaignTargets, actorName, characterId, isMaster }) =>
+    set({ campaignTargets, actorName, characterId: characterId ?? '', isMaster: isMaster ?? false }),
+  clearCampaignContext: () => set({ campaignTargets: [], actorName: '', characterId: '', isMaster: false, secretMode: false }),
 }))

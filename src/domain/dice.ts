@@ -25,6 +25,8 @@ export interface RollResult {
   notation: string
   label?: string
   kind?: RollKind
+  /** true = secret master roll; never logged to campaign log */
+  secret?: boolean
   dice: DieRoll[]
   modifier: number
   total: number

@@ -4,6 +4,7 @@ import { roll, doubleDiceCount } from '@/domain/dice'
 import type { RollResult } from '@/domain/dice'
 import { useDiceStore } from '@/store/useDiceStore'
 import { NumberField } from '@/components/primitives/NumberField'
+import { HelpHint } from '@/components/HelpHint'
 
 const T = {
   surface:      '#15121C',
@@ -149,6 +150,9 @@ export function DicePanel({ onClose }: DicePanelProps) {
   const lastResult = useDiceStore(s => s.lastResult)
   const critContext = useDiceStore(s => s.critContext)
   const clearCritContext = useDiceStore(s => s.clearCritContext)
+  const isMaster = useDiceStore(s => s.isMaster)
+  const secretMode = useDiceStore(s => s.secretMode)
+  const toggleSecretMode = useDiceStore(s => s.toggleSecretMode)
 
   const [selectedSides, setSelectedSides] = useState<DieSides>(20)
   const [quantity, setQuantity] = useState(1)
@@ -188,12 +192,12 @@ export function DicePanel({ onClose }: DicePanelProps) {
       style={{
         width: 300,
         background: T.panel,
-        border: `1px solid ${T.borderStrong}`,
+        border: `2px solid ${secretMode ? '#E67E22' : T.borderStrong}`,
         borderRadius: 14,
         padding: '16px 14px',
         fontFamily: T.sans,
         color: T.text,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+        boxShadow: secretMode ? '0 8px 32px rgba(230,126,34,0.35)' : '0 8px 32px rgba(0,0,0,0.5)',
         display: 'flex', flexDirection: 'column', gap: 12,
         maxHeight: '100%',
         overflow: 'hidden',
@@ -212,6 +216,27 @@ export function DicePanel({ onClose }: DicePanelProps) {
           ×
         </button>
       </div>
+
+      {/* Secret mode badge — visible at top when secretMode is active */}
+      {secretMode && (
+        <div
+          data-testid="dice-secret-badge"
+          style={{
+            background: 'rgba(230,126,34,0.15)',
+            border: '1px solid #E67E22',
+            borderRadius: 6,
+            padding: '4px 10px',
+            textAlign: 'center',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            color: '#E67E22',
+            flexShrink: 0,
+          }}
+        >
+          {t('dice.secret_badge')}
+        </div>
+      )}
 
       {/* Die selector */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flexShrink: 0 }}>
@@ -308,6 +333,28 @@ export function DicePanel({ onClose }: DicePanelProps) {
         </div>
       )}
 
+      {/* Secret mode toggle — master only */}
+      {isMaster && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <button
+            data-testid="dice-secret-toggle"
+            onClick={toggleSecretMode}
+            style={{
+              ...btnBase,
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: 12,
+              background: secretMode ? 'rgba(230,126,34,0.2)' : 'rgba(255,255,255,0.06)',
+              color: secretMode ? '#E67E22' : T.textMuted,
+              border: `1px solid ${secretMode ? '#E67E22' : T.border}`,
+            }}
+          >
+            🔒 {t('dice.secret_toggle')}
+          </button>
+          <HelpHint textKey="dice.secret_help" />
+        </div>
+      )}
+
       {/* Roll button */}
       <button
         data-testid="roll-btn"
@@ -376,12 +423,24 @@ export function DicePanel({ onClose }: DicePanelProps) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '4px 8px',
                   background: T.surface,
-                  border: `1px solid ${T.border}`,
+                  border: `1px solid ${r.secret ? 'rgba(230,126,34,0.4)' : T.border}`,
                   borderRadius: 6,
                   fontSize: 12,
                 }}
               >
-                <span style={{ color: T.textSub }}>{r.label ?? r.notation}</span>
+                <span style={{ color: T.textSub, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {r.secret && (
+                    <span
+                      data-testid="history-secret-marker"
+                      title={t('dice.secret_roll_marker')}
+                      aria-label={t('dice.secret_roll_marker')}
+                      style={{ fontSize: 10, color: '#E67E22' }}
+                    >
+                      🔒
+                    </span>
+                  )}
+                  {r.label ?? r.notation}
+                </span>
                 <span style={{ fontWeight: 700, color: r.crit === 'hit' ? T.green : r.crit === 'miss' ? T.rubyLight : T.text }}>
                   {r.total}
                 </span>
