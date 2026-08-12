@@ -35,6 +35,14 @@ npm run knip       # Dead code / unused exports / deps audit
 
 CI runs lint + test + build on PRs to `main-dev` and `master`.
 
+**Ritual de promoção (`main-dev` → `master`):**
+1. Revisar `git diff master...main-dev --stat` (o que exatamente sobe).
+2. **Bump da versão** em `package.json` no `main-dev`: **MINOR** (`2.x.0`) quando a promoção leva
+   funcionalidade; **PATCH** (`2.x.y`) quando leva só correção/polimento.
+3. Promover e conferir o badge de versão em produção.
+> O badge lê `__APP_VERSION__` (injetado do `package.json`). Sem o passo 2, o número congela e perde a
+> utilidade para suporte ("qual versão aparece no menu?").
+
 To redeploy the Cloudflare Worker (manual step — not in CI):
 
 ```bash
@@ -1127,6 +1135,16 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - Regressão coberta com fixture de nível 9 e valores armazenados propositalmente obsoletos
   (`proficiencyBonus: 2`, `spellSaveDC: 12`).
 
+### Dados — rolagem secreta do mestre (COMPLETED — PR #267)
+- `RollResult.secret?`; store ganha `isMaster` (vindo do contexto de campanha do dono) e `secretMode`
+  (grudento). Toggle 🔒 no `DicePanel` **só para o mestre**, com borda âmbar + badge "SEGREDO" enquanto ativo
+  e marcador por entrada no histórico.
+- Em modo secreto o `addRoll` **pula os dois efeitos remotos** (`logRoll` **e** `registerInitiative`) — nada
+  sai do dispositivo. Jogadores não veem nada.
+- **Abordagem local (sem backend):** a rolagem não é registrada em lugar nenhum, nem para o mestre, e some ao
+  recarregar (o histórico da bandeja é em memória). `HelpHint` explica isso explicitamente.
+- `clearCampaignContext` reseta `secretMode` e `isMaster` — sair da campanha nunca deixa o segredo ligado.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1871,6 +1889,8 @@ function buildInviteLink(): string {
 | Mudar a grade não reposiciona tokens; realinhar é ação explícita do dono | #259 | Nunca mover peças do mestre sem que ele peça |
 | Filtro de munição preserva o item já vinculado (fora da categoria) | #263 | Trocar o critério de um seletor não pode invalidar dados configurados antes |
 | Valores derivados são sempre recalculados; campos derivados armazenados são LEGADO e não podem ser lidos na UI | #264 | Eles não são atualizados ao subir de nível — leram obsoleto e quebraram CD de magia e sugestão de bônus |
+| Rolagem secreta é local: nada é logado (nem para o mestre) | #267 | Zero risco de vazamento e zero backend; o custo (sem histórico) está explicado no HelpHint |
+| Versão da app segue SemVer e é bumpada no `main-dev` antes de cada promoção | #267 | O badge só é útil no suporte se refletir o que está em produção |
 
 ---
 
@@ -2040,7 +2060,11 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Régua / medir distância.**~~ *Resolved (PR #244).* Modo régua efêmero (mestre), reusando a
   medição da área-linha; espelhado no broadcast local.
 - **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
-- **OQ — Rolagem secreta do mestre.** Hoje toda rolagem em campanha é pública pra mesa; permitir que o mestre role escondido (só ele vê). Deferred.
+- ~~**OQ — Rolagem secreta do mestre.**~~ *Resolved (PR #267).* Toggle 🔒 no `DicePanel` só para o mestre; em modo secreto `addRoll` pula `logRoll` e `registerInitiative`; histórico local com marcador; `HelpHint` explica a ausência de registro.
+- **OQ — Rolagem secreta persistida (abordagem B).** Hoje a rolagem secreta é local e não fica registrada.
+  Alternativa: coluna `secret` em `campaign_dice_rolls` + RLS `secret = false OR user_id = auth.uid()`, dando
+  ao mestre histórico próprio (marcado) sem expor aos jogadores. Avaliar se a falta de histórico incomodar no
+  uso. Deferred.
 - **OQ — Realtime para o tracker de iniciativa (e ping).** O refresh do tracker é por polling de 5s com
   janela de carência (não Realtime). Consequência: mestre editando sem parar só vê a rolagem do jogador ao
   pausar >4s. Candidato a Supabase Realtime channels no futuro, junto do ping (mesma dependência).
