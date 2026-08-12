@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getCampaign, listCampaignMembers, removeMember } from '@/services/campaign'
+import { getCampaign, listCampaignMembers, removeMember, transferCampaignOwnership } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
 import { unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { fetchLinkedCharactersDetails } from '@/services/campaign-view'
@@ -15,6 +15,7 @@ import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCa
 import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
 import { EditDisplayNameModal } from '@/components/campaigns/EditDisplayNameModal'
 import { ConfirmRemoveMemberModal } from '@/components/campaigns/ConfirmRemoveMemberModal'
+import { ConfirmTransferOwnershipModal } from '@/components/campaigns/ConfirmTransferOwnershipModal'
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import { TokenPresetsSection } from '@/components/campaigns/TokenPresetsSection'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
@@ -54,6 +55,7 @@ export default function CampaignDetail() {
   const [leaveModalOpen, setLeaveModalOpen] = useState(false)
   const [editNameOpen, setEditNameOpen] = useState(false)
   const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
+  const [pendingTransfer, setPendingTransfer] = useState<EnrichedMember | null>(null)
   const [diceOpen, setDiceOpen] = useState(false)
   const setCampaignContext   = useDiceStore(s => s.setCampaignContext)
   const clearCampaignContext = useDiceStore(s => s.clearCampaignContext)
@@ -322,6 +324,7 @@ export default function CampaignDetail() {
                     onLeaveCampaign={() => setLeaveModalOpen(true)}
                     onDeleteCampaign={() => setDeleteModalOpen(true)}
                     onRemoveMember={() => setPendingRemoveMember(m)}
+                    onTransferOwnership={() => setPendingTransfer(m)}
                   />
                 </div>
               </div>
@@ -468,6 +471,25 @@ export default function CampaignDetail() {
             await loadCampaignData(id)
           }}
           onCancel={() => setPendingRemoveMember(null)}
+        />
+      )}
+
+      {pendingTransfer && id && (
+        <ConfirmTransferOwnershipModal
+          member={pendingTransfer}
+          onConfirm={async () => {
+            const result = await transferCampaignOwnership(id, pendingTransfer.userId)
+            if (!result.ok) {
+              throw new Error(result.error)
+            }
+            setPendingTransfer(null)
+            const [c] = await Promise.all([
+              getCampaign(id),
+              loadCampaignData(id),
+            ])
+            if (c) setCampaign(c)
+          }}
+          onCancel={() => setPendingTransfer(null)}
         />
       )}
 

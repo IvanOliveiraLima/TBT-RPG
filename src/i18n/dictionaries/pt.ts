@@ -840,6 +840,13 @@ const pt: Record<keyof typeof en, string> = {
   'remove_member.removing': 'Removendo…',
   'remove_member.error':    'Não foi possível remover. Tente novamente.',
 
+  // Transfer ownership
+  'campaign_detail.transfer_action':  'Transferir propriedade',
+  'campaign_detail.transfer_title':   'Transferir propriedade?',
+  'campaign_detail.transfer_warning': '{name} passará a ser o dono da campanha. Você vira jogador e perde as permissões de mestre — só o novo dono poderá transferir de volta.',
+  'campaign_detail.transfer_confirm': 'Transferir',
+  'campaign_detail.transfer_error':   'Não foi possível transferir a propriedade. Tente novamente.',
+
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',
   'aria.edit_display_name_input':  'Nome de exibição',
