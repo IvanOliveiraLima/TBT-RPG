@@ -62,6 +62,7 @@ PWA instalável.
 - **Viewer responsivo no celular** — no mobile a barra de ferramentas vira um menu ☰ e os painéis viram bottom sheets, com uma superfície aberta por vez; no desktop nada muda
 - **Régua** — o mestre mede distância no mapa (arrasta dois pontos; mostra pés/quadrados)
 - **Visibilidade de mapas** — o mestre prepara mapas ocultos e publica um a um quando quiser revelá-los aos jogadores
+- **Transferir propriedade** — o mestre pode passar a campanha para outro membro; ele passa a jogador
 
 **Sincronização (opcional):**
 
@@ -94,7 +95,6 @@ PWA instalável.
 - **Polish sync** — persistent error state, manual refresh button, edge cases
 - **Auth status interativo** — click no badge abre menu (sair, conta, etc.)
 - **Worker AI expansion** — incluir items e magias na geração de personagem
-- **Transfer ownership de campanha** — Mestre passa a campanha pra outro membro
 - **Realtime via Supabase Channels** — Substituir polling por subscribe em mudanças
 - **QR code do convite** — Geração visual de QR code com o link de convite
 
@@ -111,7 +111,6 @@ PWA instalável.
 - **Spellcasting ability única por character** — multiclass spellcasters com
   abilities diferentes anotam no description.
 - **Polling de campanha a 15s** — Mestre vê edições do jogador com até 15s de atraso.
-- **Mestre não pode transferir ownership** — Apenas excluir a campanha.
 - **Sem QR code do convite** — Apenas código texto + link copiável.
 
 ### Stack
