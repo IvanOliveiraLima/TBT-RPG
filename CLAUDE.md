@@ -309,6 +309,14 @@ This order matters: components built on a broken adapter produce invisible data 
   RLS**, fazendo qualquer escrita passar sem significado. Rodar o **bloco inteiro** (com uma linha
   selecionada, o editor executa só ela e o `set_config` não vale). E lembrar que corpos de função `language
   sql` são **texto**: renomear uma função **não** atualiza quem a chama por dentro.
+- **Componente montado em duplicidade + listener global:** quando um componente pode existir em **mais de uma
+  instância** simultânea (o `SheetLayout` monta os dois shells e esconde um por CSS), qualquer listener em
+  `document` de uma instância "vê" os cliques das outras. Se a ação for compartilhada (store), uma instância
+  oculta consegue derrubar o estado da visível. Regras: (a) ignore cliques em **qualquer** instância do próprio
+  componente, não só na sua (`closest` por `data-testid`, além do `contains` do ref); (b) marque com um único
+  atributo (`data-dice-ui`) o **cluster** de controles que pertence logicamente ao componente mas vive fora
+  dele; (c) lembre que portais (tooltips) ficam fora da árvore. **No teste, monte DUAS instâncias** — um teste
+  de clique-fora com uma instância passa mesmo com o bug (foi assim que ele escapou no #260).
 
 ### internationalization (i18n)
 
@@ -1201,6 +1209,18 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   aceitar co-mestre como alvo). `listMyCampaigns` devolve `myRole`, então o card do co-mestre mostra "Mestre".
 - Prop `isCurrentUserOwner` do `LinkedCharCard` renomeada para `isMaster` (nome herdado de quando dono e
   mestre eram a mesma coisa).
+
+### Correção — bandeja de dados fechava ao usar os próprios controles (COMPLETED — PR #278)
+- **Causa principal:** `SheetLayout` renderiza **`MobileShell` e `DesktopShell` ao mesmo tempo** (media query
+  CSS esconde um), então a ficha mantém **duas instâncias** do `DicePanel` montadas. Cada uma registra seu
+  listener de `mousedown` com o próprio `panelRef`; ao clicar num botão do painel **visível**, o listener do
+  painel **oculto** concluía "clique fora" e chamava o `close()` do store (compartilhado) → fechava os dois.
+  Na campanha só existe **uma** instância, por isso o bug não aparecia lá.
+- Causas secundárias: o seletor de modo **N/V/D** vive no container do FAB (fora do painel) e só o FAB tinha o
+  marcador; e o balão do `HelpHint` é renderizado em **portal no `body`**.
+- **Fix:** o listener aborta o fechamento em quatro casos — clique na própria instância (`contains`), em
+  **qualquer** instância do painel (`[data-testid="dice-panel"]`), no cluster de dados (`[data-dice-ui]`,
+  agora no **container** do FAB+seletor, substituindo `data-dice-toggle`) e em tooltips (`[role="tooltip"]`).
 
 ---
 
@@ -2178,6 +2198,14 @@ New from Combat polish (#253–#256):
 - **OQ — Auto-vínculo de munição.** Ao importar arma à distância (ou trocar o tipo para "à distância"),
   vincular automaticamente quando existir **exatamente um** item na categoria Munição; com dois ou mais,
   manter "Nenhuma". Deferred.
+
+New from bugfix #278 (bandeja de dados):
+
+- **OQ — `SheetLayout` deveria montar um shell só.** Hoje `MobileShell` e `DesktopShell` são renderizados
+  simultaneamente e a media query esconde um, o que **renderiza a ficha inteira duas vezes** (efeitos,
+  listeners e assinaturas de store duplicados) e já causou o bug do #278. Trocar por `useIsMobile()` para
+  montar apenas o shell ativo. Suspeitar dessa duplicação em bugs futuros de estado compartilhado na ficha.
+  Deferred.
 
 ---
 
