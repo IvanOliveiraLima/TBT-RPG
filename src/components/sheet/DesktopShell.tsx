@@ -130,7 +130,7 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
       )}
 
       {/* Dice FAB + mode selector */}
-      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      <div data-dice-ui style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
         {/* Roll mode selector */}
         <div style={{ display: 'flex', gap: 3 }}>
           {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
@@ -162,7 +162,6 @@ export function DesktopShell({ character, activeTab, onTabChange, children }: De
         </div>
         <button
           data-testid="dice-fab"
-          data-dice-toggle
           onClick={toggle}
           title={t('dice.title')}
           style={{

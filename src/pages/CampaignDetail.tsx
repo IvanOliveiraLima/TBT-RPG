@@ -536,7 +536,7 @@ export default function CampaignDetail() {
         <button
           type="button"
           data-testid="campaign-detail-dice-fab"
-          data-dice-toggle
+          data-dice-ui
           onClick={() => setDiceOpen(v => !v)}
           title={t('dice.title')}
           style={{
