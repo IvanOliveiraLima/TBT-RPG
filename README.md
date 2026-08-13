@@ -63,6 +63,7 @@ PWA instalável.
 - **Régua** — o mestre mede distância no mapa (arrasta dois pontos; mostra pés/quadrados)
 - **Visibilidade de mapas** — o mestre prepara mapas ocultos e publica um a um quando quiser revelá-los aos jogadores
 - **Transferir propriedade** — o mestre pode passar a campanha para outro membro; ele passa a jogador
+- **Co-mestre** — o dono pode promover jogadores a mestre (e rebaixar); co-mestres gerenciam mapas, tokens, iniciativa e rolam em segredo, mas não podem deletar nem transferir a campanha
 
 **Sincronização (opcional):**
 
