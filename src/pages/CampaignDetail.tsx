@@ -419,7 +419,7 @@ export default function CampaignDetail() {
                   key={detail.characterId}
                   detail={detail}
                   campaignId={id!}
-                  isCurrentUserOwner={isMaster}
+                  isMaster={isMaster}
                   currentUserId={user?.id ?? null}
                   onUnlink={() => handleUnlink(detail.characterId)}
                 />

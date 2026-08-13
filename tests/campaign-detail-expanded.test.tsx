@@ -102,12 +102,12 @@ vi.mock('@/components/campaigns/InviteCodeBlock', () => ({
 // ── Mock LinkedCharCard to avoid complex rendering ───────────────────────────
 
 vi.mock('@/components/campaigns/LinkedCharCard', () => ({
-  LinkedCharCard: ({ detail, onUnlink, currentUserId, isCurrentUserOwner }: {
-    detail: LinkedCharacterDetails; onUnlink: () => void; currentUserId: string | null; isCurrentUserOwner: boolean; campaignId: string
+  LinkedCharCard: ({ detail, onUnlink, currentUserId, isMaster }: {
+    detail: LinkedCharacterDetails; onUnlink: () => void; currentUserId: string | null; isMaster: boolean; campaignId: string
   }) => (
     <div data-testid={`linked-char-${detail.characterId}`}>
       <span>{detail.character?.name ?? 'Unknown character'}</span>
-      {(isCurrentUserOwner || currentUserId === detail.ownerUserId) && (
+      {(isMaster || currentUserId === detail.ownerUserId) && (
         <button
           data-testid={`unlink-char-${detail.characterId}`}
           onClick={(e) => { e.stopPropagation(); void onUnlink() }}
@@ -382,7 +382,7 @@ describe('CampaignDetail — char card navigation', () => {
 
   // Navigation is handled inside LinkedCharCard (tested in linked-char-card.test.tsx).
   // CampaignDetail is responsible for rendering LinkedCharCard with the correct props
-  // (campaignId, detail, isCurrentUserOwner, currentUserId). The tests below verify that
+  // (campaignId, detail, isMaster, currentUserId). The tests below verify that
   // the cards are rendered and that the unlink button does not cause unwanted navigation
   // at the CampaignDetail level.
 
