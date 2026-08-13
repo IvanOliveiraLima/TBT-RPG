@@ -303,6 +303,12 @@ This order matters: components built on a broken adapter produce invisible data 
   diferentes **sem desmontar**. Garanta que todos os hooks rodem antes de qualquer `return` condicional e
   teste re-renderizando o mesmo componente com a permissão invertida — é o cenário que os testes de montagem
   isolada não cobrem.
+- **Validar RLS no SQL editor exige duas coisas:** `select set_config('request.jwt.claims',
+  json_build_object('sub','<uid>')::text, true)` **e** `set local role authenticated` — sem o `set_config`,
+  `auth.uid()` é NULL e tudo dá `false`; sem o `set local role`, o editor roda como `postgres` e **ignora
+  RLS**, fazendo qualquer escrita passar sem significado. Rodar o **bloco inteiro** (com uma linha
+  selecionada, o editor executa só ela e o `set_config` não vale). E lembrar que corpos de função `language
+  sql` são **texto**: renomear uma função **não** atualiza quem a chama por dentro.
 
 ### internationalization (i18n)
 
@@ -1171,6 +1177,31 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - O aviso de nova versão passou do rodapé para o **topo**, com `env(safe-area-inset-top)` (não fica atrás da
   barra de status) e fundo opaco.
 
+### Campanhas — co-mestre: base SQL (COMPLETED — PR #274)
+- **Achado que dimensionou a frente:** as 21 policies de ação de mestre já passavam por **duas funções**
+  (`is_campaign_owner`, `is_map_owner`) e nenhuma precisava ser exclusiva do dono. `ALTER FUNCTION … RENAME
+  TO` preserva as policies (elas referenciam a função por **OID**), então bastou renomear para
+  `is_campaign_master`/`is_map_master` e trocar os corpos — **zero policy reescrita**.
+- Novo significado: **dono OU membro com `role='master'`**. Policies que citavam `owner_id` ajustadas:
+  mapas (mestre vê não publicados), desvincular qualquer char, inserir membro, remover membro
+  (mestre remove **jogador**; só o dono remove **mestre**), e `campaigns UPDATE`.
+- **Trigger `guard_campaign_owner_change`**: como `campaigns UPDATE` foi alargado para mestres, sem ele um
+  co-mestre poderia `set owner_id = <ele>` — escalada de privilégio. O trigger só permite a troca pelo dono
+  (a RPC de transferência do #270 continua funcionando).
+- Exclusivos do dono: deletar campanha, transferir propriedade, promover/rebaixar.
+
+### Campanhas — co-mestre: promover/rebaixar + gates (COMPLETED — PR #275)
+- RPC `set_campaign_member_role` (**owner-only**): valida papel válido, que o chamador é o dono, que o alvo é
+  membro, e **impede o dono de mudar o próprio papel** (a campanha nunca fica sem mestre).
+  `campaign_members` **não tem policy de UPDATE** — de propósito: papel só muda por essa RPC.
+- Client passa a distinguir **dois níveis**: `isMaster` governa as ações de mestre (convite, mapas incl. não
+  publicados, tokens/presets, iniciativa, log, desvincular char, contexto "Mestre" da bandeja → **rolagem
+  secreta**); `isOwner` segue governando deletar campanha, transferir e promover/rebaixar.
+- `MemberRowMenu` ganhou os dois níveis (o dono alcança linhas de co-mestre para rebaixar; transferir passou a
+  aceitar co-mestre como alvo). `listMyCampaigns` devolve `myRole`, então o card do co-mestre mostra "Mestre".
+- Prop `isCurrentUserOwner` do `LinkedCharCard` renomeada para `isMaster` (nome herdado de quando dono e
+  mestre eram a mesma coisa).
+
 ---
 
 ## Patterns established during C.1.c
@@ -1919,6 +1950,9 @@ function buildInviteLink(): string {
 | Versão da app segue SemVer e é bumpada no `main-dev` antes de cada promoção | #267 | O badge só é útil no suporte se refletir o que está em produção |
 | Transferência de propriedade via RPC atômica; co-mestre continua fora (owner_id único) | #270 | Trocar dono não exige reescrever policy alguma; co-mestre exigiria e é frente própria |
 | Nenhum hook depois de return condicional (regra do lint não pode ser silenciada) | #270 | O `eslint-disable` escondia um crash que só aparece quando a condição muda com o componente montado |
+| Permissão de mestre centralizada em `is_campaign_master`/`is_map_master` | #274 | Ponto único: 21 policies mudam de significado sem serem reescritas |
+| `campaigns UPDATE` liberado para mestres + trigger que só o dono troca `owner_id` | #274 | Sem o trigger, alargar o UPDATE seria escalada de privilégio |
+| Papel de membro muda só via RPC owner-only; dono não muda o próprio papel | #275 | Sem policy de UPDATE em `campaign_members`; garante ao menos um mestre por campanha |
 
 ---
 
@@ -2071,11 +2105,13 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Transfer ownership de campanha.**~~ *Resolved (PR #270).* RPC atômica + ação no menu de membros; o dono antigo vira `player`.
 - **OQ — Realtime via Supabase Channels.** Upgrade do polling 15s pra subscribe em mudanças de chars vinculados. Deferred.
 - **OQ — QR code do convite.** Geração visual de QR code com o link de convite. Deferred.
-- **OQ — Co-mestre (promover jogador a mestre).** Hoje `owner_id` é único e **todas** as policies o usam;
-  o #270 trocou o dono sem tocar em policy alguma, mas suportar **múltiplos** masters exige trocar cada
-  policy por "é membro com `role='master'`" e revisar as ~103 referências a `isOwner` no client.
-  **Pré-requisito:** inventário das policies em produção
-  (`select tablename, policyname, cmd, qual from pg_policies where schemaname='public';`). Deferred.
+- ~~**OQ — Co-mestre (promover jogador a mestre).**~~ *Resolved (PRs #274, #275).* `is_campaign_master`/
+  `is_map_master` + trigger anti-escalada + RPC `set_campaign_member_role` (owner-only); client com
+  `isMaster` × `isOwner`.
+- **OQ — Renomear props herdadas de "owner" para "master".** Vários componentes ainda recebem
+  `isOwner`/`isCurrentUserOwner` mas representam **mestre** (`InviteCodeBlock`, `TokenPresetsSection`,
+  `CampaignMapsSection`, `CampaignRollLog`, `CampaignMapViewer`, `CampaignInitiativePanel`). Rename cosmético,
+  porém importante: o nome errado já produziu confusão na revisão do #275. Deferred.
 - ~~**OQ — Password reset / forgot password.**~~ *Resolved (PR #142).* Modo `forgot` no Login (mensagem neutra anti-enumeração) + página full-screen `ResetPassword` gated por `authCallbackType === 'recovery'` + tratamento de link expirado/usado (`otp_expired`) com banner âmbar e deep link `?mode=forgot`.
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
 - ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.
