@@ -48,6 +48,7 @@ vi.mock('@/services/campaign', () => ({
   listCampaignMembers: (...args: unknown[]) => mockListCampaignMembers(...args),
   removeMember: (...args: unknown[]) => mockRemoveMember(...args),
   transferCampaignOwnership: vi.fn().mockResolvedValue({ ok: true }),
+  setCampaignMemberRole: vi.fn().mockResolvedValue({ ok: true }),
   CampaignServiceError: class CampaignServiceError extends Error {
     constructor(public code: string) { super(code) }
   },
@@ -100,12 +101,28 @@ function makeMember(overrides: Partial<CampaignMember & { profile: UserProfile |
   }
 }
 
-function renderMenu(props: Parameters<typeof MemberRowMenu>[0]) {
+type RenderMenuProps = Omit<
+  Parameters<typeof MemberRowMenu>[0],
+  'isCurrentUserMaster' | 'onPromoteToMaster' | 'onDemoteToPlayer'
+> & {
+  isCurrentUserMaster?: boolean
+  onPromoteToMaster?: ReturnType<typeof vi.fn>
+  onDemoteToPlayer?: ReturnType<typeof vi.fn>
+}
+
+function renderMenu(props: RenderMenuProps) {
   localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+  // Default: owner is always also a master; non-owner defaults to non-master.
+  const isCurrentUserMaster = props.isCurrentUserMaster ?? props.isCurrentUserOwner
   return render(
     <MemoryRouter>
       <I18nProvider>
-        <MemberRowMenu {...props} />
+        <MemberRowMenu
+          isCurrentUserMaster={isCurrentUserMaster}
+          onPromoteToMaster={props.onPromoteToMaster ?? vi.fn()}
+          onDemoteToPlayer={props.onDemoteToPlayer ?? vi.fn()}
+          {...props}
+        />
       </I18nProvider>
     </MemoryRouter>
   )
@@ -158,15 +175,20 @@ describe('MemberRowMenu — visibility', () => {
     expect(screen.queryByTestId('member-delete-campaign-u-player')).toBeNull()
   })
 
-  it('does NOT render kebab on master row for owner (another master)', () => {
-    // Owner viewing another master row (edge case: 2 masters — no menu)
+  it('renders kebab on co-master row for owner (demote + transfer + remove)', async () => {
+    // Owner viewing a co-master row: can demote, transfer, and remove
     const member = makeMember({ userId: 'u-master2', role: 'master' })
-    const { container } = renderMenu({
+    renderMenu({
       member, currentUserId: 'u1', isCurrentUserOwner: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
     })
-    expect(container.firstChild).toBeNull()
+    await userEvent.click(screen.getByTestId('member-menu-trigger-u-master2'))
+    expect(screen.getByTestId('demote-player-u-master2')).toBeDefined()
+    expect(screen.getByTestId('transfer-ownership-u-master2')).toBeDefined()
+    expect(screen.getByTestId('member-remove-u-master2')).toBeDefined()
+    expect(screen.queryByTestId('promote-master-u-master2')).toBeNull()
+    expect(screen.queryByTestId('member-edit-name-u-master2')).toBeNull()
   })
 
   it('does NOT render kebab on other player row for player', () => {
@@ -278,8 +300,10 @@ describe('MemberRowMenu — hooks before early return (crash regression)', () =>
               member={member}
               currentUserId="u-owner"
               isCurrentUserOwner={false}
+              isCurrentUserMaster={false}
               onEditName={vi.fn()} onLeaveCampaign={vi.fn()}
               onDeleteCampaign={vi.fn()} onRemoveMember={vi.fn()} onTransferOwnership={vi.fn()}
+              onPromoteToMaster={vi.fn()} onDemoteToPlayer={vi.fn()}
             />
           </I18nProvider>
         </MemoryRouter>
@@ -307,8 +331,10 @@ describe('MemberRowMenu — hooks before early return (crash regression)', () =>
             member={member}
             currentUserId="u-owner"
             isCurrentUserOwner={false}
+            isCurrentUserMaster={false}
             onEditName={vi.fn()} onLeaveCampaign={vi.fn()}
             onDeleteCampaign={vi.fn()} onRemoveMember={vi.fn()} onTransferOwnership={vi.fn()}
+            onPromoteToMaster={vi.fn()} onDemoteToPlayer={vi.fn()}
           />
         </I18nProvider>
       </MemoryRouter>

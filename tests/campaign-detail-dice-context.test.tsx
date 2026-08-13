@@ -74,6 +74,7 @@ vi.mock('@/services/campaign', () => ({
   listCampaignMembers: (...args: unknown[]) => mockListCampaignMembers(...args),
   removeMember: vi.fn(),
   transferCampaignOwnership: vi.fn().mockResolvedValue({ ok: true }),
+  setCampaignMemberRole: vi.fn().mockResolvedValue({ ok: true }),
   CampaignServiceError: class extends Error {
     constructor(public code: string) { super(code) }
   },
