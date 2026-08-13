@@ -18,7 +18,7 @@ const T = {
 interface LinkedCharCardProps {
   detail: LinkedCharacterDetails
   campaignId: string
-  isCurrentUserOwner: boolean
+  isMaster: boolean
   currentUserId: string | null
   onUnlink: () => Promise<void>
 }
@@ -26,7 +26,7 @@ interface LinkedCharCardProps {
 export function LinkedCharCard({
   detail,
   campaignId,
-  isCurrentUserOwner,
+  isMaster,
   currentUserId,
   onUnlink,
 }: LinkedCharCardProps) {
@@ -65,7 +65,7 @@ export function LinkedCharCard({
   }, [detail.characterId, detail.ownerUserId, detail.character, imagesLoaded])
 
   const char = detail.character
-  const canUnlink = isCurrentUserOwner || (currentUserId != null && currentUserId === detail.ownerUserId)
+  const canUnlink = isMaster || (currentUserId != null && currentUserId === detail.ownerUserId)
 
   const name = char?.name ?? t('campaign_detail.unknown_character')
   const raceLabel = char?.race ?? null

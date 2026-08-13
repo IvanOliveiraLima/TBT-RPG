@@ -843,6 +843,9 @@ const en = {
   'campaign_detail.transfer_warning': "{name} will become the campaign owner. You'll become a player and lose master permissions — only the new owner can transfer it back.",
   'campaign_detail.transfer_confirm': 'Transfer',
   'campaign_detail.transfer_error':   'Could not transfer ownership. Please try again.',
+  'campaign_detail.promote_master':   'Promote to Master',
+  'campaign_detail.demote_player':    'Demote to Player',
+  'campaign_detail.role_change_error':'Could not change role. Please try again.',
 
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',

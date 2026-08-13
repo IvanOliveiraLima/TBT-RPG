@@ -3,9 +3,13 @@
  *
  * Visibility rules:
  *   - Shows on own row (player: Edit name + Leave; owner: Edit name + Delete campaign)
- *   - Owner sees menu on other-player rows (actions: Transfer ownership + Remove member)
- *   - No menu on other-master rows (owner is single, so only edge case is 2 masters — not supported)
- *   - No menu when there are no valid actions
+ *   - Master sees menu on player rows (Remove member)
+ *   - Owner sees menu on co-master rows (Demote + Remove + Transfer)
+ *   - Owner sees Transfer + Promote on player rows
+ *   - No menu on other rows without actionable items
+ *
+ * Hooks before any return — required by react-hooks/rules-of-hooks and critical
+ * to avoid crash when permissions change live (e.g. after ownership transfer).
  */
 
 import { useState, useRef, useEffect } from 'react'
@@ -28,22 +32,28 @@ interface MemberRowMenuProps {
   member: EnrichedMember
   currentUserId: string
   isCurrentUserOwner: boolean
+  isCurrentUserMaster: boolean
   onEditName: () => void
   onLeaveCampaign: () => void
   onDeleteCampaign: () => void
   onRemoveMember: () => void
   onTransferOwnership: () => void
+  onPromoteToMaster: () => void
+  onDemoteToPlayer: () => void
 }
 
 export function MemberRowMenu({
   member,
   currentUserId,
   isCurrentUserOwner,
+  isCurrentUserMaster,
   onEditName,
   onLeaveCampaign,
   onDeleteCampaign,
   onRemoveMember,
   onTransferOwnership,
+  onPromoteToMaster,
+  onDemoteToPlayer,
 }: MemberRowMenuProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -51,8 +61,14 @@ export function MemberRowMenu({
 
   const isSelf = member.userId === currentUserId
   const isMemberMaster = member.role === 'master'
-  // Show menu only when there are actionable items
-  const showMenu = isSelf || (isCurrentUserOwner && !isMemberMaster)
+  // Show menu when there are actionable items:
+  //   - own row (always has edit name + leave/delete)
+  //   - master acting on player rows
+  //   - owner acting on co-master rows (demote)
+  const showMenu =
+    isSelf
+    || (isCurrentUserMaster && !isMemberMaster)
+    || (isCurrentUserOwner && isMemberMaster && !isSelf)
 
   useEffect(() => {
     if (!open) return
@@ -153,8 +169,32 @@ export function MemberRowMenu({
             </button>
           )}
 
-          {/* Transfer ownership — other player row, viewed by owner */}
+          {/* Promote to master — owner on player row */}
           {!isSelf && isCurrentUserOwner && !isMemberMaster && (
+            <button
+              role="menuitem"
+              data-testid={`promote-master-${member.userId}`}
+              onClick={e => { e.stopPropagation(); setOpen(false); onPromoteToMaster() }}
+              style={menuItemStyle()}
+            >
+              {t('campaign_detail.promote_master')}
+            </button>
+          )}
+
+          {/* Demote to player — owner on co-master row */}
+          {!isSelf && isCurrentUserOwner && isMemberMaster && (
+            <button
+              role="menuitem"
+              data-testid={`demote-player-${member.userId}`}
+              onClick={e => { e.stopPropagation(); setOpen(false); onDemoteToPlayer() }}
+              style={menuItemStyle()}
+            >
+              {t('campaign_detail.demote_player')}
+            </button>
+          )}
+
+          {/* Transfer ownership — owner on any other member row */}
+          {!isSelf && isCurrentUserOwner && (
             <button
               role="menuitem"
               data-testid={`transfer-ownership-${member.userId}`}
@@ -165,8 +205,8 @@ export function MemberRowMenu({
             </button>
           )}
 
-          {/* Remove member — other player row, viewed by owner */}
-          {!isSelf && isCurrentUserOwner && (
+          {/* Remove member — master on player row, or owner on any non-self row */}
+          {!isSelf && ((isCurrentUserMaster && !isMemberMaster) || isCurrentUserOwner) && (
             <button
               role="menuitem"
               data-testid={`member-remove-${member.userId}`}

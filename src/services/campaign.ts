@@ -53,7 +53,28 @@ export async function listMyCampaigns(): Promise<Campaign[]> {
     throw new CampaignServiceError('list_failed')
   }
 
-  return (data ?? []).map(mapCampaignRow)
+  const campaigns = (data ?? []).map(mapCampaignRow)
+  if (campaigns.length === 0) return campaigns
+
+  // Merge myRole so CampaignCard can show the correct badge for co-masters.
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id
+  if (!userId) return campaigns
+
+  const { data: roles } = await supabase
+    .from('campaign_members')
+    .select('campaign_id, role')
+    .eq('user_id', userId)
+
+  if (roles && roles.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const roleMap = new Map(roles.map((r: any) => [r.campaign_id as string, r.role as 'master' | 'player']))
+    return campaigns.map(c => {
+      const myRole = roleMap.get(c.id)
+      return myRole !== undefined ? { ...c, myRole } : c
+    })
+  }
+  return campaigns
 }
 
 export async function getCampaign(id: string): Promise<Campaign | null> {
@@ -285,6 +306,24 @@ export async function transferCampaignOwnership(
   })
   if (error) {
     console.error('[campaign] transferOwnership error', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
+export async function setCampaignMemberRole(
+  campaignId: string,
+  userId: string,
+  role: 'master' | 'player',
+): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: 'offline' }
+  const { error } = await supabase.rpc('set_campaign_member_role', {
+    p_campaign_id: campaignId,
+    p_user_id: userId,
+    p_role: role,
+  })
+  if (error) {
+    console.error('[campaign] setMemberRole', error)
     return { ok: false, error: error.message }
   }
   return { ok: true }

@@ -846,6 +846,9 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.transfer_warning': '{name} passará a ser o dono da campanha. Você vira jogador e perde as permissões de mestre — só o novo dono poderá transferir de volta.',
   'campaign_detail.transfer_confirm': 'Transferir',
   'campaign_detail.transfer_error':   'Não foi possível transferir a propriedade. Tente novamente.',
+  'campaign_detail.promote_master':   'Promover a Mestre',
+  'campaign_detail.demote_player':    'Rebaixar a Jogador',
+  'campaign_detail.role_change_error':'Não foi possível alterar o papel. Tente novamente.',
 
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',

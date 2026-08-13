@@ -6,6 +6,7 @@ let mockSupabaseConfigured = false
 let mockSession: { user: { id: string } } | null = null
 
 const mockFrom = vi.fn()
+const mockRpc = vi.fn()
 const mockStorageList = vi.fn()
 const mockStorageRemove = vi.fn()
 
@@ -20,6 +21,7 @@ const mockClient = {
     ),
   },
   from: (...args: unknown[]) => mockFrom(...args),
+  rpc: (...args: unknown[]) => mockRpc(...args),
   storage: {
     from: (_bucket: string) => ({
       list: (prefix: string) => mockStorageList(prefix),
@@ -78,6 +80,7 @@ import {
   listCampaignMembers,
   updateAutoInitiative,
   getAutoInitiative,
+  setCampaignMemberRole,
   CampaignServiceError,
 } from '@/services/campaign'
 
@@ -190,15 +193,20 @@ describe('listMyCampaigns', () => {
   })
 
   it('returns mapped campaigns sorted by updated_at descending', async () => {
-    setupAuth()
+    setupAuth('u1')
     const rows = [
       { id: 'c2', name: 'B', description: null, owner_id: 'u1', created_at: '2024-01-02T00:00:00Z', updated_at: '2024-01-03T00:00:00Z' },
       { id: 'c1', name: 'A', description: null, owner_id: 'u1', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z' },
     ]
-    const selectChain = {
-      order: vi.fn().mockResolvedValue({ data: rows, error: null }),
-    }
-    mockFrom.mockReturnValue({ select: vi.fn().mockReturnValue(selectChain) })
+    // First call: campaigns table → select().order()
+    // Second call: campaign_members table → select().eq()
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'campaigns') {
+        return { select: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: rows, error: null }) }) }
+      }
+      // campaign_members: select().eq() → no roles → campaigns returned as-is
+      return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [], error: null }) }) }
+    })
 
     const result = await listMyCampaigns()
     expect(result).toHaveLength(2)
@@ -507,5 +515,37 @@ describe('getAutoInitiative', () => {
     const chain = makeChain({ data: null, error: { message: 'not found' } })
     mockFrom.mockReturnValue(chain)
     await expect(getAutoInitiative('c1')).resolves.toBe(false)
+  })
+})
+
+// ── setCampaignMemberRole ──────────────────────────────────────────────────────
+
+describe('setCampaignMemberRole', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('returns { ok: false, error: "offline" } when supabase is null', async () => {
+    resetAuth()
+    const result = await setCampaignMemberRole('c1', 'u2', 'master')
+    expect(result).toEqual({ ok: false, error: 'offline' })
+  })
+
+  it('calls rpc with correct params and returns { ok: true }', async () => {
+    setupAuth()
+    mockRpc.mockResolvedValue({ error: null })
+
+    const result = await setCampaignMemberRole('c1', 'u2', 'player')
+    expect(mockRpc).toHaveBeenCalledWith('set_campaign_member_role', {
+      p_campaign_id: 'c1', p_user_id: 'u2', p_role: 'player',
+    })
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('returns { ok: false } on RPC error without throwing', async () => {
+    setupAuth()
+    mockRpc.mockResolvedValue({ error: { message: 'not_owner' } })
+
+    const result = await setCampaignMemberRole('c1', 'u2', 'master')
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe('not_owner')
   })
 })
