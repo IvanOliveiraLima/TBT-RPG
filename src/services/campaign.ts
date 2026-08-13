@@ -69,7 +69,10 @@ export async function listMyCampaigns(): Promise<Campaign[]> {
   if (roles && roles.length > 0) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const roleMap = new Map(roles.map((r: any) => [r.campaign_id as string, r.role as 'master' | 'player']))
-    return campaigns.map(c => ({ ...c, myRole: roleMap.get(c.id) }))
+    return campaigns.map(c => {
+      const myRole = roleMap.get(c.id)
+      return myRole !== undefined ? { ...c, myRole } : c
+    })
   }
   return campaigns
 }

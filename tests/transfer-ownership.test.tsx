@@ -145,9 +145,10 @@ describe('MemberRowMenu — transfer ownership', () => {
   it('shows transfer item when owner views player row (EN)', async () => {
     renderMenu({
       member: makeMember({ userId: 'u-player' }),
-      currentUserId: 'u-owner', isCurrentUserOwner: true,
+      currentUserId: 'u-owner', isCurrentUserOwner: true, isCurrentUserMaster: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'en')
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
     expect(screen.getByTestId('transfer-ownership-u-player').textContent).toContain('Transfer ownership')
@@ -156,9 +157,10 @@ describe('MemberRowMenu — transfer ownership', () => {
   it('shows transfer item when owner views player row (PT)', async () => {
     renderMenu({
       member: makeMember({ userId: 'u-player' }),
-      currentUserId: 'u-owner', isCurrentUserOwner: true,
+      currentUserId: 'u-owner', isCurrentUserOwner: true, isCurrentUserMaster: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'pt')
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
     expect(screen.getByTestId('transfer-ownership-u-player').textContent).toContain('Transferir propriedade')
@@ -167,9 +169,10 @@ describe('MemberRowMenu — transfer ownership', () => {
   it('does NOT show transfer item on own row', async () => {
     renderMenu({
       member: makeMember({ userId: 'u-owner', role: 'master' }),
-      currentUserId: 'u-owner', isCurrentUserOwner: true,
+      currentUserId: 'u-owner', isCurrentUserOwner: true, isCurrentUserMaster: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'en')
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-owner'))
     expect(screen.queryByTestId('transfer-ownership-u-owner')).toBeNull()
@@ -178,30 +181,35 @@ describe('MemberRowMenu — transfer ownership', () => {
   it('does NOT show transfer item for non-owner (no menu at all)', () => {
     const { container } = renderMenu({
       member: makeMember({ userId: 'u-player' }),
-      currentUserId: 'u-other', isCurrentUserOwner: false,
+      currentUserId: 'u-other', isCurrentUserOwner: false, isCurrentUserMaster: false,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'en')
     expect(container.firstChild).toBeNull()
   })
 
-  it('does NOT show transfer item when target is already a master (no menu)', () => {
-    const { container } = renderMenu({
+  it('shows transfer item when owner views co-master row', async () => {
+    renderMenu({
       member: makeMember({ userId: 'u-master2', role: 'master' }),
-      currentUserId: 'u-owner', isCurrentUserOwner: true,
+      currentUserId: 'u-owner', isCurrentUserOwner: true, isCurrentUserMaster: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership: vi.fn(),
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'en')
-    expect(container.firstChild).toBeNull()
+    await userEvent.click(screen.getByTestId('member-menu-trigger-u-master2'))
+    expect(screen.getByTestId('transfer-ownership-u-master2')).toBeDefined()
+    expect(screen.queryByTestId('promote-master-u-master2')).toBeNull()
   })
 
   it('calls onTransferOwnership when transfer item is clicked', async () => {
     const onTransferOwnership = vi.fn()
     renderMenu({
       member: makeMember({ userId: 'u-player' }),
-      currentUserId: 'u-owner', isCurrentUserOwner: true,
+      currentUserId: 'u-owner', isCurrentUserOwner: true, isCurrentUserMaster: true,
       onEditName: vi.fn(), onLeaveCampaign: vi.fn(),
       onDeleteCampaign: vi.fn(), onRemoveMember: vi.fn(), onTransferOwnership,
+      onPromoteToMaster: vi.fn(), onDemoteToPlayer: vi.fn(),
     }, 'en')
     await userEvent.click(screen.getByTestId('member-menu-trigger-u-player'))
     await userEvent.click(screen.getByTestId('transfer-ownership-u-player'))
