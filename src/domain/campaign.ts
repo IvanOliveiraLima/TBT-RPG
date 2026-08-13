@@ -7,6 +7,8 @@ export interface Campaign {
   autoInitiative: boolean
   createdAt: number
   updatedAt: number
+  /** Role of the current user in this campaign (populated by listMyCampaigns). */
+  myRole?: 'master' | 'player'
 }
 
 export interface CampaignMember {

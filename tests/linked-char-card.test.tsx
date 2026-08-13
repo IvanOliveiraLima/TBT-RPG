@@ -95,7 +95,7 @@ const DETAIL_NO_DISPLAY_NAME: LinkedCharacterDetails = {
 interface RenderOptions {
   detail?: LinkedCharacterDetails
   campaignId?: string
-  isCurrentUserOwner?: boolean
+  isMaster?: boolean
   currentUserId?: string | null
   onUnlink?: () => Promise<void>
 }
@@ -103,7 +103,7 @@ interface RenderOptions {
 function renderCard({
   detail = DETAIL_WITH_CHAR,
   campaignId = 'c1',
-  isCurrentUserOwner = false,
+  isMaster = false,
   currentUserId = null,
   onUnlink = vi.fn().mockResolvedValue(undefined),
 }: RenderOptions = {}) {
@@ -114,7 +114,7 @@ function renderCard({
         <LinkedCharCard
           detail={detail}
           campaignId={campaignId}
-          isCurrentUserOwner={isCurrentUserOwner}
+          isMaster={isMaster}
           currentUserId={currentUserId}
           onUnlink={onUnlink}
         />
@@ -145,22 +145,22 @@ describe('LinkedCharCard', () => {
     )
   })
 
-  it('shows unlink button when isCurrentUserOwner=true', async () => {
-    renderCard({ isCurrentUserOwner: true })
+  it('shows unlink button when isMaster=true', async () => {
+    renderCard({ isMaster: true })
     await waitFor(() =>
       expect(screen.getByTestId('unlink-char-char1')).toBeDefined()
     )
   })
 
   it('shows unlink button when currentUserId equals detail.ownerUserId', async () => {
-    renderCard({ currentUserId: 'owner1', isCurrentUserOwner: false })
+    renderCard({ currentUserId: 'owner1', isMaster: false })
     await waitFor(() =>
       expect(screen.getByTestId('unlink-char-char1')).toBeDefined()
     )
   })
 
   it('does NOT show unlink button for non-owner, non-char-owner', async () => {
-    renderCard({ currentUserId: 'other_user', isCurrentUserOwner: false })
+    renderCard({ currentUserId: 'other_user', isMaster: false })
     await waitFor(() =>
       expect(screen.getByTestId('linked-char-char1')).toBeDefined()
     )
@@ -188,7 +188,7 @@ describe('LinkedCharCard', () => {
   it('clicking unlink button does NOT trigger card navigation (stopPropagation)', async () => {
     const { userEvent } = await import('@testing-library/user-event')
     const ue = userEvent.setup()
-    renderCard({ isCurrentUserOwner: true })
+    renderCard({ isMaster: true })
     await waitFor(() => expect(screen.getByTestId('unlink-char-char1')).toBeDefined())
     await ue.click(screen.getByTestId('unlink-char-char1'))
     // mockNavigate should NOT have been called for char view navigation
@@ -216,7 +216,7 @@ describe('LinkedCharCard', () => {
     const { userEvent } = await import('@testing-library/user-event')
     const ue = userEvent.setup()
     const onUnlink = vi.fn().mockResolvedValue(undefined)
-    renderCard({ isCurrentUserOwner: true, onUnlink })
+    renderCard({ isMaster: true, onUnlink })
     await waitFor(() => expect(screen.getByTestId('unlink-char-char1')).toBeDefined())
     await ue.click(screen.getByTestId('unlink-char-char1'))
     expect(onUnlink).toHaveBeenCalledOnce()
@@ -303,7 +303,7 @@ describe('LinkedCharCard — mobile layout', () => {
   })
 
   it('unlink button is still present on mobile (testid preserved)', async () => {
-    renderCard({ isCurrentUserOwner: true })
+    renderCard({ isMaster: true })
     await waitFor(() =>
       expect(screen.getByTestId('unlink-char-char1')).toBeDefined()
     )
