@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
-import { getCampaign, listCampaignMembers, removeMember, transferCampaignOwnership } from '@/services/campaign'
+import { getCampaign, listCampaignMembers, removeMember, transferCampaignOwnership, setCampaignMemberRole } from '@/services/campaign'
 import { listProfilesByIds } from '@/services/user-profile'
 import { unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { fetchLinkedCharactersDetails } from '@/services/campaign-view'
@@ -109,13 +109,16 @@ export default function CampaignDetail() {
     return () => { clearInterval(t) }
   }, [id, user, authLoading])
 
-  // Set campaign context so GM rolls on this page are logged as "Mestre" (owner only)
-  const isOwnerForContext = !loading && !authLoading && campaign != null && user?.id === campaign.ownerId
+  // Set campaign context so GM rolls on this page are logged as "Mestre" (master only —
+  // includes co-masters who also get secret rolls and the master badge).
+  const isMasterForContext = !loading && !authLoading && campaign != null &&
+    (user?.id === campaign.ownerId ||
+     members.find(m => m.userId === user?.id)?.role === 'master')
   useEffect(() => {
-    if (!isOwnerForContext || !id) return
+    if (!isMasterForContext || !id) return
     setCampaignContext({ campaignTargets: [id], actorName: t('dice_log.master'), isMaster: true })
     return () => { clearCampaignContext() }
-  }, [isOwnerForContext, id, setCampaignContext, clearCampaignContext, t])
+  }, [isMasterForContext, id, setCampaignContext, clearCampaignContext, t])
 
   async function handleUnlink(characterId: string) {
     if (!id) return
@@ -126,6 +129,26 @@ export default function CampaignDetail() {
     } catch {
       alert(t('campaign_chars.unlink_failed'))
     }
+  }
+
+  async function handlePromoteToMaster(member: EnrichedMember) {
+    if (!id) return
+    const result = await setCampaignMemberRole(id, member.userId, 'master')
+    if (!result.ok) {
+      alert(t('campaign_detail.role_change_error'))
+      return
+    }
+    await loadCampaignData(id)
+  }
+
+  async function handleDemoteToPlayer(member: EnrichedMember) {
+    if (!id) return
+    const result = await setCampaignMemberRole(id, member.userId, 'player')
+    if (!result.ok) {
+      alert(t('campaign_detail.role_change_error'))
+      return
+    }
+    await loadCampaignData(id)
   }
 
   if (authLoading || loading) {
@@ -166,6 +189,8 @@ export default function CampaignDetail() {
   }
 
   const isOwner = user?.id === campaign.ownerId
+  const myRole = members.find(m => m.userId === user?.id)?.role
+  const isMaster = isOwner || myRole === 'master'
 
   return (
     <div style={{
@@ -248,10 +273,10 @@ export default function CampaignDetail() {
           }}
         >
 
-        {/* Invite code — owner only */}
+        {/* Invite code — master (and owner) */}
         <InviteCodeBlock
           campaign={campaign}
-          isOwner={isOwner}
+          isOwner={isMaster}
           onCodeRegenerated={(newCode) => {
             setCampaign(prev => prev ? { ...prev, inviteCode: newCode } : prev)
           }}
@@ -320,11 +345,14 @@ export default function CampaignDetail() {
                     member={m}
                     currentUserId={user?.id ?? ''}
                     isCurrentUserOwner={isOwner}
+                    isCurrentUserMaster={isMaster}
                     onEditName={() => setEditNameOpen(true)}
                     onLeaveCampaign={() => setLeaveModalOpen(true)}
                     onDeleteCampaign={() => setDeleteModalOpen(true)}
                     onRemoveMember={() => setPendingRemoveMember(m)}
                     onTransferOwnership={() => setPendingTransfer(m)}
+                    onPromoteToMaster={() => { void handlePromoteToMaster(m) }}
+                    onDemoteToPlayer={() => { void handleDemoteToPlayer(m) }}
                   />
                 </div>
               </div>
@@ -391,7 +419,7 @@ export default function CampaignDetail() {
                   key={detail.characterId}
                   detail={detail}
                   campaignId={id!}
-                  isCurrentUserOwner={isOwner}
+                  isCurrentUserOwner={isMaster}
                   currentUserId={user?.id ?? null}
                   onUnlink={() => handleUnlink(detail.characterId)}
                 />
@@ -412,22 +440,22 @@ export default function CampaignDetail() {
           />
         )}
 
-        {/* Token presets section — owner only */}
-        {id && isOwner && (
-          <TokenPresetsSection campaignId={id} isOwner={isOwner} />
+        {/* Token presets section — master (and owner) */}
+        {id && isMaster && (
+          <TokenPresetsSection campaignId={id} isOwner={isMaster} />
         )}
 
         {/* Maps section — full width */}
         {id && (
           <div style={{ gridColumn: '1 / -1' }}>
-            <CampaignMapsSection campaignId={id} isOwner={isOwner} />
+            <CampaignMapsSection campaignId={id} isOwner={isMaster} />
           </div>
         )}
 
         {/* Dice roll log — full width, visible to all members */}
         {id && (
           <div style={{ gridColumn: '1 / -1' }}>
-            <CampaignRollLog campaignId={id} isOwner={isOwner} />
+            <CampaignRollLog campaignId={id} isOwner={isMaster} />
           </div>
         )}
 
@@ -494,7 +522,7 @@ export default function CampaignDetail() {
       )}
 
       {/* GM dice panel — fixed (no backdrop-filter above this level) */}
-      {isOwner && diceOpen && (
+      {isMaster && diceOpen && (
         <div style={{
           position: 'fixed', bottom: 80, right: 24, zIndex: 40,
           display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
@@ -503,8 +531,8 @@ export default function CampaignDetail() {
         </div>
       )}
 
-      {/* GM dice FAB — owner only */}
-      {isOwner && (
+      {/* GM dice FAB — master (and owner) */}
+      {isMaster && (
         <button
           type="button"
           data-testid="campaign-detail-dice-fab"
