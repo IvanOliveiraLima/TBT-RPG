@@ -53,7 +53,25 @@ export async function listMyCampaigns(): Promise<Campaign[]> {
     throw new CampaignServiceError('list_failed')
   }
 
-  return (data ?? []).map(mapCampaignRow)
+  const campaigns = (data ?? []).map(mapCampaignRow)
+  if (campaigns.length === 0) return campaigns
+
+  // Merge myRole so CampaignCard can show the correct badge for co-masters.
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id
+  if (!userId) return campaigns
+
+  const { data: roles } = await supabase
+    .from('campaign_members')
+    .select('campaign_id, role')
+    .eq('user_id', userId)
+
+  if (roles && roles.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const roleMap = new Map(roles.map((r: any) => [r.campaign_id as string, r.role as 'master' | 'player']))
+    return campaigns.map(c => ({ ...c, myRole: roleMap.get(c.id) }))
+  }
+  return campaigns
 }
 
 export async function getCampaign(id: string): Promise<Campaign | null> {
