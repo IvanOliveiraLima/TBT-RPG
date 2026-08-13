@@ -290,6 +290,24 @@ export async function transferCampaignOwnership(
   return { ok: true }
 }
 
+export async function setCampaignMemberRole(
+  campaignId: string,
+  userId: string,
+  role: 'master' | 'player',
+): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: 'offline' }
+  const { error } = await supabase.rpc('set_campaign_member_role', {
+    p_campaign_id: campaignId,
+    p_user_id: userId,
+    p_role: role,
+  })
+  if (error) {
+    console.error('[campaign] setMemberRole', error)
+    return { ok: false, error: error.message }
+  }
+  return { ok: true }
+}
+
 // ── Mappers ───────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
