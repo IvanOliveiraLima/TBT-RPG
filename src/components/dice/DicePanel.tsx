@@ -134,8 +134,10 @@ export function DicePanel({ onClose }: DicePanelProps) {
     function onDocMouseDown(e: MouseEvent) {
       const t = e.target as HTMLElement | null
       if (!t) return
-      if (panelRef.current?.contains(t)) return          // click inside the panel
-      if (t.closest('[data-dice-toggle]')) return        // click on the toggle trigger
+      if (panelRef.current?.contains(t)) return          // click inside this panel instance
+      if (t.closest('[data-testid="dice-panel"]')) return // click in sibling panel (sheet mounts two shells)
+      if (t.closest('[data-dice-ui]')) return             // FAB, mode selector and cluster controls
+      if (t.closest('[role="tooltip"]')) return           // HelpHint balloon lives in a portal on body
       onClose()
     }
     document.addEventListener('mousedown', onDocMouseDown)
