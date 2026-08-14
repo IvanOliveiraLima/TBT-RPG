@@ -15,15 +15,12 @@ const BASE: Character = {
   classes: [{ name: 'Ranger', level: 4, hitDie: 10 }],
   experience: 0,
   abilities: { str: 10, dex: 14, con: 12, int: 10, wis: 18, cha: 8 },
-  proficiencyBonus: 2,
   hp: { current: 30, max: 30, temp: 0 },
   hitDice: [{ className: 'Ranger', current: 4, max: 4, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 15,
   initiative: 2,
   speed: 30,
-  passivePerception: 14,
-  spellSaveDC: 0,
   inspiration: false,
   savingThrows: [],
   skills: [],
@@ -90,7 +87,7 @@ describe('CombatStrip', () => {
     const withPerception = {
       ...BASE,
       abilities: { ...BASE.abilities, wis: 14, },
-      skills: [{ name: 'Perception', ability: 'wis' as const, proficient: true, expertise: false, bonus: 4 }],
+      skills: [{ name: 'Perception', ability: 'wis' as const, proficient: true, expertise: false }],
     }
     renderWithI18n(<CombatStrip character={withPerception} />, 'pt')
     expect(screen.getByTestId('combat-stat-pp').textContent).toContain('14')

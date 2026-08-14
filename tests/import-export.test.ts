@@ -35,7 +35,6 @@ function makeChar(id: string, ac = 15): Character {
     xp: 0,
     spellcastingAbility: '',
     spellcastingClass: '',
-    spellSaveDC: 0,
     spellAttackBonus: 0,
     spellSlots: [],
     attacks: [],

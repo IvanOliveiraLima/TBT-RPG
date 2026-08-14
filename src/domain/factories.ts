@@ -7,13 +7,7 @@
  */
 
 import type { Character, AbilityKey, SavingThrowState, SkillState } from './character'
-import {
-  abilityModifier,
-  proficiencyBonus,
-  skillBonus,
-  savingThrowBonus,
-  passivePerception,
-} from './calculations'
+import { abilityModifier } from './calculations'
 import { getHitDie } from './classes'
 
 const DEFAULT_CLASS_NAME = 'Nova classe'
@@ -47,14 +41,12 @@ const CANONICAL_SKILLS: { key: string; name: string; ability: AbilityKey }[] = [
  */
 export function createEmptyCharacter(name = ''): Character {
   const abilities = { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }
-  const profBonus = proficiencyBonus(1)
 
   const savingThrows: SavingThrowState[] = (
     ['str', 'dex', 'con', 'int', 'wis', 'cha'] as AbilityKey[]
   ).map(ability => ({
     ability,
     proficient: false,
-    bonus: savingThrowBonus(abilities[ability], false, profBonus),
   }))
 
   const skills: SkillState[] = CANONICAL_SKILLS.map(({ name: skillName, ability }) => ({
@@ -62,7 +54,6 @@ export function createEmptyCharacter(name = ''): Character {
     ability,
     proficient: false,
     expertise: false,
-    bonus: skillBonus(abilities[ability], false, false, profBonus),
   }))
 
   const hitDie = getHitDie(DEFAULT_CLASS_NAME)
@@ -80,7 +71,6 @@ export function createEmptyCharacter(name = ''): Character {
     age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
 
     abilities,
-    proficiencyBonus: profBonus,
 
     hp: { current: 10, max: 10, temp: 0 },
     hitDice: [{ className: DEFAULT_CLASS_NAME, current: 1, max: 1, dieSize: hitDie }],
@@ -89,8 +79,6 @@ export function createEmptyCharacter(name = ''): Character {
     ac: 10,
     initiative: abilityModifier(abilities.dex),
     speed: 30,
-    passivePerception: passivePerception(abilities.wis, false, false, profBonus),
-    spellSaveDC: 0,
     inspiration: false,
 
     savingThrows,

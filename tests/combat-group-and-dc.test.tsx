@@ -60,14 +60,11 @@ const BASE: Character = {
   experience: 6500,
   age: '', height: '', weight: '', eyeColor: '', skinColor: '', hairColor: '',
   abilities: { str: 8, dex: 14, con: 14, int: 18, wis: 14, cha: 16 },
-  proficiencyBonus: 3,
   hp: { current: 30, max: 30, temp: 0 },
   hitDice: [{ className: 'Wizard', current: 5, max: 5, dieSize: 6 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14, initiative: 2, speed: 30,
-  passivePerception: 12,
   // spellSaveDC = 8 + 3 (profBonus) + 4 (INT mod) = 15
-  spellSaveDC: 15,
   inspiration: false,
   savingThrows: [], skills: [],
   proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
@@ -425,7 +422,6 @@ describe('AttacksList — save DC badge on spell attack cards', () => {
     const char = {
       ...BASE,
       abilities: { ...BASE.abilities, wis: 16 },
-      proficiencyBonus: 3,
       spellcastingAbility: 'wis' as const,
       attacks: [attack],
     }

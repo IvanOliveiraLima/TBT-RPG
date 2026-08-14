@@ -69,7 +69,6 @@ function makeCharacter(overrides: Partial<Character> = {}): Character {
     xp: 0,
     spellcastingAbility: '',
     spellcastingClass: '',
-    spellSaveDC: 0,
     spellAttackBonus: 0,
     spellSlots: [],
     attacks: [],
