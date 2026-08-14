@@ -15,11 +15,7 @@ import { createEmptyCharacter, CANONICAL_SKILLS } from '@/domain/factories'
 import {
   abilityModifier,
   proficiencyBonus,
-  skillBonus,
-  savingThrowBonus,
-  passivePerception,
   formatSigned,
-  spellSaveDC,
 } from '@/domain/calculations'
 import { getHitDie } from '@/domain/classes'
 
@@ -166,9 +162,6 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
 
     base.classes  = [{ name: className, level, hitDie }]
     base.hitDice  = [{ className, current: level, max: level, dieSize: hitDie }]
-
-    const profBonus = proficiencyBonus(level)
-    base.proficiencyBonus = profBonus
   }
 
   // Abilities — worker stores all 6 as strings
@@ -184,16 +177,13 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
   base.abilities = mergedAbilities
 
   // Re-derive stats that depend on abilities
-  const profBonus = base.proficiencyBonus
-  base.initiative       = abilityModifier(mergedAbilities.dex)
-  base.passivePerception = passivePerception(mergedAbilities.wis, false, false, profBonus)
-  base.ac               = 10 + abilityModifier(mergedAbilities.dex)
+  const totalLevel = base.classes.reduce((s, c) => s + c.level, 0)
+  const profBonus = proficiencyBonus(totalLevel)
+  base.initiative = abilityModifier(mergedAbilities.dex)
+  base.ac         = 10 + abilityModifier(mergedAbilities.dex)
 
-  // Re-derive saving throws
-  base.savingThrows = base.savingThrows.map(st => ({
-    ...st,
-    bonus: savingThrowBonus(mergedAbilities[st.ability], st.proficient, profBonus),
-  }))
+  // Re-derive saving throws (profBonus computed above; bonus field dropped from type)
+  base.savingThrows = base.savingThrows.map(st => ({ ...st }))
 
   // Speed
   if (ai.speed !== undefined) {
@@ -225,7 +215,6 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
       return {
         ...skillState,
         proficient,
-        bonus: skillBonus(mergedAbilities[skillState.ability], proficient, false, profBonus),
       }
     })
   }
@@ -287,10 +276,9 @@ export function mergeAIResponseIntoCharacter(ai: WorkerCharacter): Character {
     }).filter(a => a.name !== '')
   }
 
-  // Spellcasting ability + class; derive save DC on the client
+  // Spellcasting ability + class
   if (ai.spellcasting_ability && (ABILS as readonly string[]).includes(ai.spellcasting_ability)) {
     base.spellcastingAbility = ai.spellcasting_ability as AbilityKey
-    base.spellSaveDC = spellSaveDC(mergedAbilities[base.spellcastingAbility], profBonus)
   }
   if (ai.spellcasting_class?.trim()) base.spellcastingClass = ai.spellcasting_class.trim()
 
