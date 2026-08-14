@@ -3,6 +3,7 @@ import { screen, fireEvent } from '@testing-library/react'
 import { useState } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { renderWithI18n } from './helpers/render'
+import { mockViewport, resetViewport } from './helpers/viewport'
 import { SheetLayout } from '@/components/sheet/SheetLayout'
 import type { TabKey } from '@/components/sheet/types'
 import { StatusTab } from '@/components/sheet/tabs/StatusTab'
@@ -81,9 +82,13 @@ function TabSwitcher() {
 describe('tab switching', () => {
   beforeEach(() => {
     localStorage.clear()
+    // Tab labels like 'Inv', 'Histórico', 'Status' come from the mobile bottom
+    // tab bar — force mobile shell so they are rendered.
+    mockViewport('mobile')
   })
 
   afterEach(() => {
+    resetViewport()
     useCharacterStore.setState({ activeId: null, loading: false, error: null })
     useCharactersStore.setState({ characters: [], loading: false, error: null })
   })
@@ -117,11 +122,14 @@ describe('tab switching', () => {
     expect(screen.getAllByTestId('spell-header').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('clicking Inv shows Inventory placeholder', () => {
+  it('clicking Inv shows InventoryTab content', () => {
+    useCharactersStore.setState({ characters: [MOCK_CHARACTER], loading: false, error: null })
+    useCharacterStore.setState({ activeId: MOCK_CHARACTER.id, loading: false, error: null })
     renderWithI18n(<TabSwitcher />, 'pt')
     const invBtns = screen.getAllByText('Inv')
     fireEvent.click(invBtns[0]!)
-    expect(screen.getAllByText('Inventário').length).toBeGreaterThanOrEqual(1)
+    // CurrencyBlock renders 'MOEDAS' section title in PT
+    expect(screen.getAllByText('MOEDAS').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking Histórico (lore tab) shows LoreTab content', () => {
