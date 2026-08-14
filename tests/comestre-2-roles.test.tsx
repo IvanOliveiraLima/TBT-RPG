@@ -366,14 +366,14 @@ describe('CampaignCard — myRole badge', () => {
     expect(screen.getByText('Master')).toBeDefined()
   })
 
-  it('shows Mestre (PT) when myRole=master (co-master)', () => {
+  it('shows Co-Mestre (PT) when myRole=master (co-master)', () => {
     renderCard({ ...BASE_CAMPAIGN, myRole: 'master' }, 'u-comaster', 'pt')
-    expect(screen.getByText('Mestre')).toBeDefined()
+    expect(screen.getByText('Co-Mestre')).toBeDefined()
   })
 
-  it('shows Master (EN) when myRole=master (co-master)', () => {
+  it('shows Co-master (EN) when myRole=master (co-master)', () => {
     renderCard({ ...BASE_CAMPAIGN, myRole: 'master' }, 'u-comaster', 'en')
-    expect(screen.getByText('Master')).toBeDefined()
+    expect(screen.getByText('Co-master')).toBeDefined()
   })
 
   it('shows Jogador (PT) when myRole=player', () => {

@@ -42,11 +42,11 @@ vi.mock('@/store/useDiceStore', () => ({
 // ── Mock CampaignRollLog ──────────────────────────────────────────────────────
 
 vi.mock('@/components/campaigns/CampaignRollLog', () => ({
-  CampaignRollLog: ({ campaignId, isOwner }: { campaignId: string; isOwner: boolean }) => (
+  CampaignRollLog: ({ campaignId, isMaster }: { campaignId: string; isMaster: boolean }) => (
     <div
       data-testid="campaign-roll-log-mock"
       data-campaign-id={campaignId}
-      data-is-owner={String(isOwner)}
+      data-is-owner={String(isMaster)}
     />
   ),
 }))
@@ -190,7 +190,7 @@ describe('CampaignMapViewer — roll log panel', () => {
   })
 
   it('shows roll log toggle for owner too', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('roll-log-toggle')).toBeDefined())
   })
 
@@ -217,7 +217,7 @@ describe('CampaignMapViewer — roll log panel', () => {
   })
 
   it('passes isOwner=true to CampaignRollLog for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('roll-log-toggle')).toBeDefined())
     fireEvent.click(screen.getByTestId('roll-log-toggle'))
     expect(screen.getByTestId('campaign-roll-log-mock').getAttribute('data-is-owner')).toBe('true')
@@ -245,12 +245,12 @@ describe('CampaignMapViewer — GM dice tray', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
   it('shows dice FAB for owner (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
   })
 
   it('shows dice FAB for owner (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
   })
 
@@ -261,26 +261,26 @@ describe('CampaignMapViewer — GM dice tray', () => {
   })
 
   it('does not show dice FAB in broadcast mode (owner)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner broadcast />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster broadcast />, 'en')
     await waitFor(() => expect(screen.getByTestId('campaign-map-viewer')).toBeDefined())
     expect(screen.queryByTestId('viewer-dice-fab')).toBeNull()
   })
 
   it('DicePanel is not open by default', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     expect(screen.queryByTestId('dice-panel-mock')).toBeNull()
   })
 
   it('opens DicePanel when FAB is clicked', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     fireEvent.click(screen.getByTestId('viewer-dice-fab'))
     expect(screen.getByTestId('dice-panel-mock')).toBeDefined()
   })
 
   it('closes DicePanel via onClose callback', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     fireEvent.click(screen.getByTestId('viewer-dice-fab'))
     expect(screen.getByTestId('dice-panel-mock')).toBeDefined()
@@ -289,7 +289,7 @@ describe('CampaignMapViewer — GM dice tray', () => {
   })
 
   it('toggles DicePanel closed when FAB is clicked again', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     fireEvent.click(screen.getByTestId('viewer-dice-fab'))
     expect(screen.getByTestId('dice-panel-mock')).toBeDefined()
@@ -307,19 +307,19 @@ describe('CampaignMapViewer — GM campaign context (viewer does NOT own it)', (
   beforeEach(() => { vi.clearAllMocks() })
 
   it('does NOT set campaign context for owner (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     expect(mockSetCampaignContext).not.toHaveBeenCalled()
   })
 
   it('does NOT set campaign context for owner (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     expect(mockSetCampaignContext).not.toHaveBeenCalled()
   })
 
   it('does NOT clear campaign context on unmount', async () => {
-    const { unmount } = renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    const { unmount } = renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('viewer-dice-fab')).toBeDefined())
     unmount()
     expect(mockClearCampaignContext).not.toHaveBeenCalled()
@@ -332,7 +332,7 @@ describe('CampaignMapViewer — GM campaign context (viewer does NOT own it)', (
   })
 
   it('does not set campaign context in broadcast mode (even for owner)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner broadcast />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster broadcast />, 'en')
     await waitFor(() => expect(screen.getByTestId('campaign-map-viewer')).toBeDefined())
     expect(mockSetCampaignContext).not.toHaveBeenCalled()
   })

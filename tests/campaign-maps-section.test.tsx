@@ -59,9 +59,9 @@ const MAP_2: CampaignMap = {
   published: false,
 }
 
-function renderSection(isOwner = false) {
+function renderSection(isMaster = false) {
   return renderWithI18n(
-    <CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={isOwner} />,
+    <CampaignMapsSection campaignId={CAMPAIGN_ID} isMaster={isMaster} />,
     'en',
   )
 }
@@ -82,7 +82,7 @@ describe('CampaignMapsSection — structure', () => {
   })
 
   it('shows section title in PT', async () => {
-    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isMaster={false} />, 'pt')
     await waitFor(() => expect(screen.getByTestId('campaign-detail-maps').textContent).toContain('Mapas (0)'))
   })
 
@@ -215,7 +215,7 @@ describe('CampaignMapsSection — owner', () => {
 
   it('shows quota error in PT', async () => {
     mockUploadCampaignMap.mockRejectedValue(Object.assign(new Error('quota'), { code: 'quota_exceeded' }))
-    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('add-map-label'))
     const fileInput = screen.getByTestId('map-file-input') as HTMLInputElement
     const file = new File([new Uint8Array(10)], 'map.png', { type: 'image/png' })
@@ -304,7 +304,7 @@ describe('CampaignMapsSection — expand/restore map viewer', () => {
   })
 
   it('expand button label contains "Expandir" in PT', async () => {
-    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isMaster={false} />, 'pt')
     await waitFor(() => fireEvent.click(screen.getByTestId(`open-map-${MAP_1.id}`)))
     const btn = screen.getByTestId('expand-map-viewer')
     expect(btn.getAttribute('aria-label')).toBe('Expandir')
@@ -399,7 +399,7 @@ describe('CampaignMapsSection — publish toggle', () => {
 
   it('player empty state in PT', async () => {
     mockListCampaignMaps.mockResolvedValue([])
-    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignMapsSection campaignId={CAMPAIGN_ID} isMaster={false} />, 'pt')
     await waitFor(() =>
       expect(screen.getByTestId('maps-empty-state').textContent).toContain('O mestre ainda não liberou nenhum mapa.')
     )

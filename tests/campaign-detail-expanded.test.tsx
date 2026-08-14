@@ -94,8 +94,8 @@ vi.mock('@/services/user-profile', () => ({
 // ── Mock InviteCodeBlock (test separately) ────────────────────────────────────
 
 vi.mock('@/components/campaigns/InviteCodeBlock', () => ({
-  InviteCodeBlock: ({ isOwner }: { isOwner: boolean; campaign: Campaign; onCodeRegenerated: () => void }) => (
-    isOwner ? <div data-testid="invite-code-block-stub">InviteBlock</div> : null
+  InviteCodeBlock: ({ isMaster }: { isMaster: boolean; campaign: Campaign; onCodeRegenerated: () => void }) => (
+    isMaster ? <div data-testid="invite-code-block-stub">InviteBlock</div> : null
   ),
 }))
 
@@ -232,6 +232,18 @@ describe('CampaignDetail — loading and rendering', () => {
   it('displays role labels', async () => {
     renderDetail()
     await waitFor(() => expect(screen.getByText('Mestre')).toBeDefined())
+    expect(screen.getByText('Jogador')).toBeDefined()
+  })
+
+  it('owner shows "Mestre", co-master shows "Co-Mestre", player shows "Jogador"', async () => {
+    // owner1 = campaign.ownerId → Mestre; comaster2 = role master but not owner → Co-Mestre
+    const COMASTER: CampaignMember = { campaignId: 'c1', userId: 'comaster2', role: 'master', joinedAt: 0 }
+    const PROFILE_COMASTER: UserProfile = { userId: 'comaster2', displayName: 'Charlie', createdAt: 0, updatedAt: 0 }
+    mockListCampaignMembers.mockResolvedValue([MEMBER_MASTER, COMASTER, MEMBER_PLAYER])
+    mockListProfilesByIds.mockResolvedValue([PROFILE_MASTER, PROFILE_COMASTER, PROFILE_PLAYER])
+    renderDetail()
+    await waitFor(() => expect(screen.getByText('Mestre')).toBeDefined())
+    expect(screen.getByText('Co-Mestre')).toBeDefined()
     expect(screen.getByText('Jogador')).toBeDefined()
   })
 

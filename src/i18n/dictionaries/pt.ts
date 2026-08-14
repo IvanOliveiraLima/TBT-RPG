@@ -694,7 +694,9 @@ const pt: Record<keyof typeof en, string> = {
 
   // Campaign detail
   'campaign_detail.members':           'Membros',
-  'campaign_detail.role_master':       'Mestre',
+  'campaign_detail.members_help':      'Mestre é quem criou (ou recebeu) a campanha: só ele deleta, transfere a propriedade e promove. Co-Mestres ajudam a conduzir — mapas, tokens, iniciativa e rolagens secretas —, mas não podem deletar nem transferir.',
+  'campaign_detail.role_owner':        'Mestre',
+  'campaign_detail.role_comaster':     'Co-Mestre',
   'campaign_detail.role_player':       'Jogador',
   'campaign_detail.unknown_member':      'Membro desconhecido',
   'campaign_detail.unknown_character':   'Personagem desconhecido',
@@ -846,7 +848,7 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.transfer_warning': '{name} passará a ser o dono da campanha. Você vira jogador e perde as permissões de mestre — só o novo dono poderá transferir de volta.',
   'campaign_detail.transfer_confirm': 'Transferir',
   'campaign_detail.transfer_error':   'Não foi possível transferir a propriedade. Tente novamente.',
-  'campaign_detail.promote_master':   'Promover a Mestre',
+  'campaign_detail.promote_master':   'Promover a Co-Mestre',
   'campaign_detail.demote_player':    'Rebaixar a Jogador',
   'campaign_detail.role_change_error':'Não foi possível alterar o papel. Tente novamente.',
 

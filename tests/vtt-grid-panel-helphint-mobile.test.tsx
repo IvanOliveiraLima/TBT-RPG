@@ -210,13 +210,13 @@ describe('VTT — grid panel HelpHint (fields) — desktop', () => {
   })
 
   it('? trigger appears next to the GRADE title (desktop)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelDesktop()
     expect(screen.getAllByTestId('help-hint-trigger').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking the title ? opens grid_fields_help tooltip (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelDesktop()
     const triggers = screen.getAllByTestId('help-hint-trigger')
     act(() => { fireEvent.click(triggers[0]) })
@@ -226,7 +226,7 @@ describe('VTT — grid panel HelpHint (fields) — desktop', () => {
   })
 
   it('clicking the title ? opens grid_fields_help tooltip (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'pt')
     await openGridPanelDesktop()
     const triggers = screen.getAllByTestId('help-hint-trigger')
     act(() => { fireEvent.click(triggers[0]) })
@@ -249,13 +249,13 @@ describe('VTT — grid panel HelpHint (fields) — mobile', () => {
   })
 
   it('? trigger appears next to the GRADE title (mobile)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     expect(screen.getAllByTestId('help-hint-trigger').length).toBeGreaterThanOrEqual(1)
   })
 
   it('clicking the title ? opens grid_fields_help tooltip (EN, mobile)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     const triggers = screen.getAllByTestId('help-hint-trigger')
     act(() => { fireEvent.click(triggers[0]) })
@@ -265,7 +265,7 @@ describe('VTT — grid panel HelpHint (fields) — mobile', () => {
   })
 
   it('clicking the title ? opens grid_fields_help tooltip (PT, mobile)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'pt')
     await openGridPanelMobile()
     const triggers = screen.getAllByTestId('help-hint-trigger')
     act(() => { fireEvent.click(triggers[0]) })
@@ -288,21 +288,21 @@ describe('VTT — mobile realign-tokens-btn parity', () => {
   })
 
   it('realign button visible on mobile when grid enabled + tokens present (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     expect(screen.getByTestId('realign-tokens-btn').textContent).toContain('Align tokens to grid')
   })
 
   it('realign button visible on mobile when grid enabled + tokens present (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'pt')
     await openGridPanelMobile()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     expect(screen.getByTestId('realign-tokens-btn').textContent).toContain('Alinhar tokens à grade')
   })
 
   it('clicking mobile realign calls updateMapToken for TOKEN_A with snapped coords', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     fireEvent.click(screen.getByTestId('realign-tokens-btn'))
@@ -315,7 +315,7 @@ describe('VTT — mobile realign-tokens-btn parity', () => {
   })
 
   it('clicking mobile realign calls updateMapToken for TOKEN_B', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     fireEvent.click(screen.getByTestId('realign-tokens-btn'))
@@ -329,14 +329,14 @@ describe('VTT — mobile realign-tokens-btn parity', () => {
 
   it('realign button hidden on mobile when grid is disabled', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_A])
-    renderWithI18n(<CampaignMapViewer map={MAP_NO_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_NO_GRID} isMaster />, 'en')
     await openGridPanelMobile()
     expect(screen.queryByTestId('realign-tokens-btn')).toBeNull()
   })
 
   it('realign button hidden on mobile when no tokens', async () => {
     mockListMapTokens.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanelMobile()
     expect(screen.queryByTestId('realign-tokens-btn')).toBeNull()
   })

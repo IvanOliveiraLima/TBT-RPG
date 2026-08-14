@@ -30,7 +30,7 @@ const noOp = vi.fn()
 describe('CampaignInitiativePanel — empty state', () => {
   it('shows empty message in PT', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'pt',
     )
     expect(screen.getByTestId('initiative-empty')).toBeDefined()
@@ -39,7 +39,7 @@ describe('CampaignInitiativePanel — empty state', () => {
 
   it('shows empty message in EN', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('initiative-empty').textContent).toContain('No combatants yet')
@@ -49,7 +49,7 @@ describe('CampaignInitiativePanel — empty state', () => {
 describe('CampaignInitiativePanel — owner controls', () => {
   it('shows start combat button when inactive', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('initiative-start-btn')).toBeDefined()
@@ -58,7 +58,7 @@ describe('CampaignInitiativePanel — owner controls', () => {
   it('shows end combat button when active', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker({ active: true, combatants: [{ id: 'a', name: 'Goblin', initiative: 10 }], activeCombatantId: 'a' })}
         linkedChars={[]}
         onUpdate={noOp}
@@ -70,7 +70,7 @@ describe('CampaignInitiativePanel — owner controls', () => {
 
   it('shows add-monster button', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('show-monster-form')).toBeDefined()
@@ -82,7 +82,7 @@ describe('CampaignInitiativePanel — owner controls', () => {
       { characterId: 'char2', name: 'Gimli' },
     ]
     renderWithI18n(
-      <CampaignInitiativePanel isOwner tracker={makeTracker()} linkedChars={linkedChars} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={linkedChars} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('quick-add-char1')).toBeDefined()
@@ -94,7 +94,7 @@ describe('CampaignInitiativePanel — owner controls', () => {
       combatants: [{ id: 'c1', name: 'Fighter', initiative: 15 }],
     })
     renderWithI18n(
-      <CampaignInitiativePanel isOwner tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('remove-combatant-c1')).toBeDefined()
@@ -107,7 +107,7 @@ describe('CampaignInitiativePanel — owner controls', () => {
       activeCombatantId: 'a',
     })
     renderWithI18n(
-      <CampaignInitiativePanel isOwner tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('initiative-prev')).toBeDefined()
@@ -123,7 +123,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 
   it('does NOT show start/end button', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.queryByTestId('initiative-start-btn')).toBeNull()
@@ -132,7 +132,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 
   it('does NOT show add-monster button', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={trackerWithCombatant} linkedChars={linkedChars} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={trackerWithCombatant} linkedChars={linkedChars} onUpdate={noOp} />,
       'en',
     )
     expect(screen.queryByTestId('show-monster-form')).toBeNull()
@@ -140,7 +140,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 
   it('does NOT show quick-add buttons', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={makeTracker()} linkedChars={linkedChars} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={linkedChars} onUpdate={noOp} />,
       'en',
     )
     expect(screen.queryByTestId('quick-add-char1')).toBeNull()
@@ -148,7 +148,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 
   it('does NOT show remove buttons', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.queryByTestId('remove-combatant-c1')).toBeNull()
@@ -161,7 +161,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
       activeCombatantId: 'a',
     })
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.queryByTestId('initiative-prev')).toBeNull()
@@ -170,7 +170,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 
   it('renders combatant row with initiative value', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={trackerWithCombatant} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('combatant-row-c1')).toBeDefined()
@@ -181,7 +181,7 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 describe('CampaignInitiativePanel — title i18n', () => {
   it('shows PT title when inactive', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'pt',
     )
     expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Iniciativa')
@@ -189,7 +189,7 @@ describe('CampaignInitiativePanel — title i18n', () => {
 
   it('shows EN title when inactive', () => {
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
     expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Initiative')
@@ -203,7 +203,7 @@ describe('CampaignInitiativePanel — title i18n', () => {
       activeCombatantId: 'a',
     })
     renderWithI18n(
-      <CampaignInitiativePanel isOwner={false} tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      <CampaignInitiativePanel isMaster={false} tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
       'pt',
     )
     expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Rodada 3')
@@ -217,7 +217,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -235,7 +235,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -251,7 +251,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
   it('does NOT render toggle when onToggleAutoInitiative is absent (member view)', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner={false}
+        isMaster={false}
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -265,7 +265,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner={false}
+        isMaster={false}
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -281,7 +281,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -298,7 +298,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -315,7 +315,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -331,7 +331,7 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
     const onToggle = vi.fn()
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}

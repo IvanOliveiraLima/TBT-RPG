@@ -196,7 +196,7 @@ describe('CampaignMapViewer — condition chips in token icon', () => {
 
   it('token without conditions produces no chip row in icon html', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
     const marker = screen.getByTestId('marker')
     // chip row contains "display:flex" — should be absent when no conditions
@@ -205,7 +205,7 @@ describe('CampaignMapViewer — condition chips in token icon', () => {
 
   it('token with 3 conditions renders abbr chips in icon html', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
     const html = screen.getByTestId('marker').getAttribute('data-icon-html') ?? ''
     // Should include abbr chips for blinded (BL), charmed (CH), prone (PR)
@@ -218,7 +218,7 @@ describe('CampaignMapViewer — condition chips in token icon', () => {
 
   it('token with 5 conditions shows 3 chips + "+2" overflow', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_MANY_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
     const html = screen.getByTestId('marker').getAttribute('data-icon-html') ?? ''
     // First 3: blinded=BL, charmed=CH, prone=PR
@@ -235,7 +235,7 @@ describe('CampaignMapViewer — condition chips in token icon', () => {
   it('different conditions produce different cache keys (distinct icon objects)', async () => {
     // Render two tokens with different conditions; their icons must differ
     mockListMapTokens.mockResolvedValue([TOKEN_NO_COND, TOKEN_WITH_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(2))
     const [marker1, marker2] = screen.getAllByTestId('marker')
     const html1 = marker1.getAttribute('data-icon-html') ?? ''
@@ -255,7 +255,7 @@ describe('CampaignMapViewer — condition toggle in popup (owner)', () => {
 
   it('renders condition toggle buttons for all 14 conditions in owner popup', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-conditions-${TOKEN_NO_COND.id}`))
     const conditionsGrid = screen.getByTestId(`token-conditions-${TOKEN_NO_COND.id}`)
     expect(conditionsGrid.querySelectorAll('button')).toHaveLength(14)
@@ -263,7 +263,7 @@ describe('CampaignMapViewer — condition toggle in popup (owner)', () => {
 
   it('toggling an inactive condition calls updateMapToken with it added', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`condition-toggle-${TOKEN_NO_COND.id}-blinded`))
 
     fireEvent.click(screen.getByTestId(`condition-toggle-${TOKEN_NO_COND.id}-blinded`))
@@ -276,7 +276,7 @@ describe('CampaignMapViewer — condition toggle in popup (owner)', () => {
 
   it('toggling an active condition calls updateMapToken with it removed', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`condition-toggle-${TOKEN_WITH_COND.id}-blinded`))
 
     // blinded is active in TOKEN_WITH_COND — clicking it should remove it
@@ -290,7 +290,7 @@ describe('CampaignMapViewer — condition toggle in popup (owner)', () => {
 
   it('member popup has no condition toggle buttons', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_COND])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-${TOKEN_WITH_COND.id}`))
     // Member popup only has the label span, no condition toggles
     expect(screen.queryByTestId(`condition-toggle-${TOKEN_WITH_COND.id}-blinded`)).toBeNull()

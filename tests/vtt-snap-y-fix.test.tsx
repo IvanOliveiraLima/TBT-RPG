@@ -218,7 +218,7 @@ describe('VTT — snapTokenPos: dragend snaps in image space', () => {
      * row = floor((30 - 3) / 10) = floor(2.7) = 2
      * stored_y_bug = 3 + 2.5 * 10 = 28  (image_y = 72, NOT a cell centre)
      */
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker').length).toBeGreaterThan(0))
 
     const handler = capturedDragHandlers.get(`${TOKEN_A.y},${TOKEN_A.x}`)
@@ -236,7 +236,7 @@ describe('VTT — snapTokenPos: dragend snaps in image space', () => {
 
   it('1×1 token: snapped x is correct (X axis has no flip)', async () => {
     // lng=55, offsetX=0, size=10: col=floor(55/10)=5, x_snap=5.5*10=55
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await waitFor(() => screen.getAllByTestId('marker').length > 0)
 
     const handler = capturedDragHandlers.get(`${TOKEN_A.y},${TOKEN_A.x}`)
@@ -261,7 +261,7 @@ describe('VTT — snapTokenPos: dragend snaps in image space', () => {
      * snapped_x = 0 + (10 + 1) * 10 = 110
      */
     mockListMapTokens.mockResolvedValue([TOKEN_B])
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await waitFor(() => screen.getAllByTestId('marker').length > 0)
 
     const handler = capturedDragHandlers.get(`${TOKEN_B.y},${TOKEN_B.x}`)
@@ -298,7 +298,7 @@ describe('VTT — realignTokens action', () => {
      *   snapTokenPos(50, 30, 1) → snapToGrid(50, 70, 1, grid)
      *   x: col=floor(50/10)=5 → 55; y_img: row=floor(6.7)=6 → 68; stored_y=32
      */
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanel()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     expect(screen.getByTestId('realign-tokens-btn').textContent).toContain('Align tokens to grid')
@@ -316,7 +316,7 @@ describe('VTT — realignTokens action', () => {
   })
 
   it('realign button label in PT', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'pt')
     await openGridPanel()
     await waitFor(() => screen.getByTestId('realign-tokens-btn'))
     expect(screen.getByTestId('realign-tokens-btn').textContent).toContain('Alinhar tokens à grade')
@@ -324,14 +324,14 @@ describe('VTT — realignTokens action', () => {
 
   it('realign button is hidden when grid is disabled', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_A])
-    renderWithI18n(<CampaignMapViewer map={MAP_NO_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_NO_GRID} isMaster />, 'en')
     await openGridPanel()
     expect(screen.queryByTestId('realign-tokens-btn')).toBeNull()
   })
 
   it('realign button is hidden when tokens list is empty', async () => {
     mockListMapTokens.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_BASE} isMaster />, 'en')
     await openGridPanel()
     expect(screen.queryByTestId('realign-tokens-btn')).toBeNull()
   })

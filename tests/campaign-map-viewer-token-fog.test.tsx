@@ -150,7 +150,7 @@ describe('CampaignMapViewer — token visibility under fog (player)', () => {
 
   it('player does NOT see token in unrevealed cell when fog is enabled', async () => {
     mockGetMapFog.mockResolvedValue(FOG_EMPTY) // cell "2,14" not revealed
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(tokenVisible('tok-a')).toBe(false)
@@ -158,7 +158,7 @@ describe('CampaignMapViewer — token visibility under fog (player)', () => {
 
   it('player DOES see token when its cell is revealed', async () => {
     mockGetMapFog.mockResolvedValue(FOG_A_ONLY) // "2,14" revealed
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => expect(tokenVisible('tok-a')).toBe(true))
@@ -167,7 +167,7 @@ describe('CampaignMapViewer — token visibility under fog (player)', () => {
   it('player sees nothing when fog is on and no cells are revealed', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_A, TOKEN_B])
     mockGetMapFog.mockResolvedValue(FOG_EMPTY)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(tokenVisible('tok-a')).toBe(false)
@@ -177,7 +177,7 @@ describe('CampaignMapViewer — token visibility under fog (player)', () => {
   it('player sees all tokens when fog is disabled', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_A, TOKEN_B])
     mockGetMapFog.mockResolvedValue(FOG_OFF)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => {
@@ -189,7 +189,7 @@ describe('CampaignMapViewer — token visibility under fog (player)', () => {
   it('revealing one cell shows only the token in that cell', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_A, TOKEN_B])
     mockGetMapFog.mockResolvedValue(FOG_A_ONLY) // only "2,14"
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => expect(tokenVisible('tok-a')).toBe(true))
@@ -205,7 +205,7 @@ describe('CampaignMapViewer — token visibility under fog (owner)', () => {
   })
 
   it('owner sees all tokens even when fog is on and no cells are revealed', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => {
@@ -216,7 +216,7 @@ describe('CampaignMapViewer — token visibility under fog (owner)', () => {
 
   it('owner sees all tokens when fog is fully on', async () => {
     mockGetMapFog.mockResolvedValue(FOG_ALL)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => {
@@ -234,7 +234,7 @@ describe('CampaignMapViewer — token-fog Y-flip invariant', () => {
 
   it('bottom token appears when its correctly-flipped cell ("2,2") is revealed', async () => {
     mockGetMapFog.mockResolvedValue(FOG_B_ONLY) // "2,2" — correct flip
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     await waitFor(() => expect(tokenVisible('tok-b')).toBe(true))
@@ -242,7 +242,7 @@ describe('CampaignMapViewer — token-fog Y-flip invariant', () => {
 
   it('bottom token stays hidden when only the wrong (raw-y) cell "2,18" is revealed', async () => {
     mockGetMapFog.mockResolvedValue(FOG_B_WRONG_CELL) // "2,18" — raw tok.y without flip
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(tokenVisible('tok-b')).toBe(false)

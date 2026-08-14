@@ -217,7 +217,7 @@ describe('CampaignMapViewer — fog overlay (owner view)', () => {
   })
 
   it('fog overlay for owner has dimmed fill-opacity (0.5)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => expect(screen.queryByTestId('fog-overlay')).not.toBeNull())
     const overlay = screen.getByTestId('fog-overlay')
     const rect = overlay.querySelector('rect[mask]')
@@ -238,56 +238,56 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   })
 
   it('shows fog toggle button for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => expect(screen.queryByTestId('fog-panel-toggle')).not.toBeNull())
   })
 
   it('fog toggle button label contains fog title (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('fog-panel-toggle').textContent).toContain('Fog'))
   })
 
   it('fog toggle button label contains fog title (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'pt')
     await waitFor(() => expect(screen.getByTestId('fog-panel-toggle').textContent).toContain('Névoa'))
   })
 
   it('fog toggle button is disabled when grid is not enabled', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.queryByTestId('fog-panel-toggle')).not.toBeNull())
     const btn = screen.getByTestId('fog-panel-toggle') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
   })
 
   it('fog toggle button is enabled when grid is enabled', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => expect(screen.queryByTestId('fog-panel-toggle')).not.toBeNull())
     const btn = screen.getByTestId('fog-panel-toggle') as HTMLButtonElement
     expect(btn.disabled).toBe(false)
   })
 
   it('does NOT show fog toggle for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('fog-panel-toggle')).toBeNull()
   })
 
   it('clicking fog toggle opens the fog panel', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => expect(screen.queryByTestId('fog-config-panel')).not.toBeNull())
   })
 
   it('fog panel contains enable fog toggle', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-enable-toggle'))
   })
 
   it('fog panel contains reveal/hide brush buttons', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-brush-reveal'))
@@ -295,7 +295,7 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   })
 
   it('fog panel contains reveal-all and hide-all buttons', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-reveal-all'))
@@ -303,7 +303,7 @@ describe('CampaignMapViewer — fog panel toggle (owner)', () => {
   })
 
   it('"Concluir" button closes fog panel and restores toggle button', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-done-btn'))
@@ -326,7 +326,7 @@ describe('CampaignMapViewer — fog panel actions', () => {
   })
 
   it('toggling fog-enable-toggle calls saveMapFog', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-enable-toggle'))
@@ -338,7 +338,7 @@ describe('CampaignMapViewer — fog panel actions', () => {
   })
 
   it('"Revelar tudo" calls saveMapFog with allCells', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-reveal-all'))
@@ -351,7 +351,7 @@ describe('CampaignMapViewer — fog panel actions', () => {
 
   it('"Ocultar tudo" calls saveMapFog with empty revealed', async () => {
     mockGetMapFog.mockResolvedValue(FOG_ON)
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
     await waitFor(() => screen.getByTestId('fog-hide-all'))
@@ -376,7 +376,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
   })
 
   it('in fogMode, pointerdown+pointerup calls saveMapFog once', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Enter fog mode
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
@@ -390,7 +390,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
   })
 
   it('in fogMode, map click does NOT add a marker', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Enter fog mode
     fireEvent.click(screen.getByTestId('fog-panel-toggle'))
@@ -404,7 +404,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
   })
 
   it('outside fogMode, pointerdown does NOT call saveMapFog', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // NOT entering fog mode — no pointer handlers registered on the container
     act(() => { firePointerDown() })
@@ -414,7 +414,7 @@ describe('CampaignMapViewer — fog mode routing', () => {
   })
 
   it('outside fogMode, map click adds a pending marker (not fog)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('fog-panel-toggle'))
     // Click without fog mode → should add pending marker
     expect(capturedDblClickHandler).not.toBeNull()
@@ -442,7 +442,7 @@ describe('CampaignMapViewer — fog polling', () => {
   })
 
   it('member polls getMapFog every 5 s', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster={false} />, 'en')
     // Initial fetch
     await act(async () => { await Promise.resolve() })
     const initialCalls = mockGetMapFog.mock.calls.length
@@ -452,7 +452,7 @@ describe('CampaignMapViewer — fog polling', () => {
   })
 
   it('owner does NOT poll getMapFog', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await act(async () => { await Promise.resolve() })
     const callsAfterMount = mockGetMapFog.mock.calls.length
     await act(async () => { vi.advanceTimersByTime(10_000) })

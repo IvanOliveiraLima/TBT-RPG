@@ -219,25 +219,25 @@ describe('CampaignMapViewer — preset palette', () => {
   // ── Visibility ───────────────────────────────────────────────────────────────
 
   it('member: preset palette toggle is NOT visible', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('preset-palette-toggle')).toBeNull()
   })
 
   it('owner: preset palette toggle IS visible', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
   })
 
   it('owner: listTokenPresets is called with campaignId on mount', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(mockListTokenPresets).toHaveBeenCalledWith(MAP.campaignId))
   })
 
   // ── Opening the palette ───────────────────────────────────────────────────────
 
   it('clicking toggle opens the palette panel', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     expect(screen.getByTestId('preset-palette-panel')).toBeDefined()
@@ -245,7 +245,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('palette shows empty state when no presets', async () => {
     mockListTokenPresets.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId('preset-palette-empty'))
@@ -253,7 +253,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('palette lists presets when available', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG, PRESET_WITH_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -264,7 +264,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('clicking a preset item arms it', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -275,7 +275,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('clicking an armed preset item disarms it', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -288,7 +288,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('"Done"/"Concluir" button disarms the preset', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -301,7 +301,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('cursor becomes crosshair when a preset is armed', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -313,7 +313,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('single map click while armed calls createMapToken with preset fields', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -334,7 +334,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('multi-place: preset stays armed after placing (coloca vários seguidos)', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -358,7 +358,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('preset with image: uploadTokenImageBlob called for the placed token', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_WITH_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_WITH_IMG.id}`))
@@ -376,7 +376,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('single map click without armed preset does NOT call createMapToken', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     // Do NOT arm any preset — just fire click
     await act(async () => {
@@ -387,7 +387,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('dblclick while armed does NOT open a pending marker dialog', async () => {
     mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
@@ -406,7 +406,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('palette panel shows PT label "Tokens prontos"', async () => {
     mockListTokenPresets.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId('preset-palette-panel'))
@@ -415,7 +415,7 @@ describe('CampaignMapViewer — preset palette', () => {
 
   it('palette panel shows EN label "Ready tokens"', async () => {
     mockListTokenPresets.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId('preset-palette-panel'))
