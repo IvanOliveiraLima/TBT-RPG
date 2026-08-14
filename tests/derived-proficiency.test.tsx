@@ -1,5 +1,10 @@
 /**
- * Regression tests: stale stored proficiencyBonus / spellSaveDC
+ * Regression tests: stale stored proficiencyBonus / spellSaveDC / passivePerception
+ *
+ * After Fundação.2 (refactor/remove-stored-derived) these three fields no longer
+ * exist on the Character type, but existing JSON records in IndexedDB / Supabase
+ * may still contain them as extra keys. The runtime must ignore them and always
+ * derive the correct values from the derive* helpers.
  *
  * The stored fields `character.proficiencyBonus` and `character.spellSaveDC` are
  * written at character creation and NOT updated when the user levels up.
@@ -209,5 +214,49 @@ describe('AttacksList — bonus suggestion uses derived prof (stale stored ignor
     renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
     fireEvent.click(screen.getByTestId('attack-card-atk1'))
     expect(screen.getByTestId('attack-card-atk1').textContent).toContain('prof +4')
+  })
+})
+
+// ── Legacy record from storage — Fundação.2 regression ───────────────────────
+// Simulates a character record loaded from IndexedDB/Supabase that still
+// carries the old keys (written before Fundação.2 removed them from the type).
+// The UI must ignore those stale values and always derive from helpers.
+
+describe('legacy record with stale derived keys renders derived values', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useCharactersStore.setState({ characters: [], loading: false, error: null })
+  })
+
+  it('CombatStrip shows correct prof bonus from level, not stale stored value', () => {
+    // Level-9 character; legacy JSON still has proficiencyBonus: 2 and spellSaveDC: 12
+    const legacyRecord = {
+      ...STALE,
+      proficiencyBonus: 2,     // stale — stored at character creation, never updated
+      passivePerception: 11,   // stale
+      spellSaveDC: 12,         // stale — should be 15 (8 + prof 4 + INT mod 3)
+    } as unknown as Character
+
+    renderWithI18n(<CombatStrip character={legacyRecord} />, 'en')
+
+    // PROF must be +4 (level 9), not the stale +2
+    expect(screen.getByTestId('combat-stat-prof').textContent).toContain('+4')
+    // DC must be 15, not the stale 12
+    expect(screen.getByTestId('combat-stat-dc').textContent).toContain('15')
+  })
+
+  it('AttacksList bonus chip shows derived prof (+4), not stale (+2)', () => {
+    const legacyRecord = {
+      ...STALE,
+      proficiencyBonus: 2,
+      spellSaveDC: 12,
+      attacks: [makeSpellAttack()],
+    } as unknown as Character
+
+    renderWithI18n(<AttacksList character={legacyRecord} onUpdate={vi.fn()} />, 'en')
+    fireEvent.click(screen.getByTestId('attack-card-atk1'))
+    // breakdown: "INT +3 · prof +4" — not "prof +2"
+    expect(screen.getByTestId('attack-card-atk1').textContent).toContain('prof +4')
+    expect(screen.getByTestId('attack-card-atk1').textContent).not.toContain('prof +2')
   })
 })
