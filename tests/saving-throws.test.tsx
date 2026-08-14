@@ -206,13 +206,15 @@ describe('SavingThrows', () => {
     expect(strToggle.getAttribute('aria-label')).toContain('Strength')
   })
 
-  it('new bonus is recalculated after toggle (proficient str → mod+prof)', () => {
-    // profBonus for Cleric 3 = 2; STR 14 mod = +2; proficient → +4
+  it('emits updated proficiency after toggle (bonus is derived at render, not stored)', () => {
+    // STR toggle: was proficient=false → emitted as proficient=true
+    // The bonus (+4 = STR mod +2 + profBonus +2) is computed in render by the component
     const onUpdate = vi.fn()
     renderWithI18n(<SavingThrows character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('save-str-toggle'))
-    const call = onUpdate.mock.calls[0]![0] as { savingThrows: Array<{ ability: string; bonus: number }> }
+    const call = onUpdate.mock.calls[0]![0] as { savingThrows: Array<{ ability: string; proficient: boolean }> }
     const strSave = call.savingThrows.find(s => s.ability === 'str')
-    expect(strSave?.bonus).toBe(4) // +2 mod + 2 profBonus
+    expect(strSave?.proficient).toBe(true)
+    expect('bonus' in (strSave ?? {})).toBe(false) // bonus no longer stored
   })
 })
