@@ -29,12 +29,11 @@ const EIRA: Character = {
   classes: [{ name: 'Ranger', level: 5, hitDie: 10 }],
   experience: 6500,
   abilities: { str: 14, dex: 18, con: 14, int: 12, wis: 16, cha: 10 },
-  proficiencyBonus: 3,
   hp: { current: 42, max: 42, temp: 5 },
   hitDice: [{ className: 'Ranger', current: 5, max: 5, dieSize: 10 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 4, speed: 35,
-  passivePerception: 16, spellSaveDC: 14, inspiration: false,
+  inspiration: false,
   savingThrows: [
     save('str', false, 2),
     save('dex', true, 7),
