@@ -691,7 +691,9 @@ const en = {
 
   // Campaign detail
   'campaign_detail.members':           'Members',
-  'campaign_detail.role_master':       'Master',
+  'campaign_detail.members_help':      'Master is who created (or received) the campaign: only they can delete, transfer ownership and promote. Co-masters help run it — maps, tokens, initiative and secret rolls — but cannot delete or transfer.',
+  'campaign_detail.role_owner':        'Master',
+  'campaign_detail.role_comaster':     'Co-master',
   'campaign_detail.role_player':       'Player',
   'campaign_detail.unknown_member':      'Unknown member',
   'campaign_detail.unknown_character':   'Unknown character',
@@ -843,7 +845,7 @@ const en = {
   'campaign_detail.transfer_warning': "{name} will become the campaign owner. You'll become a player and lose master permissions — only the new owner can transfer it back.",
   'campaign_detail.transfer_confirm': 'Transfer',
   'campaign_detail.transfer_error':   'Could not transfer ownership. Please try again.',
-  'campaign_detail.promote_master':   'Promote to Master',
+  'campaign_detail.promote_master':   'Promote to co-master',
   'campaign_detail.demote_player':    'Demote to Player',
   'campaign_detail.role_change_error':'Could not change role. Please try again.',
 

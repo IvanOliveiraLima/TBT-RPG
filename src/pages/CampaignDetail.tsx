@@ -19,6 +19,7 @@ import { ConfirmTransferOwnershipModal } from '@/components/campaigns/ConfirmTra
 import { CampaignMapsSection } from '@/components/campaigns/CampaignMapsSection'
 import { TokenPresetsSection } from '@/components/campaigns/TokenPresetsSection'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
+import { HelpHint } from '@/components/HelpHint'
 import { DicePanel } from '@/components/dice/DicePanel'
 import { useDiceStore } from '@/store/useDiceStore'
 import type { Campaign, CampaignMember, UserProfile } from '@/domain/campaign'
@@ -293,15 +294,23 @@ export default function CampaignDetail() {
           }}
         >
           <div style={{
-            fontFamily: T.serif, fontSize: 11, fontWeight: 600,
-            letterSpacing: 2, textTransform: 'uppercase',
-            color: T.textMuted, marginBottom: 14,
+            display: 'flex', alignItems: 'center', gap: 6,
+            marginBottom: 14,
           }}>
-            {t('campaign_detail.members')} ({members.length})
+            <div style={{
+              fontFamily: T.serif, fontSize: 11, fontWeight: 600,
+              letterSpacing: 2, textTransform: 'uppercase',
+              color: T.textMuted,
+            }}>
+              {t('campaign_detail.members')} ({members.length})
+            </div>
+            <HelpHint textKey="campaign_detail.members_help" />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {members.map(m => (
+            {members.map(m => {
+              const isRowOwner = m.userId === campaign.ownerId
+              return (
               <div
                 key={m.userId}
                 data-testid={`member-row-${m.userId}`}
@@ -336,9 +345,11 @@ export default function CampaignDetail() {
                     color: m.role === 'master' ? T.gold : T.textMuted,
                     textTransform: 'uppercase',
                   }}>
-                    {m.role === 'master'
-                      ? t('campaign_detail.role_master')
-                      : t('campaign_detail.role_player')}
+                    {isRowOwner
+                      ? t('campaign_detail.role_owner')
+                      : m.role === 'master'
+                        ? t('campaign_detail.role_comaster')
+                        : t('campaign_detail.role_player')}
                   </div>
 
                   <MemberRowMenu
@@ -356,7 +367,7 @@ export default function CampaignDetail() {
                   />
                 </div>
               </div>
-            ))}
+            )})}
 
             {members.length === 0 && (
               <div style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}>
