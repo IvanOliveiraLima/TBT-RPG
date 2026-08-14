@@ -169,27 +169,27 @@ describe('CampaignMapViewer — markers (member view)', () => {
   })
 
   it('(no label) text shows in PT', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'pt')
     await waitFor(() => screen.getByTestId(`marker-label-${MARKER_2.id}`))
     expect(screen.getByTestId(`marker-label-${MARKER_2.id}`).textContent).toContain('(sem rótulo)')
   })
 
   it('does NOT show rename/remove buttons for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId(`marker-label-${MARKER_1.id}`))
     expect(screen.queryByTestId(`marker-rename-${MARKER_1.id}`)).toBeNull()
     expect(screen.queryByTestId(`marker-remove-${MARKER_1.id}`)).toBeNull()
   })
 
   it('does NOT show add hint for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('marker-add-hint')).toBeNull()
   })
 
   it('does NOT install dblclick handler for member (no MapClickHandler)', async () => {
     capturedDblClickHandler = null
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(capturedDblClickHandler).toBeNull()
   })
@@ -204,31 +204,31 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   })
 
   it('shows add hint for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('marker-add-hint'))
   })
 
   it('add hint text in PT', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('marker-add-hint'))
     expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique duas vezes no mapa')
   })
 
   it('shows rename and remove buttons for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     expect(screen.getByTestId(`marker-remove-${MARKER_1.id}`)).toBeDefined()
   })
 
   it('clicking rename opens label input', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     expect(screen.getByTestId(`marker-label-input-${MARKER_1.id}`)).toBeDefined()
   })
 
   it('label input pre-fills with current label', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     expect((screen.getByTestId(`marker-label-input-${MARKER_1.id}`) as HTMLInputElement).value).toBe(MARKER_1.label)
@@ -236,7 +236,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 
   it('save rename calls updateMapMarkerLabel and updates label', async () => {
     mockUpdateMapMarkerLabel.mockResolvedValue(undefined)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.change(screen.getByTestId(`marker-label-input-${MARKER_1.id}`), { target: { value: 'New Name' } })
@@ -246,7 +246,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   })
 
   it('cancel rename hides the input and restores view', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-rename-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-cancel-rename-${MARKER_1.id}`))
@@ -256,7 +256,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 
   it('remove calls deleteMapMarker and removes marker from DOM', async () => {
     mockDeleteMapMarker.mockResolvedValue(undefined)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`marker-remove-${MARKER_1.id}`))
     fireEvent.click(screen.getByTestId(`marker-remove-${MARKER_1.id}`))
     await waitFor(() => expect(mockDeleteMapMarker).toHaveBeenCalledWith(MARKER_1.id))
@@ -264,7 +264,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   })
 
   it('map click shows pending marker UI for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
@@ -274,7 +274,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   })
 
   it('cancel pending marker removes the pending UI', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-cancel-btn'))
@@ -285,7 +285,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('add marker calls createMapMarker with x=lng y=lat and adds to list', async () => {
     const newMarker = { id: 'mk-new', mapId: 'map-1', x: 400, y: 300, label: 'New Spot', createdAt: 2 }
     mockCreateMapMarker.mockResolvedValue(newMarker)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-label-input'))
@@ -297,7 +297,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   })
 
   it('pending marker position uses [lat, lng] = [y, x]', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
@@ -335,7 +335,7 @@ describe('CampaignMapViewer — marker polling', () => {
   })
 
   it('does NOT poll markers for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await act(async () => { await Promise.resolve() })
     const callsAfterMount = mockListMapMarkers.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000) })

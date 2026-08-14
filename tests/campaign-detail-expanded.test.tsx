@@ -94,8 +94,8 @@ vi.mock('@/services/user-profile', () => ({
 // ── Mock InviteCodeBlock (test separately) ────────────────────────────────────
 
 vi.mock('@/components/campaigns/InviteCodeBlock', () => ({
-  InviteCodeBlock: ({ isOwner }: { isOwner: boolean; campaign: Campaign; onCodeRegenerated: () => void }) => (
-    isOwner ? <div data-testid="invite-code-block-stub">InviteBlock</div> : null
+  InviteCodeBlock: ({ isMaster }: { isMaster: boolean; campaign: Campaign; onCodeRegenerated: () => void }) => (
+    isMaster ? <div data-testid="invite-code-block-stub">InviteBlock</div> : null
   ),
 }))
 

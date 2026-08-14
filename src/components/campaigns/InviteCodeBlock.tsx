@@ -25,17 +25,17 @@ function formatCode(code: string): string {
 
 interface InviteCodeBlockProps {
   campaign: Campaign
-  isOwner: boolean
+  isMaster: boolean
   onCodeRegenerated: (newCode: string) => void
 }
 
-export function InviteCodeBlock({ campaign, isOwner, onCodeRegenerated }: InviteCodeBlockProps) {
+export function InviteCodeBlock({ campaign, isMaster, onCodeRegenerated }: InviteCodeBlockProps) {
   const { t } = useTranslation()
   const [copiedTarget, setCopiedTarget] = useState<'link' | 'code' | null>(null)
   const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!isOwner) return null
+  if (!isMaster) return null
 
   function buildInviteLink(): string {
     const base = import.meta.env.BASE_URL.replace(/\/$/, '')

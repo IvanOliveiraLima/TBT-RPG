@@ -30,10 +30,10 @@ function formatRelative(ts: number): string {
 
 interface Props {
   campaignId: string
-  isOwner: boolean
+  isMaster: boolean
 }
 
-export function CampaignRollLog({ campaignId, isOwner }: Props) {
+export function CampaignRollLog({ campaignId, isMaster }: Props) {
   const { t } = useTranslation()
   const [rolls, setRolls] = useState<CampaignDiceRoll[]>([])
   const [clearing, setClearing] = useState(false)
@@ -76,7 +76,7 @@ export function CampaignRollLog({ campaignId, isOwner }: Props) {
         }}>
           {t('dice_log.title')}
         </div>
-        {isOwner && rolls.length > 0 && (
+        {isMaster && rolls.length > 0 && (
           <button
             data-testid="dice-log-clear-btn"
             onClick={() => { void handleClear() }}

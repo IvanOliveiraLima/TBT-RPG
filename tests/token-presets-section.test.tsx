@@ -39,9 +39,9 @@ const PRESET_2: CampaignTokenPreset = {
   id: 'p2', campaignId: CAMPAIGN_ID, label: 'Orc', color: '#1A5276', size: 2, imagePath: null,
 }
 
-function renderSection(isOwner = true, lang: 'en' | 'pt' = 'en') {
+function renderSection(isMaster = true, lang: 'en' | 'pt' = 'en') {
   return renderWithI18n(
-    <TokenPresetsSection campaignId={CAMPAIGN_ID} isOwner={isOwner} />,
+    <TokenPresetsSection campaignId={CAMPAIGN_ID} isMaster={isMaster} />,
     lang,
   )
 }

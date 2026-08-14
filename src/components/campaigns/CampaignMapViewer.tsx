@@ -572,7 +572,7 @@ function TokenPopupContent({
 
 interface Props {
   map: CampaignMap
-  isOwner?: boolean
+  isMaster?: boolean
   expanded?: boolean
   onGridSaved?: (mapId: string, grid: GridConfig) => void
   broadcast?: boolean
@@ -626,7 +626,7 @@ const BOTTOM_SHEET_HDR: React.CSSProperties = {
   marginBottom:   4,
 }
 
-export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGridSaved, broadcast = false }: Props) {
+export function CampaignMapViewer({ map, isMaster = false, expanded = false, onGridSaved, broadcast = false }: Props) {
   const { t } = useTranslation()
   const isMobile = useIsMobile()
   const [signedUrl, setSignedUrl] = useState<string | null>(null)
@@ -727,7 +727,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Poll markers every 15 s for non-owners (members see additions without reopening)
   useEffect(() => {
-    if (isOwner || broadcast) return
+    if (isMaster || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapMarkers(map.id)
@@ -735,7 +735,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, MAP_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner, broadcast])
+  }, [map.id, isMaster, broadcast])
 
   // Fetch tokens on mount
   useEffect(() => {
@@ -749,7 +749,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Poll tokens every 5 s for non-owners
   useEffect(() => {
-    if (isOwner || broadcast) return
+    if (isMaster || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapTokens(map.id)
@@ -757,7 +757,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner, broadcast])
+  }, [map.id, isMaster, broadcast])
 
   // Fetch areas on mount
   useEffect(() => {
@@ -771,7 +771,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Poll areas every 5 s for non-owners
   useEffect(() => {
-    if (isOwner || broadcast) return
+    if (isMaster || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       listMapAreas(map.id)
@@ -779,7 +779,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, TOKEN_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner, broadcast])
+  }, [map.id, isMaster, broadcast])
 
   // Resolve signed URLs for tokens that have an image; dedup by path
   useEffect(() => {
@@ -814,7 +814,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Poll fog every 5 s for non-owners
   useEffect(() => {
-    if (isOwner || broadcast) return
+    if (isMaster || broadcast) return
     let cancelled = false
     const id = setInterval(() => {
       getMapFog(map.id)
@@ -822,13 +822,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         .catch(() => {})
     }, FOG_POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [map.id, isOwner, broadcast])
+  }, [map.id, isMaster, broadcast])
 
   // ── BroadcastChannel — owner emits state; broadcast receiver applies it ─────
 
   // Owner: create channel, respond to hello with snapshot, post snapshot on mount
   useEffect(() => {
-    if (!isOwner || broadcast) return
+    if (!isMaster || broadcast) return
     if (typeof BroadcastChannel === 'undefined') return
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     broadcastChRef.current = ch
@@ -839,15 +839,15 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     }
     ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
     return () => { ch.close(); broadcastChRef.current = null }
-  }, [isOwner, broadcast, map.id])
+  }, [isMaster, broadcast, map.id])
 
   // Owner: re-post full snapshot whenever any shared state changes
   useEffect(() => {
-    if (!isOwner || broadcast) return
+    if (!isMaster || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
     ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
-  }, [isOwner, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment])
+  }, [isMaster, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
@@ -874,7 +874,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Fetch preset palette + resolve signed URLs for preset images (owner only)
   useEffect(() => {
-    if (!isOwner) return
+    if (!isMaster) return
     let cancelled = false
     listTokenPresets(map.campaignId)
       .then(ps => {
@@ -889,7 +889,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       })
       .catch(() => undefined)
     return () => { cancelled = true }
-  }, [isOwner, map.campaignId])
+  }, [isMaster, map.campaignId])
 
   // Fetch initiative on mount (not broadcast)
   useEffect(() => {
@@ -919,7 +919,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
 
   // Fetch linked char names for initiative quick-add (owner only)
   useEffect(() => {
-    if (!isOwner || broadcast) return
+    if (!isMaster || broadcast) return
     let cancelled = false
     fetchLinkedCharactersDetails(map.campaignId)
       .then(details => {
@@ -932,17 +932,17 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [isOwner, broadcast, map.campaignId])
+  }, [isMaster, broadcast, map.campaignId])
 
   // Fetch auto-initiative flag on mount (owner only, not broadcast)
   useEffect(() => {
-    if (!isOwner || broadcast) return
+    if (!isMaster || broadcast) return
     let cancelled = false
     getAutoInitiative(map.campaignId)
       .then(v => { if (!cancelled) setAutoInitiative(v) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [map.campaignId, isOwner, broadcast])
+  }, [map.campaignId, isMaster, broadcast])
 
   function handleToggleAutoInitiative(next: boolean) {
     setAutoInitiative(next)
@@ -1000,7 +1000,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
   const revealedSet = useMemo(() => new Set(fog.revealed), [fog.revealed])
 
   function isTokenHiddenForViewer(tok: CampaignMapToken): boolean {
-    if (isOwner) return false
+    if (isMaster) return false
     if (!fog.enabled) return false
     const cell = pointToCell(tok.x, map.height - tok.y, localGrid)
     if (!cell) return false
@@ -1372,7 +1372,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
     >
       {/* ── Owner toolbar — upper-right, below Leaflet zoom controls ─── */}
       {/* ── Owner toolbar — desktop only (hidden on mobile; tools menu replaces it) ── */}
-      {isOwner && !isMobile && (
+      {isMaster && !isMobile && (
         <div
           style={{
             position: 'absolute', top: 8, right: 8, zIndex: 1000,
@@ -1980,7 +1980,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         </div>
       )}
 
-      {isOwner && (
+      {isMaster && (
         <div
           data-testid="marker-add-hint"
           style={{
@@ -2028,7 +2028,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             ⚔ {t('initiative.title')}
           </button>
           {/* Ferramentas button — mobile owner only; replaces the hidden right-side toolbar */}
-          {isOwner && isMobile && (
+          {isMaster && isMobile && (
             <button
               type="button"
               data-testid="tools-menu-toggle"
@@ -2057,7 +2057,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             width: 300, maxHeight: '70%', overflowY: 'auto',
           }}
         >
-          <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+          <CampaignRollLog campaignId={map.campaignId} isMaster={isMaster} />
         </div>
       )}
       {!broadcast && activePanel === 'rolls' && isMobile && (
@@ -2068,7 +2068,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             </span>
             <button type="button" onClick={() => setActivePanel(null)} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>×</button>
           </div>
-          <CampaignRollLog campaignId={map.campaignId} isOwner={isOwner} />
+          <CampaignRollLog campaignId={map.campaignId} isMaster={isMaster} />
         </div>
       )}
 
@@ -2082,7 +2082,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           }}
         >
           <CampaignInitiativePanel
-            isOwner={isOwner}
+            isMaster={isMaster}
             tracker={tracker}
             linkedChars={linkedChars}
             onUpdate={(t) => { void handleUpdateTracker(t) }}
@@ -2100,7 +2100,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
             <button type="button" onClick={() => setActivePanel(null)} style={{ background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>×</button>
           </div>
           <CampaignInitiativePanel
-            isOwner={isOwner}
+            isMaster={isMaster}
             tracker={tracker}
             linkedChars={linkedChars}
             onUpdate={(t) => { void handleUpdateTracker(t) }}
@@ -2139,7 +2139,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       {/* ── Mobile owner tool panels as bottom sheets ────────────────────────── */}
 
       {/* Ferramentas menu — list of tool actions (mobile owner, activePanel === 'tools') */}
-      {isOwner && isMobile && activePanel === 'tools' && (
+      {isMaster && isMobile && activePanel === 'tools' && (
         <div data-testid="tools-bottom-sheet" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <span style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
@@ -2205,7 +2205,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Grid panel — mobile bottom sheet */}
-      {isOwner && isMobile && panelOpen && (
+      {isMaster && isMobile && panelOpen && (
         <div data-testid="grid-config-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -2276,7 +2276,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Preset palette — mobile bottom sheet */}
-      {isOwner && isMobile && activePanel === 'presets' && (
+      {isMaster && isMobile && activePanel === 'presets' && (
         <div data-testid="preset-palette-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
@@ -2319,7 +2319,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Area panel — mobile bottom sheet */}
-      {isOwner && isMobile && (areaPanelOpen || areaMode) && (
+      {isMaster && isMobile && (areaPanelOpen || areaMode) && (
         <div data-testid="area-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
@@ -2370,7 +2370,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       )}
 
       {/* Fog panel — mobile bottom sheet */}
-      {isOwner && isMobile && fogMode && (
+      {isMaster && isMobile && fogMode && (
         <div data-testid="fog-config-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
@@ -2675,13 +2675,13 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               width={map.width}
               height={map.height}
               fill="#0a0a0f"
-              fillOpacity={isOwner ? 0.5 : 1}
+              fillOpacity={isMaster ? 0.5 : 1}
               mask={`url(#fog-${map.id})`}
             />
           </SVGOverlay>
         )}
 
-        {isOwner && (
+        {isMaster && (
           <>
             <MapClickHandler
               onDblClick={latlng => {
@@ -2704,7 +2704,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
         )}
 
         {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
-        {isOwner && (
+        {isMaster && (
           <FogInteraction
             fogMode={fogMode}
             onPaint={handleFogPaint}
@@ -2712,7 +2712,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           />
         )}
 
-        {isOwner && (
+        {isMaster && (
           <AreaInteraction
             areaMode={areaMode}
             onStart={handleAreaStart}
@@ -2721,7 +2721,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
           />
         )}
 
-        {isOwner && (
+        {isMaster && (
           <RulerDragHandler
             rulerMode={rulerMode}
             onStart={handleRulerStart}
@@ -2773,11 +2773,11 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
                   <>
                     <div
                       data-testid={`marker-label-${m.id}`}
-                      style={{ fontSize: 13, marginBottom: isOwner ? 6 : 0, color: '#333' }}
+                      style={{ fontSize: 13, marginBottom: isMaster ? 6 : 0, color: '#333' }}
                     >
                       {m.label || t('campaign_maps.marker_empty_label')}
                     </div>
-                    {isOwner && (
+                    {isMaster && (
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button
                           type="button"
@@ -2854,8 +2854,8 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               key={tok.id}
               position={[tok.y, tok.x]}
               icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
-              draggable={isOwner && !areaMode && !fogMode && !rulerMode}
-              {...(isOwner ? {
+              draggable={isMaster && !areaMode && !fogMode && !rulerMode}
+              {...(isMaster ? {
                 eventHandlers: {
                   dragend(e: L.DragEndEvent) {
                     const latlng = (e.target as L.Marker).getLatLng()
@@ -2867,7 +2867,7 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
               } : {})}
             >
               <Popup>
-                {isOwner ? (
+                {isMaster ? (
                   <TokenPopupContent
                     token={tok}
                     campaignId={map.campaignId}
@@ -2892,14 +2892,14 @@ export function CampaignMapViewer({ map, isOwner = false, expanded = false, onGr
       </MapContainer>
 
       {/* GM dice panel — absolute inside the relative viewer wrapper (avoids backdrop-filter clipping) */}
-      {isOwner && !broadcast && diceOpen && (
+      {isMaster && !broadcast && diceOpen && (
         <div style={{ position: 'absolute', top: 12, bottom: 80, right: 24, zIndex: 1001, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <DicePanel onClose={() => setDiceOpen(false)} />
         </div>
       )}
 
       {/* GM dice FAB — owner only, not in broadcast */}
-      {isOwner && !broadcast && (
+      {isMaster && !broadcast && (
         <button
           type="button"
           data-testid="viewer-dice-fab"

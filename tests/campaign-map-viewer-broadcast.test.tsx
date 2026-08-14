@@ -199,13 +199,13 @@ afterEach(() => {
 
 describe('CampaignMapViewer — owner emits via BroadcastChannel', () => {
   it('opens BroadcastChannel with correct map id on mount (owner)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(bcConstructorSpy).toHaveBeenCalledWith('tbt-map-map-1')
   })
 
   it('posts snapshot on mount (owner)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => {
       const ch = channels[0]
       expect(ch?.postMessage).toHaveBeenCalledWith(
@@ -215,7 +215,7 @@ describe('CampaignMapViewer — owner emits via BroadcastChannel', () => {
   })
 
   it('responds to hello with snapshot', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
 
     const ch = channels[0]
@@ -233,20 +233,20 @@ describe('CampaignMapViewer — owner emits via BroadcastChannel', () => {
   })
 
   it('shows "Open broadcast screen" button in owner toolbar', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('broadcast-open-btn'))
     expect(screen.getByTestId('broadcast-open-btn').textContent).toContain('Open broadcast screen')
   })
 
   it('shows "Abrir tela de transmissão" in owner toolbar (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('broadcast-open-btn'))
     expect(screen.getByTestId('broadcast-open-btn').textContent).toContain('Abrir tela de transmissão')
   })
 
   it('clicking broadcast button calls window.open with broadcast route', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('broadcast-open-btn'))
     fireEvent.click(screen.getByTestId('broadcast-open-btn'))
     expect(openSpy).toHaveBeenCalledWith(
@@ -258,7 +258,7 @@ describe('CampaignMapViewer — owner emits via BroadcastChannel', () => {
   })
 
   it('does NOT open BroadcastChannel when not owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     // Receiver (broadcast=false, isOwner=false) — no channel should open
     expect(channels).toHaveLength(0)

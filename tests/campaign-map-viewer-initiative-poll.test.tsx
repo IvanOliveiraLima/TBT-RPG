@@ -193,7 +193,7 @@ describe('CampaignMapViewer — initiative poll (Correction 1)', () => {
   })
 
   it('polls getInitiative for owner every 5s', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await act(async () => { await Promise.resolve() })
     const before = mockGetInitiative.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
@@ -201,7 +201,7 @@ describe('CampaignMapViewer — initiative poll (Correction 1)', () => {
   })
 
   it('polls getInitiative for member every 5s (existing behavior preserved)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await act(async () => { await Promise.resolve() })
     const before = mockGetInitiative.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
@@ -209,7 +209,7 @@ describe('CampaignMapViewer — initiative poll (Correction 1)', () => {
   })
 
   it('does NOT poll getInitiative in broadcast mode', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner broadcast />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster broadcast />, 'en')
     await act(async () => { await Promise.resolve() })
     const before = mockGetInitiative.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
@@ -237,7 +237,7 @@ describe('CampaignMapViewer — initiative poll grace guard', () => {
 
   it('owner adopts remote tracker when no recent local edit', async () => {
     mockGetInitiative.mockResolvedValue(REMOTE_TRACKER)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await flushSignedUrl()
     await openInitiativePanel()
 
@@ -249,7 +249,7 @@ describe('CampaignMapViewer — initiative poll grace guard', () => {
   })
 
   it('grace guard: poll suppressed within 4s of handleUpdateTracker', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await flushSignedUrl()
     await openInitiativePanel()
     expect(capturedOnUpdate).not.toBeNull()
@@ -273,7 +273,7 @@ describe('CampaignMapViewer — initiative poll grace guard', () => {
   })
 
   it('grace guard: remote tracker adopted after 4s grace expires', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await flushSignedUrl()
     await openInitiativePanel()
     expect(capturedOnUpdate).not.toBeNull()

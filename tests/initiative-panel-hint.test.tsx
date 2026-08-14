@@ -22,7 +22,7 @@ describe('CampaignInitiativePanel — auto-initiative HelpHint', () => {
   it('renders HelpHint trigger when owner and toggle available', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -37,7 +37,7 @@ describe('CampaignInitiativePanel — auto-initiative HelpHint', () => {
   it('does NOT render HelpHint trigger when not owner', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner={false}
+        isMaster={false}
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -52,7 +52,7 @@ describe('CampaignInitiativePanel — auto-initiative HelpHint', () => {
   it('does NOT render HelpHint trigger when onToggleAutoInitiative not provided', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -65,7 +65,7 @@ describe('CampaignInitiativePanel — auto-initiative HelpHint', () => {
   it('clicking HelpHint trigger shows the hint text in EN', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}
@@ -83,7 +83,7 @@ describe('CampaignInitiativePanel — auto-initiative HelpHint', () => {
   it('clicking HelpHint trigger shows the hint text in PT', () => {
     renderWithI18n(
       <CampaignInitiativePanel
-        isOwner
+        isMaster
         tracker={makeTracker()}
         linkedChars={[]}
         onUpdate={noOp}

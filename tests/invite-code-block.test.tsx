@@ -43,12 +43,12 @@ const CAMPAIGN: Campaign = {
   updatedAt: 0,
 }
 
-function renderBlock(isOwner: boolean, onCodeRegenerated = vi.fn()) {
+function renderBlock(isMaster: boolean, onCodeRegenerated = vi.fn()) {
   localStorage.setItem('tbt-rpg-v2-lang', 'pt')
   return render(
     <MemoryRouter>
       <I18nProvider>
-        <InviteCodeBlock campaign={CAMPAIGN} isOwner={isOwner} onCodeRegenerated={onCodeRegenerated} />
+        <InviteCodeBlock campaign={CAMPAIGN} isMaster={isMaster} onCodeRegenerated={onCodeRegenerated} />
       </I18nProvider>
     </MemoryRouter>
   )

@@ -50,7 +50,7 @@ const SMALL_BTN: React.CSSProperties = {
 
 interface Props {
   campaignId: string
-  isOwner: boolean
+  isMaster: boolean
 }
 
 interface UploadState {
@@ -59,7 +59,7 @@ interface UploadState {
   error: string | null
 }
 
-export function CampaignMapsSection({ campaignId, isOwner }: Props) {
+export function CampaignMapsSection({ campaignId, isMaster }: Props) {
   const { t } = useTranslation()
   const [maps, setMaps] = useState<CampaignMap[]>([])
   const [viewerMap, setViewerMap] = useState<CampaignMap | null>(null)
@@ -75,12 +75,12 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
 
   // Poll maps list every 15s for non-owners (members see additions without reopening)
   useEffect(() => {
-    if (isOwner) return
+    if (isMaster) return
     const id = setInterval(() => {
       listCampaignMaps(campaignId).then(setMaps).catch(() => {})
     }, MAP_POLL_MS)
     return () => clearInterval(id)
-  }, [campaignId, isOwner])
+  }, [campaignId, isMaster])
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -160,7 +160,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             {t('campaign_maps.section_title')} ({maps.length})
           </div>
 
-          {isOwner && (
+          {isMaster && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 data-testid="map-name-input"
@@ -226,7 +226,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             data-testid="maps-empty-state"
             style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: 12 }}
           >
-            {isOwner ? t('campaign_maps.empty') : t('campaign_maps.empty_player')}
+            {isMaster ? t('campaign_maps.empty') : t('campaign_maps.empty_player')}
           </div>
         )}
 
@@ -258,7 +258,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
                   {m.name}
                 </button>
 
-                {isOwner && (
+                {isMaster && (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <button
@@ -399,7 +399,7 @@ export function CampaignMapsSection({ campaignId, isOwner }: Props) {
             <CampaignMapViewer
               key={viewerMap.id}
               map={viewerMap}
-              isOwner={isOwner}
+              isMaster={isMaster}
               expanded={expanded}
               onGridSaved={(id, grid) => {
                 const patch = {

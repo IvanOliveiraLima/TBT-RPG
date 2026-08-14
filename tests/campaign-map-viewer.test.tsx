@@ -229,37 +229,37 @@ describe('CampaignMapViewer — grid config panel', () => {
   })
 
   it('shows collapsed toggle button for owner (not full panel)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('grid-panel-toggle')).toBeDefined())
     expect(screen.queryByTestId('grid-config-panel')).toBeNull()
   })
 
   it('toggle button label contains grid title (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('grid-panel-toggle').textContent).toContain('Grid'))
   })
 
   it('toggle button label contains grid title (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => expect(screen.getByTestId('grid-panel-toggle').textContent).toContain('Grade'))
   })
 
   it('clicking toggle button opens the config panel (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-config-panel')).toBeDefined())
     expect(screen.getByTestId('grid-config-panel').textContent).toContain('Grid')
   })
 
   it('clicking toggle button opens the config panel (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-config-panel')).toBeDefined())
     expect(screen.getByTestId('grid-config-panel').textContent).toContain('Grade')
   })
 
   it('collapse button (×) hides the panel', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-collapse-btn')).toBeDefined())
     screen.getByTestId('grid-collapse-btn').click()
@@ -268,14 +268,14 @@ describe('CampaignMapViewer — grid config panel', () => {
   })
 
   it('does NOT show toggle or panel for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getByTestId('campaign-map-viewer')).toBeDefined())
     expect(screen.queryByTestId('grid-panel-toggle')).toBeNull()
     expect(screen.queryByTestId('grid-config-panel')).toBeNull()
   })
 
   it('save grid button calls updateCampaignMapGrid and collapses panel', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
     screen.getByTestId('grid-save-btn').click()
@@ -288,7 +288,7 @@ describe('CampaignMapViewer — grid config panel', () => {
 
   it('calls onGridSaved callback with mapId and current grid after save', async () => {
     const onGridSaved = vi.fn()
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner onGridSaved={onGridSaved} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster onGridSaved={onGridSaved} />, 'en')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
     screen.getByTestId('grid-save-btn').click()
@@ -301,7 +301,7 @@ describe('CampaignMapViewer — grid config panel', () => {
   it('does NOT call onGridSaved when updateCampaignMapGrid fails', async () => {
     mockUpdateCampaignMapGrid.mockRejectedValue(new Error('network'))
     const onGridSaved = vi.fn()
-    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isOwner onGridSaved={onGridSaved} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP_WITH_GRID} isMaster onGridSaved={onGridSaved} />, 'en')
     await waitFor(() => screen.getByTestId('grid-panel-toggle').click())
     await waitFor(() => expect(screen.getByTestId('grid-save-btn')).toBeDefined())
     screen.getByTestId('grid-save-btn').click()

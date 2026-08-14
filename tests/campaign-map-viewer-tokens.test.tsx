@@ -196,7 +196,7 @@ describe('CampaignMapViewer — tokens (member view)', () => {
   })
 
   it('member token markers are NOT draggable', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker').length).toBe(2))
     screen.getAllByTestId('marker').forEach(el => {
       expect(el.getAttribute('data-draggable')).toBe('false')
@@ -204,25 +204,25 @@ describe('CampaignMapViewer — tokens (member view)', () => {
   })
 
   it('does NOT show add token button for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('token-add-btn')).toBeNull()
   })
 
   it('shows token label in member popup', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-${TOKEN_1.id}`))
     expect(screen.getByTestId(`token-label-${TOKEN_1.id}`).textContent).toBe(TOKEN_1.label)
   })
 
   it('shows (no label) for member token with empty label', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-${TOKEN_2.id}`))
     expect(screen.getByTestId(`token-label-${TOKEN_2.id}`).textContent).toContain('(no label)')
   })
 
   it('does NOT show remove control for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-${TOKEN_1.id}`))
     expect(screen.queryByTestId(`token-remove-${TOKEN_1.id}`)).toBeNull()
   })
@@ -241,13 +241,13 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('shows add token button for owner (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getByTestId('token-add-btn')).toBeDefined())
     expect(screen.getByTestId('token-add-btn').textContent).toContain('Add token')
   })
 
   it('shows add token button label in PT', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => expect(screen.getByTestId('token-add-btn').textContent).toContain('Adicionar token'))
   })
 
@@ -255,7 +255,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
     const newToken: CampaignMapToken = { ...TOKEN_1, id: 'tok-new' }
     mockCreateMapToken.mockResolvedValue(newToken)
     mockListMapTokens.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('token-add-btn'))
     fireEvent.click(screen.getByTestId('token-add-btn'))
     await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledWith(
@@ -267,14 +267,14 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('owner token markers are draggable', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker').length).toBeGreaterThan(0))
     const markers = screen.getAllByTestId('marker')
     expect(markers.some(el => el.getAttribute('data-draggable') === 'true')).toBe(true)
   })
 
   it('shows owner popup with label input, color, size and remove (no save button)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_1.id}`))
     expect(screen.getByTestId(`token-label-input-${TOKEN_1.id}`)).toBeDefined()
     expect(screen.getByTestId(`token-color-input-${TOKEN_1.id}`)).toBeDefined()
@@ -284,7 +284,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('color change calls updateMapToken immediately', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-color-input-${TOKEN_1.id}`))
     fireEvent.change(screen.getByTestId(`token-color-input-${TOKEN_1.id}`), { target: { value: '#ff0000' } })
     await waitFor(() => expect(mockUpdateMapToken).toHaveBeenCalledWith(
@@ -294,7 +294,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('size change calls updateMapToken immediately', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-size-select-${TOKEN_1.id}`))
     fireEvent.change(screen.getByTestId(`token-size-select-${TOKEN_1.id}`), { target: { value: '3' } })
     await waitFor(() => expect(mockUpdateMapToken).toHaveBeenCalledWith(
@@ -304,14 +304,14 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('label onChange does NOT call updateMapToken mid-typing', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
     fireEvent.change(screen.getByTestId(`token-label-input-${TOKEN_1.id}`), { target: { value: 'Dragon' } })
     expect(mockUpdateMapToken).not.toHaveBeenCalled()
   })
 
   it('label blur calls updateMapToken when value changed', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
     fireEvent.change(screen.getByTestId(`token-label-input-${TOKEN_1.id}`), { target: { value: 'Dragon' } })
     fireEvent.blur(screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
@@ -322,7 +322,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('label blur does NOT call updateMapToken when value unchanged', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
     // Don't change the value, just blur
     fireEvent.blur(screen.getByTestId(`token-label-input-${TOKEN_1.id}`))
@@ -330,7 +330,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('remove button calls deleteMapToken and removes token from DOM', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-remove-${TOKEN_1.id}`))
     fireEvent.click(screen.getByTestId(`token-remove-${TOKEN_1.id}`))
     await waitFor(() => expect(mockDeleteMapToken).toHaveBeenCalledWith(expect.objectContaining({ id: TOKEN_1.id })))
@@ -338,7 +338,7 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
   })
 
   it('dragend calls updateMapToken with latlng converted to x/y (no grid → pass-through)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker').length).toBeGreaterThan(0))
     // Handler key: lat=TOKEN_1.y, lng=TOKEN_1.x
     const handler = capturedDragHandlers.get(`${TOKEN_1.y},${TOKEN_1.x}`)
@@ -382,7 +382,7 @@ describe('CampaignMapViewer — token polling', () => {
   })
 
   it('does NOT poll tokens for owner', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await act(async () => { await Promise.resolve() })
     const callsAfterMount = mockListMapTokens.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })

@@ -276,7 +276,7 @@ export default function CampaignDetail() {
         {/* Invite code — master (and owner) */}
         <InviteCodeBlock
           campaign={campaign}
-          isOwner={isMaster}
+          isMaster={isMaster}
           onCodeRegenerated={(newCode) => {
             setCampaign(prev => prev ? { ...prev, inviteCode: newCode } : prev)
           }}
@@ -442,20 +442,20 @@ export default function CampaignDetail() {
 
         {/* Token presets section — master (and owner) */}
         {id && isMaster && (
-          <TokenPresetsSection campaignId={id} isOwner={isMaster} />
+          <TokenPresetsSection campaignId={id} isMaster={isMaster} />
         )}
 
         {/* Maps section — full width */}
         {id && (
           <div style={{ gridColumn: '1 / -1' }}>
-            <CampaignMapsSection campaignId={id} isOwner={isMaster} />
+            <CampaignMapsSection campaignId={id} isMaster={isMaster} />
           </div>
         )}
 
         {/* Dice roll log — full width, visible to all members */}
         {id && (
           <div style={{ gridColumn: '1 / -1' }}>
-            <CampaignRollLog campaignId={id} isOwner={isMaster} />
+            <CampaignRollLog campaignId={id} isMaster={isMaster} />
           </div>
         )}
 
