@@ -3,6 +3,7 @@ import type { Character } from '@/domain/character'
 import type { TabKey } from './types'
 import { DesktopShell } from './DesktopShell'
 import { MobileShell } from './MobileShell'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface SheetLayoutProps {
   character: Character
@@ -12,26 +13,16 @@ interface SheetLayoutProps {
 }
 
 /**
- * Renders both Mobile and Desktop shells in the DOM simultaneously.
- * CSS media queries (Tailwind lg breakpoint) control which is visible.
- * Trade-off: slight DOM duplication, but fully robust across resize events.
+ * Mounts a single shell based on the current viewport.
+ * Tailwind `lg` breakpoint = 1024px — matches the previous CSS media-query cutoff.
  */
 export function SheetLayout({ character, activeTab, onTabChange, children }: SheetLayoutProps) {
+  // Tailwind `lg` = 1024px — preserves the same breakpoint as the previous layout.
+  const isMobile = useIsMobile(1024)
+  const Shell = isMobile ? MobileShell : DesktopShell
   return (
-    <>
-      {/* Mobile: < 1024px */}
-      <div className="lg:hidden">
-        <MobileShell character={character} activeTab={activeTab} onTabChange={onTabChange}>
-          {children}
-        </MobileShell>
-      </div>
-
-      {/* Desktop: >= 1024px */}
-      <div className="hidden lg:block">
-        <DesktopShell character={character} activeTab={activeTab} onTabChange={onTabChange}>
-          {children}
-        </DesktopShell>
-      </div>
-    </>
+    <Shell character={character} activeTab={activeTab} onTabChange={onTabChange}>
+      {children}
+    </Shell>
   )
 }

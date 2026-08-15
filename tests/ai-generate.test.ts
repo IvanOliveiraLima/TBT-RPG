@@ -439,8 +439,8 @@ describe('mergeAIResponseIntoCharacter', () => {
     expect(result.spells[0]!.id).not.toBe(result.spells[1]!.id)
   })
 
-  it('sets spellcastingAbility and derives spellSaveDC', () => {
-    // Wizard level 1: INT=16 (mod=+3), prof=+2 → DC = 8+2+3 = 13
+  it('sets spellcastingAbility (DC is derived at render, not stored)', () => {
+    // Wizard level 1: INT=16 (mod=+3), prof=+2 → DC = 8+2+3 = 13 (computed by deriveSpellSaveDC)
     const result = mergeAIResponseIntoCharacter({
       classes: [{ name: 'Wizard', level: '1' }],
       int: '16',
@@ -449,7 +449,7 @@ describe('mergeAIResponseIntoCharacter', () => {
     })
     expect(result.spellcastingAbility).toBe('int')
     expect(result.spellcastingClass).toBe('Wizard')
-    expect(result.spellSaveDC).toBe(13)
+    // spellSaveDC is no longer stored; CombatStrip/SpellHeader derive it via deriveSpellSaveDC
   })
 
   it('does not set spellcastingAbility for invalid ability key', () => {

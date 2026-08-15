@@ -57,12 +57,7 @@ export function SpellHeader({ character, onUpdate }: SpellHeaderProps) {
 
   function handleAbilityChange(value: string) {
     if (locked) return
-    const ability = value as AbilityKey | ''
-    // Derive new DC for CombatStrip (keep spellSaveDC in sync)
-    const newDC = ability
-      ? (deriveSpellSaveDC(character.abilities, ability, profBonus) ?? 0)
-      : 0
-    onUpdate?.({ spellcastingAbility: ability, spellSaveDC: newDC })
+    onUpdate?.({ spellcastingAbility: value as AbilityKey | '' })
   }
 
   const readOnly = !onUpdate

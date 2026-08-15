@@ -222,19 +222,19 @@ afterEach(() => {
 
 describe('ruler toggle — desktop', () => {
   it('ruler-toggle button is visible for owner on desktop', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.getByTestId('ruler-toggle')).toBeDefined()
   })
 
   it('ruler-toggle not visible for non-owner on desktop', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('ruler-toggle')).toBeNull()
   })
 
   it('clicking ruler-toggle activates ruler mode (gold styling)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     const btn = screen.getByTestId('ruler-toggle')
     fireEvent.click(btn)
@@ -245,7 +245,7 @@ describe('ruler toggle — desktop', () => {
   })
 
   it('clicking ruler-toggle again deactivates it', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     const btn = screen.getByTestId('ruler-toggle')
     fireEvent.click(btn)
@@ -259,13 +259,13 @@ describe('ruler toggle — desktop', () => {
   })
 
   it('ruler-toggle shows "Ruler" label (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     expect(screen.getByTestId('ruler-toggle').textContent).toContain('Ruler')
   })
 
   it('ruler-toggle shows "Régua" label (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     expect(screen.getByTestId('ruler-toggle').textContent).toContain('Régua')
   })
@@ -275,7 +275,7 @@ describe('ruler toggle — desktop', () => {
 
 describe('ruler surface coordination — desktop', () => {
   it('activating area panel clears ruler mode', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     // Activate ruler
     fireEvent.click(screen.getByTestId('ruler-toggle'))
@@ -290,7 +290,7 @@ describe('ruler surface coordination — desktop', () => {
   })
 
   it('activating grid panel clears ruler mode', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     // Activate ruler
     fireEvent.click(screen.getByTestId('ruler-toggle'))
@@ -309,7 +309,7 @@ describe('ruler surface coordination — desktop', () => {
 
 describe('ruler Esc clears segment', () => {
   it('pressing Escape while in ruler mode does not crash', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('ruler-toggle'))
     fireEvent.click(screen.getByTestId('ruler-toggle'))
     await waitFor(() => {
@@ -330,7 +330,7 @@ describe('ruler — mobile tools menu', () => {
   beforeEach(() => { _isMobileValue = true })
 
   it('tools-ruler-btn is present in tools bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -338,7 +338,7 @@ describe('ruler — mobile tools menu', () => {
   })
 
   it('tools-ruler-btn shows "Ruler" label (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -346,7 +346,7 @@ describe('ruler — mobile tools menu', () => {
   })
 
   it('clicking tools-ruler-btn exits the tools menu', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -359,7 +359,7 @@ describe('ruler — mobile tools menu', () => {
 
 describe('ruler broadcast snapshot', () => {
   it('owner snapshot postMessage includes `ruler` key', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => {
       const ch = channels[0]
       expect(ch?.postMessage).toHaveBeenCalledWith(

@@ -155,32 +155,32 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('shows "Use character portrait" button in owner token popup (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN.id}`))
     expect(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`).textContent).toContain('Use character portrait')
   })
 
   it('shows "Usar retrato de personagem" in owner token popup (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN.id}`))
     expect(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`).textContent).toContain('Usar retrato de personagem')
   })
 
   it('does NOT show portrait pick button for member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId(`token-portrait-pick-${TOKEN.id}`)).toBeNull()
   })
 
   it('clicking picker button opens picker and calls listCampaignCharacters', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => expect(mockListCampaignCharacters).toHaveBeenCalledWith('camp-1'))
   })
 
   it('picker shows character with portrait as enabled', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-${CHAR_WITH_PORTRAIT.characterId}`))
@@ -189,7 +189,7 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('picker shows character without portrait as disabled', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-${CHAR_WITHOUT_PORTRAIT.characterId}`))
@@ -198,7 +198,7 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('no-portrait character shows "(No portrait)" label (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-no-portrait-${CHAR_WITHOUT_PORTRAIT.characterId}`))
@@ -206,7 +206,7 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('no-portrait character shows "(Sem retrato)" label (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-no-portrait-${CHAR_WITHOUT_PORTRAIT.characterId}`))
@@ -214,7 +214,7 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('selecting a character calls setTokenImageFromCharacterPortrait with correct args', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-${CHAR_WITH_PORTRAIT.characterId}`))
@@ -227,7 +227,7 @@ describe('CampaignMapViewer — token portrait picker', () => {
   })
 
   it('picker closes after successful portrait pick', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     fireEvent.click(screen.getByTestId(`token-portrait-pick-${TOKEN.id}`))
     await waitFor(() => screen.getByTestId(`portrait-char-${CHAR_WITH_PORTRAIT.characterId}`))

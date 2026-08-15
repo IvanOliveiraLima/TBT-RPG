@@ -163,13 +163,13 @@ describe('CampaignMapViewer — desktop layout (isMobile = false)', () => {
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = false })
 
   it('shows the right-side owner toolbar (grid-panel-toggle visible)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.getByTestId('grid-panel-toggle')).toBeDefined()
   })
 
   it('does NOT show the Ferramentas toggle button on desktop', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('tools-menu-toggle')).toBeNull()
   })
@@ -179,31 +179,31 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = true })
 
   it('hides the right-side owner toolbar (no grid-panel-toggle)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('grid-panel-toggle')).toBeNull()
   })
 
   it('shows Ferramentas toggle for owner (EN: "Tools")', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     expect(screen.getByTestId('tools-menu-toggle').textContent).toContain('Tools')
   })
 
   it('shows "Ferramentas" label for owner (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     expect(screen.getByTestId('tools-menu-toggle').textContent).toContain('Ferramentas')
   })
 
   it('does NOT show Ferramentas button for non-owner member', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('tools-menu-toggle')).toBeNull()
   })
 
   it('clicking Ferramentas opens the tools bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -211,7 +211,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('Ferramentas menu lists expected tools', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -224,7 +224,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('clicking Ferramentas toggle again closes the bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
@@ -233,7 +233,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('tapping "Grade" from tools menu opens grid bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-grid-btn'))
@@ -245,7 +245,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('roll log panel shows as bottom sheet (has close ×)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('roll-log-toggle'))
     fireEvent.click(screen.getByTestId('roll-log-toggle'))
     await waitFor(() => screen.getByTestId('viewer-roll-log-panel'))
@@ -254,7 +254,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('initiative panel shows as bottom sheet (has close ×)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('initiative-toggle'))
     fireEvent.click(screen.getByTestId('initiative-toggle'))
     await waitFor(() => screen.getByTestId('viewer-initiative-panel'))
@@ -263,7 +263,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('tapping "Áreas" from tools menu opens area panel bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-areas-btn'))
@@ -274,7 +274,7 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
   })
 
   it('tapping "Tokens prontos" from tools menu opens preset palette bottom sheet', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-presets-btn'))
@@ -289,7 +289,7 @@ describe('CampaignMapViewer — mobile single surface (no overlapping bottom she
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = true })
 
   it('opening roll-log-toggle closes an open grid sheet (Grade → ⚄)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     // Open grid via Ferramentas → Grade
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
@@ -305,7 +305,7 @@ describe('CampaignMapViewer — mobile single surface (no overlapping bottom she
   })
 
   it('opening initiative-toggle closes an open area sheet (Áreas → ⚔)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('tools-menu-toggle'))
     // Open area panel via Ferramentas → Áreas
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
@@ -325,7 +325,7 @@ describe('CampaignMapViewer — desktop single surface unchanged (coexistence)',
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = false })
 
   it('on desktop, roll-log-toggle does NOT close the grid panel (both coexist)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     // Open grid via desktop toolbar
     fireEvent.click(screen.getByTestId('grid-panel-toggle'))
@@ -343,7 +343,7 @@ describe('CampaignMapViewer — mobile broadcast (no tools, no Ferramentas)', ()
   beforeEach(() => { vi.clearAllMocks(); _isMobileValue = true })
 
   it('broadcast mode shows neither Ferramentas nor roll log toggle', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner broadcast />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster broadcast />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('tools-menu-toggle')).toBeNull()
     expect(screen.queryByTestId('roll-log-toggle')).toBeNull()

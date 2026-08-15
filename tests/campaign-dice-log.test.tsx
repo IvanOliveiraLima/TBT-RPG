@@ -141,21 +141,21 @@ describe('CampaignRollLog', () => {
   })
 
   it('renders title in EN', async () => {
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getByText('Roll log')).toBeDefined()
     })
   })
 
   it('renders title in PT', async () => {
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'pt')
     await waitFor(() => {
       expect(screen.getByText('Log de rolagens')).toBeDefined()
     })
   })
 
   it('shows empty state when no rolls in EN', async () => {
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-empty')).toBeDefined()
       expect(screen.getByText('No rolls yet')).toBeDefined()
@@ -163,7 +163,7 @@ describe('CampaignRollLog', () => {
   })
 
   it('shows empty state in PT', async () => {
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'pt')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'pt')
     await waitFor(() => {
       expect(screen.getByText('Nenhuma rolagem ainda')).toBeDefined()
     })
@@ -171,7 +171,7 @@ describe('CampaignRollLog', () => {
 
   it('shows dice-log-entry for each roll', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll(), makeCampaignRoll({ id: 'row2' })])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getAllByTestId('dice-log-entry')).toHaveLength(2)
     })
@@ -179,7 +179,7 @@ describe('CampaignRollLog', () => {
 
   it('shows actor name in each entry', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll({ actorName: 'Gandalf' })])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-actor').textContent).toBe('Gandalf')
     })
@@ -187,7 +187,7 @@ describe('CampaignRollLog', () => {
 
   it('shows roll total in each entry', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll({ result: makeResult({ total: 19 }) })])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-total').textContent).toBe('19')
     })
@@ -195,7 +195,7 @@ describe('CampaignRollLog', () => {
 
   it('clear button shown to owner when rolls exist', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll()])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={true} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={true} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-clear-btn')).toBeDefined()
     })
@@ -203,7 +203,7 @@ describe('CampaignRollLog', () => {
 
   it('clear button hidden from non-owner', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll()])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={false} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={false} />, 'en')
     await waitFor(() => {
       expect(screen.getAllByTestId('dice-log-entry')).toHaveLength(1)
     })
@@ -212,7 +212,7 @@ describe('CampaignRollLog', () => {
 
   it('clear button hidden when no rolls (owner)', async () => {
     mockListRolls.mockResolvedValue([])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={true} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={true} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-empty')).toBeDefined()
     })
@@ -223,7 +223,7 @@ describe('CampaignRollLog', () => {
     mockListRolls
       .mockResolvedValueOnce([makeCampaignRoll()])
       .mockResolvedValueOnce([])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={true} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={true} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-clear-btn')).toBeDefined()
     })
@@ -236,7 +236,7 @@ describe('CampaignRollLog', () => {
 
   it('clear button label in EN', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll()])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={true} />, 'en')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={true} />, 'en')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-clear-btn').textContent).toBe('Clear log')
     })
@@ -244,7 +244,7 @@ describe('CampaignRollLog', () => {
 
   it('clear button label in PT', async () => {
     mockListRolls.mockResolvedValue([makeCampaignRoll()])
-    renderWithI18n(<CampaignRollLog campaignId="c1" isOwner={true} />, 'pt')
+    renderWithI18n(<CampaignRollLog campaignId="c1" isMaster={true} />, 'pt')
     await waitFor(() => {
       expect(screen.getByTestId('dice-log-clear-btn').textContent).toBe('Limpar log')
     })

@@ -142,14 +142,14 @@ describe('CampaignMapViewer — token image signed URL', () => {
   it('fetches signed URL for token with imagePath on mount', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_IMAGE])
     mockGetTokenImageUrl.mockResolvedValue('https://signed.example.com/tok-2.png')
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => expect(mockGetTokenImageUrl).toHaveBeenCalledWith('camp-1/tokens/tok-2.png'))
   })
 
   it('does NOT fetch signed URL for token without imagePath', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_IMAGE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(mockListMapTokens).toHaveBeenCalled())
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(mockGetTokenImageUrl).not.toHaveBeenCalled()
@@ -164,7 +164,7 @@ describe('CampaignMapViewer — token popup image controls (owner)', () => {
 
   it('shows upload label but no remove button when token has no image', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_IMAGE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_NO_IMAGE.id}`))
     expect(screen.getByTestId(`token-image-upload-label-${TOKEN_NO_IMAGE.id}`)).toBeDefined()
     expect(screen.queryByTestId(`token-image-remove-${TOKEN_NO_IMAGE.id}`)).toBeNull()
@@ -173,7 +173,7 @@ describe('CampaignMapViewer — token popup image controls (owner)', () => {
   it('shows remove-image button when token has imagePath', async () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_IMAGE])
     mockGetTokenImageUrl.mockResolvedValue('https://signed.example.com/tok-2.png')
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_WITH_IMAGE.id}`))
     expect(screen.getByTestId(`token-image-remove-${TOKEN_WITH_IMAGE.id}`)).toBeDefined()
   })
@@ -182,7 +182,7 @@ describe('CampaignMapViewer — token popup image controls (owner)', () => {
     mockListMapTokens.mockResolvedValue([TOKEN_NO_IMAGE])
     mockUploadTokenImage.mockResolvedValue('camp-1/tokens/tok-1.png')
     mockGetTokenImageUrl.mockResolvedValue('https://signed.example.com/tok-1.png')
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-image-input-${TOKEN_NO_IMAGE.id}`))
     const file = new File(['img'], 'avatar.png', { type: 'image/png' })
     fireEvent.change(screen.getByTestId(`token-image-input-${TOKEN_NO_IMAGE.id}`), {
@@ -201,7 +201,7 @@ describe('CampaignMapViewer — token popup image controls (owner)', () => {
     mockListMapTokens.mockResolvedValue([TOKEN_WITH_IMAGE])
     mockGetTokenImageUrl.mockResolvedValue('https://signed.example.com/tok-2.png')
     mockRemoveTokenImage.mockResolvedValue(undefined)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId(`token-image-remove-${TOKEN_WITH_IMAGE.id}`))
     fireEvent.click(screen.getByTestId(`token-image-remove-${TOKEN_WITH_IMAGE.id}`))
     await waitFor(() =>

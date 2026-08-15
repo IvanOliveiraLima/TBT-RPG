@@ -48,10 +48,10 @@ const SMALL_BTN: React.CSSProperties = {
 
 interface Props {
   campaignId: string
-  isOwner: boolean
+  isMaster: boolean
 }
 
-export function TokenPresetsSection({ campaignId, isOwner }: Props) {
+export function TokenPresetsSection({ campaignId, isMaster }: Props) {
   const { t } = useTranslation()
   const [presets, setPresets] = useState<CampaignTokenPreset[]>([])
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
@@ -184,7 +184,7 @@ export function TokenPresetsSection({ campaignId, isOwner }: Props) {
           {t('token_presets.section_title')}
         </div>
 
-        {isOwner && (
+        {isMaster && (
           <button
             type="button"
             data-testid="presets-add"
@@ -349,7 +349,7 @@ export function TokenPresetsSection({ campaignId, isOwner }: Props) {
               )}
 
               {/* Remove preset (two-step) */}
-              {isOwner && (
+              {isMaster && (
                 confirmRemoveId === preset.id ? (
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <button

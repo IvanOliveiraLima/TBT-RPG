@@ -22,12 +22,11 @@ const KAEL: Character = {
   classes: [{ name: 'Bard', level: 5, hitDie: 8 }],
   experience: 6500,
   abilities: { str: 8, dex: 14, con: 12, int: 12, wis: 10, cha: 18 },
-  proficiencyBonus: 3,
   hp: { current: 35, max: 35, temp: 0 },
   hitDice: [{ className: 'Bard', current: 5, max: 5, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 14, initiative: 2, speed: 30,
-  passivePerception: 13, spellSaveDC: 15, inspiration: false,
+  inspiration: false,
   savingThrows: [], skills: [],
   proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
   attacks: [],
@@ -78,7 +77,6 @@ const KANAAN: Character = {
   spellSlots: {},
   spellcastingAbility: '',
   spellcastingClass: '',
-  spellSaveDC: 0,
 }
 
 describe('SpellsTab integration', () => {

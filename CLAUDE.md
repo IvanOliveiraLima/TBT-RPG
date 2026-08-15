@@ -317,6 +317,10 @@ This order matters: components built on a broken adapter produce invisible data 
   atributo (`data-dice-ui`) o **cluster** de controles que pertence logicamente ao componente mas vive fora
   dele; (c) lembre que portais (tooltips) ficam fora da árvore. **No teste, monte DUAS instâncias** — um teste
   de clique-fora com uma instância passa mesmo com o bug (foi assim que ele escapou no #260).
+- **Breakpoint explícito ao trocar CSS por JS:** ao substituir uma media query (`lg:hidden`) por um hook,
+  passe o mesmo ponto de corte **explicitamente** (`useIsMobile(1024)`) — o default do hook (640) mudaria
+  silenciosamente o layout numa faixa inteira de viewports (tablets). E, no jsdom, sem `matchMedia` o hook
+  cai no fallback: use um helper de viewport nos testes que precisam do layout mobile.
 
 ### internationalization (i18n)
 
@@ -1222,6 +1226,36 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   **qualquer** instância do painel (`[data-testid="dice-panel"]`), no cluster de dados (`[data-dice-ui]`,
   agora no **container** do FAB+seletor, substituindo `data-dice-toggle`) e em tooltips (`[role="tooltip"]`).
 
+### Fundação — `SheetLayout` monta um único shell (COMPLETED — PR #281)
+- Antes, `MobileShell` e `DesktopShell` eram renderizados **ao mesmo tempo** (media query CSS escondia um) e
+  recebiam **o mesmo `children`** — a ficha inteira montava **duas vezes** (conteúdo das abas, listeners,
+  assinaturas de store). Foi a causa do bug do #278.
+- Agora: `useIsMobile(1024)` (breakpoint **explícito**, igual ao `lg` do Tailwind — o default do hook é 640 e
+  mudaria o layout de tablets) e um único `Shell` montado.
+- Helper de teste `tests/helpers/viewport.ts` (`mockViewport`/`resetViewport`), já que o jsdom não tem
+  `matchMedia` (sem ele, o hook cai no guard e só o desktop monta).
+- Efeito colateral revelador: um teste de aba passava **por acidente** — clicava na barra mobile e encontrava
+  o texto no sidebar do desktop. A duplicação estava mascarando asserções fracas.
+
+### Fundação — remoção dos campos derivados armazenados (COMPLETED — PR #282)
+- Removidos de `Character`: `proficiencyBonus`, `passivePerception`, `spellSaveDC`; e o `bonus` de
+  `SkillState`/`SavingThrowState`. Escritas removidas de `factories`, `ai-generate`, `SpellHeader` (esta era
+  **morta** desde o #264) e `SavingThrows`.
+- **Sem migração de banco:** o `Character` é serializado inteiro; registros antigos mantêm as chaves no JSON e
+  elas passam a ser ignoradas. `db.ts` não lê nenhum desses campos.
+- Fecha na raiz a classe de bug do #264 (CD de magia e bônus de ataque errados após subir de nível).
+- Regressão coberta: registro "vindo do storage" com `proficiencyBonus: 2` / `spellSaveDC: 12` num
+  personagem nível 9 → a UI mostra **+4** e **CD 15**.
+
+### Fundação — nomes: `isMaster` e rótulos de co-mestre (COMPLETED — PR #283)
+- Seis componentes tiveram a prop `isOwner` renomeada para `isMaster` (`InviteCodeBlock`,
+  `TokenPresetsSection`, `CampaignMapsSection`, `CampaignRollLog`, `CampaignMapViewer`,
+  `CampaignInitiativePanel`) — eram ações de mestre com nome de dono. **Preservados** os `isOwner` legítimos
+  (`CampaignDetail`, `CampaignCard`, `MemberRowMenu.isCurrentUserOwner`).
+- Rótulos: "Promover a **Co-Mestre**" (evita confusão com "Transferir propriedade") e badge de três vias na
+  lista de membros — **Mestre** (dono), **Co-Mestre**, **Jogador** —, já que os dois primeiros apareciam
+  idênticos. `HelpHint` em "Membros" explicando a diferença.
+
 ---
 
 ## Patterns established during C.1.c
@@ -1973,6 +2007,8 @@ function buildInviteLink(): string {
 | Permissão de mestre centralizada em `is_campaign_master`/`is_map_master` | #274 | Ponto único: 21 policies mudam de significado sem serem reescritas |
 | `campaigns UPDATE` liberado para mestres + trigger que só o dono troca `owner_id` | #274 | Sem o trigger, alargar o UPDATE seria escalada de privilégio |
 | Papel de membro muda só via RPC owner-only; dono não muda o próprio papel | #275 | Sem policy de UPDATE em `campaign_members`; garante ao menos um mestre por campanha |
+| Um único shell montado na ficha (`useIsMobile(1024)`), nunca os dois | #281 | Montar os dois duplica a ficha inteira e faz instâncias ocultas interferirem no estado compartilhado |
+| Nenhum valor derivado é persistido no `Character` — tudo vem dos helpers `derive*` | #282 | Campos derivados armazenados não são atualizados e ficam obsoletos (causa do #264) |
 
 ---
 
@@ -2128,10 +2164,8 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Co-mestre (promover jogador a mestre).**~~ *Resolved (PRs #274, #275).* `is_campaign_master`/
   `is_map_master` + trigger anti-escalada + RPC `set_campaign_member_role` (owner-only); client com
   `isMaster` × `isOwner`.
-- **OQ — Renomear props herdadas de "owner" para "master".** Vários componentes ainda recebem
-  `isOwner`/`isCurrentUserOwner` mas representam **mestre** (`InviteCodeBlock`, `TokenPresetsSection`,
-  `CampaignMapsSection`, `CampaignRollLog`, `CampaignMapViewer`, `CampaignInitiativePanel`). Rename cosmético,
-  porém importante: o nome errado já produziu confusão na revisão do #275. Deferred.
+- ~~**OQ — Renomear props herdadas de "owner" para "master".**~~ *Resolved (PR #283).* Seis componentes
+  passaram a receber `isMaster`; os `isOwner` legítimos (dono) foram preservados.
 - ~~**OQ — Password reset / forgot password.**~~ *Resolved (PR #142).* Modo `forgot` no Login (mensagem neutra anti-enumeração) + página full-screen `ResetPassword` gated por `authCallbackType === 'recovery'` + tratamento de link expirado/usado (`otp_expired`) com banner âmbar e deep link `?mode=forgot`.
 - **OQ — OAuth providers.** Google, Discord. Não implementado.
 - ~~**OQ — Account deletion via UI.**~~ *Resolved (PR #149).* Modal com confirmação por digitação do e-mail; serviço orquestrado num clique (campanhas → storage → cloud chars → IndexedDB → RPC `delete_own_account` → signOut). Função SQL `SECURITY DEFINER` com `auth.uid()`; cleanup best-effort, RPC define sucesso.
@@ -2191,21 +2225,16 @@ New from Combat polish (#253–#256):
   ataque. Deferred (decisão pendente).
 - **OQ — Reordenar/duplicar ataques.** Reordenar cards (setas ou drag) e duplicar um ataque (mesma arma com
   variação). A pensar melhor. Deferred.
-- **OQ — Remover os campos derivados armazenados do domínio.** `proficiencyBonus`, `spellSaveDC`,
-  `passivePerception` e os `bonus` de perícia/resistência são derivados persistidos (LEGADO). Removê-los
-  exige tocar `factories`, `ai-generate`, adapter/persistência e fixtures — mas elimina de vez a classe de bug
-  do #264. Deferred.
+- ~~**OQ — Remover os campos derivados armazenados do domínio.**~~ *Resolved (PR #282).* Campos removidos do
+  tipo e das escritas; sem migração de banco (chaves legadas remanescentes são ignoradas).
 - **OQ — Auto-vínculo de munição.** Ao importar arma à distância (ou trocar o tipo para "à distância"),
   vincular automaticamente quando existir **exatamente um** item na categoria Munição; com dois ou mais,
   manter "Nenhuma". Deferred.
 
 New from bugfix #278 (bandeja de dados):
 
-- **OQ — `SheetLayout` deveria montar um shell só.** Hoje `MobileShell` e `DesktopShell` são renderizados
-  simultaneamente e a media query esconde um, o que **renderiza a ficha inteira duas vezes** (efeitos,
-  listeners e assinaturas de store duplicados) e já causou o bug do #278. Trocar por `useIsMobile()` para
-  montar apenas o shell ativo. Suspeitar dessa duplicação em bugs futuros de estado compartilhado na ficha.
-  Deferred.
+- ~~**OQ — `SheetLayout` deveria montar um shell só.**~~ *Resolved (PR #281).* `useIsMobile(1024)` monta
+  apenas o shell ativo; a ficha deixou de renderizar duas vezes.
 
 ---
 

@@ -30,7 +30,6 @@ export interface ClassEntry {
 export interface SavingThrowState {
   ability: AbilityKey
   proficient: boolean
-  bonus: number          // derived from ability score + proficiency
 }
 
 export interface SkillState {
@@ -38,7 +37,6 @@ export interface SkillState {
   ability: AbilityKey
   proficient: boolean
   expertise: boolean
-  bonus: number          // derived
 }
 
 export type AttackKind = 'melee' | 'ranged' | 'spell'
@@ -135,7 +133,6 @@ export interface Character {
 
   // Core stats
   abilities: Abilities
-  proficiencyBonus: number   // LEGADO: derivado e NÃO mantido — use deriveProficiencyBonus(character)
 
   // Status
   hp: {
@@ -150,8 +147,6 @@ export interface Character {
   ac: number
   initiative: number         // stored as is from v1; ideally dex mod + misc
   speed: number
-  passivePerception: number  // derived: 10 + perception skill bonus
-  spellSaveDC: number        // LEGADO: derivado e NÃO mantido — use deriveSpellSaveDC(...)
   inspiration: boolean       // v1 stores as string in top_bar.insperation (typo preserved in raw)
 
   // Saving throws & skills

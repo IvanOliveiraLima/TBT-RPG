@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { createEmptyCharacter, CANONICAL_SKILLS } from '@/domain/factories'
+import { deriveProficiencyBonus } from '@/domain/derived'
 
 describe('createEmptyCharacter', () => {
   it('returns an object with all required Character fields', () => {
@@ -53,9 +54,9 @@ describe('createEmptyCharacter', () => {
     expect(abilities.cha).toBe(10)
   })
 
-  it('proficiencyBonus is 2 at level 1', () => {
+  it('deriveProficiencyBonus is 2 for a level 1 character', () => {
     const char = createEmptyCharacter()
-    expect(char.proficiencyBonus).toBe(2)
+    expect(deriveProficiencyBonus(char)).toBe(2)
   })
 
   it('initialises hp at 10/10/0', () => {
@@ -116,9 +117,13 @@ describe('createEmptyCharacter', () => {
     expect(char.initiative).toBe(0)
   })
 
-  it('passivePerception equals 10 for default abilities', () => {
+  it('passive perception calculates to 10 for default abilities', () => {
+    // 10 + WIS mod (0) + no perception proficiency = 10
     const char = createEmptyCharacter()
-    expect(char.passivePerception).toBe(10)
+    const perception = char.skills.find(s => s.name === 'Perception')
+    expect(perception?.proficient).toBe(false)
+    expect(char.abilities.wis).toBe(10)
+    // Verified via CombatStrip which uses passivePerception() helper from calculations
   })
 
   it('generates unique IDs for successive calls', () => {

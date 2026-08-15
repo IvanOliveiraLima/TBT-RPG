@@ -209,20 +209,20 @@ describe('CampaignMapViewer — area shapes render', () => {
 
   it('areas-overlay absent when no areas', async () => {
     mockListMapAreas.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('areas-overlay')).toBeNull()
   })
 
   it('areas-overlay present when areas exist', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
   })
 
   it('circle area renders <circle> element', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     expect(overlay.querySelector('circle')).not.toBeNull()
@@ -231,7 +231,7 @@ describe('CampaignMapViewer — area shapes render', () => {
 
   it('square area renders <rect> element', async () => {
     mockListMapAreas.mockResolvedValue([AREA_SQUARE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     expect(overlay.querySelector('rect')).not.toBeNull()
@@ -240,7 +240,7 @@ describe('CampaignMapViewer — area shapes render', () => {
 
   it('member has no area panel toggle', async () => {
     mockListMapAreas.mockResolvedValue([])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(screen.queryByTestId('area-panel-toggle')).toBeNull()
   })
@@ -257,14 +257,14 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
   })
 
   it('clicking area-panel-toggle shows area panel', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-panel'))
   })
 
   it('area panel shows shape selector buttons', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-shape-circle'))
@@ -272,7 +272,7 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
   })
 
   it('area panel shows color input', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-color-input'))
@@ -280,7 +280,7 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
 
   it('clear button calls clearMapAreas', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-clear-btn'))
@@ -289,7 +289,7 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
   })
 
   it('area panel closing works', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-panel-close'))
@@ -298,7 +298,7 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
   })
 
   it('area panel shows "Areas" label (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-panel'))
@@ -306,7 +306,7 @@ describe('CampaignMapViewer — area toolbar (owner)', () => {
   })
 
   it('area panel shows "Áreas" label (PT)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-panel'))
@@ -325,7 +325,7 @@ describe('CampaignMapViewer — line & cone shape buttons', () => {
   })
 
   it('area panel shows line shape button (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-shape-line'))
@@ -333,7 +333,7 @@ describe('CampaignMapViewer — line & cone shape buttons', () => {
   })
 
   it('area panel shows cone shape button (EN)', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-shape-cone'))
@@ -341,7 +341,7 @@ describe('CampaignMapViewer — line & cone shape buttons', () => {
   })
 
   it('area panel shows line/cone buttons in PT', async () => {
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'pt')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-shape-line'))
@@ -362,7 +362,7 @@ describe('CampaignMapViewer — line & cone SVG render', () => {
   it('line area renders <line> element', async () => {
     mockListMapAreas.mockResolvedValue([AREA_LINE])
     mockCreateMapArea.mockResolvedValue(AREA_LINE)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     // SVGOverlay is rendered as <svg>; query for <line> within it
@@ -379,7 +379,7 @@ describe('CampaignMapViewer — line & cone SVG render', () => {
   it('cone area renders <polygon> element', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CONE])
     mockCreateMapArea.mockResolvedValue(AREA_CONE)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     const polyEl = overlay.querySelector('polygon')
@@ -401,7 +401,7 @@ describe('CampaignMapViewer — line & cone SVG render', () => {
     }
     mockListMapAreas.mockResolvedValue([coneFt])
     mockCreateMapArea.mockResolvedValue(coneFt)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     const polyEl = overlay.querySelector('polygon')
@@ -416,7 +416,7 @@ describe('CampaignMapViewer — line & cone SVG render', () => {
   it('line area is not null when x2/y2 are present', async () => {
     mockListMapAreas.mockResolvedValue([AREA_LINE, AREA_CONE])
     mockCreateMapArea.mockResolvedValue(AREA_LINE)
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner={false} />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
     const overlay = screen.getByTestId('areas-overlay')
     expect(overlay.querySelector('line')).not.toBeNull()
@@ -436,7 +436,7 @@ describe('CampaignMapViewer — per-area remove', () => {
 
   it('area list shows remove button per area', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE, AREA_SQUARE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-list'))
@@ -446,7 +446,7 @@ describe('CampaignMapViewer — per-area remove', () => {
 
   it('clicking remove calls deleteMapArea with correct id', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId(`area-remove-${AREA_CIRCLE.id}`))
@@ -456,7 +456,7 @@ describe('CampaignMapViewer — per-area remove', () => {
 
   it('clicking remove removes the area from the list (optimistic)', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE, AREA_SQUARE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId(`area-remove-${AREA_CIRCLE.id}`))
@@ -468,7 +468,7 @@ describe('CampaignMapViewer — per-area remove', () => {
 
   it('"Clear all" still calls clearMapAreas', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-clear-btn'))
@@ -478,7 +478,7 @@ describe('CampaignMapViewer — per-area remove', () => {
 
   it('area list shows shape labels for line and cone', async () => {
     mockListMapAreas.mockResolvedValue([AREA_LINE, AREA_CONE])
-    renderWithI18n(<CampaignMapViewer map={MAP} isOwner />, 'en')
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('area-panel-toggle'))
     fireEvent.click(screen.getByTestId('area-panel-toggle'))
     await waitFor(() => screen.getByTestId('area-list'))

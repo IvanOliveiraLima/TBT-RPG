@@ -89,9 +89,11 @@ export function CampaignCard({ campaign, currentUserId, onOpen, onRequestDelete,
             </div>
           )}
           <div style={{ fontSize: 10, color: T.textMuted, marginTop: 4 }}>
-            {(campaign.myRole === 'master' || isOwner)
-              ? t('campaign_detail.role_master')
-              : t('campaign_detail.role_player')}
+            {isOwner
+              ? t('campaign_detail.role_owner')
+              : campaign.myRole === 'master'
+                ? t('campaign_detail.role_comaster')
+                : t('campaign_detail.role_player')}
           </div>
         </div>
       </button>

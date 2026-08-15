@@ -27,14 +27,10 @@ export function SavingThrows({ character, onUpdate }: SavingThrowsProps) {
   function handleToggle(k: AbilityKey) {
     if (!onUpdate) return
     const currentProf = profMap.get(k) ?? false
-    const newSavingThrows: SavingThrowState[] = ABILITY_ORDER.map((ability) => {
-      const prof = ability === k ? !currentProf : (profMap.get(ability) ?? false)
-      return {
-        ability,
-        proficient: prof,
-        bonus: savingThrowBonus(character.abilities[ability], prof, profBonus),
-      }
-    })
+    const newSavingThrows: SavingThrowState[] = ABILITY_ORDER.map((ability) => ({
+      ability,
+      proficient: ability === k ? !currentProf : (profMap.get(ability) ?? false),
+    }))
     onUpdate({ savingThrows: newSavingThrows })
   }
 

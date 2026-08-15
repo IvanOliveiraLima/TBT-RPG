@@ -13,19 +13,18 @@ const BASE: Character = {
   classes: [{ name: 'Cleric', level: 3, hitDie: 8 }],
   experience: 0,
   abilities: { str: 14, dex: 10, con: 16, int: 12, wis: 18, cha: 10 },
-  proficiencyBonus: 2,
   hp: { current: 24, max: 24, temp: 0 },
   hitDice: [{ className: 'Cleric', current: 3, max: 3, dieSize: 8 }],
   deathSaves: { successes: 0, failures: 0 },
   ac: 16, initiative: 0, speed: 25,
-  passivePerception: 14, spellSaveDC: 14, inspiration: false,
+  inspiration: false,
   savingThrows: [
-    { ability: 'str', proficient: false, bonus: 2 },
-    { ability: 'dex', proficient: false, bonus: 0 },
-    { ability: 'con', proficient: false, bonus: 3 },
-    { ability: 'int', proficient: true,  bonus: 3 },
-    { ability: 'wis', proficient: true,  bonus: 6 },
-    { ability: 'cha', proficient: false, bonus: 0 },
+    { ability: 'str', proficient: false },
+    { ability: 'dex', proficient: false },
+    { ability: 'con', proficient: false },
+    { ability: 'int', proficient: true  },
+    { ability: 'wis', proficient: true  },
+    { ability: 'cha', proficient: false },
   ],
   skills: [],
   proficiencies: { weapons: [], armor: [], tools: [], other: [] }, languages: [],
@@ -207,13 +206,15 @@ describe('SavingThrows', () => {
     expect(strToggle.getAttribute('aria-label')).toContain('Strength')
   })
 
-  it('new bonus is recalculated after toggle (proficient str → mod+prof)', () => {
-    // profBonus for Cleric 3 = 2; STR 14 mod = +2; proficient → +4
+  it('emits updated proficiency after toggle (bonus is derived at render, not stored)', () => {
+    // STR toggle: was proficient=false → emitted as proficient=true
+    // The bonus (+4 = STR mod +2 + profBonus +2) is computed in render by the component
     const onUpdate = vi.fn()
     renderWithI18n(<SavingThrows character={BASE} onUpdate={onUpdate} />, 'pt')
     fireEvent.click(screen.getByTestId('save-str-toggle'))
-    const call = onUpdate.mock.calls[0]![0] as { savingThrows: Array<{ ability: string; bonus: number }> }
+    const call = onUpdate.mock.calls[0]![0] as { savingThrows: Array<{ ability: string; proficient: boolean }> }
     const strSave = call.savingThrows.find(s => s.ability === 'str')
-    expect(strSave?.bonus).toBe(4) // +2 mod + 2 profBonus
+    expect(strSave?.proficient).toBe(true)
+    expect('bonus' in (strSave ?? {})).toBe(false) // bonus no longer stored
   })
 })

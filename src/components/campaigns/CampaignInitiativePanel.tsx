@@ -51,7 +51,7 @@ const T = {
 interface LinkedChar { characterId: string; name: string }
 
 interface Props {
-  isOwner: boolean
+  isMaster: boolean
   tracker: InitiativeTracker
   linkedChars: LinkedChar[]
   onUpdate: (t: InitiativeTracker) => void
@@ -59,7 +59,7 @@ interface Props {
   onToggleAutoInitiative?: (v: boolean) => void
 }
 
-export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdate, autoInitiative, onToggleAutoInitiative }: Props) {
+export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpdate, autoInitiative, onToggleAutoInitiative }: Props) {
   const { t } = useTranslation()
   const [monsterName, setMonsterName] = useState('')
   const [monsterInit, setMonsterInit] = useState('0')
@@ -127,7 +127,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       }}
     >
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isOwner && onToggleAutoInitiative ? 6 : 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMaster && onToggleAutoInitiative ? 6 : 12 }}>
         <div style={{
           fontFamily:    T.serif,
           fontSize:      11,
@@ -140,7 +140,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
             ? t('initiative.round', { n: tracker.round })
             : t('initiative.title')}
         </div>
-        {isOwner && (
+        {isMaster && (
           <button
             data-testid={tracker.active ? 'initiative-end-btn' : 'initiative-start-btn'}
             onClick={() => onUpdate(tracker.active ? endCombat(tracker) : startCombat(tracker))}
@@ -152,7 +152,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       </div>
 
       {/* ── Auto-initiative toggle (owner only) ─────────────────── */}
-      {isOwner && onToggleAutoInitiative && (
+      {isMaster && onToggleAutoInitiative && (
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11, color: T.textMuted }}>
             <input
@@ -169,7 +169,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       )}
 
       {/* ── Turn controls (owner, during active combat) ─────────── */}
-      {isOwner && tracker.active && sorted.length > 0 && (
+      {isMaster && tracker.active && sorted.length > 0 && (
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
           <button
             data-testid="initiative-prev"
@@ -227,7 +227,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
                 </span>
 
                 {/* Initiative value */}
-                {isOwner ? (
+                {isMaster ? (
                   <input
                     type="number"
                     data-testid={`initiative-value-${c.id}`}
@@ -253,7 +253,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
                 )}
 
                 {/* Remove (owner only) */}
-                {isOwner && (
+                {isMaster && (
                   <button
                     data-testid={`remove-combatant-${c.id}`}
                     aria-label="Remove"
@@ -279,7 +279,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       )}
 
       {/* ── Owner: quick-add linked chars ───────────────────────── */}
-      {isOwner && linkedChars.length > 0 && (
+      {isMaster && linkedChars.length > 0 && (
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 5 }}>
             {t('initiative.quick_add')}
@@ -310,7 +310,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
       )}
 
       {/* ── Owner: add monster/NPC ──────────────────────────────── */}
-      {isOwner && !showMonsterForm && (
+      {isMaster && !showMonsterForm && (
         <button
           data-testid="show-monster-form"
           onClick={() => setShowMonsterForm(true)}
@@ -319,7 +319,7 @@ export function CampaignInitiativePanel({ isOwner, tracker, linkedChars, onUpdat
           {t('initiative.add_monster')}
         </button>
       )}
-      {isOwner && showMonsterForm && (
+      {isMaster && showMonsterForm && (
         <div data-testid="monster-form" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <input
             type="text"
