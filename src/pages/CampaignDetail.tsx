@@ -102,10 +102,10 @@ export default function CampaignDetail() {
   }, [id, user, authLoading, navigate])
 
   // Poll linked characters' live data (HP, level, etc.) so the master sees updates
-  // without reloading the page. 10s aligns well with active combat pacing.
+  // without reloading the page.
   useEffect(() => {
     if (!id || !user || authLoading) return
-    const t = setInterval(() => { void loadLinkedDetails(id) }, 10_000)
+    const t = setInterval(() => { void loadLinkedDetails(id) }, 5_000)
     return () => { clearInterval(t) }
   }, [id, user, authLoading])
 

@@ -205,12 +205,12 @@ describe('CampaignDetail — linked characters polling', () => {
     await waitFor(() => expect(mockFetchLinkedCharactersDetails).toHaveBeenCalledWith('c1'))
   })
 
-  it('registers a 10 s setInterval for polling on mount', async () => {
+  it('registers a 5 s setInterval for polling on mount', async () => {
     const spy = vi.spyOn(globalThis, 'setInterval')
     try {
       renderDetail()
       await waitFor(() => expect(mockFetchLinkedCharactersDetails).toHaveBeenCalledWith('c1'))
-      const pollingCall = spy.mock.calls.find(([, delay]) => delay === 10_000)
+      const pollingCall = spy.mock.calls.find(([, delay]) => delay === 5_000)
       expect(pollingCall).toBeDefined()
     } finally {
       spy.mockRestore()

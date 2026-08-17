@@ -6,7 +6,7 @@ import {
   CampaignViewError,
 } from '@/services/campaign-view'
 
-const DEFAULT_POLL_MS = 15_000
+const DEFAULT_POLL_MS = 5_000
 
 // Polling state lives outside Zustand to avoid re-renders on timer ID changes.
 let pollingTimer: ReturnType<typeof window.setInterval> | null = null
