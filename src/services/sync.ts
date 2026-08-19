@@ -140,8 +140,15 @@ async function uploadCharacter(character: Character, userId: string): Promise<vo
     }
   }
 
-  // Strip local-only sync metadata before sending to cloud
-  const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = character
+  // Strip local-only sync metadata AND images: images already live in Storage
+  // and are hydrated from there on download. Re-uploading hundreds of KB of base64
+  // on every edit (including a simple HP change) wastes mobile data and bandwidth.
+  const { dirty: _dirty, baseUpdatedAt: _base, ...rest } = character
+  const charData = {
+    ...rest,
+    images: { ...rest.images, character: '' },
+    symbolImage: '',
+  }
 
   const { error } = await supabase.from('characters').upsert({
     id:         character.id,
@@ -315,7 +322,20 @@ async function downloadCharacters(userId: string): Promise<void> {
 
       // LWW: only overwrite local if cloud is strictly newer
       if (cloudTime > (localChar.updatedAt ?? 0)) {
-        await importCharacter({ ...cloudChar.data, updatedAt: cloudTime })
+        const incoming = cloudChar.data
+        await importCharacter({
+          ...incoming,
+          // New rows arrive without images (stripped on upload). Preserve local images;
+          // legacy rows that still have base64 in data keep working (incoming.images.character is truthy).
+          images: incoming.images?.character ? incoming.images : localChar.images,
+          // Conditional spread avoids assigning `symbolImage: undefined` (exactOptionalPropertyTypes).
+          // Incoming empty string means stripped → fall back to local; truthy means legacy row → keep it.
+          ...(!(incoming.symbolImage) && localChar.symbolImage
+            ? { symbolImage: localChar.symbolImage }
+            : {}),
+          updatedAt: cloudTime,
+        })
+        await downloadCharacterImages(userId, cloudChar.id)   // idempotent: only fetches what's missing
         storeNeedsRefresh = true
       }
     } else {
