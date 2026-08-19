@@ -693,16 +693,25 @@ export async function importCharacter(character: Character): Promise<void> {
 
 /**
  * After a successful cloud upload, mark the local copy as clean.
- * Only clears dirty if updatedAt still matches the uploaded snapshot —
- * if the user edited concurrently, updatedAt will have advanced and we
- * leave dirty: true so the next sync cycle picks it up.
+ * Always advances baseUpdatedAt to the uploaded snapshot — this prevents
+ * the next sync from treating our own upload as a "cloud-advanced" conflict.
+ * If the user edited concurrently (updatedAt advanced past syncedAt), dirty
+ * stays true so the next sync cycle picks up the new edit; otherwise clears.
  */
 export async function markCharacterSynced(id: string, syncedAt: number): Promise<void> {
   const db = await openV2()
   try {
     const existing = await db.get(V2_STORE, id) as Character | undefined
-    if (!existing || existing.updatedAt !== syncedAt) return
-    await db.put(V2_STORE, { ...existing, dirty: false, baseUpdatedAt: syncedAt })
+    if (!existing) return
+    // Edição concorrente durante o upload: o registro segue "dirty" (precisa subir
+    // de novo), mas a BASE avança para o snapshot que acabamos de enviar — senão o
+    // próximo sync compararia com uma base velha e acusaria conflito fantasma.
+    const editedDuringUpload = existing.updatedAt !== syncedAt
+    await db.put(V2_STORE, {
+      ...existing,
+      dirty: editedDuringUpload,
+      baseUpdatedAt: Math.max(existing.baseUpdatedAt ?? 0, syncedAt),
+    })
   } finally {
     db.close()
   }
