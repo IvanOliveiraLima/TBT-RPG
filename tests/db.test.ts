@@ -454,6 +454,26 @@ describe('dirty flag and sync metadata', () => {
       expect(stored.updatedAt).toBe(1700000001000)  // preserved
     })
 
+    it('advances baseUpdatedAt to syncedAt even on concurrent edit (phantom conflict fix)', async () => {
+      // Before the fix: baseUpdatedAt was NOT updated when updatedAt !== syncedAt.
+      // That left baseUpdatedAt stale, so the next sync saw cloud > stale base → phantom conflict.
+      store.set('char_001', makeChar({ dirty: true, updatedAt: 1700000001000, baseUpdatedAt: 1699000000000 }))
+      await markCharacterSynced('char_001', 1700000000000)
+      const stored = store.get('char_001') as Character
+      // dirty stays true (still needs to upload the concurrent edit)
+      expect(stored.dirty).toBe(true)
+      // base advances to the snapshot we just uploaded — eliminates the phantom conflict
+      expect(stored.baseUpdatedAt).toBe(1700000000000)
+    })
+
+    it('does not regress baseUpdatedAt when syncedAt is older (out-of-order uploads)', async () => {
+      store.set('char_001', makeChar({ dirty: true, updatedAt: 1700000003000, baseUpdatedAt: 1700000002000 }))
+      await markCharacterSynced('char_001', 1700000001000)  // older syncedAt
+      const stored = store.get('char_001') as Character
+      // baseUpdatedAt must not go backwards
+      expect(stored.baseUpdatedAt).toBe(1700000002000)
+    })
+
     it('does nothing when character does not exist', async () => {
       await expect(markCharacterSynced('nonexistent', 1700000000000)).resolves.toBeUndefined()
     })

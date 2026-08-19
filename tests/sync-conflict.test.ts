@@ -250,6 +250,37 @@ describe('conflict detection — upload phase', () => {
     expect(mockUpsert).not.toHaveBeenCalled()
     expect(mockMarkCharacterSynced).not.toHaveBeenCalled()
   })
+
+  it('no phantom conflict after concurrent edit during upload', async () => {
+    // Scenario that caused the bug:
+    // 1. Local: dirty=true, baseUpdatedAt=100, updatedAt=100 (about to upload)
+    // 2. Upload succeeds: cloud now at updated_at=100
+    // 3. During the upload, the user edited: local updatedAt advanced to 150
+    // 4. markCharacterSynced(id, 100) is called
+    //    OLD: returned early (existing.updatedAt 150 !== syncedAt 100) → baseUpdatedAt stayed at old value
+    //    FIX: advances baseUpdatedAt to 100, keeps dirty=true
+    // 5. Next sync: cloud is at 100, baseUpdatedAt=100 → cloudTime(100) > baseUpdatedAt(100) is false → no conflict
+    //
+    // Here we simulate step 5 (the next sync) with the fixed state after markCharacterSynced.
+    // After the fix, baseUpdatedAt=100 and cloud updated_at=100 → safe to upload (no conflict).
+    const syncedAt  = 100
+    const cloudIso  = new Date(syncedAt).toISOString()
+
+    // State after the fix: baseUpdatedAt advanced to syncedAt; updatedAt is the concurrent edit
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      baseUpdatedAt: syncedAt,
+      updatedAt: 150,
+    }))
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+
+    await syncAll()
+
+    // Must NOT detect a conflict — cloud is at our own upload, not another device's write
+    expect(mockAddConflict).not.toHaveBeenCalled()
+    // Must proceed to upload the new edit
+    expect(mockUpsert).toHaveBeenCalledTimes(1)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
