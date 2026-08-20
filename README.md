@@ -317,7 +317,14 @@ Formatos suportados: `jpg`, `jpeg`, `png`, `webp`
 
 Limite: `2MB` por imagem
 
-### 12. Lock da ficha (modo leitura)
+### 12. Exaustão e vida temporária
+
+- **Exaustão** — marcador de 0–6 no bloco de HP; cada nível exibe o efeito correspondente com um `HelpHint`.
+  Não aplica efeitos mecânicos automaticamente — é um marcador de narração.
+- **Vida temporária** — dano (botão −) consome os pontos temporários primeiro; cura (+) não restaura
+  temporários. O campo Temp tem steppers próprios para conceder/limpar manualmente.
+
+### 13. Lock da ficha (modo leitura)
 
 Use o lock durante sessões de jogo para evitar edição acidental em stats permanentes.
 
