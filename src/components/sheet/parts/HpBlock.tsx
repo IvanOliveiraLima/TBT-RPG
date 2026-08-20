@@ -1,12 +1,15 @@
 import type React from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
+import type { TranslationKey } from '@/i18n'
 import { Card } from '../ui/Card'
 import { HpBar } from './HpBar'
 import { HitDicePool } from './HitDicePool'
 import { DeathSaves } from './DeathSaves'
 import { NumberField } from '@/components/primitives/NumberField'
 import { abilityModifier } from '@/domain/calculations'
+import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { HelpHint } from '@/components/HelpHint'
 
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9,
@@ -16,6 +19,29 @@ const LABEL_STYLE: React.CSSProperties = {
   color: '#7A7788',
   display: 'block',
   marginBottom: 3,
+}
+
+const EXHAUSTION_LEVELS = [1, 2, 3, 4, 5, 6] as const
+
+const EXHAUSTION_EFFECT_KEYS: Record<1|2|3|4|5|6, TranslationKey> = {
+  1: 'combat.exhaustion_1',
+  2: 'combat.exhaustion_2',
+  3: 'combat.exhaustion_3',
+  4: 'combat.exhaustion_4',
+  5: 'combat.exhaustion_5',
+  6: 'combat.exhaustion_6',
+}
+
+const PIP_BTN: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: '6px',
+  margin: '-6px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 4,
 }
 
 const HP_INPUT_STYLE: React.CSSProperties = {
@@ -53,12 +79,21 @@ interface HpBlockProps {
 
 export function HpBlock({ character, onUpdate }: HpBlockProps) {
   const { t } = useTranslation()
+  const locked = useCharacterLocked(character.id)
   const { hp, deathSaves, hitDice } = character
   const current = hp.current
   const max = hp.max
   const pct = max > 0 ? Math.round((current / max) * 100) : 0
   const low = pct < 30
   const conMod = abilityModifier(character.abilities.con)
+  const exhaustionLevel = character.exhaustion ?? 0
+  const exhaustionReadOnly = !onUpdate || locked
+
+  function handleExhaustionClick(n: number) {
+    if (exhaustionReadOnly) return
+    const next = n <= exhaustionLevel ? n - 1 : n
+    onUpdate!({ exhaustion: next })
+  }
 
   return (
     <Card>
@@ -181,6 +216,87 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
               }
             : {})}
         />
+      </div>
+
+      {/* Exhaustion */}
+      <div
+        style={{
+          marginTop: 14,
+          paddingTop: 14,
+          borderTop: '1px solid #2A2537',
+        }}
+      >
+        {/* Label row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 1.2,
+              color: '#7A7788',
+            }}
+          >
+            {t('combat.exhaustion')}
+          </span>
+          <HelpHint textKey="combat.exhaustion_help" />
+        </div>
+
+        {/* 6 markers */}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {EXHAUSTION_LEVELS.map(n => {
+            const filled = n <= exhaustionLevel
+            const fillColor = n === 6 ? '#E24B4A' : '#D4A017'
+            const markerStyle: React.CSSProperties = {
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: filled ? fillColor : 'transparent',
+              border: `1.5px solid ${filled ? fillColor : '#3A3450'}`,
+              boxShadow: filled ? `0 0 8px ${fillColor}80` : 'none',
+              flexShrink: 0,
+            }
+            if (exhaustionReadOnly) {
+              return (
+                <div
+                  key={n}
+                  data-testid={`exhaustion-level-${n}`}
+                  role="presentation"
+                  style={markerStyle}
+                />
+              )
+            }
+            return (
+              <button
+                key={n}
+                type="button"
+                data-testid={`exhaustion-level-${n}`}
+                aria-pressed={filled}
+                aria-label={t('aria.exhaustion_set', { n: String(n) })}
+                onClick={() => handleExhaustionClick(n)}
+                style={PIP_BTN}
+              >
+                <div role="presentation" style={markerStyle} />
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Effect text */}
+        {exhaustionLevel > 0 && (
+          <p
+            data-testid="exhaustion-effect"
+            style={{
+              marginTop: 6,
+              marginBottom: 0,
+              fontSize: 11,
+              color: exhaustionLevel === 6 ? '#E24B4A' : '#7A7788',
+              fontStyle: 'italic',
+            }}
+          >
+            {t(EXHAUSTION_EFFECT_KEYS[exhaustionLevel as 1|2|3|4|5|6])}
+          </p>
+        )}
       </div>
     </Card>
   )

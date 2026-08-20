@@ -204,6 +204,7 @@ export interface Character {
   updatedAt: number
 
   locked?: boolean        // when true: permanent fields read-only; transients still editable
+  exhaustion?: number     // 0–6 exhaustion levels (D&D 5e); absent treated as 0
 
   // Local sync metadata (IndexedDB only — stripped before upload to cloud)
   dirty?: boolean         // true = has local edits not yet synced; undefined treated as true (legacy)
