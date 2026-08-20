@@ -115,3 +115,19 @@ describe('NotesBlock', () => {
     expect(ta.value).toContain('Ki points: 5 remaining.')
   })
 })
+
+describe('NotesBlock — AutoGrowTextarea', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('notes textarea has overflow:hidden (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.style.overflow).toBe('hidden')
+  })
+
+  it('notes textarea has resize:none (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<NotesBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('notes-textarea') as HTMLTextAreaElement
+    expect(ta.style.resize).toBe('none')
+  })
+})

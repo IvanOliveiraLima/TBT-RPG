@@ -101,3 +101,19 @@ describe('BackstoryBlock', () => {
     expect(screen.getByText('BACKSTORY')).toBeDefined()
   })
 })
+
+describe('BackstoryBlock — AutoGrowTextarea', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('backstory textarea has overflow:hidden (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<BackstoryBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('backstory-textarea') as HTMLTextAreaElement
+    expect(ta.style.overflow).toBe('hidden')
+  })
+
+  it('backstory textarea has resize:none (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<BackstoryBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ta = screen.getByTestId('backstory-textarea') as HTMLTextAreaElement
+    expect(ta.style.resize).toBe('none')
+  })
+})

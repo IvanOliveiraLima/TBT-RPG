@@ -172,3 +172,25 @@ describe('PersonalityBlock', () => {
     expect(ta.value).toBe('Quiet and observant')
   })
 })
+
+describe('PersonalityBlock — AutoGrowTextarea', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('all 4 personality textareas have overflow:hidden (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ids = ['traits', 'ideals', 'bonds', 'flaws']
+    for (const id of ids) {
+      const ta = screen.getByTestId(`personality-textarea-${id}`) as HTMLTextAreaElement
+      expect(ta.style.overflow).toBe('hidden')
+    }
+  })
+
+  it('all 4 personality textareas have resize:none (AutoGrowTextarea primitive)', () => {
+    renderWithI18n(<PersonalityBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+    const ids = ['traits', 'ideals', 'bonds', 'flaws']
+    for (const id of ids) {
+      const ta = screen.getByTestId(`personality-textarea-${id}`) as HTMLTextAreaElement
+      expect(ta.style.resize).toBe('none')
+    }
+  })
+})
