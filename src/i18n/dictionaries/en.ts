@@ -209,6 +209,16 @@ const en = {
   'combat.notes_label':             'Notes',
   'combat.notes_placeholder':       'Special effects, mechanics…',
 
+  // Combat — Exhaustion (D&D 5e, 6 cumulative levels)
+  'combat.exhaustion':      'Exhaustion',
+  'combat.exhaustion_1':    'Disadvantage on ability checks',
+  'combat.exhaustion_2':    'Speed halved',
+  'combat.exhaustion_3':    'Disadvantage on attack rolls and saving throws',
+  'combat.exhaustion_4':    'Hit point maximum halved',
+  'combat.exhaustion_5':    'Speed reduced to 0',
+  'combat.exhaustion_6':    'Death',
+  'combat.exhaustion_help': 'Each level adds to the previous effects. A long rest removes one level.',
+
   // Features & Traits
   'features.label': 'Features & Traits',
   'features.title': 'Features',
@@ -528,6 +538,7 @@ const en = {
   'aria.deathsave_failure_toggle':   'Toggle death save failure {n}',
   'aria.hitdice_class_input':        'Hit dice remaining for {className}',
   'aria.roll':                       'Roll {label}',
+  'aria.exhaustion_set':             'Set exhaustion to {n}',
 
   // Languages & Proficiencies
   'aria.language_input':       'Language {index}',
