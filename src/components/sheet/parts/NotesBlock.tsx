@@ -3,6 +3,7 @@ import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { Label } from '../ui/Label'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -16,7 +17,6 @@ const TEXTAREA: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  resize: 'vertical',
   minHeight: 120,
   padding: 0,
   fontFamily: 'inherit',
@@ -44,7 +44,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
       {isReadonlySuffix ? (
         // notes2 exists: show notes1 as editable textarea + notes2 as read-only text below
         <>
-          <textarea
+          <AutoGrowTextarea
             value={character.notes1}
             onChange={(e) => onUpdate?.({ notes1: e.target.value })}
             placeholder={t('notes.placeholder')}
@@ -68,7 +68,7 @@ export function NotesBlock({ character, onUpdate }: NotesBlockProps) {
           </p>
         </>
       ) : (
-        <textarea
+        <AutoGrowTextarea
           value={character.notes1}
           onChange={(e) => onUpdate?.({ notes1: e.target.value })}
           placeholder={t('notes.placeholder')}

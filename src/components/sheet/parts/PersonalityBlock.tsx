@@ -4,6 +4,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { Label } from '../ui/Label'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -28,7 +29,6 @@ const TEXTAREA: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  resize: 'vertical',
   minHeight: 72,
   padding: 0,
   fontFamily: 'inherit',
@@ -63,7 +63,7 @@ function PersonalityField({ testId, label, placeholder, value, onChange, locked 
       >
         {label}
       </h4>
-      <textarea
+      <AutoGrowTextarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

@@ -341,39 +341,71 @@ describe('scheduleEditSync', () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Advance fake time past maxWait so any pending debounce/maxWait timers fire,
+    // which calls flushEditSync and sets editDebounceTimer/editMaxWaitTimer back to null.
+    // Without this, a test that leaves pending timers would leak stale IDs into the
+    // next test, preventing the maxWait from being scheduled (it guards with !== null).
+    await vi.advanceTimersByTimeAsync(10_000)
     vi.useRealTimers()
   })
 
-  it('triggers syncAll after 15s', async () => {
+  it('triggers syncAll after 2s of quiet', async () => {
     const statuses: string[] = []
     const unsub = onSyncStatusChange(s => statuses.push(s))
     scheduleEditSync()
     expect(statuses).toHaveLength(0)
-    await vi.advanceTimersByTimeAsync(15_000)
+    await vi.advanceTimersByTimeAsync(2_000)
     unsub()
     expect(statuses).toContain('syncing')
   })
 
-  it('debounces: multiple calls reset the timer', async () => {
+  it('debounces: second call resets the debounce timer', async () => {
     const statuses: string[] = []
     const unsub = onSyncStatusChange(s => statuses.push(s))
     scheduleEditSync()
-    await vi.advanceTimersByTimeAsync(10_000)
-    scheduleEditSync()  // reset — should not fire until 15s from now
-    await vi.advanceTimersByTimeAsync(10_000)  // total 20s but only 10 from last call
-    unsub()
-    expect(statuses.filter(s => s === 'syncing')).toHaveLength(0)  // not yet
-    await vi.advanceTimersByTimeAsync(5_000)  // now 15s from last call
-  })
-
-  it('does not fire before 15s', async () => {
-    const statuses: string[] = []
-    const unsub = onSyncStatusChange(s => statuses.push(s))
-    scheduleEditSync()
-    await vi.advanceTimersByTimeAsync(14_999)
+    await vi.advanceTimersByTimeAsync(1_000)
+    scheduleEditSync()  // reset debounce — should not fire until 2s from now
+    await vi.advanceTimersByTimeAsync(1_000)  // only 1s since last call
     unsub()
     expect(statuses.filter(s => s === 'syncing')).toHaveLength(0)
+  })
+
+  it('does not fire before 2s', async () => {
+    const statuses: string[] = []
+    const unsub = onSyncStatusChange(s => statuses.push(s))
+    scheduleEditSync()
+    await vi.advanceTimersByTimeAsync(1_999)
+    unsub()
+    expect(statuses.filter(s => s === 'syncing')).toHaveLength(0)
+  })
+
+  it('maxWait fires during continuous editing (the bug fix)', async () => {
+    // Bug: pure debounce never fires while edits arrive faster than the debounce window.
+    // maxWait=5s guarantees at least one sync even under continuous editing.
+    const statuses: string[] = []
+    const unsub = onSyncStatusChange(s => statuses.push(s))
+    // Call every 1s for 5s — debounce would never fire, maxWait must fire by 5s
+    for (let i = 0; i < 5; i++) {
+      scheduleEditSync()
+      await vi.advanceTimersByTimeAsync(1_000)
+    }
+    unsub()
+    expect(statuses.filter(s => s === 'syncing').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('maxWait timer is not reset by further scheduleEditSync calls', async () => {
+    // maxWait must fire at 5s from the FIRST call, not pushed forward by later calls.
+    const statuses: string[] = []
+    const unsub = onSyncStatusChange(s => statuses.push(s))
+    scheduleEditSync()                         // t=0s: debounce@2s, maxWait@5s
+    await vi.advanceTimersByTimeAsync(1_000)   // t=1s
+    scheduleEditSync()                         // debounce reset to t+2s; maxWait stays at 5s
+    await vi.advanceTimersByTimeAsync(1_000)   // t=2s
+    scheduleEditSync()                         // debounce reset to t+2s; maxWait stays at 5s
+    await vi.advanceTimersByTimeAsync(3_000)   // t=5s — maxWait fires here
+    unsub()
+    expect(statuses.filter(s => s === 'syncing').length).toBeGreaterThanOrEqual(1)
   })
 })
 
@@ -437,5 +469,90 @@ describe('initSyncListeners', () => {
     // Should not throw
     initSyncListeners()
     initSyncListeners()
+  })
+})
+
+// ── syncAll — reentrancy coalescing ───────────────────────────────────────────
+
+describe('syncAll — reentrancy coalescing', () => {
+  beforeEach(() => {
+    setupLoggedIn()
+    vi.clearAllMocks()
+    mockGetPendingTombstones.mockResolvedValue([])
+    mockRemoveTombstone.mockResolvedValue(undefined)
+    mockUpsert.mockResolvedValue({ error: null })
+    mockListCharacters.mockResolvedValue([])
+    mockImportCharacter.mockResolvedValue(undefined)
+    mockFetchCharacters.mockResolvedValue(undefined)
+    mockMaybySingle.mockResolvedValue({ data: null })
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    mockCharacters.length = 0
+  })
+
+  it('concurrent calls return the same in-flight promise', async () => {
+    let resolveBlock!: (v: DeletedCharacterTombstone[]) => void
+    mockGetPendingTombstones.mockReturnValueOnce(
+      new Promise<DeletedCharacterTombstone[]>(res => { resolveBlock = res })
+    )
+    mockGetPendingTombstones.mockResolvedValue([])
+
+    const p1 = syncAll()
+    const p2 = syncAll()  // arrives while p1 in-flight — must return the same promise
+
+    expect(p1).toBe(p2)
+
+    resolveBlock([])
+    await p1
+    // Drain the queued follow-up (triggered by p2 setting syncQueued=true)
+    await new Promise(r => setTimeout(r, 10))
+  })
+
+  it('body does not run concurrently: at most one parallel execution', async () => {
+    let concurrent = 0
+    let maxConcurrent = 0
+
+    mockGetPendingTombstones.mockImplementation(async () => {
+      concurrent++
+      maxConcurrent = Math.max(maxConcurrent, concurrent)
+      await new Promise(r => setTimeout(r, 10))
+      concurrent--
+      return []
+    })
+
+    const p1 = syncAll()
+    const p2 = syncAll()
+
+    await Promise.all([p1, p2])
+    // Let the queued follow-up complete
+    await new Promise(r => setTimeout(r, 50))
+
+    expect(maxConcurrent).toBe(1)
+  })
+
+  it('call during execution queues one follow-up and does not lose it', async () => {
+    // Each runSyncAll calls mockGetPendingTombstones twice (processTombstones +
+    // downloadCharacters), so we count 'syncing' status events as a proxy for run count.
+    const statuses: string[] = []
+    const unsub = onSyncStatusChange(s => statuses.push(s))
+
+    let resolveBlock!: (v: DeletedCharacterTombstone[]) => void
+    mockGetPendingTombstones
+      .mockReturnValueOnce(
+        new Promise<DeletedCharacterTombstone[]>(res => { resolveBlock = res })
+      )
+      .mockResolvedValue([])
+
+    const p1 = syncAll()
+    syncAll()  // queued — sets syncQueued=true, returns same promise
+
+    resolveBlock([])
+    await p1
+
+    // Give the queued run time to complete
+    await new Promise(r => setTimeout(r, 20))
+    unsub()
+
+    // First run + exactly one queued run = 2 'syncing' events
+    expect(statuses.filter(s => s === 'syncing')).toHaveLength(2)
   })
 })

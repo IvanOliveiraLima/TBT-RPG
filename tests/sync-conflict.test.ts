@@ -250,6 +250,37 @@ describe('conflict detection — upload phase', () => {
     expect(mockUpsert).not.toHaveBeenCalled()
     expect(mockMarkCharacterSynced).not.toHaveBeenCalled()
   })
+
+  it('no phantom conflict after concurrent edit during upload', async () => {
+    // Scenario that caused the bug:
+    // 1. Local: dirty=true, baseUpdatedAt=100, updatedAt=100 (about to upload)
+    // 2. Upload succeeds: cloud now at updated_at=100
+    // 3. During the upload, the user edited: local updatedAt advanced to 150
+    // 4. markCharacterSynced(id, 100) is called
+    //    OLD: returned early (existing.updatedAt 150 !== syncedAt 100) → baseUpdatedAt stayed at old value
+    //    FIX: advances baseUpdatedAt to 100, keeps dirty=true
+    // 5. Next sync: cloud is at 100, baseUpdatedAt=100 → cloudTime(100) > baseUpdatedAt(100) is false → no conflict
+    //
+    // Here we simulate step 5 (the next sync) with the fixed state after markCharacterSynced.
+    // After the fix, baseUpdatedAt=100 and cloud updated_at=100 → safe to upload (no conflict).
+    const syncedAt  = 100
+    const cloudIso  = new Date(syncedAt).toISOString()
+
+    // State after the fix: baseUpdatedAt advanced to syncedAt; updatedAt is the concurrent edit
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      baseUpdatedAt: syncedAt,
+      updatedAt: 150,
+    }))
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+
+    await syncAll()
+
+    // Must NOT detect a conflict — cloud is at our own upload, not another device's write
+    expect(mockAddConflict).not.toHaveBeenCalled()
+    // Must proceed to upload the new edit
+    expect(mockUpsert).toHaveBeenCalledTimes(1)
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -486,5 +517,138 @@ describe('resolveConflictKeepBoth', () => {
 
     const added = mockAddCharacter.mock.calls[0]![0] as Character
     expect(added.race).toBe('Dwarf')   // preserved from local
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('image stripping — upload payload', () => {
+  it('sends images.character as empty string in upsert payload', async () => {
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      images: { character: 'data:image/png;base64,abc123portrait' },
+    }))
+
+    await syncAll()
+
+    const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
+    const data = payload['data'] as Character
+    expect(data.images.character).toBe('')
+  })
+
+  it('sends symbolImage as empty string in upsert payload', async () => {
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      symbolImage: 'data:image/png;base64,xyz789symbol',
+    }))
+
+    await syncAll()
+
+    const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
+    const data = payload['data'] as Character
+    expect(data.symbolImage).toBe('')
+  })
+
+  it('rest of character data is intact in upsert payload', async () => {
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      name: 'Torchblazer',
+      images: { character: 'data:image/png;base64,portrait' },
+    }))
+
+    await syncAll()
+
+    const payload = mockUpsert.mock.calls[0]![0] as Record<string, unknown>
+    const data = payload['data'] as Character
+    expect(data.name).toBe('Torchblazer')
+    expect(data.id).toBe('char_001')
+  })
+
+  it('still uploads images to Storage (uploadImage path unchanged)', async () => {
+    mockCharacters.splice(0, Infinity, makeChar({
+      dirty: true,
+      images: { character: 'data:image/png;base64,portrait' },
+      symbolImage: 'data:image/png;base64,symbol',
+    }))
+
+    await syncAll()
+
+    expect(mockStorageUpload).toHaveBeenCalledTimes(2)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('image preservation — download phase', () => {
+  /** Set up a scenario where the upload phase skips the char and the download phase runs. */
+  function setupDownloadOnly(localChar: Character, cloudData: Character, cloudTime = 2000) {
+    // dirty: false → upload phase skips this char
+    mockCharacters.splice(0, Infinity, { ...localChar, dirty: false })
+    mockListCharacters.mockResolvedValue([localChar])
+    const cloudRow = {
+      id: localChar.id, user_id: 'user_001',
+      data: cloudData,
+      updated_at: new Date(cloudTime).toISOString(),
+    }
+    mockReturns
+      .mockResolvedValueOnce({ data: [], error: null })           // fetchCloudTombstoneIds
+      .mockResolvedValueOnce({ data: [cloudRow], error: null })  // chars
+      .mockResolvedValueOnce({ data: [], error: null })           // tombstones
+  }
+
+  it('preserves local portrait when incoming cloud row has no images (central risk)', async () => {
+    const localChar = makeChar({
+      updatedAt: 1000,
+      images: { character: 'data:image/png;base64,localPortrait' },
+    })
+    setupDownloadOnly(localChar, makeChar({ images: {} }))
+
+    await syncAll()
+
+    expect(mockImportCharacter).toHaveBeenCalledTimes(1)
+    const imported = mockImportCharacter.mock.calls[0]![0] as Character
+    expect(imported.images.character).toBe('data:image/png;base64,localPortrait')
+  })
+
+  it('preserves local symbolImage when incoming cloud row has no symbolImage', async () => {
+    const localChar = makeChar({
+      updatedAt: 1000,
+      symbolImage: 'data:image/png;base64,localSymbol',
+    })
+    setupDownloadOnly(localChar, makeChar({ symbolImage: undefined }))
+
+    await syncAll()
+
+    expect(mockImportCharacter).toHaveBeenCalledTimes(1)
+    const imported = mockImportCharacter.mock.calls[0]![0] as Character
+    expect(imported.symbolImage).toBe('data:image/png;base64,localSymbol')
+  })
+
+  it('uses incoming portrait when legacy cloud row still has base64 (compatibility)', async () => {
+    const localChar = makeChar({
+      updatedAt: 1000,
+      images: { character: 'data:image/png;base64,localPortrait' },
+    })
+    setupDownloadOnly(
+      localChar,
+      makeChar({ images: { character: 'data:image/png;base64,cloudPortrait' } }),
+    )
+
+    await syncAll()
+
+    expect(mockImportCharacter).toHaveBeenCalledTimes(1)
+    const imported = mockImportCharacter.mock.calls[0]![0] as Character
+    expect(imported.images.character).toBe('data:image/png;base64,cloudPortrait')
+  })
+
+  it('triggers downloadCharacterImages after overwriting local with newer cloud', async () => {
+    const localChar = makeChar({ updatedAt: 1000 })
+    setupDownloadOnly(localChar, makeChar({ images: {} }))
+
+    await syncAll()
+
+    // downloadCharacterImages calls supabase.storage.from('character-images').list(...)
+    const storageCalls = (mockClient.storage.from as ReturnType<typeof vi.fn>).mock.calls
+    expect(storageCalls.some(([bucket]: unknown[]) => bucket === 'character-images')).toBe(true)
   })
 })

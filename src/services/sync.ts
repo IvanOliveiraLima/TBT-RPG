@@ -11,7 +11,7 @@
  *    skip chars currently in conflict (both sides held intact until user resolves)
  *  - Propagate cloud tombstones → delete local chars deleted on another device
  *  - Eager image download for chars new to this device (idempotent)
- *  - Debounced reactive sync: 15s after the last edit
+ *  - Debounced reactive sync: 2s quietude / 5s teto (maxWait)
  *  - Periodic background sync: every 30s
  *  - Online/offline event listeners
  *  - Conflict resolution: resolveConflictKeepMine / KeepCloud / KeepBoth
@@ -140,8 +140,15 @@ async function uploadCharacter(character: Character, userId: string): Promise<vo
     }
   }
 
-  // Strip local-only sync metadata before sending to cloud
-  const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = character
+  // Strip local-only sync metadata AND images: images already live in Storage
+  // and are hydrated from there on download. Re-uploading hundreds of KB of base64
+  // on every edit (including a simple HP change) wastes mobile data and bandwidth.
+  const { dirty: _dirty, baseUpdatedAt: _base, ...rest } = character
+  const charData = {
+    ...rest,
+    images: { ...rest.images, character: '' },
+    symbolImage: '',
+  }
 
   const { error } = await supabase.from('characters').upsert({
     id:         character.id,
@@ -315,7 +322,20 @@ async function downloadCharacters(userId: string): Promise<void> {
 
       // LWW: only overwrite local if cloud is strictly newer
       if (cloudTime > (localChar.updatedAt ?? 0)) {
-        await importCharacter({ ...cloudChar.data, updatedAt: cloudTime })
+        const incoming = cloudChar.data
+        await importCharacter({
+          ...incoming,
+          // New rows arrive without images (stripped on upload). Preserve local images;
+          // legacy rows that still have base64 in data keep working (incoming.images.character is truthy).
+          images: incoming.images?.character ? incoming.images : localChar.images,
+          // Conditional spread avoids assigning `symbolImage: undefined` (exactOptionalPropertyTypes).
+          // Incoming empty string means stripped → fall back to local; truthy means legacy row → keep it.
+          ...(!(incoming.symbolImage) && localChar.symbolImage
+            ? { symbolImage: localChar.symbolImage }
+            : {}),
+          updatedAt: cloudTime,
+        })
+        await downloadCharacterImages(userId, cloudChar.id)   // idempotent: only fetches what's missing
         storeNeedsRefresh = true
       }
     } else {
@@ -365,9 +385,12 @@ async function fetchCloudTombstoneIds(userId: string): Promise<Set<string>> {
   return new Set((data ?? []).map(r => r.id))
 }
 
-/* ── syncAll ─────────────────────────────────────────────────────────── */
+/* ── syncAll (with reentrancy coalescing) ────────────────────────────── */
 
-export async function syncAll(): Promise<void> {
+let syncInFlight: Promise<void> | null = null
+let syncQueued = false
+
+async function runSyncAll(): Promise<void> {
   if (!navigator.onLine) {
     setSyncStatus('offline')
     return
@@ -426,18 +449,46 @@ export async function syncAll(): Promise<void> {
   }
 }
 
-/* ── Debounced reactive sync (15s after last edit) ───────────────────── */
+export function syncAll(): Promise<void> {
+  if (syncInFlight) {
+    syncQueued = true
+    return syncInFlight
+  }
+  syncInFlight = (async () => {
+    try {
+      await runSyncAll()
+    } finally {
+      syncInFlight = null
+      if (syncQueued) {
+        syncQueued = false
+        void syncAll()
+      }
+    }
+  })()
+  return syncInFlight
+}
+
+/* ── Debounced reactive sync (2s de quietude, no máximo 5s de espera) ── */
+
+const EDIT_DEBOUNCE_MS = 2_000
+const EDIT_MAX_WAIT_MS = 5_000
 
 let editDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let editMaxWaitTimer: ReturnType<typeof setTimeout> | null = null
+
+function flushEditSync(): void {
+  if (editDebounceTimer) { clearTimeout(editDebounceTimer); editDebounceTimer = null }
+  if (editMaxWaitTimer)  { clearTimeout(editMaxWaitTimer);  editMaxWaitTimer  = null }
+  void syncAll()
+}
 
 export function scheduleEditSync(): void {
-  if (editDebounceTimer !== null) {
-    clearTimeout(editDebounceTimer)
+  if (editDebounceTimer) clearTimeout(editDebounceTimer)
+  editDebounceTimer = setTimeout(flushEditSync, EDIT_DEBOUNCE_MS)
+  // maxWait timer is NOT reset on each call — guarantees upload during continuous editing
+  if (editMaxWaitTimer === null) {
+    editMaxWaitTimer = setTimeout(flushEditSync, EDIT_MAX_WAIT_MS)
   }
-  editDebounceTimer = setTimeout(() => {
-    editDebounceTimer = null
-    void syncAll()
-  }, 15_000)
 }
 
 /* ── Periodic background sync (30s) ─────────────────────────────────── */

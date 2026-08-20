@@ -321,6 +321,14 @@ This order matters: components built on a broken adapter produce invisible data 
   passe o mesmo ponto de corte **explicitamente** (`useIsMobile(1024)`) — o default do hook (640) mudaria
   silenciosamente o layout numa faixa inteira de viewports (tablets). E, no jsdom, sem `matchMedia` o hook
   cai no fallback: use um helper de viewport nos testes que precisam do layout mobile.
+- **Bug latente exposto por frequência:** o conflito fantasma existia desde sempre, mas era raro porque o
+  upload só ocorria após 15 s de quietude. Ao acelerar a operação (teto de 5 s), a corrida virou rotina —
+  e a "melhoria" pareceu ter causado o problema. **Ao aumentar a frequência de algo, audite antes as
+  suposições de concorrência do caminho acelerado** (o que acontece se o estado mudar no meio da operação?).
+- **Grid não encolhe sozinho:** itens de grid têm `min-width: auto`, então o conteúdo **transborda** em vez
+  de comprimir. Para linhas com controles de largura variável use
+  `repeat(auto-fit, minmax(Xpx, 1fr))` **e** `minWidth: 0` nos filhos. Lembre que a largura relevante é a do
+  **container** (um cartão numa coluna estreita), não a do viewport — por isso breakpoints nem sempre ajudam.
 
 ### internationalization (i18n)
 
@@ -1256,6 +1264,45 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   lista de membros — **Mestre** (dono), **Co-Mestre**, **Jogador** —, já que os dois primeiros apareciam
   idênticos. `HelpHint` em "Membros" explicando a diferença.
 
+### Sync — latência de HP e conflito fantasma (COMPLETED — PR #286)
+- **Teto no debounce:** `scheduleEditSync` reiniciava um `setTimeout` de 15 s **a cada edição** — durante um
+  combate com ajustes seguidos de HP, o upload **nunca disparava** (só o sync periódico de 30 s). Agora:
+  2 s de quietude **com teto de 5 s** que **nunca é reiniciado**.
+- **Guarda de reentrância** no `syncAll` (coalescing: chamadas durante a execução viram exatamente uma
+  execução seguinte), necessária porque a frequência subiu ~6×.
+- **Conflito fantasma (o bloqueio real):** `markCharacterSynced` fazia `return` se o personagem tivesse sido
+  editado **durante** o upload, deixando o `baseUpdatedAt` defasado; no sync seguinte, `cloudTime` (a nossa
+  própria escrita) `> baseUpdatedAt` → "conflito" → upload bloqueado até o usuário resolver **na ficha**.
+  Agora a base **sempre avança** após upload bem-sucedido; só o `dirty` reflete a edição concorrente.
+- Polls do mestre: 10 s/15 s → 5 s (provisório, até a RT.1).
+
+### Sync — imagens fora do JSONB (COMPLETED — PR #287)
+- O upload enviava a ficha inteira **com o retrato em base64** a cada edição (inclusive uma simples mudança
+  de HP). As imagens já vivem no **Storage** e são hidratadas de lá.
+- Upload passa a zerar `images.character`/`symbolImage` no payload; o Storage continua igual.
+- **Cuidado obrigatório:** o caminho de download "local existe + nuvem mais nova" **não** hidratava imagens —
+  removê-las do payload sem corrigir isso apagaria os retratos do aparelho. Agora ele preserva as imagens
+  locais quando o remoto vem vazio e chama `downloadCharacterImages` (idempotente).
+- Linhas legadas (com base64 no `data`) continuam funcionando; sem migração.
+
+### Ficha — marcador de exaustão + textareas da aba História (COMPLETED — PR #288)
+- `Character.exhaustion?: number` (0–6, opcional; ausente = 0), marcadores no `HpBlock` ao lado dos Testes de
+  Morte, com o efeito do nível exibido e `HelpHint`. **Não** aplica efeitos mecânicos (é marcador de
+  narração).
+- Aba História migrada para o primitivo `AutoGrowTextarea` (4 campos em 3 blocos), que já era usado em
+  Inventário/Características/Magias/Ataques.
+
+### Ficha — HP: absorção de temporários, steppers e variação (COMPLETED — PR #289)
+- `NumberField` ganhou `onStep?: (dir) => void` **opcional**: quando presente, os botões chamam o handler do
+  consumidor; **digitar continua indo por `onChange`** (é um "defina como X" explícito). Sem `onStep`, nada
+  muda para os demais consumidores.
+- Dano (botão "−") **consome os pontos temporários primeiro** (regra 5e); cura ("+") só restaura a vida
+  atual. O campo Temp ganhou steppers próprios para conceder/limpar manualmente.
+- **Badge transitório** com a variação acumulada (some ~2 s após o último clique), contando **apenas**
+  mudanças que realmente ocorreram.
+- Layout: a linha de HP virou `repeat(auto-fit, minmax(118px, 1fr))` + `minWidth: 0` nos campos — com dois
+  campos "steppados" o conteúdo transbordava (itens de grid não encolhem por padrão).
+
 ---
 
 ## Patterns established during C.1.c
@@ -2009,6 +2056,10 @@ function buildInviteLink(): string {
 | Papel de membro muda só via RPC owner-only; dono não muda o próprio papel | #275 | Sem policy de UPDATE em `campaign_members`; garante ao menos um mestre por campanha |
 | Um único shell montado na ficha (`useIsMobile(1024)`), nunca os dois | #281 | Montar os dois duplica a ficha inteira e faz instâncias ocultas interferirem no estado compartilhado |
 | Nenhum valor derivado é persistido no `Character` — tudo vem dos helpers `derive*` | #282 | Campos derivados armazenados não são atualizados e ficam obsoletos (causa do #264) |
+| `baseUpdatedAt` sempre avança após upload bem-sucedido; `dirty` reflete edição concorrente | #286 | Não avançar fazia o app conflitar com a própria escrita e bloquear uploads silenciosamente |
+| Teto do debounce de sync nunca é reiniciado por novas edições | #286 | Sem teto, edição contínua adia o upload indefinidamente |
+| Imagens vivem no Storage + IndexedDB, nunca no payload de sync; nenhum caminho de download pode apagar imagem local | #287 | Enviar base64 a cada edição inflava a linha em centenas de KB |
+| Botões de HP aplicam regra (dano absorve temporário); digitação define o valor explicitamente | #289 | Evita surpresa: clicar segue a regra 5e, digitar é comando direto |
 
 ---
 
@@ -2235,6 +2286,17 @@ New from bugfix #278 (bandeja de dados):
 
 - ~~**OQ — `SheetLayout` deveria montar um shell só.**~~ *Resolved (PR #281).* `useIsMobile(1024)` monta
   apenas o shell ativo; a ficha deixou de renderizar duas vezes.
+
+New from sync latency + HP milestone (#286–#289):
+
+- **OQ — Indicador de sincronização travada fora da ficha.** Um conflito bloqueia o upload **silenciosamente**:
+  na campanha tudo parece normal, só desatualizado, e o alerta só aparece ao abrir a ficha. Expor o estado
+  (badge de sync, card do personagem) para o problema ser visível onde ele é percebido. Deferred.
+- **OQ — Efeitos mecânicos da exaustão.** Hoje o nível é só marcador. Automatizar (velocidade, HP máximo,
+  desvantagem em rolagens) exigiria mexer em derivados e no motor de dados. Deferred.
+- **OQ — Enviar apenas o delta de HP.** Com as imagens fora do payload (#287) a linha ficou pequena; medir na
+  prática antes de investir em colunas dedicadas/tabela de vitais, que criariam um segundo caminho de dados
+  a manter em sincronia com o JSONB. Deferred.
 
 ---
 

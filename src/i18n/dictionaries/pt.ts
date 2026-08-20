@@ -133,6 +133,7 @@ const pt: Record<keyof typeof en, string> = {
   'hp.max_label': 'Máx',
   'hp.temp_label': '+{n} temp',
   'hp.temp_input_label': 'Temp',
+  'hp.temp_help': 'PV temporários absorvem o dano primeiro: ao clicar em − na vida atual, eles caem antes. Não são recuperados por cura e não somam ao máximo.',
 
   // Hit Dice
   'hit_dice.section_title': 'Dados de Vida',
@@ -210,6 +211,16 @@ const pt: Record<keyof typeof en, string> = {
   'combat.properties_placeholder':  'Versátil, Acuidade, Leve…',
   'combat.notes_label':             'Notas',
   'combat.notes_placeholder':       'Efeitos especiais, mecânicas…',
+
+  // Combat — Exhaustion (D&D 5e, 6 cumulative levels)
+  'combat.exhaustion':      'Exaustão',
+  'combat.exhaustion_1':    'Desvantagem em testes de habilidade',
+  'combat.exhaustion_2':    'Velocidade reduzida à metade',
+  'combat.exhaustion_3':    'Desvantagem em jogadas de ataque e salvaguardas',
+  'combat.exhaustion_4':    'Máximo de pontos de vida reduzido à metade',
+  'combat.exhaustion_5':    'Velocidade reduzida a 0',
+  'combat.exhaustion_6':    'Morte',
+  'combat.exhaustion_help': 'Cada nível acumula os efeitos dos anteriores. Um descanso longo remove um nível.',
 
   // Features & Traits
   'features.label': 'Características & Traços',
@@ -529,6 +540,7 @@ const pt: Record<keyof typeof en, string> = {
   'aria.deathsave_failure_toggle':   'Alternar falha {n} de teste de morte',
   'aria.hitdice_class_input':        'Dados de vida restantes de {className}',
   'aria.roll':                       'Rolar {label}',
+  'aria.exhaustion_set':             'Definir exaustão para {n}',
 
   // Aria — languages
   'aria.language_input':       'Idioma {index}',

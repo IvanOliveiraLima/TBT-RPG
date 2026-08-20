@@ -8,6 +8,7 @@ interface NumberFieldProps
   min?: number
   max?: number
   onChange: (n: number) => void
+  onStep?: (dir: -1 | 1) => void
   showSteppers?: boolean
   readOnly?: boolean
 }
@@ -28,6 +29,7 @@ export function NumberField({
   min = 0,
   max = 999,
   onChange,
+  onStep,
   showSteppers = false,
   readOnly,
   ...rest
@@ -60,11 +62,13 @@ export function NumberField({
   }
 
   function decrement() {
+    if (onStep) { onStep(-1); return }
     const next = Math.max(min, value - 1)
     if (next !== value) onChange(next)
   }
 
   function increment() {
+    if (onStep) { onStep(1); return }
     const next = Math.min(max, value + 1)
     if (next !== value) onChange(next)
   }
@@ -117,8 +121,11 @@ export function NumberField({
     userSelect: 'none',
   })
 
-  const decrementDisabled = fieldDisabled || value <= min
-  const incrementDisabled = fieldDisabled || value >= max
+  // When onStep is provided, the step handler decides whether a change actually
+  // occurs — NumberField can't know. Skip the value-bound check so the button
+  // stays enabled (e.g. current HP at 0 but temp HP > 0 can still absorb).
+  const decrementDisabled = fieldDisabled || (!onStep && value <= min)
+  const incrementDisabled = fieldDisabled || (!onStep && value >= max)
 
   return (
     <div

@@ -3,6 +3,7 @@ import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
 import { Label } from '../ui/Label'
 import { useCharacterLocked } from '@/hooks/useCharacterLocked'
+import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 
 const CARD: React.CSSProperties = {
   background: '#15121C',
@@ -16,7 +17,6 @@ const TEXTAREA: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  resize: 'vertical',
   minHeight: 120,
   padding: 0,
   fontFamily: 'inherit',
@@ -37,7 +37,7 @@ export function BackstoryBlock({ character, onUpdate }: BackstoryBlockProps) {
   return (
     <div style={CARD} data-testid="backstory-block">
       <Label style={{ marginBottom: 10 }}>{t('backstory.section_title')}</Label>
-      <textarea
+      <AutoGrowTextarea
         value={character.backstory}
         onChange={(e) => onUpdate?.({ backstory: e.target.value })}
         placeholder={t('backstory.placeholder')}
