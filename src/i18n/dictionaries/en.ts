@@ -131,6 +131,7 @@ const en = {
   'hp.max_label': 'Max',
   'hp.temp_label': '+{n} temp',
   'hp.temp_input_label': 'Temp',
+  'hp.temp_help': 'Temporary HP absorbs damage first: clicking − on current HP drains temp HP before the real pool. Temp HP is not restored by healing and does not add to your maximum.',
 
   // Hit Dice
   'hit_dice.section_title': 'Hit Dice',

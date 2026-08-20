@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { screen, fireEvent, within } from '@testing-library/react'
 import { HpBlock } from '@/components/sheet/parts/HpBlock'
 import { HitDicePool } from '@/components/sheet/parts/HitDicePool'
 import { DeathSaves } from '@/components/sheet/parts/DeathSaves'
@@ -162,21 +162,23 @@ describe('HpBlock — HP steppers', () => {
 
   it('current HP has decrement and increment buttons when editable (PT)', () => {
     renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
-    expect(screen.getByRole('button', { name: 'Diminuir' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Aumentar' })).toBeDefined()
+    // Scope to the first stepper wrapper (current HP)
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    expect(within(currentHpWrapper).getByRole('button', { name: 'Diminuir' })).toBeDefined()
+    expect(within(currentHpWrapper).getByRole('button', { name: 'Aumentar' })).toBeDefined()
   })
 
   it('current HP has decrement and increment buttons when editable (EN)', () => {
     renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'en')
-    expect(screen.getByRole('button', { name: 'Decrement' })).toBeDefined()
-    expect(screen.getByRole('button', { name: 'Increment' })).toBeDefined()
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    expect(within(currentHpWrapper).getByRole('button', { name: 'Decrement' })).toBeDefined()
+    expect(within(currentHpWrapper).getByRole('button', { name: 'Increment' })).toBeDefined()
   })
 
-  it('max HP and temp HP do not have stepper buttons — only current HP does', () => {
+  it('temp HP also has stepper buttons when editable; max HP does not', () => {
     renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
-    // Exactly 1 decrement button total (from current HP only)
-    expect(screen.queryAllByRole('button', { name: 'Diminuir' }).length).toBe(1)
-    expect(screen.queryAllByRole('button', { name: 'Aumentar' }).length).toBe(1)
+    // 2 wrappers: current HP + temp HP; max HP has no steppers
+    expect(screen.getAllByTestId('number-field-stepper-wrapper').length).toBe(2)
   })
 
   it('no stepper buttons when no onUpdate provided', () => {
@@ -185,11 +187,12 @@ describe('HpBlock — HP steppers', () => {
     expect(screen.queryByRole('button', { name: 'Aumentar' })).toBeNull()
   })
 
-  it('decrement button calls onUpdate with current - 1', () => {
+  it('decrement button calls onUpdate absorbing temp first (temp=0 → reduces current)', () => {
     const char = { ...BASE, hp: { current: 30, max: 45, temp: 0 } }
     const onUpdate = vi.fn()
     renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
-    fireEvent.click(screen.getByRole('button', { name: 'Diminuir' }))
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    fireEvent.click(within(currentHpWrapper).getByRole('button', { name: 'Diminuir' }))
     expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 29, max: 45, temp: 0 } })
   })
 
@@ -197,20 +200,34 @@ describe('HpBlock — HP steppers', () => {
     const char = { ...BASE, hp: { current: 30, max: 45, temp: 0 } }
     const onUpdate = vi.fn()
     renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
-    fireEvent.click(screen.getByRole('button', { name: 'Aumentar' }))
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    fireEvent.click(within(currentHpWrapper).getByRole('button', { name: 'Aumentar' }))
     expect(onUpdate).toHaveBeenCalledWith({ hp: { current: 31, max: 45, temp: 0 } })
   })
 
-  it('decrement button is disabled when current HP is 0', () => {
+  it('decrement button is enabled even at current=0 when onStep is bound (button calls stepHp)', () => {
+    // With onStep provided, NumberField skips the value-bound disabled check.
+    // When temp=0 and current=0, stepHp is a no-op — nothing is called.
+    const onUpdate = vi.fn()
     const char = { ...BASE, hp: { current: 0, max: 45, temp: 0 } }
-    renderWithI18n(<HpBlock character={char} onUpdate={vi.fn()} />, 'pt')
-    expect((screen.getByRole('button', { name: 'Diminuir' }) as HTMLButtonElement).disabled).toBe(true)
+    renderWithI18n(<HpBlock character={char} onUpdate={onUpdate} />, 'pt')
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    const btn = within(currentHpWrapper).getByRole('button', { name: 'Diminuir' }) as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 
-  it('increment button is disabled when current HP equals max', () => {
-    renderWithI18n(<HpBlock character={BASE} onUpdate={vi.fn()} />, 'pt')
+  it('increment button is enabled even at max when onStep is bound', () => {
+    // stepHp(1) will do nothing since current === max, so onUpdate not called.
+    const onUpdate = vi.fn()
+    renderWithI18n(<HpBlock character={BASE} onUpdate={onUpdate} />, 'pt')
     // BASE has current=45, max=45
-    expect((screen.getByRole('button', { name: 'Aumentar' }) as HTMLButtonElement).disabled).toBe(true)
+    const currentHpWrapper = screen.getAllByTestId('number-field-stepper-wrapper')[0]!
+    const btn = within(currentHpWrapper).getByRole('button', { name: 'Aumentar' }) as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    fireEvent.click(btn)
+    expect(onUpdate).not.toHaveBeenCalled()
   })
 })
 
