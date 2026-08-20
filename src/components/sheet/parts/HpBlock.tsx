@@ -182,7 +182,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))',
           gap: 8,
           marginBottom: 10,
         }}
@@ -190,7 +190,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
         data-testid="hp-inputs"
       >
         {/* Current HP */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', minWidth: 0 }}>
           <span style={LABEL_STYLE}>{t('hp.current_label')}</span>
           <NumberField
             value={current}
@@ -207,7 +207,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
         </div>
 
         {/* Max HP */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', minWidth: 0 }}>
           <span style={LABEL_STYLE}>{t('hp.max_label')}</span>
           <NumberField
             value={max}
@@ -222,7 +222,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
         </div>
 
         {/* Temp HP */}
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, marginBottom: 3 }}>
             <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#7A7788' }}>
               {t('hp.temp_input_label')}
