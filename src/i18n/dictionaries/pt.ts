@@ -133,6 +133,7 @@ const pt: Record<keyof typeof en, string> = {
   'hp.max_label': 'Máx',
   'hp.temp_label': '+{n} temp',
   'hp.temp_input_label': 'Temp',
+  'hp.temp_help': 'PV temporários absorvem o dano primeiro: ao clicar em − na vida atual, eles caem antes. Não são recuperados por cura e não somam ao máximo.',
 
   // Hit Dice
   'hit_dice.section_title': 'Dados de Vida',

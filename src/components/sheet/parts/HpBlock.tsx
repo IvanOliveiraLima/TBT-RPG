@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import type React from 'react'
 import type { Character } from '@/domain/character'
 import { useTranslation } from '@/i18n'
@@ -89,6 +90,37 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
   const exhaustionLevel = character.exhaustion ?? 0
   const exhaustionReadOnly = !onUpdate || locked
 
+  const [delta, setDelta] = useState(0)
+  const deltaTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function bumpDelta(dir: -1 | 1) {
+    setDelta(d => d + dir)
+    if (deltaTimer.current) clearTimeout(deltaTimer.current)
+    deltaTimer.current = setTimeout(() => setDelta(0), 2000)
+  }
+
+  useEffect(() => () => {
+    if (deltaTimer.current) clearTimeout(deltaTimer.current)
+  }, [])
+
+  function stepHp(dir: -1 | 1) {
+    if (!onUpdate) return
+    if (dir === -1) {
+      if (hp.temp > 0) {
+        onUpdate({ hp: { ...hp, temp: hp.temp - 1 } })
+        bumpDelta(-1)
+      } else if (current > 0) {
+        onUpdate({ hp: { ...hp, current: current - 1 } })
+        bumpDelta(-1)
+      }
+    } else {
+      if (current < max) {
+        onUpdate({ hp: { ...hp, current: current + 1 } })
+        bumpDelta(1)
+      }
+    }
+  }
+
   function handleExhaustionClick(n: number) {
     if (exhaustionReadOnly) return
     const next = n <= exhaustionLevel ? n - 1 : n
@@ -117,15 +149,32 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
         >
           {t('hp.section_title')}
         </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: low ? '#E24B4A' : '#7A7788',
-            fontWeight: 600,
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          {max > 0 ? `${pct}%` : '—'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {delta !== 0 && (
+            <span
+              data-testid="hp-delta-badge"
+              aria-live="polite"
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                fontVariantNumeric: 'tabular-nums',
+                color: delta > 0 ? '#5DCAA5' : '#E24B4A',
+                transition: 'opacity 0.3s',
+              }}
+            >
+              {delta > 0 ? `+${delta}` : `\u2212${Math.abs(delta)}`}
+            </span>
+          )}
+          <div
+            style={{
+              fontSize: 11,
+              color: low ? '#E24B4A' : '#7A7788',
+              fontWeight: 600,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {max > 0 ? `${pct}%` : '—'}
+          </div>
         </div>
       </div>
 
@@ -148,6 +197,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
             min={0}
             max={max > 0 ? max : 999}
             onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, current: n } }) }}
+            onStep={stepHp}
             aria-label={t('aria.hp_current_input')}
             data-testid="hp-current-input"
             showSteppers={!!onUpdate}
@@ -173,7 +223,12 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
 
         {/* Temp HP */}
         <div style={{ textAlign: 'center' }}>
-          <span style={LABEL_STYLE}>{t('hp.temp_input_label')}</span>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, marginBottom: 3 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#7A7788' }}>
+              {t('hp.temp_input_label')}
+            </span>
+            <HelpHint textKey="hp.temp_help" />
+          </div>
           <NumberField
             value={hp.temp}
             min={0}
@@ -181,6 +236,7 @@ export function HpBlock({ character, onUpdate }: HpBlockProps) {
             onChange={n => { if (onUpdate) onUpdate({ hp: { ...hp, temp: n } }) }}
             aria-label={t('aria.hp_temp_input')}
             data-testid="hp-temp-input"
+            showSteppers={!!onUpdate}
             style={TEMP_INPUT_STYLE}
             disabled={!onUpdate}
           />
