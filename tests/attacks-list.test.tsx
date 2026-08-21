@@ -234,38 +234,41 @@ describe('AttacksList — add-attack button', () => {
 describe('AttacksList — remove attack', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('remove button calls onUpdate with attack filtered out by id (two-step confirm)', () => {
+  it('remove via row menu calls onUpdate with attack filtered out (two-step confirm)', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<AttacksList character={BASE} onUpdate={onUpdate} />, 'en')
-    // First click enters confirming state — no action yet
-    fireEvent.click(screen.getByTestId('remove-attack-atk_0'))
+    // Open the ⋮ menu for atk_0
+    fireEvent.click(screen.getByTestId('attack-menu-atk_0'))
+    // First click on delete item enters confirm mode — no action yet
+    fireEvent.click(screen.getByTestId('attack-remove-atk_0'))
     expect(onUpdate).not.toHaveBeenCalled()
     // Second click confirms
-    fireEvent.click(screen.getByTestId('remove-attack-atk_0'))
+    fireEvent.click(screen.getByTestId('attack-remove-atk_0'))
     const call = onUpdate.mock.calls[0]![0] as { attacks: Attack[] }
     expect(call.attacks).toHaveLength(1)
     expect(call.attacks[0]!.id).toBe('atk_1')
   })
 
-  it('preserves other attacks by id when removing (two-step confirm)', () => {
+  it('preserves other attacks by id when removing via row menu', () => {
     const onUpdate = vi.fn()
     renderWithI18n(<AttacksList character={BASE} onUpdate={onUpdate} />, 'en')
-    fireEvent.click(screen.getByTestId('remove-attack-atk_1'))
+    fireEvent.click(screen.getByTestId('attack-menu-atk_1'))
+    fireEvent.click(screen.getByTestId('attack-remove-atk_1'))
     expect(onUpdate).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByTestId('remove-attack-atk_1'))
+    fireEvent.click(screen.getByTestId('attack-remove-atk_1'))
     const call = onUpdate.mock.calls[0]![0] as { attacks: Attack[] }
     expect(call.attacks).toHaveLength(1)
     expect(call.attacks[0]!.name).toBe('Longsword')
   })
 
-  it('remove button has accessible aria-label in PT', () => {
+  it('row menu trigger has correct aria-label in PT', () => {
     renderWithI18n(<AttacksList character={BASE} onUpdate={vi.fn()} />, 'pt')
-    expect(screen.getByRole('button', { name: 'Remover ataque Longsword' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Ações de Longsword' })).toBeDefined()
   })
 
-  it('remove button has accessible aria-label in EN', () => {
+  it('row menu trigger has correct aria-label in EN', () => {
     renderWithI18n(<AttacksList character={BASE} onUpdate={vi.fn()} />, 'en')
-    expect(screen.getByRole('button', { name: 'Remove attack Longsword' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Actions for Longsword' })).toBeDefined()
   })
 })
 
@@ -301,9 +304,9 @@ describe('AttackCard — expand/collapse', () => {
     expect(screen.getByTestId('attack-notes-textarea-atk_0')).toBeDefined()
   })
 
-  it('remove click does not expand the card', () => {
+  it('opening row menu does not expand the card', () => {
     renderWithI18n(<AttacksList character={BASE} onUpdate={vi.fn()} />, 'en')
-    fireEvent.click(screen.getByTestId('remove-attack-atk_0'))
+    fireEvent.click(screen.getByTestId('attack-menu-atk_0'))
     expect(screen.queryByTestId('attack-name-input-atk_0')).toBeNull()
   })
 })

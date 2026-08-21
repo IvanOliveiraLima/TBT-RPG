@@ -329,6 +329,10 @@ This order matters: components built on a broken adapter produce invisible data 
   de comprimir. Para linhas com controles de largura variável use
   `repeat(auto-fit, minmax(Xpx, 1fr))` **e** `minWidth: 0` nos filhos. Lembre que a largura relevante é a do
   **container** (um cartão numa coluna estreita), não a do viewport — por isso breakpoints nem sempre ajudam.
+- **Afordância antes de estética:** dois controles com o mesmo símbolo e significados opostos (excluir × /
+  fechar ✕) custam mais do que qualquer ajuste visual. Ao criar um controle destrutivo, verifique se o
+  símbolo já é usado com outro sentido no app — e prefira mudar **o primitivo compartilhado**, não a tela
+  onde o problema apareceu (no #292, um arquivo corrigiu 7 telas).
 
 ### internationalization (i18n)
 
@@ -1303,6 +1307,24 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - Layout: a linha de HP virou `repeat(auto-fit, minmax(118px, 1fr))` + `minWidth: 0` nos campos — com dois
   campos "steppados" o conteúdo transbordava (itens de grid não encolhem por padrão).
 
+### UI — lixeira para excluir (COMPLETED — PR #292)
+- O botão de excluir era um `×`, o mesmo glifo usado como **fechar** — colisão sistemática: `×` de excluir no
+  `ConfirmableRemoveButton` (7 telas) vs `✕` de fechar em 7 modais/painéis.
+- Novo `TrashIcon` e troca **num único ponto** (o primitivo); as 7 telas herdam. O ícone usa
+  `color="currentColor"`, herdando cinza em repouso e vermelho na confirmação — sem duplicar lógica de cor.
+- Confirmação em dois passos, `stopPropagation`, testids e a11y preservados.
+
+### Combate — reordenar ataques + menu de linha (COMPLETED — PR #293)
+- `↑`/`↓` na linha compacta reordenam **dentro da seção** (armas, cada nível de magia, "outras magias");
+  desabilitados nas pontas e ocultos quando a seção tem 1 item ou a ficha está travada.
+- **Cuidado central:** as seções são *views derivadas* do array plano `attacks`. `moveInSection` troca o item
+  com o vizinho **da seção** e só então localiza ambos no array — trocar índices adjacentes faria o item
+  pular quando armas e magias estão intercaladas.
+- Novo primitivo **`RowMenu`** (kebab com item opcional de confirmação em dois passos), usado no card de
+  ataque com **Duplicar** e **Excluir**. `↑`/`↓` ficam **fora** do menu: reordenar é ação repetida e o menu
+  fecharia a cada passo.
+- Duplicar insere a cópia logo abaixo do original, com id novo e sufixo no nome.
+
 ---
 
 ## Patterns established during C.1.c
@@ -2060,6 +2082,9 @@ function buildInviteLink(): string {
 | Teto do debounce de sync nunca é reiniciado por novas edições | #286 | Sem teto, edição contínua adia o upload indefinidamente |
 | Imagens vivem no Storage + IndexedDB, nunca no payload de sync; nenhum caminho de download pode apagar imagem local | #287 | Enviar base64 a cada edição inflava a linha em centenas de KB |
 | Botões de HP aplicam regra (dano absorve temporário); digitação define o valor explicitamente | #289 | Evita surpresa: clicar segue a regra 5e, digitar é comando direto |
+| Lixeira = excluir · ✕ = fechar; nunca usar × para ação destrutiva | #292 | O mesmo glifo com significados opostos gerou confusão real de uso |
+| Em listas com seções derivadas, mover troca com o vizinho **da seção**, não índices adjacentes do array | #293 | Armas e magias compartilham o array `attacks`; trocar índices faz o item pular |
+| `RowMenu` é o primitivo padrão para ações por linha | #293 | Evita botões soltos e dá lugar para novas ações sem poluir a linha |
 
 ---
 
@@ -2274,8 +2299,14 @@ New from Combat polish (#253–#256):
 - **OQ — Conjurar em nível superior (upcasting).** O botão "Conjurar" consome o espaço do **próprio** nível
   da magia. Falta decidir a UX: seletor de nível na hora de conjurar vs. nível de conjuração fixo por
   ataque. Deferred (decisão pendente).
-- **OQ — Reordenar/duplicar ataques.** Reordenar cards (setas ou drag) e duplicar um ataque (mesma arma com
-  variação). A pensar melhor. Deferred.
+- ~~**OQ — Reordenar/duplicar ataques.**~~ *Resolved (PR #293).* `↑`/`↓` por seção + `RowMenu` com Duplicar
+  e Excluir.
+- **OQ — Migrar `MemberRowMenu` para o primitivo `RowMenu`.** O kebab das campanhas tem a mesma mecânica,
+  mas nasceu acoplado a `CampaignMember`/`UserProfile` e tem regras de visibilidade complexas (dono ×
+  co-mestre × própria linha). Unificar reduziria duplicação. Deferred.
+- **OQ — Adotar `RowMenu` nas demais listas da ficha.** Magias, inventário e características ainda usam a
+  lixeira solta; adotar o kebab uniformizaria as ações por linha e traria "duplicar" a custo baixo.
+  Deferred.
 - ~~**OQ — Remover os campos derivados armazenados do domínio.**~~ *Resolved (PR #282).* Campos removidos do
   tipo e das escritas; sem migração de banco (chaves legadas remanescentes são ignoradas).
 - **OQ — Auto-vínculo de munição.** Ao importar arma à distância (ou trocar o tipo para "à distância"),

@@ -324,7 +324,11 @@ Limite: `2MB` por imagem
 - **Vida temporária** — dano (botão −) consome os pontos temporários primeiro; cura (+) não restaura
   temporários. O campo Temp tem steppers próprios para conceder/limpar manualmente.
 
-### 13. Lock da ficha (modo leitura)
+### 13. Organização dos ataques
+
+- **Organização dos ataques** — reordene os ataques dentro de cada seção com ↑/↓ e duplique um ataque para criar variações pelo menu ⋮.
+
+### 14. Lock da ficha (modo leitura)
 
 Use o lock durante sessões de jogo para evitar edição acidental em stats permanentes.
 

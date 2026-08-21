@@ -298,6 +298,11 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.ammo_empty_hint':       'Cadastre um item na categoria Munição no inventário.',
   'attacks.ammo_help':             'Vincule um item do inventário para usar como munição. Cada ataque gasta 1 e o contador ao lado do ataque mostra o que resta — use o +1 para devolver. Só itens da categoria Munição aparecem na lista (além do que já estiver vinculado).',
   'attacks.bonus_suggestion_help': 'Bônus sugerido = modificador da habilidade + bônus de proficiência. Toque para preencher o campo; você pode editar depois. Em armas, assume que você é proficiente — se não for, use só o modificador da habilidade mostrado. Em magias, a proficiência sempre se aplica.',
+  'attacks.duplicate':             'Duplicar',
+  'attacks.copy_suffix':           ' (cópia)',
+  'attacks.move_up':               'Mover para cima',
+  'attacks.move_down':             'Mover para baixo',
+  'attacks.delete_label':          'Excluir',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASSE',
@@ -866,6 +871,7 @@ const pt: Record<keyof typeof en, string> = {
 
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',
+  'aria.row_menu':                 'Ações de {name}',
   'aria.edit_display_name_input':  'Nome de exibição',
 
   // Aria — combat
