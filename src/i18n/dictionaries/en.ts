@@ -296,6 +296,11 @@ const en = {
   'attacks.ammo_empty_hint':       'Add an item in the Ammunition category in your inventory.',
   'attacks.ammo_help':             'Link an inventory item to use as ammunition. Each attack spends 1 and the counter next to the attack shows what\'s left — use +1 to give one back. Only items in the Ammunition category are listed (plus the one already linked).',
   'attacks.bonus_suggestion_help': "Suggested bonus = ability modifier + proficiency bonus. Tap to fill the field; you can always edit it. For weapons it assumes you're proficient — if you aren't, use just the ability modifier shown. For spells proficiency always applies.",
+  'attacks.duplicate':             'Duplicate',
+  'attacks.copy_suffix':           ' (copy)',
+  'attacks.move_up':               'Move up',
+  'attacks.move_down':             'Move down',
+  'attacks.delete_label':          'Delete',
 
   // SpellcastingHeader (editable)
   'spells.header.class':        'CLASS',
@@ -863,6 +868,7 @@ const en = {
 
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',
+  'aria.row_menu':                 'Actions for {name}',
   'aria.edit_display_name_input':  'Display name',
 
   // Aria — combat
