@@ -4,10 +4,13 @@
  * Pattern B (inline): first click → "Confirm?" state; second click → executes.
  * Click outside or 5s timeout → resets to rest without executing.
  * stopPropagation on every click to avoid triggering parent expand/collapse handlers.
+ *
+ * Convenção do app: LIXEIRA = excluir · ✕ = fechar. Nunca usar × para ação destrutiva.
  */
 
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from '@/i18n'
+import { TrashIcon } from '@/components/icons'
 
 const CONFIRM_TIMEOUT_MS = 5000
 
@@ -129,7 +132,7 @@ export function ConfirmableRemoveButton({
       className={className}
       style={baseStyle}
     >
-      {confirming ? t('remove.confirm') : '×'}
+      {confirming ? t('remove.confirm') : <TrashIcon size={isSm ? 13 : 15} color="currentColor" />}
     </button>
   )
 }

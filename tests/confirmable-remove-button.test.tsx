@@ -7,22 +7,24 @@ import { renderWithI18n } from './helpers/render'
 describe('ConfirmableRemoveButton — rest state', () => {
   beforeEach(() => { localStorage.clear() })
 
-  it('renders × in rest state (EN)', () => {
+  it('renders trash icon (svg) in rest state (EN)', () => {
     renderWithI18n(
       <ConfirmableRemoveButton onConfirm={vi.fn()} ariaLabel="Remove item" />,
       'en'
     )
     const btn = screen.getByRole('button', { name: 'Remove item' })
-    expect(btn.textContent).toBe('×')
+    expect(btn.querySelector('svg')).not.toBeNull()
+    expect(btn.textContent).toBe('')
   })
 
-  it('renders × in rest state (PT)', () => {
+  it('renders trash icon (svg) in rest state (PT)', () => {
     renderWithI18n(
       <ConfirmableRemoveButton onConfirm={vi.fn()} ariaLabel="Remover item" />,
       'pt'
     )
     const btn = screen.getByRole('button', { name: 'Remover item' })
-    expect(btn.textContent).toBe('×')
+    expect(btn.querySelector('svg')).not.toBeNull()
+    expect(btn.textContent).toBe('')
   })
 
   it('has data-action="remove" attribute', () => {
@@ -126,7 +128,7 @@ describe('ConfirmableRemoveButton — confirmation execution', () => {
     const btn = screen.getByRole('button', { name: 'Remove item' })
     fireEvent.click(btn)
     fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion' }))
-    expect(screen.getByRole('button').textContent).toBe('×')
+    expect(screen.getByRole('button').querySelector('svg')).not.toBeNull()
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
 
@@ -160,8 +162,8 @@ describe('ConfirmableRemoveButton — cancel behaviors', () => {
 
     expect(screen.queryByText('Confirm?')).toBeNull()
     expect(onConfirm).not.toHaveBeenCalled()
-    // back to ×
-    expect(container.querySelector('button[data-action="remove"]')!.textContent).toBe('×')
+    // back to trash icon
+    expect(container.querySelector('button[data-action="remove"]')!.querySelector('svg')).not.toBeNull()
   })
 
   it('auto-resets after 5s timeout', async () => {
