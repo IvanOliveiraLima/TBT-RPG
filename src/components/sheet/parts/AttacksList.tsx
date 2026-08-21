@@ -5,7 +5,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { AttackKindIcon } from './AttackKindIcon'
 import { NumberField } from '@/components/primitives/NumberField'
-import { ConfirmableRemoveButton } from '@/components/primitives/ConfirmableRemoveButton'
+import { RowMenu } from '@/components/primitives/RowMenu'
 import { AutoGrowTextarea } from '@/components/primitives/AutoGrowTextarea'
 import { CANONICAL_DAMAGE_TYPES } from '@/data/canonical/damage-types'
 import { useSheetRoll } from '@/hooks/useSheetRoll'
@@ -455,6 +455,28 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
 
 type BonusSuggestion = { value: number; abilityMod: number; prof: number; abilityKey: AbilityKey }
 
+const MOVE_BTN: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: '4px 5px',
+  cursor: 'pointer',
+  color: '#7A7788',
+  fontSize: 12,
+  lineHeight: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 4,
+  flexShrink: 0,
+  userSelect: 'none',
+}
+
+const MOVE_BTN_DISABLED: React.CSSProperties = {
+  ...MOVE_BTN,
+  opacity: 0.3,
+  cursor: 'not-allowed',
+}
+
 interface AttackCardProps {
   attack: Attack
   expanded: boolean
@@ -472,9 +494,15 @@ interface AttackCardProps {
   onConsumeAmmo?: () => void
   onRestoreAmmo?: () => void
   bonusSuggestion?: BonusSuggestion | null
+  // Reorder + row menu (absent in read-only / locked mode)
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  moveUpDisabled?: boolean
+  moveDownDisabled?: boolean
+  onDuplicate?: () => void
 }
 
-function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo, bonusSuggestion }: AttackCardProps) {
+function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, spellSaveDC, spellLevel, slot, onConsumeSlot, onRestoreSlot, ammoCandidates: ammoCands, ammoItem, onConsumeAmmo, onRestoreAmmo, bonusSuggestion, onMoveUp, onMoveDown, moveUpDisabled, moveDownDisabled, onDuplicate }: AttackCardProps) {
   const { t } = useTranslation()
   const { rollCheck, rollDamage } = useSheetRoll()
 
@@ -552,12 +580,53 @@ function AttackCard({ attack, expanded, onToggle, onUpdate, onRemove, locked, sp
         {/* Free space — clicking here collapses the card */}
         <span data-testid={`attack-header-gap-${attack.id}`} style={{ flex: 1 }} />
 
-        {!locked && (
-          <ConfirmableRemoveButton
-            onConfirm={onRemove}
-            ariaLabel={t('aria.remove_attack', { name: attack.name || t('combat.unnamed_attack') })}
-            testId={`remove-attack-${attack.id}`}
-          />
+        {onDuplicate !== undefined && (
+          <>
+            {(onMoveUp !== undefined || onMoveDown !== undefined) && (
+              <>
+                <button
+                  type="button"
+                  data-testid={`attack-move-up-${attack.id}`}
+                  aria-label={t('attacks.move_up')}
+                  disabled={moveUpDisabled}
+                  onClick={e => { e.stopPropagation(); if (!moveUpDisabled) onMoveUp?.() }}
+                  style={moveUpDisabled ? MOVE_BTN_DISABLED : MOVE_BTN}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  data-testid={`attack-move-down-${attack.id}`}
+                  aria-label={t('attacks.move_down')}
+                  disabled={moveDownDisabled}
+                  onClick={e => { e.stopPropagation(); if (!moveDownDisabled) onMoveDown?.() }}
+                  style={moveDownDisabled ? MOVE_BTN_DISABLED : MOVE_BTN}
+                >
+                  ↓
+                </button>
+              </>
+            )}
+            <RowMenu
+              ariaLabel={t('aria.row_menu', { name: attack.name || t('combat.unnamed_attack') })}
+              testId={`attack-menu-${attack.id}`}
+              items={[
+                {
+                  key: 'duplicate',
+                  label: t('attacks.duplicate'),
+                  testId: `attack-duplicate-${attack.id}`,
+                  onSelect: () => { onDuplicate?.() },
+                },
+                {
+                  key: 'remove',
+                  label: t('attacks.delete_label'),
+                  testId: `attack-remove-${attack.id}`,
+                  danger: true,
+                  confirm: true,
+                  onSelect: onRemove,
+                },
+              ]}
+            />
+          </>
         )}
       </div>
 
@@ -1249,6 +1318,30 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
     return () => document.removeEventListener('pointerdown', onDown)
   }, [])
 
+  function moveInSection(id: string, dir: -1 | 1, section: Attack[]) {
+    if (!onUpdate) return
+    const i = section.findIndex(a => a.id === id)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= section.length) return
+    const flat = [...attacks]
+    const ai = flat.findIndex(x => x.id === id)
+    const bi = flat.findIndex(x => x.id === section[j]!.id)
+    if (ai < 0 || bi < 0) return
+    const tmp = flat[ai]!; flat[ai] = flat[bi]!; flat[bi] = tmp
+    onUpdate({ attacks: flat })
+  }
+
+  function duplicateAttack(id: string) {
+    if (!onUpdate) return
+    const i = attacks.findIndex(a => a.id === id)
+    if (i < 0) return
+    const src = attacks[i]!
+    const copy: Attack = { ...src, id: crypto.randomUUID(), name: `${src.name}${t('attacks.copy_suffix')}` }
+    const flat = [...attacks]
+    flat.splice(i + 1, 0, copy)
+    onUpdate({ attacks: flat })
+  }
+
   function addAttack() {
     if (!onUpdate) return
     const newId = crypto.randomUUID()
@@ -1423,10 +1516,11 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
               <div data-testid="attacks-section-weapons" style={SECTION_HEADER_STYLE}>
                 {t('attacks.weapons_section')}
               </div>
-              {weaponAttacks.map(attack => {
+              {weaponAttacks.map((attack, idx) => {
                 const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
                   ? character.inventory.find(i => i.id === attack.ammoItemId)
                   : undefined
+                const canMove = !!onUpdate && !locked && weaponAttacks.length >= 2
                 return (
                   <AttackCard
                     key={attack.id}
@@ -1440,6 +1534,8 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                     {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                     bonusSuggestion={bonusSuggestionFor(attack)}
+                    {...(canMove ? { onMoveUp: () => moveInSection(attack.id, -1, weaponAttacks), onMoveDown: () => moveInSection(attack.id, 1, weaponAttacks), moveUpDisabled: idx === 0, moveDownDisabled: idx === weaponAttacks.length - 1 } : {})}
+                    {...(onUpdate && !locked ? { onDuplicate: () => duplicateAttack(attack.id) } : {})}
                   />
                 )
               })}
@@ -1457,8 +1553,10 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                   ? t('spells.cantrips_section')
                   : t('spells.level_section', { level: String(lvl) })}
               </div>
-              {(byLevel[lvl] ?? []).map(attack => {
+              {(byLevel[lvl] ?? []).map((attack, idx) => {
                 const slotForLevel = lvl >= 1 ? (character.spellSlots ?? {})[String(lvl)] : undefined
+                const sectionList = byLevel[lvl] ?? []
+                const canMove = !!onUpdate && !locked && sectionList.length >= 2
                 return (
                   <AttackCard
                     key={attack.id}
@@ -1473,6 +1571,8 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                     {...(slotForLevel ? { slot: slotForLevel } : {})}
                     {...(lvl >= 1 && !locked ? { onConsumeSlot: () => consumeSlot(lvl), onRestoreSlot: () => restoreSlot(lvl) } : {})}
                     bonusSuggestion={bonusSuggestionFor(attack)}
+                    {...(canMove ? { onMoveUp: () => moveInSection(attack.id, -1, sectionList), onMoveDown: () => moveInSection(attack.id, 1, sectionList), moveUpDisabled: idx === 0, moveDownDisabled: idx === sectionList.length - 1 } : {})}
+                    {...(onUpdate && !locked ? { onDuplicate: () => duplicateAttack(attack.id) } : {})}
                   />
                 )
               })}
@@ -1485,30 +1585,36 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
               <div data-testid="attacks-section-other" style={SECTION_HEADER_STYLE}>
                 {t('attacks.other_spells_section')}
               </div>
-              {unknownSpells.map(attack => (
-                <AttackCard
-                  key={attack.id}
-                  attack={attack}
-                  expanded={openId === attack.id}
-                  onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
-                  onUpdate={partial => updateAttack(attack.id, partial)}
-                  onRemove={() => removeAttack(attack.id)}
-                  {...(locked ? { locked: true } : {})}
-                  {...(spellSaveDC != null ? { spellSaveDC } : {})}
-                  spellLevel={null}
-                  bonusSuggestion={bonusSuggestionFor(attack)}
-                />
-              ))}
+              {unknownSpells.map((attack, idx) => {
+                const canMove = !!onUpdate && !locked && unknownSpells.length >= 2
+                return (
+                  <AttackCard
+                    key={attack.id}
+                    attack={attack}
+                    expanded={openId === attack.id}
+                    onToggle={() => setOpenId(cur => (cur === attack.id ? null : attack.id))}
+                    onUpdate={partial => updateAttack(attack.id, partial)}
+                    onRemove={() => removeAttack(attack.id)}
+                    {...(locked ? { locked: true } : {})}
+                    {...(spellSaveDC != null ? { spellSaveDC } : {})}
+                    spellLevel={null}
+                    bonusSuggestion={bonusSuggestionFor(attack)}
+                    {...(canMove ? { onMoveUp: () => moveInSection(attack.id, -1, unknownSpells), onMoveDown: () => moveInSection(attack.id, 1, unknownSpells), moveUpDisabled: idx === 0, moveDownDisabled: idx === unknownSpells.length - 1 } : {})}
+                    {...(onUpdate && !locked ? { onDuplicate: () => duplicateAttack(attack.id) } : {})}
+                  />
+                )
+              })}
             </>
           )}
         </div>
       ) : (
         /* ── Flat view: no spells — render as before ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {attacks.map(attack => {
+          {attacks.map((attack, idx) => {
             const resolvedAmmoItem = attack.kind === 'ranged' && attack.ammoItemId
               ? character.inventory.find(i => i.id === attack.ammoItemId)
               : undefined
+            const canMove = !!onUpdate && !locked && attacks.length >= 2
             return (
               <AttackCard
                 key={attack.id}
@@ -1522,6 +1628,8 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
                 {...(resolvedAmmoItem ? { ammoItem: resolvedAmmoItem } : {})}
                 {...(resolvedAmmoItem && !locked ? { onConsumeAmmo: () => adjustAmmo(attack.ammoItemId!, -1), onRestoreAmmo: () => adjustAmmo(attack.ammoItemId!, 1) } : {})}
                 bonusSuggestion={bonusSuggestionFor(attack)}
+                {...(canMove ? { onMoveUp: () => moveInSection(attack.id, -1, attacks), onMoveDown: () => moveInSection(attack.id, 1, attacks), moveUpDisabled: idx === 0, moveDownDisabled: idx === attacks.length - 1 } : {})}
+                {...(onUpdate && !locked ? { onDuplicate: () => duplicateAttack(attack.id) } : {})}
               />
             )
           })}
