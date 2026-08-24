@@ -59,6 +59,15 @@ vi.mock('@/services/campaign-characters', () => ({
   },
 }))
 
+// ── Mock realtime service ─────────────────────────────────────────────────────
+// Returns inactive status by default (no Supabase in tests).
+vi.mock('@/services/realtime', () => ({
+  subscribeCharacterChanges: (_onChange: unknown, onStatus: (s: string) => void) => {
+    onStatus('inactive')
+    return () => {}
+  },
+}))
+
 // ── Mock tab components ───────────────────────────────────────────────────────
 
 vi.mock('@/components/sheet/tabs/StatusTab', () => ({
@@ -198,9 +207,9 @@ describe('CampaignCharacterView — character loaded', () => {
     await waitFor(() => expect(mockLoadCharacter).toHaveBeenCalledWith('c1', 'char1'))
   })
 
-  it('calls startPolling on mount', async () => {
+  it('calls startPolling on mount with interval', async () => {
     renderView()
-    await waitFor(() => expect(mockStartPolling).toHaveBeenCalledWith('c1', 'char1'))
+    await waitFor(() => expect(mockStartPolling).toHaveBeenCalledWith('c1', 'char1', expect.any(Number)))
   })
 
   it('renders linked chars in desktop sidebar', async () => {
