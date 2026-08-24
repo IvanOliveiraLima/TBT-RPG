@@ -865,6 +865,9 @@ const en = {
   'campaign_detail.promote_master':   'Promote to co-master',
   'campaign_detail.demote_player':    'Demote to Player',
   'campaign_detail.role_change_error':'Could not change role. Please try again.',
+  'campaign_detail.rt_active':        'Live updates active',
+  'campaign_detail.rt_inactive':      'Polling (realtime unavailable)',
+  'campaign_detail.rt_help':          'When active, character card updates arrive in ~2–5 s instead of the {interval}-second polling fallback.',
 
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',
