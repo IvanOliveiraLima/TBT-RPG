@@ -150,16 +150,23 @@ async function uploadCharacter(character: Character, userId: string): Promise<vo
     symbolImage: '',
   }
 
-  const { error } = await supabase.from('characters').upsert({
-    id:         character.id,
-    user_id:    userId,
-    data:       charData,
-    updated_at: new Date(character.updatedAt).toISOString(),
-  })
+  const { data: saved, error } = await supabase
+    .from('characters')
+    .upsert({
+      id:         character.id,
+      user_id:    userId,
+      data:       charData,
+      updated_at: new Date(character.updatedAt).toISOString(),
+    })
+    .select('updated_at')
+    .single()
   if (error) throw error
 
-  // Mark local copy as clean; skips if a concurrent edit advanced updatedAt
-  await markCharacterSynced(character.id, character.updatedAt)
+  // The set_updated_at trigger rewrites updated_at on the server to the server clock.
+  // Use the server-written value as the reconciliation base so the next sync
+  // does not flag our own upload as "cloud advanced" → phantom conflict.
+  const cloudStamp = saved?.updated_at ? new Date(saved.updated_at).getTime() : character.updatedAt
+  await markCharacterSynced(character.id, character.updatedAt, cloudStamp)
 
   // Upload images to Storage (best-effort per image)
   if (character.images.character) {
@@ -549,16 +556,24 @@ export async function resolveConflictKeepMine(
   const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = local
   const winner = { ...charData, updatedAt: winTs }
 
-  const { error } = await supabase.from('characters').upsert({
-    id:         local.id,
-    user_id:    session.user.id,
-    data:       winner,                              // updatedAt stamped inside data too
-    updated_at: new Date(winTs).toISOString(),
-  })
+  const { data: saved, error } = await supabase
+    .from('characters')
+    .upsert({
+      id:         local.id,
+      user_id:    session.user.id,
+      data:       winner,                              // updatedAt stamped inside data too
+      updated_at: new Date(winTs).toISOString(),
+    })
+    .select('updated_at')
+    .single()
   if (error) throw error
 
-  // Persist locally as clean and reconciled (importCharacter sets dirty:false, baseUpdatedAt:winTs)
+  // Persist locally; then realign base with what the server wrote.
+  // Without this, the set_updated_at trigger makes the server's value differ from winTs
+  // and the very next sync flags our own write as a conflict again.
   await importCharacter({ ...winner })
+  const cloudStamp = saved?.updated_at ? new Date(saved.updated_at).getTime() : winTs
+  await markCharacterSynced(local.id, winTs, cloudStamp)
   useSyncConflictStore.getState().removeConflict(local.id)
   await useCharactersStore.getState().fetchCharacters()
 }

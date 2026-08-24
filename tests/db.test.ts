@@ -477,5 +477,34 @@ describe('dirty flag and sync metadata', () => {
     it('does nothing when character does not exist', async () => {
       await expect(markCharacterSynced('nonexistent', 1700000000000)).resolves.toBeUndefined()
     })
+
+    it('uses cloudStamp as base when server rewrites updated_at (trigger scenario)', async () => {
+      const syncedAt   = 1700000000000
+      const cloudStamp = syncedAt + 57_000   // trigger added 57 s
+      store.set('char_001', makeChar({ dirty: true, updatedAt: syncedAt }))
+      await markCharacterSynced('char_001', syncedAt, cloudStamp)
+      const stored = store.get('char_001') as Character
+      expect(stored.baseUpdatedAt).toBe(cloudStamp)
+      expect(stored.dirty).toBe(false)
+    })
+
+    it('uses syncedAt as base when cloudStamp is omitted (backward compat)', async () => {
+      const syncedAt = 1700000000000
+      store.set('char_001', makeChar({ dirty: true, updatedAt: syncedAt }))
+      await markCharacterSynced('char_001', syncedAt)          // no cloudStamp
+      const stored = store.get('char_001') as Character
+      expect(stored.baseUpdatedAt).toBe(syncedAt)
+    })
+
+    it('uses cloudStamp as base even when there was a concurrent edit', async () => {
+      const syncedAt   = 1700000000000
+      const cloudStamp = syncedAt + 57_000
+      // concurrent edit happened during upload
+      store.set('char_001', makeChar({ dirty: true, updatedAt: syncedAt + 1_000 }))
+      await markCharacterSynced('char_001', syncedAt, cloudStamp)
+      const stored = store.get('char_001') as Character
+      expect(stored.dirty).toBe(true)           // still needs to upload concurrent edit
+      expect(stored.baseUpdatedAt).toBe(cloudStamp)  // base = server's value, not local
+    })
   })
 })

@@ -693,24 +693,31 @@ export async function importCharacter(character: Character): Promise<void> {
 
 /**
  * After a successful cloud upload, mark the local copy as clean.
- * Always advances baseUpdatedAt to the uploaded snapshot — this prevents
- * the next sync from treating our own upload as a "cloud-advanced" conflict.
+ * Always advances baseUpdatedAt to the value the SERVER wrote (cloudStamp) —
+ * this prevents phantom conflicts caused by the set_updated_at trigger, which
+ * rewrites the updated_at column to the server clock regardless of what we sent.
+ * Falls back to syncedAt when cloudStamp is not available (backward compat).
  * If the user edited concurrently (updatedAt advanced past syncedAt), dirty
  * stays true so the next sync cycle picks up the new edit; otherwise clears.
  */
-export async function markCharacterSynced(id: string, syncedAt: number): Promise<void> {
+export async function markCharacterSynced(
+  id: string,
+  syncedAt: number,
+  cloudStamp?: number,
+): Promise<void> {
   const db = await openV2()
   try {
     const existing = await db.get(V2_STORE, id) as Character | undefined
     if (!existing) return
     // Edição concorrente durante o upload: o registro segue "dirty" (precisa subir
-    // de novo), mas a BASE avança para o snapshot que acabamos de enviar — senão o
+    // de novo), mas a BASE avança para o valor que o SERVIDOR gravou — senão o
     // próximo sync compararia com uma base velha e acusaria conflito fantasma.
     const editedDuringUpload = existing.updatedAt !== syncedAt
+    const base = cloudStamp ?? syncedAt
     await db.put(V2_STORE, {
       ...existing,
       dirty: editedDuringUpload,
-      baseUpdatedAt: Math.max(existing.baseUpdatedAt ?? 0, syncedAt),
+      baseUpdatedAt: Math.max(existing.baseUpdatedAt ?? 0, base),
     })
   } finally {
     db.close()

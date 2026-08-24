@@ -4,14 +4,14 @@ import type { DeletedCharacterTombstone } from '@/data/db'
 
 // ── Mock @/data/db ────────────────────────────────────────────────────────────
 
-const mockMarkCharacterSynced = vi.fn<[string, number], Promise<void>>()
+const mockMarkCharacterSynced  = vi.fn()
 const mockGetPendingTombstones = vi.fn<[], Promise<DeletedCharacterTombstone[]>>()
 const mockRemoveTombstone      = vi.fn<[string], Promise<void>>()
 const mockListCharacters       = vi.fn<[], Promise<Character[]>>()
 const mockImportCharacter      = vi.fn<[Character], Promise<void>>()
 
 vi.mock('@/data/db', () => ({
-  markCharacterSynced: (...a: unknown[]) => mockMarkCharacterSynced(...(a as [string, number])),
+  markCharacterSynced: (...a: unknown[]) => mockMarkCharacterSynced(...(a as [string, number, (number | undefined)?])),
   getPendingTombstones: (...a: unknown[]) => mockGetPendingTombstones(...(a as [])),
   removeTombstone:      (...a: unknown[]) => mockRemoveTombstone(...(a as [string])),
   listCharacters:       (...a: unknown[]) => mockListCharacters(...(a as [])),
@@ -51,7 +51,10 @@ vi.mock('@/services/delete-character', () => ({
 let mockSession: { user: { id: string } } | null = null
 let mockSupabaseConfigured = false
 
-const mockUpsert = vi.fn()
+const mockUpsertSingle = vi.fn()
+const mockUpsert = vi.fn().mockImplementation(() => ({
+  select: () => ({ single: mockUpsertSingle }),
+}))
 const mockDeleteQuery = vi.fn()
 const mockStorageUpload = vi.fn()
 const mockMaybySingle = vi.fn().mockResolvedValue({ data: null })
@@ -130,7 +133,7 @@ describe('dirty flag — upload filtering in syncAll', () => {
     vi.clearAllMocks()
     mockGetPendingTombstones.mockResolvedValue([])
     mockRemoveTombstone.mockResolvedValue(undefined)
-    mockUpsert.mockResolvedValue({ error: null })
+    mockUpsertSingle.mockResolvedValue({ data: null, error: null })
     mockListCharacters.mockResolvedValue([])
     mockImportCharacter.mockResolvedValue(undefined)
     mockFetchCharacters.mockResolvedValue(undefined)
@@ -174,7 +177,7 @@ describe('dirty flag — cloud payload stripping', () => {
     mockCharacters.length = 0
     vi.clearAllMocks()
     mockGetPendingTombstones.mockResolvedValue([])
-    mockUpsert.mockResolvedValue({ error: null })
+    mockUpsertSingle.mockResolvedValue({ data: null, error: null })
     mockListCharacters.mockResolvedValue([])
     mockImportCharacter.mockResolvedValue(undefined)
     mockFetchCharacters.mockResolvedValue(undefined)
@@ -215,7 +218,7 @@ describe('dirty flag — markCharacterSynced called after upload', () => {
     mockCharacters.length = 0
     vi.clearAllMocks()
     mockGetPendingTombstones.mockResolvedValue([])
-    mockUpsert.mockResolvedValue({ error: null })
+    mockUpsertSingle.mockResolvedValue({ data: null, error: null })
     mockListCharacters.mockResolvedValue([])
     mockImportCharacter.mockResolvedValue(undefined)
     mockFetchCharacters.mockResolvedValue(undefined)
@@ -224,14 +227,30 @@ describe('dirty flag — markCharacterSynced called after upload', () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
   })
 
-  it('calls markCharacterSynced with char id and updatedAt after successful upload', async () => {
+  it('calls markCharacterSynced with char id, updatedAt, and cloudStamp after successful upload', async () => {
     mockCharacters.splice(0, Infinity, makeChar({ dirty: true, updatedAt: 1700000000000 }))
     await syncAll()
-    expect(mockMarkCharacterSynced).toHaveBeenCalledWith('char_001', 1700000000000)
+    expect(mockMarkCharacterSynced).toHaveBeenCalledWith('char_001', 1700000000000, expect.any(Number))
+  })
+
+  it('passes server-written updated_at as cloudStamp when trigger rewrites the timestamp', async () => {
+    const localTs  = 1700000000000
+    const serverTs = localTs + 57_000   // server trigger added 57 s
+    mockUpsertSingle.mockResolvedValueOnce({ data: { updated_at: new Date(serverTs).toISOString() }, error: null })
+    mockCharacters.splice(0, Infinity, makeChar({ dirty: true, updatedAt: localTs }))
+    await syncAll()
+    expect(mockMarkCharacterSynced).toHaveBeenCalledWith('char_001', localTs, serverTs)
+  })
+
+  it('falls back to character.updatedAt as cloudStamp when server returns no data', async () => {
+    mockUpsertSingle.mockResolvedValueOnce({ data: null, error: null })
+    mockCharacters.splice(0, Infinity, makeChar({ dirty: true, updatedAt: 1700000000000 }))
+    await syncAll()
+    expect(mockMarkCharacterSynced).toHaveBeenCalledWith('char_001', 1700000000000, 1700000000000)
   })
 
   it('does not call markCharacterSynced when upload fails', async () => {
-    mockUpsert.mockResolvedValueOnce({ error: new Error('network error') })
+    mockUpsertSingle.mockResolvedValueOnce({ data: null, error: new Error('network error') })
     mockCharacters.splice(0, Infinity, makeChar({ dirty: true }))
     await syncAll()
     expect(mockMarkCharacterSynced).not.toHaveBeenCalled()

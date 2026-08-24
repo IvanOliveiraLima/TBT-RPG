@@ -4,13 +4,13 @@ import type { DeletedCharacterTombstone } from '@/data/db'
 
 // ── Mock @/data/db ────────────────────────────────────────────────────────────
 
-const mockMarkCharacterSynced = vi.fn<[string, number], Promise<void>>()
+const mockMarkCharacterSynced  = vi.fn()
 const mockGetPendingTombstones = vi.fn<[], Promise<DeletedCharacterTombstone[]>>()
 const mockListCharacters       = vi.fn<[], Promise<Character[]>>()
 const mockImportCharacter      = vi.fn<[Character], Promise<void>>()
 
 vi.mock('@/data/db', () => ({
-  markCharacterSynced:  (...a: unknown[]) => mockMarkCharacterSynced(...(a as [string, number])),
+  markCharacterSynced:  (...a: unknown[]) => mockMarkCharacterSynced(...(a as [string, number, (number | undefined)?])),
   getPendingTombstones: (...a: unknown[]) => mockGetPendingTombstones(...(a as [])),
   listCharacters:       (...a: unknown[]) => mockListCharacters(...(a as [])),
   importCharacter:      (...a: unknown[]) => mockImportCharacter(...(a as [Character])),
@@ -69,7 +69,10 @@ vi.mock('@/services/delete-character', () => ({
 let mockSession: { user: { id: string } } | null = null
 let mockSupabaseConfigured = false
 
-const mockUpsert       = vi.fn()
+const mockUpsertSingle = vi.fn()
+const mockUpsert       = vi.fn().mockImplementation(() => ({
+  select: () => ({ single: mockUpsertSingle }),
+}))
 const mockMaybySingle  = vi.fn().mockResolvedValue({ data: null })
 const mockReturns      = vi.fn().mockResolvedValue({ data: [], error: null })
 const mockStorageUpload = vi.fn()
@@ -156,7 +159,7 @@ beforeEach(() => {
   mockMarkCharacterSynced.mockResolvedValue(undefined)
   mockMaybySingle.mockResolvedValue({ data: null })
   mockReturns.mockResolvedValue({ data: [], error: null })
-  mockUpsert.mockResolvedValue({ error: null })
+  mockUpsertSingle.mockResolvedValue({ data: null, error: null })
   mockAddConflict.mockReset()
   mockRemoveConflict.mockReset()
   mockHasConflict.mockReturnValue(false)
@@ -417,12 +420,39 @@ describe('resolveConflictKeepMine', () => {
     expect(mockFetchCharacters).toHaveBeenCalledTimes(1)
   })
 
-  it('does NOT call markCharacterSynced (importCharacter handles persistence)', async () => {
+  it('calls markCharacterSynced to realign base with server-written updated_at', async () => {
     const local = makeChar({ dirty: true, updatedAt: 1500 })
 
     await resolveConflictKeepMine(local, 2000)
 
-    expect(mockMarkCharacterSynced).not.toHaveBeenCalled()
+    expect(mockMarkCharacterSynced).toHaveBeenCalledTimes(1)
+  })
+
+  it('passes server updated_at as cloudStamp to markCharacterSynced', async () => {
+    const cloudUpdatedAt = 9_999_999_999_999
+    const winTs          = cloudUpdatedAt + 1        // max(now, cloud+1) → cloud+1 (far future)
+    const serverTs       = winTs + 57_000             // trigger rewrote the column
+    mockUpsertSingle.mockResolvedValueOnce({
+      data: { updated_at: new Date(serverTs).toISOString() }, error: null,
+    })
+    const local = makeChar({ dirty: true, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, cloudUpdatedAt)
+
+    const call = mockMarkCharacterSynced.mock.calls[0] as [string, number, number]
+    expect(call[2]).toBe(serverTs)
+  })
+
+  it('uses winTs as fallback cloudStamp when server returns no data', async () => {
+    mockUpsertSingle.mockResolvedValueOnce({ data: null, error: null })
+    const local = makeChar({ dirty: true, updatedAt: 1500 })
+
+    await resolveConflictKeepMine(local, 2000)
+
+    const call = mockMarkCharacterSynced.mock.calls[0] as [string, number, number]
+    // cloudStamp falls back to winTs = Math.max(Date.now(), 2001)
+    expect(typeof call[2]).toBe('number')
+    expect(call[2]).toBeGreaterThanOrEqual(2001)
   })
 })
 
