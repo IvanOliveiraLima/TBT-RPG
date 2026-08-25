@@ -333,6 +333,14 @@ This order matters: components built on a broken adapter produce invisible data 
   fechar ✕) custam mais do que qualquer ajuste visual. Ao criar um controle destrutivo, verifique se o
   símbolo já é usado com outro sentido no app — e prefira mudar **o primitivo compartilhado**, não a tela
   onde o problema apareceu (no #292, um arquivo corrigiu 7 telas).
+- **Relógio único:** se o banco carimba um horário (trigger/`default now()`), esse valor é **metadado do
+  servidor** — nunca base de reconciliação. Toda decisão de sync deve comparar timestamps de **edição**,
+  gerados pelo mesmo tipo de relógio. Misturar as duas grandezas produz "a nuvem está à frente" de forma
+  intermitente e inexplicável.
+- **Instrumentar antes da terceira hipótese:** nesta investigação houve três diagnósticos plausíveis e
+  errados em sequência (cada correção revelava a camada seguinte). O que fechou o caso foram **números de
+  produção** — `data->>'updatedAt'` vs a coluna, e o estado local (`updatedAt`/`base`/`dirty`) no momento do
+  erro. Quando duas hipóteses falharem, pare de propor a terceira: **instrumente e meça**.
 
 ### internationalization (i18n)
 
@@ -1325,6 +1333,26 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
   fecharia a cada passo.
 - Duplicar insere a cópia logo abaixo do original, com id novo e sufixo no nome.
 
+### Campanhas — Realtime nos personagens vinculados (COMPLETED — PR #296)
+- `postgres_changes` na tabela `characters` (etapa manual: `alter publication supabase_realtime add table
+  public.characters`), com RLS filtrando por assinante.
+- **Padrão "avisar e buscar":** o evento serve só de **gatilho**; o payload é ignorado (a linha carrega o
+  personagem inteiro). O refetch reusa `loadLinkedDetails`/`campaign-view`.
+- **Sem `filter` na assinatura** — o Postgres Changes aceita um valor por filtro e são vários vinculados; a
+  RLS já limita o que chega, e o consumidor decide se o `id` interessa.
+- Polling mantido como fallback (30 s com canal ativo, 5 s sem) + indicador de status no cabeçalho.
+
+### Sync — volta ao último-a-escrever-vence (COMPLETED — PR #299)
+- **Removida** a detecção de conflito (store, banner, modal, as três resoluções e 10 chaves i18n). O upload
+  passa a subir sempre que `dirty`, exceto quando a nuvem é mais recente **pelo relógio de edição**.
+- **Motivo:** a máquina de conflitos bloqueava uploads legítimos com **um único dispositivo**. Na resolução,
+  a versão "da nuvem" já mostrava o dado novo — era bookkeeping travando, não proteção.
+- Três causas distintas produziram o mesmo sintoma ao longo da investigação: edição durante o upload
+  (#286, real e corrigida), o trigger `set_updated_at` reescrevendo a coluna (#297, fechado sem merge) e a
+  comparação entre relógios diferentes (#298, absorvido aqui).
+- **Trade-off consciente:** editar o mesmo personagem **offline em dois dispositivos** → o último a subir
+  vence e as edições do outro somem **sem aviso**. Aceito: um dono por personagem, uma sessão por vez.
+
 ---
 
 ## Patterns established during C.1.c
@@ -2085,6 +2113,9 @@ function buildInviteLink(): string {
 | Lixeira = excluir · ✕ = fechar; nunca usar × para ação destrutiva | #292 | O mesmo glifo com significados opostos gerou confusão real de uso |
 | Em listas com seções derivadas, mover troca com o vizinho **da seção**, não índices adjacentes do array | #293 | Armas e magias compartilham o array `attacks`; trocar índices faz o item pular |
 | `RowMenu` é o primitivo padrão para ações por linha | #293 | Evita botões soltos e dá lugar para novas ações sem poluir a linha |
+| Sync é **last-write-wins** por escolha consciente; não reintroduzir detecção de conflito sem necessidade real | #299 | A proteção custava mais do que protegia: bloqueava uploads legítimos com um só dispositivo |
+| Nunca comparar relógio de dispositivo com relógio de servidor | #298, #299 | `updated_at` é reescrito pelo trigger `set_updated_at`; só `data.updatedAt` é comparável com `updatedAt`/`baseUpdatedAt` |
+| Realtime usa "avisar e buscar": evento é gatilho, refetch é a fonte | #296 | A linha carrega o personagem inteiro; trafegar o payload seria pesado e frágil |
 
 ---
 
@@ -2235,7 +2266,15 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Auth signup flow quebrado.**~~ *Resolved. Dual mode signin/signup in /login. PR #127.*
 - ~~**OQ — Sistema de Campanhas.**~~ *Resolved. Camp.1-5 delivered (PRs #125–#130). Remaining OQs listed below.*
 - ~~**OQ — Transfer ownership de campanha.**~~ *Resolved (PR #270).* RPC atômica + ação no menu de membros; o dono antigo vira `player`.
-- **OQ — Realtime via Supabase Channels.** Upgrade do polling 15s pra subscribe em mudanças de chars vinculados. Deferred.
+- ~~**OQ — Realtime via Supabase Channels.**~~ *Resolved (PR #296).* `postgres_changes` em `characters` com
+  padrão "avisar e buscar" e polling como fallback.
+- **OQ — Remover `baseUpdatedAt` do domínio.** Desde o #299 o campo é gravado mas não participa de nenhuma
+  decisão (marcado como "reservado" no `db.ts`). Removê-lo exige tocar tipo, fixtures e o schema local.
+  Deferred.
+- **OQ — Fallback do Realtime só desacelera após o primeiro evento.** Hoje o polling cai para 30 s assim que
+  o canal reporta `SUBSCRIBED`. Assinar não prova que eventos chegam (RLS, publicação, token): se o canal
+  ficar mudo, o mestre fica **mais lento** que antes. Manter 5 s até o **primeiro evento recebido**.
+  Deferred.
 - **OQ — QR code do convite.** Geração visual de QR code com o link de convite. Deferred.
 - ~~**OQ — Co-mestre (promover jogador a mestre).**~~ *Resolved (PRs #274, #275).* `is_campaign_master`/
   `is_map_master` + trigger anti-escalada + RPC `set_campaign_member_role` (owner-only); client com
