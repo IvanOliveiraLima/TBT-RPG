@@ -56,6 +56,7 @@ PWA instalável.
 - **Tela de transmissão** — o mestre controla o mapa numa janela e projeta a perspectiva do jogador (névoa opaca, segredos ocultos) em outra, atualizada ao vivo, para compartilhar em projetor/chamada
 - **Dados** — motor de rolagem com vantagem/desvantagem e crítico; tocar em perícias/testes/ataques rola com o bônus certo; em campanha, as rolagens aparecem num log compartilhado que a mesa vê (o mestre rola como "Mestre")
 - **Rolagem secreta do mestre** — o mestre pode rolar sem que os jogadores vejam (fica só na bandeja dele, sem registro)
+- **Atualização em tempo real** — as fichas vinculadas aparecem atualizadas para o mestre em segundos, sem recarregar
 - **HP ao vivo** — o mestre vê o HP (e outros stats) de cada personagem vinculado atualizar automaticamente a cada ~10s, sem precisar recarregar a página
 - **Iniciativa e turnos** — o mestre monta a ordem de iniciativa dos combatentes e avança/retrocede o turno; os jogadores acompanham o turno atual em modo leitura
 - **Auto-iniciativa** — o mestre pode ligar, por campanha, o registro automático: quando um jogador rola iniciativa na ficha, o combatente dele entra/atualiza na ordem de iniciativa sozinho
@@ -73,8 +74,7 @@ PWA instalável.
 - **Upload reactive** — edições sobem pra cloud 15s após (debounced)
 - **Upload periodic** — background a cada 30s pra garantir consistência
 - **Download** — chars da cloud baixam pro IndexedDB local no login + periodic
-- **Multi-dispositivo seguro** — só sobe o que você editou de fato; se o mesmo personagem mudou em dois aparelhos, o app pergunta como resolver em vez de sobrescrever calado
-- **Conflict resolution** — Last-write-wins por `updatedAt`
+- **Multi-dispositivo** — só sobe o que você editou de fato; last-write-wins por relógio de edição (`updatedAt`)
 - **Imagens** — upload/download eager via Supabase Storage (base64 ↔ blob)
 - **Tombstones** — deleções propagam entre devices (com limitação conhecida)
 - **Auth status badge** — indicador visual de Conectado/Entrar + status de sync
@@ -96,7 +96,6 @@ PWA instalável.
 - **Polish sync** — persistent error state, manual refresh button, edge cases
 - **Auth status interativo** — click no badge abre menu (sair, conta, etc.)
 - **Worker AI expansion** — incluir items e magias na geração de personagem
-- **Realtime via Supabase Channels** — Substituir polling por subscribe em mudanças
 - **QR code do convite** — Geração visual de QR code com o link de convite
 
 ### Limitações conhecidas
