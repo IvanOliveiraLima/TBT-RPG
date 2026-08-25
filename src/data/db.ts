@@ -693,9 +693,9 @@ export async function importCharacter(character: Character): Promise<void> {
 
 /**
  * After a successful cloud upload, mark the local copy as clean.
- * Always advances baseUpdatedAt to the uploaded snapshot — this prevents
- * the next sync from treating our own upload as a "cloud-advanced" conflict.
- * If the user edited concurrently (updatedAt advanced past syncedAt), dirty
+ * baseUpdatedAt é reservado — não é usado em decisão de sync desde a volta ao LWW
+ * (refactor/sync-lww). Mantido no schema local para evitar migração de IDB agora.
+ * Se the user edited concurrently (updatedAt advanced past syncedAt), dirty
  * stays true so the next sync cycle picks up the new edit; otherwise clears.
  */
 export async function markCharacterSynced(id: string, syncedAt: number): Promise<void> {

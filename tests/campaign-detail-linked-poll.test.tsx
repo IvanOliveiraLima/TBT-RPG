@@ -81,6 +81,14 @@ vi.mock('@/services/campaign-characters', () => ({
   unlinkCharacterFromCampaign: vi.fn(),
 }))
 
+// ── realtime service — inactive by default ───────────────────────────────────
+vi.mock('@/services/realtime', () => ({
+  subscribeCharacterChanges: (_onChange: unknown, onStatus: (s: string) => void) => {
+    onStatus('inactive')
+    return () => {}
+  },
+}))
+
 // ── campaign-view service — the target ───────────────────────────────────────
 
 const mockFetchLinkedCharactersDetails = vi.fn()

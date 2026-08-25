@@ -381,7 +381,7 @@ describe('downloadCharacters — LWW conflict', () => {
 
   it('overwrites local when cloud is strictly newer', async () => {
     const localChar  = makeChar({ id: 'char_001', updatedAt: 1_000 })
-    const cloudData  = makeChar({ id: 'char_001', name: 'CloudName', updatedAt: 1_000 })
+    const cloudData  = makeChar({ id: 'char_001', name: 'CloudName', updatedAt: 2_000 })
     mockCharsSelectData  = [makeCloudRow(cloudData, 2_000)]
     mockListCharacters.mockResolvedValue([localChar])
 
@@ -415,9 +415,9 @@ describe('downloadCharacters — LWW conflict', () => {
     expect(mockImportCharacter).not.toHaveBeenCalled()
   })
 
-  it('preserves cloud updatedAt when importing', async () => {
+  it('preserves cloud edit timestamp (data.updatedAt) when importing', async () => {
     const localChar = makeChar({ id: 'char_001', updatedAt: 1_000 })
-    const cloudData = makeChar({ id: 'char_001', updatedAt: 1_000 })
+    const cloudData = makeChar({ id: 'char_001', updatedAt: 9_999 })
     mockCharsSelectData = [makeCloudRow(cloudData, 9_999)]
     mockListCharacters.mockResolvedValue([localChar])
 

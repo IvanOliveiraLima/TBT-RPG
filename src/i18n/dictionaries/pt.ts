@@ -868,6 +868,9 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.promote_master':   'Promover a Co-Mestre',
   'campaign_detail.demote_player':    'Rebaixar a Jogador',
   'campaign_detail.role_change_error':'Não foi possível alterar o papel. Tente novamente.',
+  'campaign_detail.rt_active':        'Atualizações ao vivo ativas',
+  'campaign_detail.rt_inactive':      'Sondagem (realtime indisponível)',
+  'campaign_detail.rt_help':          'Quando ativo, os cards atualizam em ~2–5 s em vez do fallback de sondagem a cada {interval} s.',
 
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',
@@ -1012,17 +1015,6 @@ const pt: Record<keyof typeof en, string> = {
   // ── Help hints ───────────────────────────────────────────────────────────────
   'help.aria_open': 'Mostrar ajuda',
 
-  // ── Sync conflict ─────────────────────────────────────────────────────────────
-  'sync_conflict.banner':      '{n} conflito(s) de sincronização — Resolver',
-  'sync_conflict.resolve':     'Resolver',
-  'sync_conflict.title':       'Conflito de Sincronização',
-  'sync_conflict.body':        'Alterado em outro dispositivo enquanto você tinha mudanças não sincronizadas.',
-  'sync_conflict.this_device': 'Este aparelho',
-  'sync_conflict.cloud':       'Nuvem',
-  'sync_conflict.keep_mine':   'Manter deste aparelho',
-  'sync_conflict.keep_cloud':  'Manter da nuvem',
-  'sync_conflict.keep_both':   'Manter as duas',
-  'sync_conflict.copy_suffix': '(conflito)',
 };
 
 export default pt;

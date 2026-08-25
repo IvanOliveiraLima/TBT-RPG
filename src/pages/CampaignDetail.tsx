@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import { getCampaign, listCampaignMembers, removeMember, transferCampaignOwnership, setCampaignMemberRole } from '@/services/campaign'
@@ -6,6 +6,7 @@ import { listProfilesByIds } from '@/services/user-profile'
 import { unlinkCharacterFromCampaign } from '@/services/campaign-characters'
 import { fetchLinkedCharactersDetails } from '@/services/campaign-view'
 import type { LinkedCharacterDetails } from '@/services/campaign-view'
+import { subscribeCharacterChanges } from '@/services/realtime'
 import { LinkedCharCard } from '@/components/campaigns/LinkedCharCard'
 import { useTranslation } from '@/i18n'
 import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
@@ -58,6 +59,10 @@ export default function CampaignDetail() {
   const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
   const [pendingTransfer, setPendingTransfer] = useState<EnrichedMember | null>(null)
   const [diceOpen, setDiceOpen] = useState(false)
+  const [realtimeActive, setRealtimeActive] = useState(false)
+  // Stable ref to current linked-char ids for the realtime callback (avoids stale closure).
+  const linkedIdsRef = useRef<Set<string>>(new Set())
+  const rtRefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const setCampaignContext   = useDiceStore(s => s.setCampaignContext)
   const clearCampaignContext = useDiceStore(s => s.clearCampaignContext)
 
@@ -102,13 +107,44 @@ export default function CampaignDetail() {
     })
   }, [id, user, authLoading, navigate])
 
-  // Poll linked characters' live data (HP, level, etc.) so the master sees updates
-  // without reloading the page.
+  // Keep the ref in sync so the realtime callback always sees the current linked-char ids.
+  useEffect(() => {
+    linkedIdsRef.current = new Set(linkedDetails.map(d => d.characterId))
+  }, [linkedDetails])
+
+  // Realtime subscription: subscribe on mount, clean up on unmount.
+  // Notify-and-fetch: use the event as trigger only; ignore payload content.
   useEffect(() => {
     if (!id || !user || authLoading) return
-    const t = setInterval(() => { void loadLinkedDetails(id) }, 5_000)
-    return () => { clearInterval(t) }
+    const cleanup = subscribeCharacterChanges(
+      (charId) => {
+        if (!linkedIdsRef.current.has(charId)) return
+        // Debounce: coalesce bursts of events into a single refetch.
+        if (rtRefetchTimer.current !== null) clearTimeout(rtRefetchTimer.current)
+        rtRefetchTimer.current = setTimeout(() => {
+          void loadLinkedDetails(id)
+          rtRefetchTimer.current = null
+        }, 300)
+      },
+      (status) => { setRealtimeActive(status === 'active') },
+    )
+    return () => {
+      if (rtRefetchTimer.current !== null) {
+        clearTimeout(rtRefetchTimer.current)
+        rtRefetchTimer.current = null
+      }
+      cleanup()
+    }
   }, [id, user, authLoading])
+
+  // Poll linked characters' live data as fallback.
+  // Interval: 30 s when realtime is active (secondary), 5 s otherwise (primary).
+  useEffect(() => {
+    if (!id || !user || authLoading) return
+    const interval = realtimeActive ? 30_000 : 5_000
+    const t = setInterval(() => { void loadLinkedDetails(id) }, interval)
+    return () => { clearInterval(t) }
+  }, [id, user, authLoading, realtimeActive])
 
   // Set campaign context so GM rolls on this page are logged as "Mestre" (master only —
   // includes co-masters who also get secret rolls and the master badge).
@@ -251,10 +287,30 @@ export default function CampaignDetail() {
         {/* Campaign header — full width */}
         <div style={{ marginBottom: 24 }}>
           <div style={{
-            fontFamily: T.serif, fontSize: 24, fontWeight: 700,
-            color: T.textPrimary, marginBottom: 8,
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8,
           }}>
-            {campaign.name}
+            <div style={{
+              fontFamily: T.serif, fontSize: 24, fontWeight: 700,
+              color: T.textPrimary,
+            }}>
+              {campaign.name}
+            </div>
+            {/* Realtime status indicator — visible to master only */}
+            {isMaster && (
+              <div
+                data-testid="rt-status-dot"
+                title={t(realtimeActive ? 'campaign_detail.rt_active' : 'campaign_detail.rt_inactive')}
+                style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: realtimeActive ? '#4CAF50' : T.textMuted,
+                  boxShadow: realtimeActive ? '0 0 6px #4CAF5080' : 'none',
+                  transition: 'background 0.3s, box-shadow 0.3s',
+                }}
+              />
+            )}
+            {isMaster && (
+              <HelpHint textKey="campaign_detail.rt_help" />
+            )}
           </div>
           {campaign.description && (
             <div style={{ fontSize: 14, color: T.textSecondary, lineHeight: 1.6 }}>

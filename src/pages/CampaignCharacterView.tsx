@@ -4,6 +4,7 @@ import { useTranslation } from '@/i18n'
 import type { TranslationKey } from '@/i18n'
 import { useCampaignViewStore } from '@/store/campaign-view'
 import { listCampaignCharacters } from '@/services/campaign-characters'
+import { subscribeCharacterChanges } from '@/services/realtime'
 import { ForceReadOnlyContext, RemoteCharacterContext } from '@/contexts/CampaignViewContext'
 import type { CampaignCharacter } from '@/domain/campaign'
 import type { TabKey } from '@/components/sheet/types'
@@ -39,6 +40,7 @@ export default function CampaignCharacterView() {
 
   const [activeTab, setActiveTab] = useState<TabKey>('status')
   const [linkedChars, setLinkedChars] = useState<CampaignCharacter[]>([])
+  const [realtimeActive, setRealtimeActive] = useState(false)
 
   // Load linked chars for sidebar
   useEffect(() => {
@@ -46,13 +48,24 @@ export default function CampaignCharacterView() {
     listCampaignCharacters(campaignId).then(setLinkedChars).catch(console.error)
   }, [campaignId])
 
-  // Load char + start polling; clear on unmount or when ids change
+  // Load char + start polling; clear on unmount or when ids change.
+  // Polling interval: 30 s when realtime is active (secondary), 5 s otherwise.
   useEffect(() => {
     if (!campaignId || !charId) return
+    const interval = realtimeActive ? 30_000 : 5_000
     void loadCharacter(campaignId, charId)
-    startPolling(campaignId, charId)
+    startPolling(campaignId, charId, interval)
     return () => { clear() }
-  }, [campaignId, charId, loadCharacter, startPolling, clear])
+  }, [campaignId, charId, realtimeActive, loadCharacter, startPolling, clear])
+
+  // Realtime: trigger an immediate refetch when this character is updated.
+  useEffect(() => {
+    if (!campaignId || !charId) return
+    return subscribeCharacterChanges(
+      (id) => { if (id === charId) void loadCharacter(campaignId, charId) },
+      (status) => { setRealtimeActive(status === 'active') },
+    )
+  }, [campaignId, charId, loadCharacter])
 
   // Auto-redirect after char_not_found
   useEffect(() => {

@@ -865,6 +865,9 @@ const en = {
   'campaign_detail.promote_master':   'Promote to co-master',
   'campaign_detail.demote_player':    'Demote to Player',
   'campaign_detail.role_change_error':'Could not change role. Please try again.',
+  'campaign_detail.rt_active':        'Live updates active',
+  'campaign_detail.rt_inactive':      'Polling (realtime unavailable)',
+  'campaign_detail.rt_help':          'When active, character card updates arrive in ~2–5 s instead of the {interval}-second polling fallback.',
 
   // Aria — member row
   'aria.member_row_menu':          'Actions for {name}',
@@ -1010,17 +1013,6 @@ const en = {
   // ── Help hints ───────────────────────────────────────────────────────────────
   'help.aria_open': 'Show help',
 
-  // ── Sync conflict ─────────────────────────────────────────────────────────────
-  'sync_conflict.banner':      '{n} sync conflict(s) — Resolve',
-  'sync_conflict.resolve':     'Resolve',
-  'sync_conflict.title':       'Sync Conflict',
-  'sync_conflict.body':        'Edited on another device while you had unsynced changes.',
-  'sync_conflict.this_device': 'This device',
-  'sync_conflict.cloud':       'Cloud',
-  'sync_conflict.keep_mine':   "Keep this device's version",
-  'sync_conflict.keep_cloud':  'Keep cloud version',
-  'sync_conflict.keep_both':   'Keep both',
-  'sync_conflict.copy_suffix': '(conflict)',
 } as const;
 
 export default en;
