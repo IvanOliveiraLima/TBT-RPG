@@ -1,25 +1,21 @@
 /**
- * Sync service — Sub-fase 2.2 (download + multi-device) + Sync.2 (conflict detection).
+ * Sync service — Sub-fase 2.2 (download + multi-device) + LWW (last-write-wins by edit clock).
  *
  * Responsibilities:
  *  - Upload local characters to Supabase (upsert into `characters` table + Storage images)
- *    with LWW guard: skip upload when cloud version is newer
- *  - Conflict detection: dirty char + cloud advanced past baseUpdatedAt → hold, surface to user
+ *    with LWW guard: skip upload when cloud edit clock is newer (decided by data.updatedAt)
  *  - Process pending tombstones:
  *    upsert row to `deleted_characters` cloud table before removing from `characters`
- *  - Download cloud characters to local (LWW conflict resolution by updatedAt);
- *    skip chars currently in conflict (both sides held intact until user resolves)
+ *  - Download cloud characters to local (LWW by edit clock);
  *  - Propagate cloud tombstones → delete local chars deleted on another device
  *  - Eager image download for chars new to this device (idempotent)
  *  - Debounced reactive sync: 2s quietude / 5s teto (maxWait)
  *  - Periodic background sync: every 30s
  *  - Online/offline event listeners
- *  - Conflict resolution: resolveConflictKeepMine / KeepCloud / KeepBoth
  */
 
 import { supabase, getSession } from '@/lib/supabase'
 import { useCharactersStore } from '@/store/characters'
-import { useSyncConflictStore } from '@/store/useSyncConflictStore'
 import {
   getPendingTombstones,
   removeTombstone,
@@ -71,6 +67,18 @@ interface CloudDeletedRow {
   deleted_at: string
 }
 
+/**
+ * Timestamp of the EDIT stored inside the cloud row's JSON payload.
+ * NEVER use the `updated_at` column for sync decisions: the set_updated_at
+ * trigger rewrites it with the server clock, which is not comparable to the
+ * device clock stored in character.updatedAt / baseUpdatedAt.
+ * Falls back to the column only for legacy rows that predate the JSON field.
+ */
+function cloudEditedAt(row: { data?: { updatedAt?: number } | null; updated_at: string }): number {
+  const fromPayload = row.data?.updatedAt
+  return typeof fromPayload === 'number' ? fromPayload : new Date(row.updated_at).getTime()
+}
+
 /* ── Image helpers ────────────────────────────────────────────────────── */
 
 function base64ToBytes(dataUrl: string): Uint8Array {
@@ -107,37 +115,22 @@ async function uploadImage(
   if (error) throw error
 }
 
-/* ── Per-character upload (with conflict detection + LWW guard) ─────── */
+/* ── Per-character upload (LWW by edit clock) ───────────────────────── */
 
 async function uploadCharacter(character: Character, userId: string): Promise<void> {
   if (!supabase) return
 
-  // Fetch cloud row — updated_at for LWW, data for conflict resolution snapshot
+  // Fetch cloud row — edit timestamp (from data.updatedAt) for LWW decision.
   const { data: cloudRow } = await supabase
     .from('characters')
     .select('updated_at, data')
     .eq('id', character.id)
     .maybeSingle() as { data: { updated_at: string; data: Character } | null }
 
+  // LWW: only upload if our edit is newer; otherwise download will reconcile.
   if (cloudRow) {
-    const cloudTime = new Date(cloudRow.updated_at).getTime()
-
-    if (character.baseUpdatedAt !== undefined) {
-      // Sync.2 conflict detection: char has a known reconciled base.
-      // If cloud advanced past that base while we have local edits, it's a conflict.
-      if (cloudTime > character.baseUpdatedAt) {
-        useSyncConflictStore.getState().addConflict({
-          local: character,
-          cloud: { data: cloudRow.data, updatedAt: cloudTime },
-        })
-        return  // Hold — do not upload until user resolves
-      }
-      // Cloud is at or before our base — safe to upload (we branched from the same snapshot)
-    } else {
-      // Legacy (no baseUpdatedAt): fall back to original LWW guard by wall-clock time
-      const localTime = character.updatedAt ?? 0
-      if (cloudTime > localTime) return  // cloud is newer — download will handle it
-    }
+    const cloudTime = cloudEditedAt(cloudRow)
+    if (cloudTime > (character.updatedAt ?? 0)) return
   }
 
   // Strip local-only sync metadata AND images: images already live in Storage
@@ -313,13 +306,10 @@ async function downloadCharacters(userId: string): Promise<void> {
     // Local has a pending delete for this char — don't resurrect it
     if (localTombIds.has(cloudChar.id)) continue
 
-    const cloudTime = new Date(cloudChar.updated_at).getTime()
+    const cloudTime = cloudEditedAt(cloudChar)
     const localChar = localChars.find(c => c.id === cloudChar.id)
 
     if (localChar) {
-      // Conflict pending for this char — skip download until user resolves
-      if (useSyncConflictStore.getState().hasConflict(cloudChar.id)) continue
-
       // LWW: only overwrite local if cloud is strictly newer
       if (cloudTime > (localChar.updatedAt ?? 0)) {
         const incoming = cloudChar.data
@@ -341,7 +331,7 @@ async function downloadCharacters(userId: string): Promise<void> {
     } else {
       // Cloud has this char; local doesn't
       if (cloudTombIds.has(cloudChar.id)) continue  // cloud already has it tombstoned — skip
-      await importCharacter({ ...cloudChar.data, updatedAt: cloudTime })
+      await importCharacter({ ...cloudChar.data, updatedAt: cloudTime })  // cloudTime from data.updatedAt
       await downloadCharacterImages(userId, cloudChar.id)
       storeNeedsRefresh = true
     }
@@ -525,81 +515,3 @@ export function initSyncListeners(): void {
   })
 }
 
-/* ── Conflict resolution ─────────────────────────────────────────────── */
-
-/**
- * Keep this device's version: force-upload local over cloud with a winning timestamp.
- *
- * Uses winTs = max(Date.now(), cloudUpdatedAt + 1) to guarantee the chosen version
- * is strictly newer than the cloud on every device's clock — so other devices running
- * LWW will pull it down and not revert to the old cloud version.
- *
- * Requires an active session (throws if not authenticated or supabase unavailable).
- */
-export async function resolveConflictKeepMine(
-  local: Character,
-  cloudUpdatedAt: number,
-): Promise<void> {
-  if (!supabase) throw new Error('supabase_not_configured')
-  const session = await getSession()
-  if (!session) throw new Error('not_authenticated')
-
-  // Stamp a timestamp guaranteed to beat the cloud's version on any device clock
-  const winTs = Math.max(Date.now(), cloudUpdatedAt + 1)
-  const { dirty: _dirty, baseUpdatedAt: _base, ...charData } = local
-  const winner = { ...charData, updatedAt: winTs }
-
-  const { error } = await supabase.from('characters').upsert({
-    id:         local.id,
-    user_id:    session.user.id,
-    data:       winner,                              // updatedAt stamped inside data too
-    updated_at: new Date(winTs).toISOString(),
-  })
-  if (error) throw error
-
-  // Persist locally as clean and reconciled (importCharacter sets dirty:false, baseUpdatedAt:winTs)
-  await importCharacter({ ...winner })
-  useSyncConflictStore.getState().removeConflict(local.id)
-  await useCharactersStore.getState().fetchCharacters()
-}
-
-/**
- * Keep cloud version: import the cloud snapshot locally (overwrites local edits).
- */
-export async function resolveConflictKeepCloud(
-  cloud: { data: Character; updatedAt: number },
-  charId: string,
-): Promise<void> {
-  await importCharacter({ ...cloud.data, updatedAt: cloud.updatedAt })
-  useSyncConflictStore.getState().removeConflict(charId)
-  await useCharactersStore.getState().fetchCharacters()
-}
-
-/**
- * Keep both: cloud version stays at the original id (canonical); local edits become
- * a new character with a fresh id and the provided name, scheduled for next upload.
- * Zero data loss guaranteed.
- */
-export async function resolveConflictKeepBoth(
-  local: Character,
-  cloud: { data: Character; updatedAt: number },
-  copyName: string,
-): Promise<void> {
-  // 1. Cloud version overwrites the local record (becomes canonical at this id)
-  await importCharacter({ ...cloud.data, updatedAt: cloud.updatedAt })
-
-  // 2. Local edits become a new character with a fresh id (dirty → uploaded in next sync)
-  const { dirty: _d, baseUpdatedAt: _b, ...localBase } = local
-  const newId = `char_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-  const localCopy: Character = {
-    ...localBase,
-    id:        newId,
-    name:      copyName,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  }
-  await useCharactersStore.getState().addCharacter(localCopy)
-
-  useSyncConflictStore.getState().removeConflict(local.id)
-  await useCharactersStore.getState().fetchCharacters()
-}

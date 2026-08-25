@@ -4,8 +4,6 @@ import { I18nProvider } from './i18n'
 import { useAuthStore } from './store/auth'
 import ResetPassword from './pages/ResetPassword'
 import { PwaUpdatePrompt } from './components/PwaUpdatePrompt'
-import { SyncConflictBanner } from './components/SyncConflictBanner'
-
 export default function App() {
   const authCallbackType = useAuthStore(s => s.authCallbackType)
   return (
@@ -14,7 +12,6 @@ export default function App() {
         ? <ResetPassword />
         : <RouterProvider router={router} />}
       <PwaUpdatePrompt />
-      <SyncConflictBanner />
     </I18nProvider>
   )
 }
