@@ -381,7 +381,8 @@ describe('downloadCharacters — LWW conflict', () => {
 
   it('overwrites local when cloud is strictly newer', async () => {
     const localChar  = makeChar({ id: 'char_001', updatedAt: 1_000 })
-    const cloudData  = makeChar({ id: 'char_001', name: 'CloudName', updatedAt: 1_000 })
+    // data.updatedAt must reflect the cloud edit time so cloudEditedAt() returns 2_000
+    const cloudData  = makeChar({ id: 'char_001', name: 'CloudName', updatedAt: 2_000 })
     mockCharsSelectData  = [makeCloudRow(cloudData, 2_000)]
     mockListCharacters.mockResolvedValue([localChar])
 
@@ -415,9 +416,10 @@ describe('downloadCharacters — LWW conflict', () => {
     expect(mockImportCharacter).not.toHaveBeenCalled()
   })
 
-  it('preserves cloud updatedAt when importing', async () => {
+  it('preserves cloud edit timestamp when importing', async () => {
     const localChar = makeChar({ id: 'char_001', updatedAt: 1_000 })
-    const cloudData = makeChar({ id: 'char_001', updatedAt: 1_000 })
+    // data.updatedAt = 9_999 is the edit time; cloudEditedAt() returns it and import receives it
+    const cloudData = makeChar({ id: 'char_001', updatedAt: 9_999 })
     mockCharsSelectData = [makeCloudRow(cloudData, 9_999)]
     mockListCharacters.mockResolvedValue([localChar])
 
@@ -425,6 +427,34 @@ describe('downloadCharacters — LWW conflict', () => {
 
     const call = mockImportCharacter.mock.calls[0]![0]
     expect(call.updatedAt).toBe(9_999)
+  })
+
+  it('server-clock-ahead: column updated_at ahead of data.updatedAt → does NOT overwrite newer local', async () => {
+    // Trigger rewrites column to server time (+57 s) but data.updatedAt stays at 1_000.
+    // Local also has updatedAt = 1_000. cloudEditedAt() = 1_000 == local → no import (tie).
+    const localChar = makeChar({ id: 'char_001', updatedAt: 1_000 })
+    const cloudData = makeChar({ id: 'char_001', updatedAt: 1_000 })
+    const serverIso = new Date(1_000 + 57_000).toISOString()   // trigger pushed column ahead
+    mockCharsSelectData = [{ ...makeCloudRow(cloudData, 1_000), updated_at: serverIso }]
+    mockListCharacters.mockResolvedValue([localChar])
+
+    await syncAll()
+
+    expect(mockImportCharacter).not.toHaveBeenCalled()
+  })
+
+  it('legacy row without data.updatedAt uses column as fallback', async () => {
+    const localChar  = makeChar({ id: 'char_001', updatedAt: 1_000 })
+    const legacyData = { ...makeChar({ id: 'char_001' }), updatedAt: undefined } as unknown as { updatedAt?: number }
+    // Column says 5_000; data has no updatedAt → cloudEditedAt falls back to column
+    const cloudRow   = { ...makeCloudRow(legacyData as never, 5_000) }
+    mockCharsSelectData = [cloudRow]
+    mockListCharacters.mockResolvedValue([localChar])
+
+    await syncAll()
+
+    // 5000 > 1000 → import should happen
+    expect(mockImportCharacter).toHaveBeenCalledWith(expect.objectContaining({ id: 'char_001' }))
   })
 })
 

@@ -168,13 +168,14 @@ beforeEach(() => {
 describe('conflict detection — upload phase', () => {
   it('records conflict when cloud advanced past baseUpdatedAt', async () => {
     // Local: edited (dirty=true), base reconciled at 1000ms
-    // Cloud: updated at 2000ms (newer than base) → conflict
+    // Cloud: edit timestamp 2000ms (newer than base) → conflict
     const base = 1000
     const cloudTime = 2000
     const cloudIso = new Date(cloudTime).toISOString()
 
     mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: base, updatedAt: 1500 }))
-    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+    // data.updatedAt must reflect the intended cloud edit time so cloudEditedAt() returns it
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar({ updatedAt: cloudTime }) } })
 
     await syncAll()
 
@@ -185,13 +186,13 @@ describe('conflict detection — upload phase', () => {
   })
 
   it('does NOT record conflict when cloud is at or before baseUpdatedAt', async () => {
-    // Cloud at 800ms, base at 1000ms → cloud has NOT moved past our base → safe to upload
+    // Cloud edit at 800ms, base at 1000ms → cloud has NOT moved past our base → safe to upload
     const base = 1000
     const cloudTime = 800
     const cloudIso = new Date(cloudTime).toISOString()
 
     mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: base, updatedAt: 1500 }))
-    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar({ updatedAt: cloudTime }) } })
 
     await syncAll()
 
@@ -204,7 +205,7 @@ describe('conflict detection — upload phase', () => {
     const cloudIso = new Date(base).toISOString()
 
     mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: base, updatedAt: 1500 }))
-    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar({ updatedAt: base }) } })
 
     await syncAll()
 
@@ -272,7 +273,8 @@ describe('conflict detection — upload phase', () => {
       baseUpdatedAt: syncedAt,
       updatedAt: 150,
     }))
-    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar() } })
+    // data.updatedAt = syncedAt so cloudEditedAt() returns our own upload timestamp (not a foreign edit)
+    mockMaybySingle.mockResolvedValueOnce({ data: { updated_at: cloudIso, data: makeChar({ updatedAt: syncedAt }) } })
 
     await syncAll()
 
@@ -280,6 +282,65 @@ describe('conflict detection — upload phase', () => {
     expect(mockAddConflict).not.toHaveBeenCalled()
     // Must proceed to upload the new edit
     expect(mockUpsert).toHaveBeenCalledTimes(1)
+  })
+
+  it('server-clock-ahead scenario: column updated_at ahead but data.updatedAt == base → no conflict', async () => {
+    // This is the exact production bug: trigger rewrites the column to server time.
+    // After upload, base = 100 (the edit time we sent). The cloud row now has:
+    //   column updated_at = some server time (e.g. 57 s ahead)
+    //   data.updatedAt    = 100 (what we put in the payload — trigger does NOT touch it)
+    // cloudEditedAt() reads data.updatedAt = 100; 100 > 100 is false → no conflict.
+    const editTs    = 100
+    const serverTs  = editTs + 57_000              // trigger adds 57 s to the column
+    const serverIso = new Date(serverTs).toISOString()
+
+    mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: editTs, updatedAt: editTs + 1 }))
+    mockMaybySingle.mockResolvedValueOnce({
+      data: { updated_at: serverIso, data: makeChar({ updatedAt: editTs }) },
+    })
+
+    await syncAll()
+
+    expect(mockAddConflict).not.toHaveBeenCalled()
+    expect(mockUpsert).toHaveBeenCalledTimes(1)
+  })
+
+  it('real conflict still detected: another device edited (data.updatedAt > base)', async () => {
+    // Another device wrote data.updatedAt = 200 while our base is 100
+    const base      = 100
+    const anotherTs = 200
+    const serverIso = new Date(anotherTs + 57_000).toISOString()  // trigger also ran
+
+    mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: base, updatedAt: 150 }))
+    mockMaybySingle.mockResolvedValueOnce({
+      data: { updated_at: serverIso, data: makeChar({ updatedAt: anotherTs }) },
+    })
+
+    await syncAll()
+
+    expect(mockAddConflict).toHaveBeenCalledTimes(1)
+    const conflict = mockAddConflict.mock.calls[0]![0] as { cloud: { updatedAt: number } }
+    expect(conflict.cloud.updatedAt).toBe(anotherTs)
+  })
+
+  it('legacy row without data.updatedAt falls back to column (backward compat)', async () => {
+    // Row predates the payload field — data has no updatedAt.
+    // cloudEditedAt should fall back to the column value.
+    const base      = 1000
+    const cloudTs   = 2000
+    const cloudIso  = new Date(cloudTs).toISOString()
+
+    mockCharacters.splice(0, Infinity, makeChar({ dirty: true, baseUpdatedAt: base, updatedAt: 1500 }))
+    // Legacy row: data object has no updatedAt key at all
+    const legacyData = { ...makeChar(), updatedAt: undefined } as unknown as { updatedAt?: number }
+    mockMaybySingle.mockResolvedValueOnce({
+      data: { updated_at: cloudIso, data: legacyData },
+    })
+
+    await syncAll()
+
+    // cloudEditedAt falls back to column → 2000 > 1000 (base) → conflict
+    expect(mockAddConflict).toHaveBeenCalledTimes(1)
   })
 })
 

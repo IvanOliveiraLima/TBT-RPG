@@ -71,6 +71,18 @@ interface CloudDeletedRow {
   deleted_at: string
 }
 
+/**
+ * Timestamp of EDIT stored inside the cloud row's JSON payload.
+ * NEVER use the `updated_at` column for sync decisions: the set_updated_at
+ * trigger rewrites it with the server clock, which is not comparable to the
+ * device clock stored in character.updatedAt / baseUpdatedAt.
+ * Falls back to the column only for legacy rows that predate the JSON field.
+ */
+function cloudEditedAt(row: { data?: { updatedAt?: number } | null; updated_at: string }): number {
+  const fromPayload = row.data?.updatedAt
+  return typeof fromPayload === 'number' ? fromPayload : new Date(row.updated_at).getTime()
+}
+
 /* ── Image helpers ────────────────────────────────────────────────────── */
 
 function base64ToBytes(dataUrl: string): Uint8Array {
@@ -112,7 +124,8 @@ async function uploadImage(
 async function uploadCharacter(character: Character, userId: string): Promise<void> {
   if (!supabase) return
 
-  // Fetch cloud row — updated_at for LWW, data for conflict resolution snapshot
+  // Fetch cloud row — edit timestamp (from data.updatedAt) for LWW and conflict detection,
+  // plus data for conflict resolution snapshot.
   const { data: cloudRow } = await supabase
     .from('characters')
     .select('updated_at, data')
@@ -120,7 +133,7 @@ async function uploadCharacter(character: Character, userId: string): Promise<vo
     .maybeSingle() as { data: { updated_at: string; data: Character } | null }
 
   if (cloudRow) {
-    const cloudTime = new Date(cloudRow.updated_at).getTime()
+    const cloudTime = cloudEditedAt(cloudRow)
 
     if (character.baseUpdatedAt !== undefined) {
       // Sync.2 conflict detection: char has a known reconciled base.
@@ -313,7 +326,7 @@ async function downloadCharacters(userId: string): Promise<void> {
     // Local has a pending delete for this char — don't resurrect it
     if (localTombIds.has(cloudChar.id)) continue
 
-    const cloudTime = new Date(cloudChar.updated_at).getTime()
+    const cloudTime = cloudEditedAt(cloudChar)
     const localChar = localChars.find(c => c.id === cloudChar.id)
 
     if (localChar) {
