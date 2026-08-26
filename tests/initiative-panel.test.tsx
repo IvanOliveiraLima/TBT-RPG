@@ -686,4 +686,68 @@ describe('CampaignInitiativePanel — column header', () => {
     )
     expect(screen.getByTestId('combat-columns-header').textContent).toContain('PV')
   })
+
+  it('HP column appears before INIC in header (owner)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    const header = screen.getByTestId('combat-columns-header')
+    const text = header.textContent ?? ''
+    expect(text.indexOf('HP')).toBeLessThan(text.indexOf('Init'))
+  })
+})
+
+// ── Column alignment — HP placeholder ────────────────────────────────────────
+
+describe('CampaignInitiativePanel — HP placeholder alignment', () => {
+  it('master: combatant without HP gets a placeholder (no hp-minus)', () => {
+    const c = { id: 'c1', name: 'Linked', initiative: 12 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-placeholder-c1')).toBeDefined()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+  })
+
+  it('master: combatant with HP gets controls, not placeholder', () => {
+    const c = { id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 10 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-minus-c1')).toBeDefined()
+    expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
+  })
+
+  it('member: no HP placeholder rendered (column absent)', () => {
+    const c = { id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 10 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+  })
 })

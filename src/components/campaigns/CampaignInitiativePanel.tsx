@@ -289,10 +289,10 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
           <span style={{ fontSize: 10, color: 'transparent', flexShrink: 0, lineHeight: 1 }}>▶</span>
           {/* name column */}
           <span style={{ flex: 1 }} />
+          {/* HP column (master only) — before INIC so placeholder keeps INIC aligned */}
+          {isMaster && <span style={{ ...colLabel, minWidth: 76 }}>{t('initiative.hp')}</span>}
           {/* initiative column — matches input width: 44 */}
           <span style={{ ...colLabel, width: 44 }}>{t('initiative.value')}</span>
-          {/* HP column (master only) */}
-          {isMaster && <span style={{ ...colLabel, minWidth: 76 }}>{t('initiative.hp')}</span>}
           {/* spacer for remove button (master only) */}
           {isMaster && <span style={{ width: 18, flexShrink: 0 }} />}
         </div>
@@ -326,6 +326,62 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                   {c.name}
                 </span>
 
+                {/* HP (master only) — placeholder reserves space when combatant has no HP */}
+                {isMaster && (
+                  c.hp ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                      <button
+                        data-testid={`hp-minus-${c.id}`}
+                        aria-label={t('initiative.hp_aria_minus')}
+                        onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
+                          ...c.hp!,
+                          current: Math.max(0, c.hp!.current - 1),
+                        }))}
+                        style={miniBtn}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        data-testid={`combatant-hp-${c.id}`}
+                        aria-label={t('aria.combatant_hp')}
+                        value={c.hp.current}
+                        onChange={e => {
+                          const v = parseInt(e.target.value, 10)
+                          if (!isNaN(v)) {
+                            onUpdate(setCombatantHp(tracker, c.id, {
+                              ...c.hp!,
+                              current: Math.max(0, Math.min(c.hp!.max, v)),
+                            }))
+                          }
+                        }}
+                        style={{
+                          ...inputBase,
+                          width:     32,
+                          textAlign: 'center',
+                          padding:   '2px 3px',
+                        }}
+                      />
+                      <span style={{ color: T.textMuted, fontSize: 10, flexShrink: 0 }}>
+                        /{c.hp.max}
+                      </span>
+                      <button
+                        data-testid={`hp-plus-${c.id}`}
+                        aria-label={t('initiative.hp_aria_plus')}
+                        onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
+                          ...c.hp!,
+                          current: Math.min(c.hp!.max, c.hp!.current + 1),
+                        }))}
+                        style={miniBtn}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <div aria-hidden data-testid={`hp-placeholder-${c.id}`} style={{ minWidth: 76, flexShrink: 0 }} />
+                  )
+                )}
+
                 {/* Initiative value */}
                 {isMaster ? (
                   <input
@@ -350,58 +406,6 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                   >
                     {c.initiative}
                   </span>
-                )}
-
-                {/* HP (master only, when combatant has hp) */}
-                {isMaster && c.hp && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-                    <button
-                      data-testid={`hp-minus-${c.id}`}
-                      aria-label={t('initiative.hp_aria_minus')}
-                      onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
-                        ...c.hp!,
-                        current: Math.max(0, c.hp!.current - 1),
-                      }))}
-                      style={miniBtn}
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      data-testid={`combatant-hp-${c.id}`}
-                      aria-label={t('aria.combatant_hp')}
-                      value={c.hp.current}
-                      onChange={e => {
-                        const v = parseInt(e.target.value, 10)
-                        if (!isNaN(v)) {
-                          onUpdate(setCombatantHp(tracker, c.id, {
-                            ...c.hp!,
-                            current: Math.max(0, Math.min(c.hp!.max, v)),
-                          }))
-                        }
-                      }}
-                      style={{
-                        ...inputBase,
-                        width:     32,
-                        textAlign: 'center',
-                        padding:   '2px 3px',
-                      }}
-                    />
-                    <span style={{ color: T.textMuted, fontSize: 10, flexShrink: 0 }}>
-                      /{c.hp.max}
-                    </span>
-                    <button
-                      data-testid={`hp-plus-${c.id}`}
-                      aria-label={t('initiative.hp_aria_plus')}
-                      onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
-                        ...c.hp!,
-                        current: Math.min(c.hp!.max, c.hp!.current + 1),
-                      }))}
-                      style={miniBtn}
-                    >
-                      +
-                    </button>
-                  </div>
                 )}
 
                 {/* Remove (owner only) */}
