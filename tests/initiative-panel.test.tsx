@@ -15,6 +15,9 @@ import { renderWithI18n } from './helpers/render'
 import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
 import type { InitiativeTracker } from '@/domain/initiative'
 
+// Silence jsdom "not implemented" warnings for number input steppers
+vi.stubGlobal('window', { ...window, HTMLInputElement: { ...window.HTMLInputElement } })
+
 function makeTracker(overrides: Partial<InitiativeTracker> = {}): InitiativeTracker {
   return {
     combatants:        [],
@@ -179,20 +182,20 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 })
 
 describe('CampaignInitiativePanel — title i18n', () => {
-  it('shows PT title when inactive', () => {
+  it('shows PT title "Combate" when inactive', () => {
     renderWithI18n(
       <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'pt',
     )
-    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Iniciativa')
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Combate')
   })
 
-  it('shows EN title when inactive', () => {
+  it('shows EN title "Combat" when inactive', () => {
     renderWithI18n(
       <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
-    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Initiative')
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Combat')
   })
 
   it('shows round label when active (PT)', () => {
@@ -341,5 +344,410 @@ describe('CampaignInitiativePanel — auto-initiative toggle', () => {
       'pt',
     )
     expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Auto-iniciativa')
+  })
+})
+
+// ── HP controls ───────────────────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — HP controls', () => {
+  it('shows HP input in the monster form', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.getByTestId('monster-hp-input')).toBeDefined()
+  })
+
+  it('combatant without hp: no HP control in row', () => {
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5 }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-hp-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+  })
+
+  it('combatant with hp: master sees HP control', () => {
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.getByTestId('combatant-hp-c1')).toBeDefined()
+    expect(screen.getByTestId('hp-minus-c1')).toBeDefined()
+    expect(screen.getByTestId('hp-plus-c1')).toBeDefined()
+  })
+
+  it('player (isMaster=false) does NOT see HP controls', () => {
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster={false} tracker={tracker} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-hp-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-plus-c1')).toBeNull()
+  })
+
+  it('HP − button calls onUpdate with decremented current', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('hp-minus-c1'))
+    expect(onUpdate).toHaveBeenCalledOnce()
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    expect(updated.combatants[0]!.hp).toEqual({ current: 7, max: 15 })
+  })
+
+  it('HP − button clamps at 0', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 0, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('hp-minus-c1'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    expect(updated.combatants[0]!.hp!.current).toBe(0)
+  })
+
+  it('HP + button calls onUpdate with incremented current', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('hp-plus-c1'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    expect(updated.combatants[0]!.hp).toEqual({ current: 9, max: 15 })
+  })
+
+  it('HP + button clamps at max', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 15, max: 15 } }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('hp-plus-c1'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    expect(updated.combatants[0]!.hp!.current).toBe(15)
+  })
+
+  it('adding monster with HP > 0 creates combatant with hp field', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Troll' } })
+    fireEvent.change(screen.getByTestId('monster-hp-input'), { target: { value: '30' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const added = updated.combatants.find(c => c.name === 'Troll')
+    expect(added?.hp).toEqual({ current: 30, max: 30 })
+  })
+
+  it('adding monster without HP leaves hp undefined', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Rat' } })
+    // leave HP empty
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const added = updated.combatants.find(c => c.name === 'Rat')
+    expect(added?.hp).toBeUndefined()
+  })
+})
+
+// ── Auto-numbering ────────────────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — auto-numbering', () => {
+  it('first monster with unique name: name unchanged', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Orc' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    expect(updated.combatants.map(c => c.name)).toContain('Orc')
+  })
+
+  it('second same name: existing renamed to "X 1", new gets "X 2"', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5 }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Goblin' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const names = updated.combatants.map(c => c.name)
+    expect(names).toContain('Goblin 1')
+    expect(names).toContain('Goblin 2')
+    expect(names).not.toContain('Goblin')
+  })
+
+  it('third same name: gets "X 3", no rename', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [
+        { id: 'c1', name: 'Goblin 1', initiative: 5 },
+        { id: 'c2', name: 'Goblin 2', initiative: 3 },
+      ],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Goblin' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const names = updated.combatants.map(c => c.name)
+    expect(names).toContain('Goblin 3')
+    expect(names).toContain('Goblin 1')
+    expect(names).toContain('Goblin 2')
+  })
+
+  it('different base names do not collide', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Orc', initiative: 5 }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Goblin' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const names = updated.combatants.map(c => c.name)
+    expect(names).toContain('Orc')    // unchanged
+    expect(names).toContain('Goblin') // added as-is
+    expect(names).not.toContain('Orc 1')
+    expect(names).not.toContain('Goblin 1')
+  })
+
+  it('"Goblin" and "Goblina" do not collide (anchored regex)', () => {
+    const onUpdate = vi.fn()
+    const tracker = makeTracker({
+      combatants: [{ id: 'c1', name: 'Goblin', initiative: 5 }],
+    })
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={tracker} linkedChars={[]} onUpdate={onUpdate} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Goblina' } })
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0] as InitiativeTracker
+    const names = updated.combatants.map(c => c.name)
+    expect(names).toContain('Goblin')  // unchanged
+    expect(names).toContain('Goblina') // added as-is, no numbering
+    expect(names).not.toContain('Goblin 1')
+  })
+})
+
+// ── Monster form field labels ─────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — monster form field labels', () => {
+  it('shows Name, Init and HP labels in EN', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.getByTestId('monster-name-label').textContent).toBe('Name')
+    expect(screen.getByTestId('monster-init-label').textContent).toBe('Init')
+    expect(screen.getByTestId('monster-hp-label').textContent).toBe('HP')
+  })
+
+  it('shows Nome, Init and PV labels in PT', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'pt',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.getByTestId('monster-name-label').textContent).toBe('Nome')
+    expect(screen.getByTestId('monster-init-label').textContent).toBe('Init')
+    expect(screen.getByTestId('monster-hp-label').textContent).toBe('PV')
+  })
+})
+
+// ── Column header ─────────────────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — column header', () => {
+  const combatant = { id: 'c1', name: 'Orc', initiative: 8 }
+
+  it('column header absent when list is empty', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.queryByTestId('combat-columns-header')).toBeNull()
+  })
+
+  it('column header present when 1+ combatants (owner)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header')).toBeDefined()
+  })
+
+  it('column header present for member with 1+ combatants', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header')).toBeDefined()
+  })
+
+  it('HP column shown in header for owner (EN)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header').textContent).toContain('HP')
+  })
+
+  it('HP column NOT shown in header for member', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    // Header exists but should not include "HP"
+    expect(screen.getByTestId('combat-columns-header').textContent).not.toContain('HP')
+  })
+
+  it('HP column shows "PV" for owner in PT', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'pt',
+    )
+    expect(screen.getByTestId('combat-columns-header').textContent).toContain('PV')
+  })
+
+  it('HP column appears before INIC in header (owner)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    const header = screen.getByTestId('combat-columns-header')
+    const text = header.textContent ?? ''
+    expect(text.indexOf('HP')).toBeLessThan(text.indexOf('Init'))
+  })
+})
+
+// ── Column alignment — HP placeholder ────────────────────────────────────────
+
+describe('CampaignInitiativePanel — HP placeholder alignment', () => {
+  it('master: combatant without HP gets a placeholder (no hp-minus)', () => {
+    const c = { id: 'c1', name: 'Linked', initiative: 12 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-placeholder-c1')).toBeDefined()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+  })
+
+  it('master: combatant with HP gets controls, not placeholder', () => {
+    const c = { id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 10 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-minus-c1')).toBeDefined()
+    expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
+  })
+
+  it('member: no HP placeholder rendered (column absent)', () => {
+    const c = { id: 'c1', name: 'Goblin', initiative: 5, hp: { current: 8, max: 10 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [c] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
   })
 })

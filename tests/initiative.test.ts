@@ -39,6 +39,7 @@ import {
   removeCombatant,
   setInitiative,
   renameCombatant,
+  setCombatantHp,
 } from '@/domain/initiative'
 import type { Combatant, InitiativeTracker } from '@/domain/initiative'
 
@@ -249,6 +250,31 @@ describe('renameCombatant', () => {
     const t = makeTracker({ combatants: [makeCombatant({ id: 'a', name: 'Goblin' })] })
     const result = renameCombatant(t, 'a', 'Orc')
     expect(result.combatants[0]!.name).toBe('Orc')
+  })
+})
+
+describe('setCombatantHp', () => {
+  it('sets hp on the matching combatant', () => {
+    const t = makeTracker({ combatants: [makeCombatant({ id: 'a' })] })
+    const result = setCombatantHp(t, 'a', { current: 12, max: 20 })
+    expect(result.combatants[0]!.hp).toEqual({ current: 12, max: 20 })
+  })
+
+  it('does not affect other combatants', () => {
+    const t = makeTracker({
+      combatants: [
+        makeCombatant({ id: 'a' }),
+        makeCombatant({ id: 'b' }),
+      ],
+    })
+    const result = setCombatantHp(t, 'a', { current: 5, max: 10 })
+    expect(result.combatants[1]!.hp).toBeUndefined()
+  })
+
+  it('does not mutate the original tracker', () => {
+    const t = makeTracker({ combatants: [makeCombatant({ id: 'a' })] })
+    setCombatantHp(t, 'a', { current: 3, max: 10 })
+    expect(t.combatants[0]!.hp).toBeUndefined()
   })
 })
 

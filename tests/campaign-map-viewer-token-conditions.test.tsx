@@ -199,8 +199,8 @@ describe('CampaignMapViewer — condition chips in token icon', () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
     const marker = screen.getByTestId('marker')
-    // chip row contains "display:flex" — should be absent when no conditions
-    expect(marker.getAttribute('data-icon-html')).not.toContain('display:flex')
+    // chip row has margin-top:2px (CHIP_GAP) — should be absent when no conditions
+    expect(marker.getAttribute('data-icon-html')).not.toContain('margin-top:2px')
   })
 
   it('token with 3 conditions renders abbr chips in icon html', async () => {

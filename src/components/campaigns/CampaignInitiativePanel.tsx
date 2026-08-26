@@ -10,8 +10,44 @@ import {
   addCombatant,
   removeCombatant,
   setInitiative,
+  setCombatantHp,
 } from '@/domain/initiative'
 import type { Combatant, InitiativeTracker } from '@/domain/initiative'
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Given a base name and existing combatants, return the numbered name for the new combatant
+ *  and, if a pure name collision exists, the id of the combatant to rename to "{base} 1". */
+function autoNumberName(
+  base: string,
+  combatants: Combatant[],
+): { renamedId: string | null; newName: string } {
+  const trimBase = base.trim()
+  const familyRe = new RegExp(`^${escapeRegex(trimBase)}(\\s+\\d+)?$`, 'i')
+  const family = combatants.filter(c => familyRe.test(c.name.trim()))
+  if (family.length === 0) return { renamedId: null, newName: trimBase }
+
+  const pure = family.find(c => !/\s+\d+$/.test(c.name.trim()))
+  if (pure) {
+    const usedNums = new Set<number>([1])
+    for (const c of family) {
+      if (c.id === pure.id) continue
+      const m = c.name.trim().match(/\s+(\d+)$/)
+      if (m) usedNums.add(parseInt(m[1]!, 10))
+    }
+    let next = 2
+    while (usedNums.has(next)) next++
+    return { renamedId: pure.id, newName: `${trimBase} ${next}` }
+  }
+
+  const maxNum = family.reduce((mx, c) => {
+    const m = c.name.trim().match(/\s+(\d+)$/)
+    return m ? Math.max(mx, parseInt(m[1]!, 10)) : mx
+  }, 0)
+  return { renamedId: null, newName: `${trimBase} ${maxNum + 1}` }
+}
 
 // Module-level factories — keep impure calls (Date.now, Math.random) outside component body
 function makeLinkedCombatant(lc: { characterId: string; name: string }): Combatant {
@@ -23,11 +59,16 @@ function makeLinkedCombatant(lc: { characterId: string; name: string }): Combata
   }
 }
 
-function makeFreeCombatant(name: string, initiative: number): Combatant {
+function makeFreeCombatant(
+  name: string,
+  initiative: number,
+  hp?: { current: number; max: number },
+): Combatant {
   return {
     id:         `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     name,
     initiative,
+    ...(hp !== undefined ? { hp } : {}),
   }
 }
 
@@ -63,6 +104,7 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
   const { t } = useTranslation()
   const [monsterName, setMonsterName] = useState('')
   const [monsterInit, setMonsterInit] = useState('0')
+  const [monsterHp,   setMonsterHp]   = useState('')
   const [showMonsterForm, setShowMonsterForm] = useState(false)
 
   const sorted = sortCombatants(tracker.combatants)
@@ -75,11 +117,38 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
   function handleAddMonster() {
     const name = monsterName.trim()
     if (!name) return
-    const init = parseInt(monsterInit, 10)
-    onUpdate(addCombatant(tracker, makeFreeCombatant(name, isNaN(init) ? 0 : init)))
+    const init  = parseInt(monsterInit, 10)
+    const hpRaw = parseInt(monsterHp, 10)
+    const hp    = !isNaN(hpRaw) && hpRaw > 0 ? { current: hpRaw, max: hpRaw } : undefined
+
+    const { renamedId, newName } = autoNumberName(name, tracker.combatants)
+    let updated = tracker
+    if (renamedId !== null) {
+      updated = {
+        ...tracker,
+        combatants: tracker.combatants.map(c =>
+          c.id === renamedId ? { ...c, name: `${name} 1` } : c
+        ),
+      }
+    }
+
+    onUpdate(addCombatant(updated, makeFreeCombatant(newName, isNaN(init) ? 0 : init, hp)))
     setMonsterName('')
     setMonsterInit('0')
+    setMonsterHp('')
     setShowMonsterForm(false)
+  }
+
+  const miniBtn: React.CSSProperties = {
+    background:   'transparent',
+    border:       `1px solid ${T.border}`,
+    borderRadius: 4,
+    padding:      '1px 5px',
+    color:        T.textSub,
+    cursor:       'pointer',
+    fontSize:     11,
+    lineHeight:   1,
+    flexShrink:   0,
   }
 
   const btnBase: React.CSSProperties = {
@@ -112,6 +181,20 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
     outline:      'none',
     width:        '100%',
     boxSizing:    'border-box',
+  }
+
+  const fieldLabel: React.CSSProperties = {
+    fontSize:      10,
+    color:         T.textMuted,
+    letterSpacing: 0.5,
+  }
+
+  const colLabel: React.CSSProperties = {
+    fontSize:      10,
+    color:         T.textMuted,
+    letterSpacing: 1,
+    textAlign:     'center',
+    flexShrink:    0,
   }
 
   return (
@@ -198,6 +281,23 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
         </div>
       )}
       {sorted.length > 0 && (
+        <div
+          data-testid="combat-columns-header"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', marginBottom: 2 }}
+        >
+          {/* spacer for active ▶ indicator */}
+          <span style={{ fontSize: 10, color: 'transparent', flexShrink: 0, lineHeight: 1 }}>▶</span>
+          {/* name column */}
+          <span style={{ flex: 1 }} />
+          {/* HP column (master only) — before INIC so placeholder keeps INIC aligned */}
+          {isMaster && <span style={{ ...colLabel, minWidth: 76 }}>{t('initiative.hp')}</span>}
+          {/* initiative column — matches input width: 44 */}
+          <span style={{ ...colLabel, width: 44 }}>{t('initiative.value')}</span>
+          {/* spacer for remove button (master only) */}
+          {isMaster && <span style={{ width: 18, flexShrink: 0 }} />}
+        </div>
+      )}
+      {sorted.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
           {sorted.map(c => {
             const isActive = c.id === tracker.activeCombatantId
@@ -225,6 +325,62 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                 <span style={{ flex: 1, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.name}
                 </span>
+
+                {/* HP (master only) — placeholder reserves space when combatant has no HP */}
+                {isMaster && (
+                  c.hp ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                      <button
+                        data-testid={`hp-minus-${c.id}`}
+                        aria-label={t('initiative.hp_aria_minus')}
+                        onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
+                          ...c.hp!,
+                          current: Math.max(0, c.hp!.current - 1),
+                        }))}
+                        style={miniBtn}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        data-testid={`combatant-hp-${c.id}`}
+                        aria-label={t('aria.combatant_hp')}
+                        value={c.hp.current}
+                        onChange={e => {
+                          const v = parseInt(e.target.value, 10)
+                          if (!isNaN(v)) {
+                            onUpdate(setCombatantHp(tracker, c.id, {
+                              ...c.hp!,
+                              current: Math.max(0, Math.min(c.hp!.max, v)),
+                            }))
+                          }
+                        }}
+                        style={{
+                          ...inputBase,
+                          width:     32,
+                          textAlign: 'center',
+                          padding:   '2px 3px',
+                        }}
+                      />
+                      <span style={{ color: T.textMuted, fontSize: 10, flexShrink: 0 }}>
+                        /{c.hp.max}
+                      </span>
+                      <button
+                        data-testid={`hp-plus-${c.id}`}
+                        aria-label={t('initiative.hp_aria_plus')}
+                        onClick={() => onUpdate(setCombatantHp(tracker, c.id, {
+                          ...c.hp!,
+                          current: Math.min(c.hp!.max, c.hp!.current + 1),
+                        }))}
+                        style={miniBtn}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <div aria-hidden data-testid={`hp-placeholder-${c.id}`} style={{ minWidth: 76, flexShrink: 0 }} />
+                  )
+                )}
 
                 {/* Initiative value */}
                 {isMaster ? (
@@ -321,37 +477,55 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
       )}
       {isMaster && showMonsterForm && (
         <div data-testid="monster-form" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <input
-            type="text"
-            data-testid="monster-name-input"
-            placeholder={t('initiative.name')}
-            value={monsterName}
-            onChange={e => setMonsterName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
-            style={inputBase}
-            autoFocus
-          />
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span data-testid="monster-name-label" style={fieldLabel}>{t('initiative.name')}</span>
             <input
-              type="number"
-              data-testid="monster-init-input"
-              placeholder={t('initiative.value')}
-              value={monsterInit}
-              onChange={e => setMonsterInit(e.target.value)}
+              type="text"
+              data-testid="monster-name-input"
+              placeholder={t('initiative.name')}
+              value={monsterName}
+              onChange={e => setMonsterName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
-              style={{ ...inputBase, width: 60, flexShrink: 0 }}
+              style={inputBase}
+              autoFocus
             />
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span data-testid="monster-init-label" style={fieldLabel}>{t('initiative.value')}</span>
+              <input
+                type="number"
+                data-testid="monster-init-input"
+                placeholder={t('initiative.value')}
+                value={monsterInit}
+                onChange={e => setMonsterInit(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
+                style={{ ...inputBase, width: 60, flexShrink: 0 }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span data-testid="monster-hp-label" style={fieldLabel}>{t('initiative.hp')}</span>
+              <input
+                type="number"
+                data-testid="monster-hp-input"
+                placeholder={t('initiative.hp')}
+                value={monsterHp}
+                onChange={e => setMonsterHp(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
+                style={{ ...inputBase, width: 50, flexShrink: 0 }}
+              />
+            </div>
             <button
               data-testid="monster-add-btn"
               onClick={handleAddMonster}
-              style={btnAccent}
+              style={{ ...btnAccent, alignSelf: 'flex-end' }}
             >
               +
             </button>
             <button
               data-testid="monster-cancel-btn"
-              onClick={() => { setShowMonsterForm(false); setMonsterName(''); setMonsterInit('0') }}
-              style={btnBase}
+              onClick={() => { setShowMonsterForm(false); setMonsterName(''); setMonsterInit('0'); setMonsterHp('') }}
+              style={{ ...btnBase, alignSelf: 'flex-end' }}
             >
               ✕
             </button>
