@@ -992,7 +992,7 @@ const pt: Record<keyof typeof en, string> = {
   'pwa.offline_ready':    'Pronto para uso offline',
 
   // ── Initiative tracker ────────────────────────────────────────────────────────
-  'initiative.title':       'Iniciativa',
+  'initiative.title':       'Combate',
   'initiative.round':       'Rodada {n}',
   'initiative.start':       'Iniciar combate',
   'initiative.end':         'Encerrar combate',

@@ -989,7 +989,7 @@ const en = {
   'pwa.offline_ready':    'Ready to work offline',
 
   // ── Initiative tracker ────────────────────────────────────────────────────────
-  'initiative.title':       'Initiative',
+  'initiative.title':       'Combat',
   'initiative.round':       'Round {n}',
   'initiative.start':       'Start combat',
   'initiative.end':         'End combat',

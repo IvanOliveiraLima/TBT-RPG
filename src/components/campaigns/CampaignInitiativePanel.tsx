@@ -183,6 +183,20 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
     boxSizing:    'border-box',
   }
 
+  const fieldLabel: React.CSSProperties = {
+    fontSize:      10,
+    color:         T.textMuted,
+    letterSpacing: 0.5,
+  }
+
+  const colLabel: React.CSSProperties = {
+    fontSize:      10,
+    color:         T.textMuted,
+    letterSpacing: 1,
+    textAlign:     'center',
+    flexShrink:    0,
+  }
+
   return (
     <div
       data-testid="campaign-initiative-panel"
@@ -264,6 +278,23 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
           style={{ textAlign: 'center', color: T.textMuted, fontSize: 13, padding: '12px 0', marginBottom: 12 }}
         >
           {t('initiative.empty')}
+        </div>
+      )}
+      {sorted.length > 0 && (
+        <div
+          data-testid="combat-columns-header"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', marginBottom: 2 }}
+        >
+          {/* spacer for active ▶ indicator */}
+          <span style={{ fontSize: 10, color: 'transparent', flexShrink: 0, lineHeight: 1 }}>▶</span>
+          {/* name column */}
+          <span style={{ flex: 1 }} />
+          {/* initiative column — matches input width: 44 */}
+          <span style={{ ...colLabel, width: 44 }}>{t('initiative.value')}</span>
+          {/* HP column (master only) */}
+          {isMaster && <span style={{ ...colLabel, minWidth: 76 }}>{t('initiative.hp')}</span>}
+          {/* spacer for remove button (master only) */}
+          {isMaster && <span style={{ width: 18, flexShrink: 0 }} />}
         </div>
       )}
       {sorted.length > 0 && (
@@ -442,46 +473,55 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
       )}
       {isMaster && showMonsterForm && (
         <div data-testid="monster-form" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <input
-            type="text"
-            data-testid="monster-name-input"
-            placeholder={t('initiative.name')}
-            value={monsterName}
-            onChange={e => setMonsterName(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
-            style={inputBase}
-            autoFocus
-          />
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span data-testid="monster-name-label" style={fieldLabel}>{t('initiative.name')}</span>
             <input
-              type="number"
-              data-testid="monster-init-input"
-              placeholder={t('initiative.value')}
-              value={monsterInit}
-              onChange={e => setMonsterInit(e.target.value)}
+              type="text"
+              data-testid="monster-name-input"
+              placeholder={t('initiative.name')}
+              value={monsterName}
+              onChange={e => setMonsterName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
-              style={{ ...inputBase, width: 60, flexShrink: 0 }}
+              style={inputBase}
+              autoFocus
             />
-            <input
-              type="number"
-              data-testid="monster-hp-input"
-              placeholder={t('initiative.hp')}
-              value={monsterHp}
-              onChange={e => setMonsterHp(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
-              style={{ ...inputBase, width: 50, flexShrink: 0 }}
-            />
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span data-testid="monster-init-label" style={fieldLabel}>{t('initiative.value')}</span>
+              <input
+                type="number"
+                data-testid="monster-init-input"
+                placeholder={t('initiative.value')}
+                value={monsterInit}
+                onChange={e => setMonsterInit(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
+                style={{ ...inputBase, width: 60, flexShrink: 0 }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span data-testid="monster-hp-label" style={fieldLabel}>{t('initiative.hp')}</span>
+              <input
+                type="number"
+                data-testid="monster-hp-input"
+                placeholder={t('initiative.hp')}
+                value={monsterHp}
+                onChange={e => setMonsterHp(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddMonster() }}
+                style={{ ...inputBase, width: 50, flexShrink: 0 }}
+              />
+            </div>
             <button
               data-testid="monster-add-btn"
               onClick={handleAddMonster}
-              style={btnAccent}
+              style={{ ...btnAccent, alignSelf: 'flex-end' }}
             >
               +
             </button>
             <button
               data-testid="monster-cancel-btn"
               onClick={() => { setShowMonsterForm(false); setMonsterName(''); setMonsterInit('0'); setMonsterHp('') }}
-              style={btnBase}
+              style={{ ...btnBase, alignSelf: 'flex-end' }}
             >
               ✕
             </button>

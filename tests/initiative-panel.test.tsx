@@ -182,20 +182,20 @@ describe('CampaignInitiativePanel — member (read-only)', () => {
 })
 
 describe('CampaignInitiativePanel — title i18n', () => {
-  it('shows PT title when inactive', () => {
+  it('shows PT title "Combate" when inactive', () => {
     renderWithI18n(
       <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'pt',
     )
-    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Iniciativa')
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Combate')
   })
 
-  it('shows EN title when inactive', () => {
+  it('shows EN title "Combat" when inactive', () => {
     renderWithI18n(
       <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
       'en',
     )
-    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Initiative')
+    expect(screen.getByTestId('campaign-initiative-panel').textContent).toContain('Combat')
   })
 
   it('shows round label when active (PT)', () => {
@@ -579,5 +579,111 @@ describe('CampaignInitiativePanel — auto-numbering', () => {
     expect(names).toContain('Goblin')  // unchanged
     expect(names).toContain('Goblina') // added as-is, no numbering
     expect(names).not.toContain('Goblin 1')
+  })
+})
+
+// ── Monster form field labels ─────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — monster form field labels', () => {
+  it('shows Name, Init and HP labels in EN', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.getByTestId('monster-name-label').textContent).toBe('Name')
+    expect(screen.getByTestId('monster-init-label').textContent).toBe('Init')
+    expect(screen.getByTestId('monster-hp-label').textContent).toBe('HP')
+  })
+
+  it('shows Nome, Init and PV labels in PT', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'pt',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.getByTestId('monster-name-label').textContent).toBe('Nome')
+    expect(screen.getByTestId('monster-init-label').textContent).toBe('Init')
+    expect(screen.getByTestId('monster-hp-label').textContent).toBe('PV')
+  })
+})
+
+// ── Column header ─────────────────────────────────────────────────────────────
+
+describe('CampaignInitiativePanel — column header', () => {
+  const combatant = { id: 'c1', name: 'Orc', initiative: 8 }
+
+  it('column header absent when list is empty', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.queryByTestId('combat-columns-header')).toBeNull()
+  })
+
+  it('column header present when 1+ combatants (owner)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header')).toBeDefined()
+  })
+
+  it('column header present for member with 1+ combatants', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header')).toBeDefined()
+  })
+
+  it('HP column shown in header for owner (EN)', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combat-columns-header').textContent).toContain('HP')
+  })
+
+  it('HP column NOT shown in header for member', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    // Header exists but should not include "HP"
+    expect(screen.getByTestId('combat-columns-header').textContent).not.toContain('HP')
+  })
+
+  it('HP column shows "PV" for owner in PT', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'pt',
+    )
+    expect(screen.getByTestId('combat-columns-header').textContent).toContain('PV')
   })
 })
