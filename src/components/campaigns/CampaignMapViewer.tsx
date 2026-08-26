@@ -83,7 +83,44 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
-// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px, conditions)
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Given a base label and current tokens on the map, compute the label for the new token
+ *  (with numbering) and, if a pure-name collision exists, the id and new label of the
+ *  existing token that must be renamed to "{base} 1". */
+function autoNumberLabel(
+  base: string,
+  existing: Array<{ id: string; label: string }>,
+): { renamedId: string | null; renamedLabel: string | null; newLabel: string } {
+  const trimBase = base.trim()
+  if (!trimBase) return { renamedId: null, renamedLabel: null, newLabel: base }
+  const familyRe = new RegExp(`^${escapeRegex(trimBase)}(\\s+\\d+)?$`, 'i')
+  const family = existing.filter(t => familyRe.test(t.label.trim()))
+  if (family.length === 0) return { renamedId: null, renamedLabel: null, newLabel: trimBase }
+
+  const pure = family.find(t => !/\s+\d+$/.test(t.label.trim()))
+  if (pure) {
+    const usedNums = new Set<number>([1])
+    for (const t of family) {
+      if (t.id === pure.id) continue
+      const m = t.label.trim().match(/\s+(\d+)$/)
+      if (m) usedNums.add(parseInt(m[1]!, 10))
+    }
+    let next = 2
+    while (usedNums.has(next)) next++
+    return { renamedId: pure.id, renamedLabel: `${trimBase} 1`, newLabel: `${trimBase} ${next}` }
+  }
+
+  const maxNum = family.reduce((mx, t) => {
+    const m = t.label.trim().match(/\s+(\d+)$/)
+    return m ? Math.max(mx, parseInt(m[1]!, 10)) : mx
+  }, 0)
+  return { renamedId: null, renamedLabel: null, newLabel: `${trimBase} ${maxNum + 1}` }
+}
+
+// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px, conditions, label)
 const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
 
 const CHIP_H = 14   // px — height of one chip row below the disc
@@ -97,10 +134,13 @@ function getTokenIcon(
   pxPerUnit: number,
   imageUrl?: string | null,
   chips?: Array<{ abbr: string; color: string }>,
+  label?: string,
 ): L.DivIcon {
   const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
   const condKey = chips && chips.length > 0 ? chips.map(c => c.abbr).join(',') : ''
-  const key = `${imageUrl ?? color}-${d}-${condKey}`
+  // CRITICAL: label must be part of the cache key — tokens with the same color/size
+  // but different labels (e.g. "Goblin 1" vs "Goblin 2") must generate distinct icons.
+  const key = `${imageUrl ?? color}-${d}-${condKey}-${label ?? ''}`
   const cached = TOKEN_ICON_CACHE.get(key)
   if (cached) return cached
 
@@ -112,7 +152,18 @@ function getTokenIcon(
     ? `border:${ring}px solid ${color};`
     : `border:${ring}px solid rgba(255,255,255,0.7);`
 
-  let chipHtml = ''
+  // No-image tokens: draw label text centered on the disc
+  const labelOnDisc = !imageUrl && label
+    ? `<span style="font-size:${Math.max(9, Math.round(d * 0.42))}px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);pointer-events:none;user-select:none;line-height:1;">${label.slice(0, 3)}</span>`
+    : ''
+  const discFlex = !imageUrl && label ? ';display:flex;align-items:center;justify-content:center;' : ''
+
+  // Image tokens: render label as a chip in the chip row (before condition chips)
+  const labelChipHtml = imageUrl && label
+    ? `<span style="background:#2A1F3D;color:#F4EFE0;font-size:${Math.max(8, Math.round(d * 0.3))}px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">${label.slice(0, 5)}</span>`
+    : ''
+
+  let condChipHtml = ''
   if (chips && chips.length > 0) {
     const visible = chips.slice(0, MAX_CHIPS)
     const overflow = chips.length - MAX_CHIPS
@@ -122,13 +173,18 @@ function getTokenIcon(
     const overflowSpan = overflow > 0
       ? `<span style="background:#374151;color:#fff;font-size:9px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">+${overflow}</span>`
       : ''
-    chipHtml = `<div style="display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;margin-top:${CHIP_GAP}px;max-width:${d + 16}px;">${chipSpans}${overflowSpan}</div>`
+    condChipHtml = chipSpans + overflowSpan
   }
 
-  const totalH = chips && chips.length > 0 ? d + CHIP_GAP + CHIP_H : d
+  const hasChips = !!labelChipHtml || !!condChipHtml
+  const chipHtml = hasChips
+    ? `<div style="display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;margin-top:${CHIP_GAP}px;max-width:${d + 16}px;">${labelChipHtml}${condChipHtml}</div>`
+    : ''
+
+  const totalH = hasChips ? d + CHIP_GAP + CHIP_H : d
   const icon = L.divIcon({
     className: 'tbt-token',
-    html: `<div style="display:inline-block;"><div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box;"></div>${chipHtml}</div>`,
+    html: `<div style="display:inline-block;"><div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box${discFlex}">${labelOnDisc}</div>${chipHtml}</div>`,
     iconSize: [d, totalH],
     iconAnchor: [d / 2, d / 2],
     popupAnchor: [0, -d / 2],
@@ -1054,9 +1110,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     const preset = presets.find(p => p.id === armedPresetId)
     if (!preset) return
     const snapped = snapTokenPos(latlng.lng, latlng.lat, preset.size)
+
+    // Auto-number tokens with the same label family already on the map
+    const { renamedId, renamedLabel, newLabel } = autoNumberLabel(preset.label, tokens)
+    if (renamedId !== null && renamedLabel !== null) {
+      setTokens(prev => prev.map(t => t.id === renamedId ? { ...t, label: renamedLabel } : t))
+      void updateMapToken(renamedId, { label: renamedLabel }).catch(() => {})
+    }
+
     try {
       const tok = await createMapToken(map.id, snapped.x, snapped.y, {
-        label: preset.label,
+        label: newLabel,
         color: preset.color,
         size: preset.size,
       })
@@ -2853,7 +2917,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <Marker
               key={tok.id}
               position={[tok.y, tok.x]}
-              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
+              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips, tok.label || undefined)}
               draggable={isMaster && !areaMode && !fogMode && !rulerMode}
               {...(isMaster ? {
                 eventHandlers: {

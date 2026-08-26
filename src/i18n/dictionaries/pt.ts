@@ -878,8 +878,9 @@ const pt: Record<keyof typeof en, string> = {
   'aria.edit_display_name_input':  'Nome de exibição',
 
   // Aria — combat
-  'aria.ac_input': 'Classe de Armadura',
-  'aria.speed_input': 'Velocidade em pés',
+  'aria.ac_input':      'Classe de Armadura',
+  'aria.speed_input':   'Velocidade em pés',
+  'aria.combatant_hp':  'Pontos de vida atuais',
 
   // Export
   'export.empty_warning': 'Nenhum personagem para exportar.',
@@ -1005,6 +1006,9 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.empty':           'Nenhum combatente ainda',
   'initiative.auto_initiative':      'Auto-iniciativa',
   'initiative.auto_initiative_hint': 'Quando ligado, a rolagem de iniciativa do jogador atualiza o combatente dele no tracker.',
+  'initiative.hp':                   'PV',
+  'initiative.hp_aria_minus':        'Diminuir PV',
+  'initiative.hp_aria_plus':         'Aumentar PV',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',

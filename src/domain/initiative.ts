@@ -3,6 +3,7 @@ export interface Combatant {
   name: string
   initiative: number
   linkedCharacterId?: string
+  hp?: { current: number; max: number }
 }
 
 export interface InitiativeTracker {
@@ -108,5 +109,16 @@ export function renameCombatant(t: InitiativeTracker, id: string, name: string):
   return {
     ...t,
     combatants: t.combatants.map(c => c.id === id ? { ...c, name } : c),
+  }
+}
+
+export function setCombatantHp(
+  t: InitiativeTracker,
+  id: string,
+  hp: { current: number; max: number },
+): InitiativeTracker {
+  return {
+    ...t,
+    combatants: t.combatants.map(c => c.id === id ? { ...c, hp } : c),
   }
 }

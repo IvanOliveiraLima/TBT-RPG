@@ -875,8 +875,9 @@ const en = {
   'aria.edit_display_name_input':  'Display name',
 
   // Aria — combat
-  'aria.ac_input': 'Armor Class',
-  'aria.speed_input': 'Speed in feet',
+  'aria.ac_input':      'Armor Class',
+  'aria.speed_input':   'Speed in feet',
+  'aria.combatant_hp':  'Current hit points',
 
   // Export
   'export.empty_warning': 'No characters to export.',
@@ -1002,6 +1003,9 @@ const en = {
   'initiative.empty':           'No combatants yet',
   'initiative.auto_initiative':      'Auto initiative',
   'initiative.auto_initiative_hint': "When on, a player's initiative roll updates their combatant in the tracker.",
+  'initiative.hp':                   'HP',
+  'initiative.hp_aria_minus':        'Decrease HP',
+  'initiative.hp_aria_plus':         'Increase HP',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',

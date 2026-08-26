@@ -116,13 +116,15 @@ vi.mock('@/services/campaign-map-markers', () => ({
 
 // ── Mock campaign-map-tokens service ──────────────────────────────────────────
 
-const mockCreateMapToken    = vi.fn()
+const mockListMapTokens        = vi.fn()
+const mockCreateMapToken       = vi.fn()
+const mockUpdateMapToken       = vi.fn()
 const mockUploadTokenImageBlob = vi.fn()
 
 vi.mock('@/services/campaign-map-tokens', () => ({
-  listMapTokens:               () => Promise.resolve([]),
+  listMapTokens:               (...args: unknown[]) => mockListMapTokens(...args),
   createMapToken:              (...args: unknown[]) => mockCreateMapToken(...args),
-  updateMapToken:              () => Promise.resolve(),
+  updateMapToken:              (...args: unknown[]) => mockUpdateMapToken(...args),
   deleteMapToken:              () => Promise.resolve(),
   uploadTokenImage:            () => Promise.resolve('camp-1/tokens/tok-1.png'),
   uploadTokenImageBlob:        (...args: unknown[]) => mockUploadTokenImageBlob(...args),
@@ -206,7 +208,9 @@ describe('CampaignMapViewer — preset palette', () => {
     containerStyle.cursor   = ''
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListTokenPresets.mockResolvedValue([])
+    mockListMapTokens.mockResolvedValue([])
     mockCreateMapToken.mockResolvedValue(CREATED_TOKEN)
+    mockUpdateMapToken.mockResolvedValue(undefined)
     mockUploadTokenImageBlob.mockResolvedValue('camp-1/tokens/tok-new.jpg')
     mockGetTokenPresetSignedUrl.mockResolvedValue('https://signed.example.com/preset.jpg')
     global.fetch = mockFetch
@@ -420,5 +424,107 @@ describe('CampaignMapViewer — preset palette', () => {
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
     await waitFor(() => screen.getByTestId('preset-palette-panel'))
     expect(screen.getAllByText('Ready tokens').length).toBeGreaterThanOrEqual(1)
+  })
+})
+
+// ── Preset auto-numbering ─────────────────────────────────────────────────────
+
+describe('CampaignMapViewer — preset auto-numbering', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    capturedClickHandler    = null
+    capturedDblClickHandler = null
+    mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
+    mockListMapTokens.mockResolvedValue([])
+    mockUpdateMapToken.mockResolvedValue(undefined)
+    global.fetch = mockFetch
+  })
+
+  /** Creates a token with the label from the opts passed to createMapToken */
+  function makeDynamicToken(id: string): (
+    _mapId: unknown, _x: unknown, _y: unknown, opts: unknown
+  ) => Promise<CampaignMapToken> {
+    let seq = 0
+    return (_mapId, _x, _y, opts) => {
+      seq++
+      const o = opts as { label?: string; color?: string; size?: number }
+      return Promise.resolve({
+        id: `${id}-${seq}`, mapId: 'map-1', x: 100, y: 200,
+        label: o.label ?? '', color: o.color ?? '#C0392B', size: o.size ?? 2,
+        imagePath: null, conditions: [], createdAt: 0,
+      })
+    }
+  }
+
+  it('first placement: no rename, createMapToken called with preset label', async () => {
+    mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
+    mockCreateMapToken.mockImplementation(makeDynamicToken('tok'))
+
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('preset-palette-toggle'))
+    fireEvent.click(screen.getByTestId('preset-palette-toggle'))
+    await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+    fireEvent.click(screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 100, lng: 200 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledOnce())
+
+    const [, , , opts] = mockCreateMapToken.mock.calls[0] as [unknown, unknown, unknown, { label: string }]
+    expect(opts.label).toBe('Goblin')
+    expect(mockUpdateMapToken).not.toHaveBeenCalled()
+  })
+
+  it('second placement: first renamed to "X 1", new gets "X 2"', async () => {
+    mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
+    mockCreateMapToken.mockImplementation(makeDynamicToken('tok'))
+
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('preset-palette-toggle'))
+    fireEvent.click(screen.getByTestId('preset-palette-toggle'))
+    await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+    fireEvent.click(screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+
+    // First click → "Goblin"
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 100, lng: 200 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledTimes(1))
+
+    // Second click → should rename tok-1 to "Goblin 1" and create "Goblin 2"
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledTimes(2))
+
+    // Rename call must have happened with correct args (extra calls from blur are acceptable)
+    expect(mockUpdateMapToken).toHaveBeenCalledWith('tok-1', { label: 'Goblin 1' })
+
+    const [, , , opts2] = mockCreateMapToken.mock.calls[1] as [unknown, unknown, unknown, { label: string }]
+    expect(opts2.label).toBe('Goblin 2')
+  })
+
+  it('third placement: gets "X 3" without renaming existing tokens', async () => {
+    mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
+    mockCreateMapToken.mockImplementation(makeDynamicToken('tok'))
+
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('preset-palette-toggle'))
+    fireEvent.click(screen.getByTestId('preset-palette-toggle'))
+    await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+    fireEvent.click(screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
+
+    // Place 1: "Goblin"
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 100, lng: 200 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledTimes(1))
+
+    // Place 2: renames first to "Goblin 1", creates "Goblin 2"
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledTimes(2))
+
+    // Place 3: creates "Goblin 3"
+    await act(async () => { capturedClickHandler?.({ latlng: { lat: 500, lng: 600 } }) })
+    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledTimes(3))
+
+    const [, , , opts3] = mockCreateMapToken.mock.calls[2] as [unknown, unknown, unknown, { label: string }]
+    expect(opts3.label).toBe('Goblin 3')
+    // Only one rename happened (pure→"Goblin 1" on second placement); no rename on 3rd
+    expect(mockUpdateMapToken).toHaveBeenCalledWith('tok-1', { label: 'Goblin 1' })
+    expect(mockUpdateMapToken).not.toHaveBeenCalledWith(expect.anything(), { label: 'Goblin 3' })
   })
 })
