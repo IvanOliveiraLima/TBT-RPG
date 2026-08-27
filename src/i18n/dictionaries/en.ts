@@ -918,6 +918,8 @@ const en = {
   'token_presets.place_done':    'Done',
   'token_presets.palette_empty': 'No ready tokens — add them in the campaign',
   'token_presets.default_hp':    'Default HP',
+  'token_presets.size_label':    'Sz.',
+  'token_presets.hp_label':      'HP',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Conditions',

@@ -921,6 +921,8 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
   'token_presets.default_hp':    'PV padrão',
+  'token_presets.size_label':    'Tam.',
+  'token_presets.hp_label':      'PV',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',
