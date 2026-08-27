@@ -875,3 +875,214 @@ describe('CampaignInitiativePanel — linked character HP (read-only)', () => {
     expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
   })
 })
+
+// ── Token link ────────────────────────────────────────────────────────────────
+
+const TOKEN_LIST = [
+  { id: 'tok-1', label: 'Goblin 1' },
+  { id: 'tok-2', label: 'Goblin 2' },
+]
+
+const LINKED_COMBATANT = { id: 'c-link', name: 'Goblin 1', initiative: 5, tokenId: 'tok-1' }
+
+describe('CampaignInitiativePanel — monster form token select', () => {
+  it('token select not rendered when tokens prop is absent', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.queryByTestId('monster-token-select')).toBeNull()
+  })
+
+  it('token select not rendered when tokens list is empty', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={[]} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    expect(screen.queryByTestId('monster-token-select')).toBeNull()
+  })
+
+  it('token select lists available (unlinked) tokens', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={TOKEN_LIST} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    const select = screen.getByTestId('monster-token-select') as HTMLSelectElement
+    const options = Array.from(select.options).map(o => o.value)
+    expect(options).toContain('tok-1')
+    expect(options).toContain('tok-2')
+  })
+
+  it('already-linked token is excluded from the select', () => {
+    // tok-1 already linked to LINKED_COMBATANT
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    const select = screen.getByTestId('monster-token-select') as HTMLSelectElement
+    const options = Array.from(select.options).map(o => o.value)
+    expect(options).not.toContain('tok-1')
+    expect(options).toContain('tok-2')
+  })
+
+  it('selecting a token pre-fills name when name field is empty', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={TOKEN_LIST} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-token-select'), { target: { value: 'tok-2' } })
+    const nameInput = screen.getByTestId('monster-name-input') as HTMLInputElement
+    expect(nameInput.value).toBe('Goblin 2')
+  })
+
+  it('selecting a token does NOT overwrite a name already typed', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={TOKEN_LIST} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-name-input'), { target: { value: 'Custom Name' } })
+    fireEvent.change(screen.getByTestId('monster-token-select'), { target: { value: 'tok-1' } })
+    const nameInput = screen.getByTestId('monster-name-input') as HTMLInputElement
+    expect(nameInput.value).toBe('Custom Name')
+  })
+
+  it('adding a monster saves tokenId on the new combatant', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} tokens={TOKEN_LIST} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('show-monster-form'))
+    fireEvent.change(screen.getByTestId('monster-token-select'), { target: { value: 'tok-1' } })
+    // name was pre-filled; submit
+    fireEvent.click(screen.getByTestId('monster-add-btn'))
+    const updated = onUpdate.mock.calls[0]![0]
+    const added = updated.combatants.at(-1)
+    expect(added.tokenId).toBe('tok-1')
+  })
+})
+
+describe('CampaignInitiativePanel — token link icon', () => {
+  it('link icon shown when combatant has tokenId matching a token in the list', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combatant-token-c-link')).toBeDefined()
+  })
+
+  it('link icon NOT shown when combatant has tokenId but token is absent from list', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={[{ id: 'tok-99', label: 'Other' }]}  // tok-1 not present
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-token-c-link')).toBeNull()
+  })
+
+  it('link icon NOT shown when tokenId is undefined', () => {
+    const noToken = { id: 'c-no', name: 'Solo', initiative: 0 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [noToken] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-token-c-no')).toBeNull()
+  })
+
+  it('member (isMaster=false) never sees the link icon', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-token-c-link')).toBeNull()
+  })
+
+  it('clicking the link icon calls onHighlightToken with the combatant tokenId', () => {
+    const onHighlightToken = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+        onHighlightToken={onHighlightToken}
+      />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('combatant-token-c-link'))
+    expect(onHighlightToken).toHaveBeenCalledWith('tok-1')
+  })
+})
+
+describe('CampaignInitiativePanel — highlightCombatantId', () => {
+  it('highlighted combatant row gets a distinct background', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+        highlightCombatantId="c-link"
+      />,
+      'en',
+    )
+    const row = screen.getByTestId('combatant-row-c-link') as HTMLDivElement
+    // highlighted row should have a blue-tinted background different from the default surface
+    // (browser normalises rgba: spaces are added between values)
+    expect(row.style.background.replace(/\s/g, '')).toContain('rgba(107,127,212')
+  })
+
+  it('non-highlighted rows keep default surface background', () => {
+    const other = { id: 'c-other', name: 'Skeleton', initiative: 3 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [LINKED_COMBATANT, other] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+        highlightCombatantId="c-link"
+      />,
+      'en',
+    )
+    const otherRow = screen.getByTestId('combatant-row-c-other') as HTMLDivElement
+    expect(otherRow.style.background.replace(/\s/g, '')).not.toContain('rgba(107,127,212')
+  })
+})

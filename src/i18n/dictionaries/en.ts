@@ -1006,6 +1006,8 @@ const en = {
   'initiative.hp':                   'HP',
   'initiative.hp_aria_minus':        'Decrease HP',
   'initiative.hp_aria_plus':         'Increase HP',
+  'initiative.token':                'Token',
+  'initiative.highlight_token':      'Spotlight token on map',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',

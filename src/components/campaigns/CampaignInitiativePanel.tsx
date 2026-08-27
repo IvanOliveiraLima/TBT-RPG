@@ -63,12 +63,14 @@ function makeFreeCombatant(
   name: string,
   initiative: number,
   hp?: { current: number; max: number },
+  tokenId?: string,
 ): Combatant {
   return {
     id:         `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
     name,
     initiative,
-    ...(hp !== undefined ? { hp } : {}),
+    ...(hp      !== undefined ? { hp }      : {}),
+    ...(tokenId !== undefined ? { tokenId } : {}),
   }
 }
 
@@ -91,6 +93,8 @@ const T = {
 
 interface LinkedChar { characterId: string; name: string; hp?: { current: number; max: number; temp: number } }
 
+interface MapToken { id: string; label: string }
+
 interface Props {
   isMaster: boolean
   tracker: InitiativeTracker
@@ -98,13 +102,20 @@ interface Props {
   onUpdate: (t: InitiativeTracker) => void
   autoInitiative?: boolean
   onToggleAutoInitiative?: (v: boolean) => void
+  /** Map tokens available for linking a new monster; controls which tokens appear in the select. */
+  tokens?: MapToken[]
+  /** Id of the combatant whose row should be briefly highlighted (from map token click). */
+  highlightCombatantId?: string
+  /** Called when the master clicks on a combatant row/icon to spotlight its linked token. */
+  onHighlightToken?: (tokenId: string | undefined) => void
 }
 
-export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpdate, autoInitiative, onToggleAutoInitiative }: Props) {
+export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpdate, autoInitiative, onToggleAutoInitiative, tokens, highlightCombatantId, onHighlightToken }: Props) {
   const { t } = useTranslation()
-  const [monsterName, setMonsterName] = useState('')
-  const [monsterInit, setMonsterInit] = useState('0')
-  const [monsterHp,   setMonsterHp]   = useState('')
+  const [monsterName,    setMonsterName]    = useState('')
+  const [monsterInit,    setMonsterInit]    = useState('0')
+  const [monsterHp,      setMonsterHp]      = useState('')
+  const [monsterTokenId, setMonsterTokenId] = useState('')
   const [showMonsterForm, setShowMonsterForm] = useState(false)
 
   const sorted = sortCombatants(tracker.combatants)
@@ -117,9 +128,10 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
   function handleAddMonster() {
     const name = monsterName.trim()
     if (!name) return
-    const init  = parseInt(monsterInit, 10)
-    const hpRaw = parseInt(monsterHp, 10)
-    const hp    = !isNaN(hpRaw) && hpRaw > 0 ? { current: hpRaw, max: hpRaw } : undefined
+    const init    = parseInt(monsterInit, 10)
+    const hpRaw   = parseInt(monsterHp, 10)
+    const hp      = !isNaN(hpRaw) && hpRaw > 0 ? { current: hpRaw, max: hpRaw } : undefined
+    const tokenId = monsterTokenId || undefined
 
     const { renamedId, newName } = autoNumberName(name, tracker.combatants)
     let updated = tracker
@@ -132,10 +144,11 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
       }
     }
 
-    onUpdate(addCombatant(updated, makeFreeCombatant(newName, isNaN(init) ? 0 : init, hp)))
+    onUpdate(addCombatant(updated, makeFreeCombatant(newName, isNaN(init) ? 0 : init, hp, tokenId)))
     setMonsterName('')
     setMonsterInit('0')
     setMonsterHp('')
+    setMonsterTokenId('')
     setShowMonsterForm(false)
   }
 
@@ -300,24 +313,34 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
       {sorted.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
           {sorted.map(c => {
-            const isActive = c.id === tracker.activeCombatantId
+            const isActive    = c.id === tracker.activeCombatantId
+            const isHighlight = c.id === highlightCombatantId
             // HP from the linked character's live sheet (read-only; undefined = not loaded yet)
             const linkedHp = c.linkedCharacterId
               ? linkedChars.find(lc => lc.characterId === c.linkedCharacterId)?.hp
               : undefined
+            // Token link: only show icon when the token still exists in the current tokens list
+            const hasTokenLink = isMaster && !!c.tokenId && !!tokens?.some(t => t.id === c.tokenId)
             return (
               <div
                 key={c.id}
                 data-testid={`combatant-row-${c.id}`}
+                onClick={hasTokenLink ? (e) => {
+                  if ((e.target as HTMLElement).closest('input, button, select')) return
+                  onHighlightToken?.(c.tokenId)
+                } : undefined}
                 style={{
                   display:    'flex',
                   alignItems: 'center',
                   gap:        8,
                   padding:    '6px 10px',
-                  background: isActive ? T.accentLight : T.surface,
+                  background: isActive    ? T.accentLight
+                            : isHighlight ? 'rgba(107,127,212,0.15)'
+                            : T.surface,
                   border:     `1px solid ${isActive ? T.borderActive : T.border}`,
                   borderRadius: 8,
                   fontSize:   13,
+                  cursor:     hasTokenLink ? 'pointer' : 'default',
                 }}
               >
                 {/* Active indicator */}
@@ -329,6 +352,22 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                 <span style={{ flex: 1, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.name}
                 </span>
+
+                {/* Token link icon — spotlights the linked token on the map (master only) */}
+                {hasTokenLink && (
+                  <button
+                    data-testid={`combatant-token-${c.id}`}
+                    aria-label={t('initiative.highlight_token')}
+                    onClick={e => { e.stopPropagation(); onHighlightToken?.(c.tokenId) }}
+                    style={{
+                      background: 'transparent', border: 'none',
+                      color: T.textMuted, cursor: 'pointer',
+                      fontSize: 11, padding: '0 1px', flexShrink: 0, lineHeight: 1,
+                    }}
+                  >
+                    ↗
+                  </button>
+                )}
 
                 {/* HP (master only) — monster editable / linked char read-only / placeholder */}
                 {isMaster && (
@@ -504,6 +543,34 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
       )}
       {isMaster && showMonsterForm && (
         <div data-testid="monster-form" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Token select — only shown when the map has tokens */}
+          {tokens && tokens.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span data-testid="monster-token-label" style={fieldLabel}>{t('initiative.token')}</span>
+              <select
+                data-testid="monster-token-select"
+                value={monsterTokenId}
+                onChange={e => {
+                  const id = e.target.value
+                  setMonsterTokenId(id)
+                  // Pre-fill name from the token label when the name field is still empty
+                  if (id && !monsterName) {
+                    const tok = tokens.find(tk => tk.id === id)
+                    if (tok) setMonsterName(tok.label)
+                  }
+                }}
+                className="dark-select"
+                style={{ ...inputBase }}
+              >
+                <option value="">—</option>
+                {tokens
+                  .filter(tok => !tracker.combatants.some(c => c.tokenId === tok.id))
+                  .map(tok => (
+                    <option key={tok.id} value={tok.id}>{tok.label}</option>
+                  ))}
+              </select>
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span data-testid="monster-name-label" style={fieldLabel}>{t('initiative.name')}</span>
             <input
@@ -551,7 +618,7 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
             </button>
             <button
               data-testid="monster-cancel-btn"
-              onClick={() => { setShowMonsterForm(false); setMonsterName(''); setMonsterInit('0'); setMonsterHp('') }}
+              onClick={() => { setShowMonsterForm(false); setMonsterName(''); setMonsterInit('0'); setMonsterHp(''); setMonsterTokenId('') }}
               style={{ ...btnBase, alignSelf: 'flex-end' }}
             >
               ✕
