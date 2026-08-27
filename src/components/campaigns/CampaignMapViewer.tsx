@@ -486,23 +486,33 @@ function TokenPopupContent({
         }}
       />
       <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-        <input
-          type="color"
-          data-testid={`token-color-input-${token.id}`}
-          value={color}
-          onChange={e => { setColor(e.target.value); onSave(token.id, { color: e.target.value }) }}
-          style={{ width: 36, height: 30, cursor: 'pointer', borderRadius: 4, border: 'none', padding: 0 }}
-        />
-        <select
-          data-testid={`token-size-select-${token.id}`}
-          value={size}
-          onChange={e => { const s = Number(e.target.value); setSize(s); onSave(token.id, { size: s }) }}
-          style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
-        >
-          {[1, 2, 3, 4, 5].map(n => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {t('campaign_maps.token_color_label')}
+          </span>
+          <input
+            type="color"
+            data-testid={`token-color-input-${token.id}`}
+            value={color}
+            onChange={e => { setColor(e.target.value); onSave(token.id, { color: e.target.value }) }}
+            style={{ width: 36, height: 30, cursor: 'pointer', borderRadius: 4, border: 'none', padding: 0 }}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
+          <span style={{ fontSize: 9, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            {t('campaign_maps.token_size_label')}
+          </span>
+          <select
+            data-testid={`token-size-select-${token.id}`}
+            value={size}
+            onChange={e => { const s = Number(e.target.value); setSize(s); onSave(token.id, { size: s }) }}
+            style={{ flex: 1, padding: '4px 6px', borderRadius: 4, fontSize: 14 }}
+          >
+            {[1, 2, 3, 4, 5].map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <div style={{ marginBottom: 6 }}>
         <label
