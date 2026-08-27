@@ -1009,6 +1009,8 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.hp':                   'PV',
   'initiative.hp_aria_minus':        'Diminuir PV',
   'initiative.hp_aria_plus':         'Aumentar PV',
+  'initiative.token':                'Token',
+  'initiative.highlight_token':      'Destacar token no mapa',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',
