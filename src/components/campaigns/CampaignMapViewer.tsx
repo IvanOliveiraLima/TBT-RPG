@@ -142,9 +142,9 @@ function getTokenIcon(
 ): L.DivIcon {
   const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
   const condKey = chips && chips.length > 0 ? chips.map(c => c.abbr).join(',') : ''
-  // CRITICAL: label must be part of the cache key — tokens with the same color/size
-  // but different labels (e.g. "Goblin 1" vs "Goblin 2") must generate distinct icons.
-  const key = `${imageUrl ?? color}-${d}-${condKey}-${label ?? ''}`
+  // CRITICAL: image AND color both affect the rendering (color paints the ring even when
+  // there's an image), and label is drawn on the disc — all three belong in the key.
+  const key = `${imageUrl ?? ''}-${color}-${d}-${condKey}-${label ?? ''}`
   const cached = TOKEN_ICON_CACHE.get(key)
   if (cached) return cached
 
