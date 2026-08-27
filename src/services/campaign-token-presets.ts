@@ -10,6 +10,7 @@ export interface CampaignTokenPreset {
   color: string
   size: number
   imagePath: string | null
+  defaultHp: number | null
 }
 
 type Row = {
@@ -19,6 +20,7 @@ type Row = {
   color: string
   size: number
   image_path: string | null
+  default_hp: number | null
   created_at: string
 }
 
@@ -30,6 +32,7 @@ function toPreset(row: Row): CampaignTokenPreset {
     color: row.color,
     size: row.size,
     imagePath: row.image_path ?? null,
+    defaultHp: row.default_hp ?? null,
   }
 }
 
@@ -73,14 +76,15 @@ export async function createTokenPreset(
 
 export async function updateTokenPreset(
   id: string,
-  patch: Partial<Pick<CampaignTokenPreset, 'label' | 'color' | 'size' | 'imagePath'>>,
+  patch: Partial<Pick<CampaignTokenPreset, 'label' | 'color' | 'size' | 'imagePath' | 'defaultHp'>>,
 ): Promise<void> {
   if (!supabase) return
   const update: Record<string, unknown> = {}
-  if (patch.label !== undefined) update.label = patch.label
-  if (patch.color !== undefined) update.color = patch.color
-  if (patch.size !== undefined) update.size = patch.size
+  if (patch.label     !== undefined) update.label      = patch.label
+  if (patch.color     !== undefined) update.color      = patch.color
+  if (patch.size      !== undefined) update.size       = patch.size
   if (patch.imagePath !== undefined) update.image_path = patch.imagePath
+  if (patch.defaultHp !== undefined) update.default_hp = patch.defaultHp
   const { error } = await supabase
     .from('campaign_token_presets')
     .update(update)
