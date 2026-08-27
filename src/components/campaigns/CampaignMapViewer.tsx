@@ -41,6 +41,7 @@ import {
 import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
 import { fetchCampaignCharacterImages, fetchLinkedCharactersDetails } from '@/services/campaign-view'
+import { subscribeCharacterChanges } from '@/services/realtime'
 import { getInitiative, saveInitiative } from '@/services/campaign-initiative'
 import { getAutoInitiative, updateAutoInitiative } from '@/services/campaign'
 import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
@@ -72,10 +73,12 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
-const MAP_POLL_MS              = 15_000
-const TOKEN_POLL_MS            = 5_000
-const FOG_POLL_MS              = 5_000
-const INITIATIVE_EDIT_GRACE_MS = 4_000
+const MAP_POLL_MS                = 15_000
+const TOKEN_POLL_MS              = 5_000
+const FOG_POLL_MS                = 5_000
+const INITIATIVE_EDIT_GRACE_MS   = 4_000
+const LINKED_HP_ACTIVE_POLL_MS   = 30_000
+const LINKED_HP_INACTIVE_POLL_MS = 10_000
 
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
@@ -735,8 +738,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
   // Timestamp of the last local tracker edit; suppresses remote poll adoption within grace period
   const lastTrackerEditRef = useRef(0)
-  // Quick-add linked chars for initiative panel (owner only)
-  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
+  // Quick-add linked chars for initiative panel (owner only); includes live HP for read-only display
+  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string; hp?: { current: number; max: number; temp: number } }>>([])
+  // Realtime channel status for linked chars HP refresh (owner only)
+  const [linkedCharRtActive, setLinkedCharRtActive] = useState(false)
+  // Stable ref to current linked-char ids so the realtime callback can filter without a stale closure
+  const linkedCharIdsRef = useRef<Set<string>>(new Set())
+  // Debounce timer ref for realtime-triggered refetch of linked char HP
+  const linkedCharRtTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Auto-initiative toggle state (owner only, fetched once on mount)
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
@@ -973,22 +982,71 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     return () => { cancelled = true; clearInterval(id) }
   }, [map.campaignId, broadcast])
 
-  // Fetch linked char names for initiative quick-add (owner only)
+  // Fetch linked char names + live HP for the initiative panel (owner only)
+  async function loadLinkedCharsPanel(campaignId: string) {
+    const details = await fetchLinkedCharactersDetails(campaignId).catch(() => [])
+    const chars = details
+      .filter(d => d.character !== null)
+      .map(d => ({
+        characterId: d.characterId,
+        name:        d.character!.name,
+        hp:          d.character!.hp,
+      }))
+    setLinkedChars(chars)
+    linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
+  }
+
+  // Initial load on mount / campaign change (owner only, not broadcast)
   useEffect(() => {
     if (!isMaster || broadcast) return
     let cancelled = false
     fetchLinkedCharactersDetails(map.campaignId)
       .then(details => {
         if (cancelled) return
-        setLinkedChars(
-          details
-            .filter(d => d.character !== null)
-            .map(d => ({ characterId: d.characterId, name: d.character!.name }))
-        )
+        const chars = details
+          .filter(d => d.character !== null)
+          .map(d => ({
+            characterId: d.characterId,
+            name:        d.character!.name,
+            hp:          d.character!.hp,
+          }))
+        setLinkedChars(chars)
+        linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
       })
       .catch(() => {})
     return () => { cancelled = true }
   }, [isMaster, broadcast, map.campaignId])
+
+  // Realtime subscription: debounce refetch when a linked character updates
+  useEffect(() => {
+    if (!isMaster || broadcast) return
+    const cleanup = subscribeCharacterChanges(
+      (charId) => {
+        if (!linkedCharIdsRef.current.has(charId)) return
+        if (linkedCharRtTimer.current !== null) clearTimeout(linkedCharRtTimer.current)
+        linkedCharRtTimer.current = setTimeout(() => {
+          void loadLinkedCharsPanel(map.campaignId)
+          linkedCharRtTimer.current = null
+        }, 300)
+      },
+      (status) => { setLinkedCharRtActive(status === 'active') },
+    )
+    return () => {
+      if (linkedCharRtTimer.current !== null) {
+        clearTimeout(linkedCharRtTimer.current)
+        linkedCharRtTimer.current = null
+      }
+      cleanup()
+    }
+  }, [isMaster, broadcast, map.campaignId])
+
+  // Polling fallback: 30 s when realtime is active, 10 s when not (owner only, not broadcast)
+  useEffect(() => {
+    if (!isMaster || broadcast) return
+    const pollMs = linkedCharRtActive ? LINKED_HP_ACTIVE_POLL_MS : LINKED_HP_INACTIVE_POLL_MS
+    const t = setInterval(() => { void loadLinkedCharsPanel(map.campaignId) }, pollMs)
+    return () => { clearInterval(t) }
+  }, [isMaster, broadcast, map.campaignId, linkedCharRtActive])
 
   // Fetch auto-initiative flag on mount (owner only, not broadcast)
   useEffect(() => {

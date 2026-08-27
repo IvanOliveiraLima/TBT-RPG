@@ -751,3 +751,127 @@ describe('CampaignInitiativePanel — HP placeholder alignment', () => {
     expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
   })
 })
+
+// ── Linked character HP — read-only display ───────────────────────────────────
+
+describe('CampaignInitiativePanel — linked character HP (read-only)', () => {
+  const linkedCharId = 'char-1'
+  const combatant = { id: 'c1', name: 'Aragorn', initiative: 15, linkedCharacterId: linkedCharId }
+  const linkedCharWithHp = { characterId: linkedCharId, name: 'Aragorn', hp: { current: 28, max: 40, temp: 0 } }
+
+  it('shows read-only HP for linked combatant with hp data', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharWithHp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    const cell = screen.getByTestId('combatant-hp-linked-c1')
+    expect(cell).toBeDefined()
+    expect(cell.textContent).toContain('28')
+    expect(cell.textContent).toContain('40')
+  })
+
+  it('linked combatant shows no −/+ edit buttons', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharWithHp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('hp-minus-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-plus-c1')).toBeNull()
+  })
+
+  it('monster (c.hp set) still shows editable controls — not the linked display (regression)', () => {
+    const monster = { id: 'c2', name: 'Goblin', initiative: 5, hp: { current: 8, max: 15 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [monster] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-minus-c2')).toBeDefined()
+    expect(screen.getByTestId('hp-plus-c2')).toBeDefined()
+    expect(screen.queryByTestId('combatant-hp-linked-c2')).toBeNull()
+  })
+
+  it('temp > 0 shows a +N badge next to the read-only HP', () => {
+    const linkedCharWithTemp = { characterId: linkedCharId, name: 'Aragorn', hp: { current: 28, max: 40, temp: 5 } }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharWithTemp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combatant-hp-temp-c1').textContent).toContain('+5')
+  })
+
+  it('temp === 0 does not render a temp badge', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharWithHp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-hp-temp-c1')).toBeNull()
+  })
+
+  it('linked combatant with no hp in linkedChars gets a placeholder (data not loaded yet)', () => {
+    const linkedCharNoHp = { characterId: linkedCharId, name: 'Aragorn' }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharNoHp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-placeholder-c1')).toBeDefined()
+    expect(screen.queryByTestId('combatant-hp-linked-c1')).toBeNull()
+  })
+
+  it('linked combatant absent from linkedChars list gets a placeholder', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('hp-placeholder-c1')).toBeDefined()
+    expect(screen.queryByTestId('combatant-hp-linked-c1')).toBeNull()
+  })
+
+  it('member (isMaster=false) sees no HP column for a linked combatant', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster={false}
+        tracker={makeTracker({ combatants: [combatant] })}
+        linkedChars={[linkedCharWithHp]}
+        onUpdate={noOp}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-hp-linked-c1')).toBeNull()
+    expect(screen.queryByTestId('hp-placeholder-c1')).toBeNull()
+  })
+})

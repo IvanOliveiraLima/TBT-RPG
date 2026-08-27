@@ -89,7 +89,7 @@ const T = {
   serif:        "'Cinzel', Georgia, serif",
 } as const
 
-interface LinkedChar { characterId: string; name: string }
+interface LinkedChar { characterId: string; name: string; hp?: { current: number; max: number; temp: number } }
 
 interface Props {
   isMaster: boolean
@@ -301,6 +301,10 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14 }}>
           {sorted.map(c => {
             const isActive = c.id === tracker.activeCombatantId
+            // HP from the linked character's live sheet (read-only; undefined = not loaded yet)
+            const linkedHp = c.linkedCharacterId
+              ? linkedChars.find(lc => lc.characterId === c.linkedCharacterId)?.hp
+              : undefined
             return (
               <div
                 key={c.id}
@@ -326,9 +330,10 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                   {c.name}
                 </span>
 
-                {/* HP (master only) — placeholder reserves space when combatant has no HP */}
+                {/* HP (master only) — monster editable / linked char read-only / placeholder */}
                 {isMaster && (
                   c.hp ? (
+                    /* Monster with HP — editable controls */
                     <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
                       <button
                         data-testid={`hp-minus-${c.id}`}
@@ -377,7 +382,29 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                         +
                       </button>
                     </div>
+                  ) : linkedHp ? (
+                    /* Linked player character — read-only HP from live sheet */
+                    <div
+                      data-testid={`combatant-hp-linked-${c.id}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, minWidth: 76 }}
+                    >
+                      <span style={{ color: T.text, fontSize: 12, minWidth: 20, textAlign: 'right' }}>
+                        {linkedHp.current}
+                      </span>
+                      <span style={{ color: T.textMuted, fontSize: 10, flexShrink: 0 }}>
+                        /{linkedHp.max}
+                      </span>
+                      {linkedHp.temp > 0 && (
+                        <span
+                          data-testid={`combatant-hp-temp-${c.id}`}
+                          style={{ color: '#6B7FD4', fontSize: 10, flexShrink: 0 }}
+                        >
+                          +{linkedHp.temp}
+                        </span>
+                      )}
+                    </div>
                   ) : (
+                    /* No HP data yet — placeholder reserves column width for alignment */
                     <div aria-hidden data-testid={`hp-placeholder-${c.id}`} style={{ minWidth: 76, flexShrink: 0 }} />
                   )
                 )}
