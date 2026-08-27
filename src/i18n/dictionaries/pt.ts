@@ -920,6 +920,7 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.place_hint':    'Clique no mapa para colocar • {name}',
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
+  'token_presets.default_hp':    'PV padrão',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',
@@ -1011,6 +1012,7 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.hp_aria_plus':         'Aumentar PV',
   'initiative.token':                'Token',
   'initiative.highlight_token':      'Destacar token no mapa',
+  'initiative.quick_add_creatures':  'Adicionar criatura',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',

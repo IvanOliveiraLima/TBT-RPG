@@ -63,6 +63,8 @@ const DB_ROW = {
   image_path: null,
   conditions: [],
   created_at: '2026-01-01T00:00:00Z',
+  character_id: null,
+  hp_max: null,
 }
 
 const EXPECTED_TOKEN: CampaignMapToken = {
@@ -76,6 +78,8 @@ const EXPECTED_TOKEN: CampaignMapToken = {
   imagePath: null,
   conditions: [],
   createdAt: new Date('2026-01-01T00:00:00Z').getTime(),
+  characterId: null,
+  hpMax: null,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
