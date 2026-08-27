@@ -4,6 +4,7 @@ export interface Combatant {
   initiative: number
   linkedCharacterId?: string
   hp?: { current: number; max: number }
+  tokenId?: string
 }
 
 export interface InitiativeTracker {
