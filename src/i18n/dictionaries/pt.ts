@@ -878,8 +878,9 @@ const pt: Record<keyof typeof en, string> = {
   'aria.edit_display_name_input':  'Nome de exibição',
 
   // Aria — combat
-  'aria.ac_input': 'Classe de Armadura',
-  'aria.speed_input': 'Velocidade em pés',
+  'aria.ac_input':      'Classe de Armadura',
+  'aria.speed_input':   'Velocidade em pés',
+  'aria.combatant_hp':  'Pontos de vida atuais',
 
   // Export
   'export.empty_warning': 'Nenhum personagem para exportar.',
@@ -919,6 +920,7 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.place_hint':    'Clique no mapa para colocar • {name}',
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
+  'token_presets.default_hp':    'PV padrão',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',
@@ -991,7 +993,7 @@ const pt: Record<keyof typeof en, string> = {
   'pwa.offline_ready':    'Pronto para uso offline',
 
   // ── Initiative tracker ────────────────────────────────────────────────────────
-  'initiative.title':       'Iniciativa',
+  'initiative.title':       'Combate',
   'initiative.round':       'Rodada {n}',
   'initiative.start':       'Iniciar combate',
   'initiative.end':         'Encerrar combate',
@@ -1005,6 +1007,12 @@ const pt: Record<keyof typeof en, string> = {
   'initiative.empty':           'Nenhum combatente ainda',
   'initiative.auto_initiative':      'Auto-iniciativa',
   'initiative.auto_initiative_hint': 'Quando ligado, a rolagem de iniciativa do jogador atualiza o combatente dele no tracker.',
+  'initiative.hp':                   'PV',
+  'initiative.hp_aria_minus':        'Diminuir PV',
+  'initiative.hp_aria_plus':         'Aumentar PV',
+  'initiative.token':                'Token',
+  'initiative.highlight_token':      'Destacar token no mapa',
+  'initiative.quick_add_creatures':  'Adicionar criatura',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Ferramentas',

@@ -875,8 +875,9 @@ const en = {
   'aria.edit_display_name_input':  'Display name',
 
   // Aria — combat
-  'aria.ac_input': 'Armor Class',
-  'aria.speed_input': 'Speed in feet',
+  'aria.ac_input':      'Armor Class',
+  'aria.speed_input':   'Speed in feet',
+  'aria.combatant_hp':  'Current hit points',
 
   // Export
   'export.empty_warning': 'No characters to export.',
@@ -916,6 +917,7 @@ const en = {
   'token_presets.place_hint':    'Click the map to place • {name}',
   'token_presets.place_done':    'Done',
   'token_presets.palette_empty': 'No ready tokens — add them in the campaign',
+  'token_presets.default_hp':    'Default HP',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Conditions',
@@ -988,7 +990,7 @@ const en = {
   'pwa.offline_ready':    'Ready to work offline',
 
   // ── Initiative tracker ────────────────────────────────────────────────────────
-  'initiative.title':       'Initiative',
+  'initiative.title':       'Combat',
   'initiative.round':       'Round {n}',
   'initiative.start':       'Start combat',
   'initiative.end':         'End combat',
@@ -1002,6 +1004,12 @@ const en = {
   'initiative.empty':           'No combatants yet',
   'initiative.auto_initiative':      'Auto initiative',
   'initiative.auto_initiative_hint': "When on, a player's initiative roll updates their combatant in the tracker.",
+  'initiative.hp':                   'HP',
+  'initiative.hp_aria_minus':        'Decrease HP',
+  'initiative.hp_aria_plus':         'Increase HP',
+  'initiative.token':                'Token',
+  'initiative.highlight_token':      'Spotlight token on map',
+  'initiative.quick_add_creatures':  'Add creature',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',

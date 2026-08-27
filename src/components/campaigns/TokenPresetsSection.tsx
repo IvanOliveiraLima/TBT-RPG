@@ -60,6 +60,7 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
   const [removing, setRemoving] = useState(false)
   const [editLabels, setEditLabels] = useState<Record<string, string>>({})
+  const [editDefaultHp, setEditDefaultHp] = useState<Record<string, string>>({})
 
   const cancelledRef = useRef({ current: false })
 
@@ -87,8 +88,13 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
         if (cancelled.current) return
         setPresets(list)
         const labels: Record<string, string> = {}
-        for (const p of list) labels[p.id] = p.label
+        const hps: Record<string, string> = {}
+        for (const p of list) {
+          labels[p.id] = p.label
+          hps[p.id] = p.defaultHp != null ? String(p.defaultHp) : ''
+        }
         setEditLabels(labels)
+        setEditDefaultHp(hps)
         void resolveSignedUrls(list, cancelled)
       })
       .catch(() => {})
@@ -99,6 +105,7 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
     const newPreset = await createTokenPreset(campaignId)
     setPresets(prev => [...prev, newPreset])
     setEditLabels(prev => ({ ...prev, [newPreset.id]: '' }))
+    setEditDefaultHp(prev => ({ ...prev, [newPreset.id]: '' }))
   }
 
   async function handleFileChange(
@@ -299,6 +306,32 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
                   <option key={n} value={String(n)}>{n}</option>
                 ))}
               </select>
+
+              {/* Default HP input */}
+              <input
+                data-testid={`preset-default-hp-${preset.id}`}
+                type="number"
+                min={1}
+                placeholder={t('token_presets.default_hp')}
+                value={editDefaultHp[preset.id] ?? ''}
+                onChange={e => setEditDefaultHp(prev => ({ ...prev, [preset.id]: e.target.value }))}
+                onBlur={() => {
+                  const raw = editDefaultHp[preset.id] ?? ''
+                  const parsed = parseInt(raw, 10)
+                  const defaultHp = !isNaN(parsed) && parsed > 0 ? parsed : null
+                  void updateTokenPreset(preset.id, { defaultHp })
+                  setPresets(prev => prev.map(p => p.id === preset.id ? { ...p, defaultHp } : p))
+                }}
+                style={{
+                  width: 52,
+                  background: T.elevated,
+                  border: `1px solid ${T.borderSubtle}`,
+                  borderRadius: 6, padding: '4px 6px',
+                  color: T.textPrimary, fontFamily: T.sans,
+                  fontSize: 12, outline: 'none',
+                }}
+                title={t('token_presets.default_hp')}
+              />
 
               {/* Image upload */}
               <label

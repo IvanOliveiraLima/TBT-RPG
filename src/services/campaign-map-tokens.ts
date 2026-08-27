@@ -14,9 +14,11 @@ export interface CampaignMapToken {
   imagePath: string | null
   conditions: string[]
   createdAt: number
+  characterId: string | null
+  hpMax: number | null
 }
 
-export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size' | 'imagePath' | 'conditions'>>
+export type TokenPatch = Partial<Pick<CampaignMapToken, 'x' | 'y' | 'label' | 'color' | 'size' | 'imagePath' | 'conditions' | 'characterId' | 'hpMax'>>
 
 type Row = {
   id: string
@@ -29,6 +31,8 @@ type Row = {
   image_path: string | null
   conditions: string[]
   created_at: string
+  character_id: string | null
+  hp_max: number | null
 }
 
 function toToken(row: Row): CampaignMapToken {
@@ -43,6 +47,8 @@ function toToken(row: Row): CampaignMapToken {
     imagePath: row.image_path ?? null,
     conditions: row.conditions ?? [],
     createdAt: new Date(row.created_at).getTime(),
+    characterId: row.character_id ?? null,
+    hpMax: row.hp_max ?? null,
   }
 }
 
@@ -69,19 +75,21 @@ export async function createMapToken(
   mapId: string,
   x: number,
   y: number,
-  opts?: { label?: string; color?: string; size?: number },
+  opts?: { label?: string; color?: string; size?: number; hpMax?: number | null },
 ): Promise<CampaignMapToken> {
   if (!supabase) throw new Error('not_authenticated')
+  const insert: Record<string, unknown> = {
+    map_id: mapId,
+    x,
+    y,
+    label: opts?.label ?? '',
+    color: opts?.color ?? '#C0392B',
+    size:  opts?.size  ?? 1,
+  }
+  if (opts?.hpMax != null) insert.hp_max = opts.hpMax
   const { data, error } = await supabase
     .from('campaign_map_tokens')
-    .insert({
-      map_id: mapId,
-      x,
-      y,
-      label: opts?.label ?? '',
-      color: opts?.color ?? '#C0392B',
-      size: opts?.size ?? 1,
-    })
+    .insert(insert)
     .select()
     .single()
   if (error) throw error
@@ -91,13 +99,15 @@ export async function createMapToken(
 export async function updateMapToken(id: string, patch: TokenPatch): Promise<void> {
   if (!supabase) return
   const update: Record<string, unknown> = {}
-  if (patch.x !== undefined) update.x = patch.x
-  if (patch.y !== undefined) update.y = patch.y
-  if (patch.label !== undefined) update.label = patch.label
-  if (patch.color !== undefined) update.color = patch.color
-  if (patch.size !== undefined) update.size = patch.size
-  if (patch.imagePath !== undefined) update.image_path = patch.imagePath
-  if (patch.conditions !== undefined) update.conditions = patch.conditions
+  if (patch.x           !== undefined) update.x            = patch.x
+  if (patch.y           !== undefined) update.y            = patch.y
+  if (patch.label       !== undefined) update.label        = patch.label
+  if (patch.color       !== undefined) update.color        = patch.color
+  if (patch.size        !== undefined) update.size         = patch.size
+  if (patch.imagePath   !== undefined) update.image_path   = patch.imagePath
+  if (patch.conditions  !== undefined) update.conditions   = patch.conditions
+  if (patch.characterId !== undefined) update.character_id = patch.characterId
+  if (patch.hpMax       !== undefined) update.hp_max       = patch.hpMax
   const { error } = await supabase
     .from('campaign_map_tokens')
     .update(update)

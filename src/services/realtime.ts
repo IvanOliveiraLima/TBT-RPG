@@ -25,8 +25,15 @@ export function subscribeCharacterChanges(
     return () => {}
   }
 
+  // Unique topic per subscriber: supabase.channel(name) reuses an existing channel when
+  // the name repeats, and calling .on() on an already-subscribed channel throws
+  // "cannot add postgres_changes callbacks after subscribe()".
+  // CampaignDetail and CampaignMapViewer both subscribe concurrently (the viewer lives
+  // inside the page), so each call must get its own channel.
+  const topic = `character-changes-${crypto.randomUUID()}`
+
   const channel = supabase
-    .channel('character-changes')
+    .channel(topic)
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'characters' },

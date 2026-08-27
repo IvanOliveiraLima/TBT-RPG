@@ -41,6 +41,7 @@ import {
 import type { CampaignTokenPreset } from '@/services/campaign-token-presets'
 import { listCampaignCharacters } from '@/services/campaign-characters'
 import { fetchCampaignCharacterImages, fetchLinkedCharactersDetails } from '@/services/campaign-view'
+import { subscribeCharacterChanges } from '@/services/realtime'
 import { getInitiative, saveInitiative } from '@/services/campaign-initiative'
 import { getAutoInitiative, updateAutoInitiative } from '@/services/campaign'
 import { CampaignInitiativePanel } from '@/components/campaigns/CampaignInitiativePanel'
@@ -48,6 +49,7 @@ import { emptyTracker, sortCombatants } from '@/domain/initiative'
 import type { InitiativeTracker } from '@/domain/initiative'
 import { snapToGrid } from '@/utils/snap-to-grid'
 import { tokenDiameterPx } from '@/utils/token-size'
+import { shortenTokenLabel } from '@/utils/token-label'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
 import type { CampaignMapFog } from '@/services/campaign-map-fog'
 import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
@@ -72,10 +74,12 @@ const T = {
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
-const MAP_POLL_MS              = 15_000
-const TOKEN_POLL_MS            = 5_000
-const FOG_POLL_MS              = 5_000
-const INITIATIVE_EDIT_GRACE_MS = 4_000
+const MAP_POLL_MS                = 15_000
+const TOKEN_POLL_MS              = 5_000
+const FOG_POLL_MS                = 5_000
+const INITIATIVE_EDIT_GRACE_MS   = 4_000
+const LINKED_HP_ACTIVE_POLL_MS   = 30_000
+const LINKED_HP_INACTIVE_POLL_MS = 10_000
 
 const PIN_ICON_HTML =
   '<svg width="22" height="22" viewBox="0 0 24 24" fill="#5DCAA5" stroke="#15121C" stroke-width="1.5">' +
@@ -83,7 +87,44 @@ const PIN_ICON_HTML =
   '<circle cx="12" cy="9" r="2.5" fill="#15121C"/>' +
   '</svg>'
 
-// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px, conditions)
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Given a base label and current tokens on the map, compute the label for the new token
+ *  (with numbering) and, if a pure-name collision exists, the id and new label of the
+ *  existing token that must be renamed to "{base} 1". */
+function autoNumberLabel(
+  base: string,
+  existing: Array<{ id: string; label: string }>,
+): { renamedId: string | null; renamedLabel: string | null; newLabel: string } {
+  const trimBase = base.trim()
+  if (!trimBase) return { renamedId: null, renamedLabel: null, newLabel: base }
+  const familyRe = new RegExp(`^${escapeRegex(trimBase)}(\\s+\\d+)?$`, 'i')
+  const family = existing.filter(t => familyRe.test(t.label.trim()))
+  if (family.length === 0) return { renamedId: null, renamedLabel: null, newLabel: trimBase }
+
+  const pure = family.find(t => !/\s+\d+$/.test(t.label.trim()))
+  if (pure) {
+    const usedNums = new Set<number>([1])
+    for (const t of family) {
+      if (t.id === pure.id) continue
+      const m = t.label.trim().match(/\s+(\d+)$/)
+      if (m) usedNums.add(parseInt(m[1]!, 10))
+    }
+    let next = 2
+    while (usedNums.has(next)) next++
+    return { renamedId: pure.id, renamedLabel: `${trimBase} 1`, newLabel: `${trimBase} ${next}` }
+  }
+
+  const maxNum = family.reduce((mx, t) => {
+    const m = t.label.trim().match(/\s+(\d+)$/)
+    return m ? Math.max(mx, parseInt(m[1]!, 10)) : mx
+  }, 0)
+  return { renamedId: null, renamedLabel: null, newLabel: `${trimBase} ${maxNum + 1}` }
+}
+
+// Module-level icon cache — keyed by (imageUrl|color, diameter-in-px, conditions, label)
 const TOKEN_ICON_CACHE = new Map<string, L.DivIcon>()
 
 const CHIP_H = 14   // px — height of one chip row below the disc
@@ -97,10 +138,13 @@ function getTokenIcon(
   pxPerUnit: number,
   imageUrl?: string | null,
   chips?: Array<{ abbr: string; color: string }>,
+  label?: string,
 ): L.DivIcon {
   const d = Math.round(tokenDiameterPx(sizeCells, cellImageUnits, pxPerUnit))
   const condKey = chips && chips.length > 0 ? chips.map(c => c.abbr).join(',') : ''
-  const key = `${imageUrl ?? color}-${d}-${condKey}`
+  // CRITICAL: label must be part of the cache key — tokens with the same color/size
+  // but different labels (e.g. "Goblin 1" vs "Goblin 2") must generate distinct icons.
+  const key = `${imageUrl ?? color}-${d}-${condKey}-${label ?? ''}`
   const cached = TOKEN_ICON_CACHE.get(key)
   if (cached) return cached
 
@@ -112,7 +156,18 @@ function getTokenIcon(
     ? `border:${ring}px solid ${color};`
     : `border:${ring}px solid rgba(255,255,255,0.7);`
 
-  let chipHtml = ''
+  // No-image tokens: draw label text centered on the disc
+  const labelOnDisc = !imageUrl && label
+    ? `<span style="font-size:${Math.max(9, Math.round(d * 0.42))}px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);pointer-events:none;user-select:none;line-height:1;">${shortenTokenLabel(label, 4)}</span>`
+    : ''
+  const discFlex = !imageUrl && label ? ';display:flex;align-items:center;justify-content:center;' : ''
+
+  // Image tokens: render label as a chip in the chip row (before condition chips)
+  const labelChipHtml = imageUrl && label
+    ? `<span style="background:#2A1F3D;color:#F4EFE0;font-size:${Math.max(8, Math.round(d * 0.3))}px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">${shortenTokenLabel(label, 7)}</span>`
+    : ''
+
+  let condChipHtml = ''
   if (chips && chips.length > 0) {
     const visible = chips.slice(0, MAX_CHIPS)
     const overflow = chips.length - MAX_CHIPS
@@ -122,13 +177,18 @@ function getTokenIcon(
     const overflowSpan = overflow > 0
       ? `<span style="background:#374151;color:#fff;font-size:9px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">+${overflow}</span>`
       : ''
-    chipHtml = `<div style="display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;margin-top:${CHIP_GAP}px;max-width:${d + 16}px;">${chipSpans}${overflowSpan}</div>`
+    condChipHtml = chipSpans + overflowSpan
   }
 
-  const totalH = chips && chips.length > 0 ? d + CHIP_GAP + CHIP_H : d
+  const hasChips = !!labelChipHtml || !!condChipHtml
+  const chipHtml = hasChips
+    ? `<div style="display:flex;gap:2px;justify-content:center;flex-wrap:nowrap;margin-top:${CHIP_GAP}px;max-width:${d + 16}px;">${labelChipHtml}${condChipHtml}</div>`
+    : ''
+
+  const totalH = hasChips ? d + CHIP_GAP + CHIP_H : d
   const icon = L.divIcon({
     className: 'tbt-token',
-    html: `<div style="display:inline-block;"><div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box;"></div>${chipHtml}</div>`,
+    html: `<div style="display:inline-block;"><div style="width:${d}px;height:${d}px;border-radius:50%;${inner}${border}box-sizing:border-box${discFlex}">${labelOnDisc}</div>${chipHtml}</div>`,
     iconSize: [d, totalH],
     iconAnchor: [d / 2, d / 2],
     popupAnchor: [0, -d / 2],
@@ -364,7 +424,7 @@ function TokenPopupContent({
   onRemove: (id: string) => void
   onUploadImage: (tokenId: string, file: File) => void
   onRemoveImage: (tokenId: string, imagePath: string) => void
-  onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string) => void
+  onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string, characterId: string) => void
   onToggleCondition: (tokenId: string, key: ConditionKey) => void
 }) {
   const { t } = useTranslation()
@@ -481,7 +541,7 @@ function TokenPopupContent({
                       disabled={!c.portraitDataUrl}
                       onClick={() => {
                         if (c.portraitDataUrl) {
-                          onPickCharacterPortrait(token.id, c.portraitDataUrl)
+                          onPickCharacterPortrait(token.id, c.portraitDataUrl, c.characterId)
                           setPickerOpen(false)
                         }
                       }}
@@ -679,8 +739,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   const [tracker, setTracker] = useState<InitiativeTracker>(emptyTracker())
   // Timestamp of the last local tracker edit; suppresses remote poll adoption within grace period
   const lastTrackerEditRef = useRef(0)
-  // Quick-add linked chars for initiative panel (owner only)
-  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string }>>([])
+  // Quick-add linked chars for initiative panel (owner only); includes live HP for read-only display
+  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string; hp?: { current: number; max: number; temp: number } }>>([])
+  // Realtime channel status for linked chars HP refresh (owner only)
+  const [linkedCharRtActive, setLinkedCharRtActive] = useState(false)
+  // Stable ref to current linked-char ids so the realtime callback can filter without a stale closure
+  const linkedCharIdsRef = useRef<Set<string>>(new Set())
+  // Debounce timer ref for realtime-triggered refetch of linked char HP
+  const linkedCharRtTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ephemeral reciprocal highlight between combat panel and map tokens (master only, no persistence)
+  const [highlight, setHighlight] = useState<{ tokenId?: string; combatantId?: string }>({})
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Auto-initiative toggle state (owner only, fetched once on mount)
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
@@ -917,22 +986,71 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     return () => { cancelled = true; clearInterval(id) }
   }, [map.campaignId, broadcast])
 
-  // Fetch linked char names for initiative quick-add (owner only)
+  // Fetch linked char names + live HP for the initiative panel (owner only)
+  async function loadLinkedCharsPanel(campaignId: string) {
+    const details = await fetchLinkedCharactersDetails(campaignId).catch(() => [])
+    const chars = details
+      .filter(d => d.character !== null)
+      .map(d => ({
+        characterId: d.characterId,
+        name:        d.character!.name,
+        hp:          d.character!.hp,
+      }))
+    setLinkedChars(chars)
+    linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
+  }
+
+  // Initial load on mount / campaign change (owner only, not broadcast)
   useEffect(() => {
     if (!isMaster || broadcast) return
     let cancelled = false
     fetchLinkedCharactersDetails(map.campaignId)
       .then(details => {
         if (cancelled) return
-        setLinkedChars(
-          details
-            .filter(d => d.character !== null)
-            .map(d => ({ characterId: d.characterId, name: d.character!.name }))
-        )
+        const chars = details
+          .filter(d => d.character !== null)
+          .map(d => ({
+            characterId: d.characterId,
+            name:        d.character!.name,
+            hp:          d.character!.hp,
+          }))
+        setLinkedChars(chars)
+        linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
       })
       .catch(() => {})
     return () => { cancelled = true }
   }, [isMaster, broadcast, map.campaignId])
+
+  // Realtime subscription: debounce refetch when a linked character updates
+  useEffect(() => {
+    if (!isMaster || broadcast) return
+    const cleanup = subscribeCharacterChanges(
+      (charId) => {
+        if (!linkedCharIdsRef.current.has(charId)) return
+        if (linkedCharRtTimer.current !== null) clearTimeout(linkedCharRtTimer.current)
+        linkedCharRtTimer.current = setTimeout(() => {
+          void loadLinkedCharsPanel(map.campaignId)
+          linkedCharRtTimer.current = null
+        }, 300)
+      },
+      (status) => { setLinkedCharRtActive(status === 'active') },
+    )
+    return () => {
+      if (linkedCharRtTimer.current !== null) {
+        clearTimeout(linkedCharRtTimer.current)
+        linkedCharRtTimer.current = null
+      }
+      cleanup()
+    }
+  }, [isMaster, broadcast, map.campaignId])
+
+  // Polling fallback: 30 s when realtime is active, 10 s when not (owner only, not broadcast)
+  useEffect(() => {
+    if (!isMaster || broadcast) return
+    const pollMs = linkedCharRtActive ? LINKED_HP_ACTIVE_POLL_MS : LINKED_HP_INACTIVE_POLL_MS
+    const t = setInterval(() => { void loadLinkedCharsPanel(map.campaignId) }, pollMs)
+    return () => { clearInterval(t) }
+  }, [isMaster, broadcast, map.campaignId, linkedCharRtActive])
 
   // Fetch auto-initiative flag on mount (owner only, not broadcast)
   useEffect(() => {
@@ -947,6 +1065,15 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   function handleToggleAutoInitiative(next: boolean) {
     setAutoInitiative(next)
     void updateAutoInitiative(map.campaignId, next)
+  }
+
+  function triggerHighlight(update: { tokenId?: string; combatantId?: string }) {
+    if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current)
+    setHighlight(update)
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlight({})
+      highlightTimerRef.current = null
+    }, 2000)
   }
 
   // Esc clears ruler segment (stays in ruler mode for next measurement)
@@ -1054,11 +1181,20 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     const preset = presets.find(p => p.id === armedPresetId)
     if (!preset) return
     const snapped = snapTokenPos(latlng.lng, latlng.lat, preset.size)
+
+    // Auto-number tokens with the same label family already on the map
+    const { renamedId, renamedLabel, newLabel } = autoNumberLabel(preset.label, tokens)
+    if (renamedId !== null && renamedLabel !== null) {
+      setTokens(prev => prev.map(t => t.id === renamedId ? { ...t, label: renamedLabel } : t))
+      void updateMapToken(renamedId, { label: renamedLabel }).catch(() => {})
+    }
+
     try {
       const tok = await createMapToken(map.id, snapped.x, snapped.y, {
-        label: preset.label,
+        label: newLabel,
         color: preset.color,
-        size: preset.size,
+        size:  preset.size,
+        ...(preset.defaultHp != null ? { hpMax: preset.defaultHp } : {}),
       })
       setTokens(prev => [...prev, tok])
       if (preset.imagePath) {
@@ -1131,10 +1267,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     }
   }
 
-  async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string) {
+  async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string, characterId: string) {
     try {
       const path = await setTokenImageFromCharacterPortrait(map.campaignId, tokenId, portraitDataUrl)
-      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path } : t))
+      void updateMapToken(tokenId, { characterId }).catch(() => {})
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path, characterId } : t))
       setTokenImageUrlsByPath(prev => {
         const oldToken = tokens.find(t => t.id === tokenId)
         if (!oldToken?.imagePath) return prev
@@ -1366,6 +1503,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
   return (
     <>
+    {/* Keyframe for the token highlight ring — injected once, harmless if the map is mounted multiple times */}
+    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} }`}</style>
     <div
       data-testid="campaign-map-viewer"
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
@@ -2088,6 +2227,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
+            tokens={tokens.filter(tk => !tk.characterId).map(tk => ({ id: tk.id, label: tk.label, hpMax: tk.hpMax }))}
+            {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
+            onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
         </div>
       )}
@@ -2106,6 +2248,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
+            tokens={tokens.filter(tk => !tk.characterId).map(tk => ({ id: tk.id, label: tk.label, hpMax: tk.hpMax }))}
+            {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
+            onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
         </div>
       )}
@@ -2853,10 +2998,15 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <Marker
               key={tok.id}
               position={[tok.y, tok.x]}
-              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips)}
+              icon={getTokenIcon(tok.color, tok.size, localGrid.size, pxPerUnit, imageUrl, conditionChips, tok.label || undefined)}
               draggable={isMaster && !areaMode && !fogMode && !rulerMode}
               {...(isMaster ? {
                 eventHandlers: {
+                  click() {
+                    // Reciprocal highlight: clicking a token highlights the linked combatant in the panel
+                    const linked = tracker.combatants.find(c => c.tokenId === tok.id)
+                    if (linked) triggerHighlight({ combatantId: linked.id })
+                  },
                   dragend(e: L.DragEndEvent) {
                     const latlng = (e.target as L.Marker).getLatLng()
                     const snapped = snapTokenPos(latlng.lng, latlng.lat, tok.size)
@@ -2875,7 +3025,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     onRemove={id => void handleRemoveToken(id)}
                     onUploadImage={(tokenId, file) => void handleUploadTokenImage(tokenId, file)}
                     onRemoveImage={(tokenId, imagePath) => void handleRemoveTokenImage(tokenId, imagePath)}
-                    onPickCharacterPortrait={(tokenId, dataUrl) => void handlePickCharacterPortrait(tokenId, dataUrl)}
+                    onPickCharacterPortrait={(tokenId, dataUrl, charId) => void handlePickCharacterPortrait(tokenId, dataUrl, charId)}
                     onToggleCondition={(tokenId, key) => void handleToggleCondition(tokenId, key)}
                   />
                 ) : (
@@ -2889,6 +3039,21 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             </Marker>
           )
         })}
+
+        {/* Highlight ring — pulsing ring overlaid on the spotlighted token (master only) */}
+        {isMaster && highlight.tokenId && (() => {
+          const tok = tokens.find(tk => tk.id === highlight.tokenId && !isTokenHiddenForViewer(tk))
+          if (!tok) return null
+          const d = Math.round(tokenDiameterPx(tok.size, localGrid.size, pxPerUnit))
+          const rd = d + 10
+          const ringIcon = L.divIcon({
+            className: '',
+            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #6B7FD4;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
+            iconSize:   [rd, rd],
+            iconAnchor: [rd / 2, rd / 2],
+          })
+          return <Marker key={`ring-${tok.id}`} position={[tok.y, tok.x]} icon={ringIcon} interactive={false} />
+        })()}
       </MapContainer>
 
       {/* GM dice panel — absolute inside the relative viewer wrapper (avoids backdrop-filter clipping) */}

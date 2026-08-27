@@ -341,6 +341,11 @@ This order matters: components built on a broken adapter produce invisible data 
   errados em sequência (cada correção revelava a camada seguinte). O que fechou o caso foram **números de
   produção** — `data->>'updatedAt'` vs a coluna, e o estado local (`updatedAt`/`base`/`dirty`) no momento do
   erro. Quando duas hipóteses falharem, pare de propor a terceira: **instrumente e meça**.
+- **Componente que assume ser único e deixa de ser:** já aconteceu duas vezes — o `DicePanel` com dois shells
+  montados (#278) e o canal de realtime com dois assinantes (#303, nome fixo `character-changes` →
+  `cannot add postgres_changes callbacks after subscribe()`). O sintoma sempre aparece quando um **segundo**
+  consumidor entra em cena, e o teste que pega é o mesmo: **instanciar duas vezes**. Ao criar recurso global
+  (canal, listener em `document`, cache por chave), pergunte antes: *o que acontece se existirem dois?*
 
 ### internationalization (i18n)
 
@@ -1353,6 +1358,28 @@ Structural reorganisation: v2 becomes the root application; v1 is removed from t
 - **Trade-off consciente:** editar o mesmo personagem **offline em dois dispositivos** → o último a subir
   vence e as edições do outro somem **sem aviso**. Aceito: um dono por personagem, uma sessão por vez.
 
+### VTT — painel de Combate: vida de monstros e criaturas (COMPLETED — PRs #302, #303, #304, #305)
+O painel de Iniciativa virou o **painel de Combate** do mestre: quem está na luta, em que ordem e com quanta
+vida. Nenhuma tela nova — o painel já era flutuante sobre o grid.
+
+- **F1 (#302)** — `Combatant.hp?` (`{current,max}`), campo PV no formulário e controles −/+ **só do mestre**.
+  **Numeração automática** por família de nome (`^nome(\s+\d+)?$`) aplicada nos dois lados: ao adicionar
+  monstros no painel **e** ao colocar tokens por preset no mapa (o 1º "Goblin" vira "Goblin 1" quando o 2º
+  chega). **Rótulo passou a ser desenhado no token** — o campo `label` existia e nunca aparecia no grid.
+  *Armadilha:* a chave do cache de ícone não incluía o label; sem corrigir, tokens de mesma cor
+  compartilhariam o ícone e **todos mostrariam o mesmo número**.
+- **F2a (#303)** — HP dos personagens dos jogadores no painel, **somente leitura** (a fonte é a ficha),
+  mantido fresco por "avisar e buscar" (realtime + fallback 30 s/10 s). O dado já vinha em
+  `fetchLinkedCharactersDetails` e estava sendo descartado no `map`.
+- **F2b (#304)** — `Combatant.tokenId?` + **destaque recíproco**: clicar na linha faz o token pulsar; clicar
+  no token destaca a linha (o popup de edição continua abrindo). `shortenTokenLabel` preserva o **sufixo
+  numérico** ao encurtar ("Goblin 3" → "Gob 3"): a truncagem antiga cortava pela frente e apagava justamente
+  o número que diferencia.
+- **F3 (#305)** — `presets.default_hp`, `map_tokens.character_id` (**TEXT**) e `map_tokens.hp_max`.
+  Preset carrega PV padrão para o token colocado; tokens com retrato de personagem ganham `character_id` e
+  **saem** da lista de criaturas; **adição rápida** (`+ Goblin 1/2/3`) cria o combatente já com nome, vínculo
+  e vida.
+
 ---
 
 ## Patterns established during C.1.c
@@ -2116,6 +2143,9 @@ function buildInviteLink(): string {
 | Sync é **last-write-wins** por escolha consciente; não reintroduzir detecção de conflito sem necessidade real | #299 | A proteção custava mais do que protegia: bloqueava uploads legítimos com um só dispositivo |
 | Nunca comparar relógio de dispositivo com relógio de servidor | #298, #299 | `updated_at` é reescrito pelo trigger `set_updated_at`; só `data.updatedAt` é comparável com `updatedAt`/`baseUpdatedAt` |
 | Realtime usa "avisar e buscar": evento é gatilho, refetch é a fonte | #296 | A linha carrega o personagem inteiro; trafegar o payload seria pesado e frágil |
+| HP de monstro vive no `Combatant` do tracker; HP de jogador é somente leitura no painel | #302, #303 | Sem tabela nova; a ficha continua sendo a única fonte da vida do personagem |
+| `default_hp` do preset é **snapshot** copiado na colocação, não vínculo vivo | #305 | Editar o preset no meio do combate não pode alterar a vida dos tokens já em jogo |
+| Token com `character_id` nunca entra como criatura de combate | #305 | O token do personagem nasce genérico e só depois recebe o retrato; sem a marca, aparecia como monstro editável |
 
 ---
 
@@ -2367,6 +2397,15 @@ New from sync latency + HP milestone (#286–#289):
 - **OQ — Enviar apenas o delta de HP.** Com as imagens fora do payload (#287) a linha ficou pequena; medir na
   prática antes de investir em colunas dedicadas/tabela de vitais, que criariam um segundo caminho de dados
   a manter em sincronia com o JSONB. Deferred.
+
+New from combat panel milestone (#302–#305):
+
+- **OQ — Colocar token de personagem direto no mapa.** Hoje o mestre adiciona um token genérico e depois
+  escolhe o retrato. Com `map_tokens.character_id` (#305) o caminho está pavimentado para um fluxo direto
+  ("adicionar token do personagem X"). Deferred.
+- **OQ — Rótulos nos campos de tamanho e PV do token.** Em "Tokens prontos" e no popup do token no mapa os
+  campos numéricos não têm etiqueta. Agrupar com a correção da cor do token (que só persiste quando outra
+  alteração acontece) e demais polimentos de VTT. Deferred.
 
 ---
 
