@@ -49,6 +49,7 @@ import { emptyTracker, sortCombatants } from '@/domain/initiative'
 import type { InitiativeTracker } from '@/domain/initiative'
 import { snapToGrid } from '@/utils/snap-to-grid'
 import { tokenDiameterPx } from '@/utils/token-size'
+import { shortenTokenLabel } from '@/utils/token-label'
 import { getMapFog, saveMapFog } from '@/services/campaign-map-fog'
 import type { CampaignMapFog } from '@/services/campaign-map-fog'
 import { pointToCell, allCells, cellKey } from '@/utils/fog-cells'
@@ -157,13 +158,13 @@ function getTokenIcon(
 
   // No-image tokens: draw label text centered on the disc
   const labelOnDisc = !imageUrl && label
-    ? `<span style="font-size:${Math.max(9, Math.round(d * 0.42))}px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);pointer-events:none;user-select:none;line-height:1;">${label.slice(0, 3)}</span>`
+    ? `<span style="font-size:${Math.max(9, Math.round(d * 0.42))}px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);pointer-events:none;user-select:none;line-height:1;">${shortenTokenLabel(label, 4)}</span>`
     : ''
   const discFlex = !imageUrl && label ? ';display:flex;align-items:center;justify-content:center;' : ''
 
   // Image tokens: render label as a chip in the chip row (before condition chips)
   const labelChipHtml = imageUrl && label
-    ? `<span style="background:#2A1F3D;color:#F4EFE0;font-size:${Math.max(8, Math.round(d * 0.3))}px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">${label.slice(0, 5)}</span>`
+    ? `<span style="background:#2A1F3D;color:#F4EFE0;font-size:${Math.max(8, Math.round(d * 0.3))}px;font-weight:700;padding:1px 3px;border-radius:3px;line-height:${CHIP_H}px;white-space:nowrap;">${shortenTokenLabel(label, 7)}</span>`
     : ''
 
   let condChipHtml = ''
@@ -746,6 +747,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   const linkedCharIdsRef = useRef<Set<string>>(new Set())
   // Debounce timer ref for realtime-triggered refetch of linked char HP
   const linkedCharRtTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ephemeral reciprocal highlight between combat panel and map tokens (master only, no persistence)
+  const [highlight, setHighlight] = useState<{ tokenId?: string; combatantId?: string }>({})
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Auto-initiative toggle state (owner only, fetched once on mount)
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
@@ -1061,6 +1065,15 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   function handleToggleAutoInitiative(next: boolean) {
     setAutoInitiative(next)
     void updateAutoInitiative(map.campaignId, next)
+  }
+
+  function triggerHighlight(update: { tokenId?: string; combatantId?: string }) {
+    if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current)
+    setHighlight(update)
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlight({})
+      highlightTimerRef.current = null
+    }, 2000)
   }
 
   // Esc clears ruler segment (stays in ruler mode for next measurement)
@@ -1488,6 +1501,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
   return (
     <>
+    {/* Keyframe for the token highlight ring — injected once, harmless if the map is mounted multiple times */}
+    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} }`}</style>
     <div
       data-testid="campaign-map-viewer"
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
@@ -2210,6 +2225,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
+            tokens={tokens.map(tk => ({ id: tk.id, label: tk.label }))}
+            {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
+            onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
         </div>
       )}
@@ -2228,6 +2246,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
+            tokens={tokens.map(tk => ({ id: tk.id, label: tk.label }))}
+            {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
+            onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
         </div>
       )}
@@ -2979,6 +3000,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               draggable={isMaster && !areaMode && !fogMode && !rulerMode}
               {...(isMaster ? {
                 eventHandlers: {
+                  click() {
+                    // Reciprocal highlight: clicking a token highlights the linked combatant in the panel
+                    const linked = tracker.combatants.find(c => c.tokenId === tok.id)
+                    if (linked) triggerHighlight({ combatantId: linked.id })
+                  },
                   dragend(e: L.DragEndEvent) {
                     const latlng = (e.target as L.Marker).getLatLng()
                     const snapped = snapTokenPos(latlng.lng, latlng.lat, tok.size)
@@ -3011,6 +3037,21 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             </Marker>
           )
         })}
+
+        {/* Highlight ring — pulsing ring overlaid on the spotlighted token (master only) */}
+        {isMaster && highlight.tokenId && (() => {
+          const tok = tokens.find(tk => tk.id === highlight.tokenId && !isTokenHiddenForViewer(tk))
+          if (!tok) return null
+          const d = Math.round(tokenDiameterPx(tok.size, localGrid.size, pxPerUnit))
+          const rd = d + 10
+          const ringIcon = L.divIcon({
+            className: '',
+            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #6B7FD4;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
+            iconSize:   [rd, rd],
+            iconAnchor: [rd / 2, rd / 2],
+          })
+          return <Marker key={`ring-${tok.id}`} position={[tok.y, tok.x]} icon={ringIcon} interactive={false} />
+        })()}
       </MapContainer>
 
       {/* GM dice panel — absolute inside the relative viewer wrapper (avoids backdrop-filter clipping) */}
