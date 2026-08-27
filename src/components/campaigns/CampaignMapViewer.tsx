@@ -424,7 +424,7 @@ function TokenPopupContent({
   onRemove: (id: string) => void
   onUploadImage: (tokenId: string, file: File) => void
   onRemoveImage: (tokenId: string, imagePath: string) => void
-  onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string) => void
+  onPickCharacterPortrait: (tokenId: string, portraitDataUrl: string, characterId: string) => void
   onToggleCondition: (tokenId: string, key: ConditionKey) => void
 }) {
   const { t } = useTranslation()
@@ -541,7 +541,7 @@ function TokenPopupContent({
                       disabled={!c.portraitDataUrl}
                       onClick={() => {
                         if (c.portraitDataUrl) {
-                          onPickCharacterPortrait(token.id, c.portraitDataUrl)
+                          onPickCharacterPortrait(token.id, c.portraitDataUrl, c.characterId)
                           setPickerOpen(false)
                         }
                       }}
@@ -1193,7 +1193,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
       const tok = await createMapToken(map.id, snapped.x, snapped.y, {
         label: newLabel,
         color: preset.color,
-        size: preset.size,
+        size:  preset.size,
+        ...(preset.defaultHp != null ? { hpMax: preset.defaultHp } : {}),
       })
       setTokens(prev => [...prev, tok])
       if (preset.imagePath) {
@@ -1266,10 +1267,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     }
   }
 
-  async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string) {
+  async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string, characterId: string) {
     try {
       const path = await setTokenImageFromCharacterPortrait(map.campaignId, tokenId, portraitDataUrl)
-      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path } : t))
+      void updateMapToken(tokenId, { characterId }).catch(() => {})
+      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path, characterId } : t))
       setTokenImageUrlsByPath(prev => {
         const oldToken = tokens.find(t => t.id === tokenId)
         if (!oldToken?.imagePath) return prev
@@ -2225,7 +2227,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
-            tokens={tokens.map(tk => ({ id: tk.id, label: tk.label }))}
+            tokens={tokens.filter(tk => !tk.characterId).map(tk => ({ id: tk.id, label: tk.label, hpMax: tk.hpMax }))}
             {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
             onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
@@ -2246,7 +2248,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onUpdate={(t) => { void handleUpdateTracker(t) }}
             autoInitiative={autoInitiative}
             onToggleAutoInitiative={handleToggleAutoInitiative}
-            tokens={tokens.map(tk => ({ id: tk.id, label: tk.label }))}
+            tokens={tokens.filter(tk => !tk.characterId).map(tk => ({ id: tk.id, label: tk.label, hpMax: tk.hpMax }))}
             {...(highlight.combatantId !== undefined ? { highlightCombatantId: highlight.combatantId } : {})}
             onHighlightToken={tokenId => { if (tokenId) triggerHighlight({ tokenId }) }}
           />
@@ -3023,7 +3025,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     onRemove={id => void handleRemoveToken(id)}
                     onUploadImage={(tokenId, file) => void handleUploadTokenImage(tokenId, file)}
                     onRemoveImage={(tokenId, imagePath) => void handleRemoveTokenImage(tokenId, imagePath)}
-                    onPickCharacterPortrait={(tokenId, dataUrl) => void handlePickCharacterPortrait(tokenId, dataUrl)}
+                    onPickCharacterPortrait={(tokenId, dataUrl, charId) => void handlePickCharacterPortrait(tokenId, dataUrl, charId)}
                     onToggleCondition={(tokenId, key) => void handleToggleCondition(tokenId, key)}
                   />
                 ) : (

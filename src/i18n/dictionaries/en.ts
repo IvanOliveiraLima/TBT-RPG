@@ -917,6 +917,7 @@ const en = {
   'token_presets.place_hint':    'Click the map to place • {name}',
   'token_presets.place_done':    'Done',
   'token_presets.palette_empty': 'No ready tokens — add them in the campaign',
+  'token_presets.default_hp':    'Default HP',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Conditions',
@@ -1008,6 +1009,7 @@ const en = {
   'initiative.hp_aria_plus':         'Increase HP',
   'initiative.token':                'Token',
   'initiative.highlight_token':      'Spotlight token on map',
+  'initiative.quick_add_creatures':  'Add creature',
 
   // ── Mobile viewer ─────────────────────────────────────────────────────────────
   'campaign_maps.tools_menu_btn': 'Tools',

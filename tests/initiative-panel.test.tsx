@@ -974,6 +974,141 @@ describe('CampaignInitiativePanel — monster form token select', () => {
   })
 })
 
+// ── Quick-add creatures ───────────────────────────────────────────────────────
+
+const CREATURE_TOKENS = [
+  { id: 'tok-g1', label: 'Goblin 1', hpMax: 7 },
+  { id: 'tok-g2', label: 'Goblin 2', hpMax: 7 },
+]
+
+describe('CampaignInitiativePanel — quick-add creatures', () => {
+  it('quick-add section is hidden when no tokens prop', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} />,
+      'en',
+    )
+    expect(screen.queryByTestId('quick-add-creatures-section')).toBeNull()
+  })
+
+  it('quick-add section is hidden when tokens list is empty', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={[]} />,
+      'en',
+    )
+    expect(screen.queryByTestId('quick-add-creatures-section')).toBeNull()
+  })
+
+  it('quick-add section is hidden when all tokens are already linked to combatants', () => {
+    const alreadyLinked = [
+      { id: 'c1', name: 'Goblin 1', initiative: 0, tokenId: 'tok-g1' },
+      { id: 'c2', name: 'Goblin 2', initiative: 0, tokenId: 'tok-g2' },
+    ]
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: alreadyLinked })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={CREATURE_TOKENS}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('quick-add-creatures-section')).toBeNull()
+  })
+
+  it('player (isMaster=false) does not see the quick-add section', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster={false} tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={CREATURE_TOKENS} />,
+      'en',
+    )
+    expect(screen.queryByTestId('quick-add-creatures-section')).toBeNull()
+  })
+
+  it('quick-add section shows buttons for unlinked creature tokens', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={CREATURE_TOKENS} />,
+      'en',
+    )
+    expect(screen.getByTestId('quick-add-token-tok-g1')).toBeDefined()
+    expect(screen.getByTestId('quick-add-token-tok-g2')).toBeDefined()
+  })
+
+  it('only unlinked tokens appear as quick-add buttons', () => {
+    const linked = [{ id: 'c1', name: 'Goblin 1', initiative: 0, tokenId: 'tok-g1' }]
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: linked })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={CREATURE_TOKENS}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('quick-add-token-tok-g1')).toBeNull()
+    expect(screen.getByTestId('quick-add-token-tok-g2')).toBeDefined()
+  })
+
+  it('clicking a quick-add button creates a combatant with the token name, tokenId and HP', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} tokens={CREATURE_TOKENS} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('quick-add-token-tok-g1'))
+    const updated = onUpdate.mock.calls[0]![0]
+    const added = updated.combatants.at(-1)
+    expect(added.name).toBe('Goblin 1')
+    expect(added.tokenId).toBe('tok-g1')
+    expect(added.hp).toEqual({ current: 7, max: 7 })
+    expect(added.initiative).toBe(0)
+  })
+
+  it('token without hpMax → combatant created without HP', () => {
+    const noHpToken = [{ id: 'tok-sk', label: 'Skeleton' }]
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} tokens={noHpToken} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('quick-add-token-tok-sk'))
+    const updated = onUpdate.mock.calls[0]![0]
+    const added = updated.combatants.at(-1)
+    expect(added.hp).toBeUndefined()
+    expect(added.tokenId).toBe('tok-sk')
+  })
+
+  it('token with hpMax=null → combatant created without HP', () => {
+    const nullHpToken = [{ id: 'tok-zb', label: 'Zombie', hpMax: null }]
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={onUpdate} tokens={nullHpToken} />,
+      'en',
+    )
+    fireEvent.click(screen.getByTestId('quick-add-token-tok-zb'))
+    const updated = onUpdate.mock.calls[0]![0]
+    expect(updated.combatants.at(-1).hp).toBeUndefined()
+  })
+
+  it('quick-add label in PT', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={CREATURE_TOKENS} />,
+      'pt',
+    )
+    const section = screen.getByTestId('quick-add-creatures-section')
+    expect(section.textContent).toContain('Adicionar criatura')
+  })
+
+  it('quick-add label in EN', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel isMaster tracker={makeTracker()} linkedChars={[]} onUpdate={noOp} tokens={CREATURE_TOKENS} />,
+      'en',
+    )
+    const section = screen.getByTestId('quick-add-creatures-section')
+    expect(section.textContent).toContain('Add creature')
+  })
+})
+
 describe('CampaignInitiativePanel — token link icon', () => {
   it('link icon shown when combatant has tokenId matching a token in the list', () => {
     renderWithI18n(

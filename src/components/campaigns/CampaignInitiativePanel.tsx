@@ -93,7 +93,7 @@ const T = {
 
 interface LinkedChar { characterId: string; name: string; hp?: { current: number; max: number; temp: number } }
 
-interface MapToken { id: string; label: string }
+interface MapToken { id: string; label: string; hpMax?: number | null }
 
 interface Props {
   isMaster: boolean
@@ -530,6 +530,44 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
           </div>
         </div>
       )}
+
+      {/* ── Owner: quick-add creatures from map tokens ──────────── */}
+      {isMaster && tokens && (() => {
+        const eligible = tokens.filter(tok => !tracker.combatants.some(c => c.tokenId === tok.id))
+        if (eligible.length === 0) return null
+        return (
+          <div data-testid="quick-add-creatures-section" style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 5 }}>
+              {t('initiative.quick_add_creatures')}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {eligible.map(tok => (
+                <button
+                  key={tok.id}
+                  data-testid={`quick-add-token-${tok.id}`}
+                  onClick={() => {
+                    const hp = tok.hpMax ? { current: tok.hpMax, max: tok.hpMax } : undefined
+                    const { renamedId, newName } = autoNumberName(tok.label, tracker.combatants)
+                    let updated = tracker
+                    if (renamedId !== null) {
+                      updated = {
+                        ...tracker,
+                        combatants: tracker.combatants.map(c =>
+                          c.id === renamedId ? { ...c, name: `${tok.label} 1` } : c
+                        ),
+                      }
+                    }
+                    onUpdate(addCombatant(updated, makeFreeCombatant(newName, 0, hp, tok.id)))
+                  }}
+                  style={{ ...btnBase, padding: '3px 8px', fontSize: 11 }}
+                >
+                  + {tok.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Owner: add monster/NPC ──────────────────────────────── */}
       {isMaster && !showMonsterForm && (
