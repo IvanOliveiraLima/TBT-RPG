@@ -922,6 +922,10 @@ const en = {
   'token_presets.default_hp':    'Default HP',
   'token_presets.size_label':    'Sz.',
   'token_presets.hp_label':      'HP',
+  'token_presets.palette_section_characters': 'Characters',
+  'token_presets.palette_section_presets':    'Ready tokens',
+  'token_presets.palette_char_on_map':        'Already on map',
+  'campaign_maps.palette_generic_label':      'Generic token',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Conditions',

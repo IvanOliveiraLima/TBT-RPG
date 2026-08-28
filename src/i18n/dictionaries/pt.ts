@@ -925,6 +925,10 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.default_hp':    'PV padrão',
   'token_presets.size_label':    'Tam.',
   'token_presets.hp_label':      'PV',
+  'token_presets.palette_section_characters': 'Personagens',
+  'token_presets.palette_section_presets':    'Tokens prontos',
+  'token_presets.palette_char_on_map':        'Já está no mapa',
+  'campaign_maps.palette_generic_label':      'Token genérico',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',

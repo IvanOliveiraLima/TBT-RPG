@@ -240,30 +240,25 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
     mockDeleteMapToken.mockResolvedValue(undefined)
   })
 
-  it('shows add token button for owner (EN)', async () => {
+  it('shows palette toggle button for owner (EN)', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => expect(screen.getByTestId('token-add-btn')).toBeDefined())
-    expect(screen.getByTestId('token-add-btn').textContent).toContain('Add token')
+    await waitFor(() => expect(screen.getByTestId('preset-palette-toggle')).toBeDefined())
+    expect(screen.getByTestId('preset-palette-toggle').textContent).toContain('Ready tokens')
   })
 
-  it('shows add token button label in PT', async () => {
+  it('shows palette toggle button label in PT', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
-    await waitFor(() => expect(screen.getByTestId('token-add-btn').textContent).toContain('Adicionar token'))
+    await waitFor(() => expect(screen.getByTestId('preset-palette-toggle').textContent).toContain('Tokens prontos'))
   })
 
-  it('clicking add token calls createMapToken at image center and adds to list', async () => {
-    const newToken: CampaignMapToken = { ...TOKEN_1, id: 'tok-new' }
-    mockCreateMapToken.mockResolvedValue(newToken)
+  it('opening palette and clicking generic item arms the generic token', async () => {
     mockListMapTokens.mockResolvedValue([])
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('token-add-btn'))
-    fireEvent.click(screen.getByTestId('token-add-btn'))
-    await waitFor(() => expect(mockCreateMapToken).toHaveBeenCalledWith(
-      MAP.id,
-      MAP.width / 2,
-      MAP.height / 2,
-    ))
-    await waitFor(() => expect(screen.getByTestId(`token-popup-${newToken.id}`)).toBeDefined())
+    await waitFor(() => screen.getByTestId('preset-palette-toggle'))
+    fireEvent.click(screen.getByTestId('preset-palette-toggle'))
+    await waitFor(() => screen.getByTestId('palette-generic-item'))
+    fireEvent.click(screen.getByTestId('palette-generic-item'))
+    await waitFor(() => expect(screen.getByTestId('preset-place-done')).toBeDefined())
   })
 
   it('owner token markers are draggable', async () => {
