@@ -32,11 +32,11 @@ vi.mock('@/services/campaign-token-presets', () => ({
 const CAMPAIGN_ID = 'camp-1'
 
 const PRESET_1: CampaignTokenPreset = {
-  id: 'p1', campaignId: CAMPAIGN_ID, label: 'Goblin', color: '#C0392B', size: 1, imagePath: null,
+  id: 'p1', campaignId: CAMPAIGN_ID, label: 'Goblin', color: '#C0392B', size: 1, imagePath: null, defaultHp: null,
 }
 
 const PRESET_2: CampaignTokenPreset = {
-  id: 'p2', campaignId: CAMPAIGN_ID, label: 'Orc', color: '#1A5276', size: 2, imagePath: null,
+  id: 'p2', campaignId: CAMPAIGN_ID, label: 'Orc', color: '#1A5276', size: 2, imagePath: null, defaultHp: null,
 }
 
 function renderSection(isMaster = true, lang: 'en' | 'pt' = 'en') {
@@ -137,6 +137,34 @@ describe('TokenPresetsSection', () => {
     fireEvent.click(screen.getByTestId('preset-remove-p1'))
     fireEvent.click(screen.getByTestId('preset-remove-confirm-p1'))
     await waitFor(() => expect(mockDelete).toHaveBeenCalledWith(PRESET_1))
+  })
+
+  it('size label shows "Sz." in EN', async () => {
+    mockList.mockResolvedValue([PRESET_1])
+    renderSection(true, 'en')
+    await waitFor(() => screen.getByTestId('preset-size-label-p1'))
+    expect(screen.getByTestId('preset-size-label-p1').textContent).toBe('Sz.')
+  })
+
+  it('size label shows "Tam." in PT', async () => {
+    mockList.mockResolvedValue([PRESET_1])
+    renderSection(true, 'pt')
+    await waitFor(() => screen.getByTestId('preset-size-label-p1'))
+    expect(screen.getByTestId('preset-size-label-p1').textContent).toBe('Tam.')
+  })
+
+  it('HP label shows "HP" in EN', async () => {
+    mockList.mockResolvedValue([PRESET_1])
+    renderSection(true, 'en')
+    await waitFor(() => screen.getByTestId('preset-hp-label-p1'))
+    expect(screen.getByTestId('preset-hp-label-p1').textContent).toBe('HP')
+  })
+
+  it('HP label shows "PV" in PT', async () => {
+    mockList.mockResolvedValue([PRESET_1])
+    renderSection(true, 'pt')
+    await waitFor(() => screen.getByTestId('preset-hp-label-p1'))
+    expect(screen.getByTestId('preset-hp-label-p1').textContent).toBe('PV')
   })
 
   it('upload error shown on invalid file type', async () => {

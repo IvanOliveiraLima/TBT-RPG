@@ -304,8 +304,8 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
           <span style={{ flex: 1 }} />
           {/* HP column (master only) — before INIC so placeholder keeps INIC aligned */}
           {isMaster && <span style={{ ...colLabel, minWidth: 76 }}>{t('initiative.hp')}</span>}
-          {/* initiative column — matches input width: 44 */}
-          <span style={{ ...colLabel, width: 44 }}>{t('initiative.value')}</span>
+          {/* initiative column — matches input width: 38 */}
+          <span style={{ ...colLabel, width: 38 }}>{t('initiative.value')}</span>
           {/* spacer for remove button (master only) */}
           {isMaster && <span style={{ width: 18, flexShrink: 0 }} />}
         </div>
@@ -343,31 +343,30 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                   cursor:     hasTokenLink ? 'pointer' : 'default',
                 }}
               >
-                {/* Active indicator */}
-                <span style={{ color: isActive ? T.gold : 'transparent', fontSize: 10, flexShrink: 0, lineHeight: 1 }}>
-                  ▶
+                {/* Indicator slot: active turn ▶ takes priority; else ↗ shortcut when token linked */}
+                <span style={{ width: 12, flexShrink: 0, display: 'inline-flex', justifyContent: 'center' }}>
+                  {isActive ? (
+                    <span style={{ color: T.gold, fontSize: 10, lineHeight: 1 }}>▶</span>
+                  ) : hasTokenLink ? (
+                    <button
+                      data-testid={`combatant-token-${c.id}`}
+                      aria-label={t('initiative.highlight_token')}
+                      onClick={e => { e.stopPropagation(); onHighlightToken?.(c.tokenId) }}
+                      style={{
+                        background: 'transparent', border: 'none',
+                        color: T.textMuted, cursor: 'pointer',
+                        fontSize: 11, padding: 0, flexShrink: 0, lineHeight: 1,
+                      }}
+                    >
+                      ↗
+                    </button>
+                  ) : null}
                 </span>
 
                 {/* Name */}
-                <span style={{ flex: 1, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ flex: 1, minWidth: 0, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {c.name}
                 </span>
-
-                {/* Token link icon — spotlights the linked token on the map (master only) */}
-                {hasTokenLink && (
-                  <button
-                    data-testid={`combatant-token-${c.id}`}
-                    aria-label={t('initiative.highlight_token')}
-                    onClick={e => { e.stopPropagation(); onHighlightToken?.(c.tokenId) }}
-                    style={{
-                      background: 'transparent', border: 'none',
-                      color: T.textMuted, cursor: 'pointer',
-                      fontSize: 11, padding: '0 1px', flexShrink: 0, lineHeight: 1,
-                    }}
-                  >
-                    ↗
-                  </button>
-                )}
 
                 {/* HP (master only) — monster editable / linked char read-only / placeholder */}
                 {isMaster && (
@@ -460,7 +459,7 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                     }}
                     style={{
                       ...inputBase,
-                      width:     44,
+                      width:     38,
                       textAlign: 'center',
                       padding:   '3px 4px',
                     }}

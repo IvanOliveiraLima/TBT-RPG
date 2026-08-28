@@ -216,7 +216,6 @@ describe('CampaignMapViewer — mobile layout (isMobile = true)', () => {
     fireEvent.click(screen.getByTestId('tools-menu-toggle'))
     await waitFor(() => screen.getByTestId('tools-bottom-sheet'))
     expect(screen.getByTestId('tools-grid-btn')).toBeDefined()
-    expect(screen.getByTestId('tools-add-token-btn')).toBeDefined()
     expect(screen.getByTestId('tools-presets-btn')).toBeDefined()
     expect(screen.getByTestId('tools-areas-btn')).toBeDefined()
     expect(screen.getByTestId('tools-fog-btn')).toBeDefined()

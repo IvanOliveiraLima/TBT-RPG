@@ -1380,6 +1380,23 @@ vida. Nenhuma tela nova — o painel já era flutuante sobre o grid.
   **saem** da lista de criaturas; **adição rápida** (`+ Goblin 1/2/3`) cria o combatente já com nome, vínculo
   e vida.
 
+### VTT — polimento de tokens + paleta única (COMPLETED — PRs #308, #309)
+Dois passos que fecham o ciclo de colocação de tokens no mapa.
+
+- **Polimento (#308)** — rótulos nos campos numéricos que não tinham etiqueta: tamanho e cor no popup do
+  token no mapa, tamanho e PV padrão em "Tokens prontos". Dois ajustes junto: a chave do cache de ícone
+  passou a incluir imagem **e** cor (mudança de cor parecia ignorada porque só persistia quando outra
+  alteração forçava o redesenho) e o nome do combatente ganhou mais espaço no painel (seta movida para o
+  slot do indicador, iniciativa mais estreita).
+- **Paleta única (#309)** — um único botão **"Tokens"** substitui os dois antigos ("+ Adicionar token" e
+  "Tokens prontos"). A paleta abre com três seções: **personagens vinculados** (retrato + nome; desabilitado
+  se já há token daquele `character_id` no mapa), **tokens prontos** (presets) e **genérico**. Os três
+  caminhos foram unificados sob um só modelo — **tudo arma, tudo nasce no clique** — e o genérico deixou de
+  nascer no centro do mapa. Personagem colocado pela paleta já nasce com `character_id` e retrato (reusa
+  `setTokenImageFromCharacterPortrait` e o `fetchLinkedCharactersDetails`, que já trazia o retrato e era
+  descartado) e **não** entra na numeração automática (nome próprio). A paleta vive em dois lugares — barra
+  do desktop e sheet "Ferramentas" do mobile — e ambos foram tratados.
+
 ---
 
 ## Patterns established during C.1.c
@@ -2146,6 +2163,9 @@ function buildInviteLink(): string {
 | HP de monstro vive no `Combatant` do tracker; HP de jogador é somente leitura no painel | #302, #303 | Sem tabela nova; a ficha continua sendo a única fonte da vida do personagem |
 | `default_hp` do preset é **snapshot** copiado na colocação, não vínculo vivo | #305 | Editar o preset no meio do combate não pode alterar a vida dos tokens já em jogo |
 | Token com `character_id` nunca entra como criatura de combate | #305 | O token do personagem nasce genérico e só depois recebe o retrato; sem a marca, aparecia como monstro editável |
+| Todo token nasce no clique: a paleta arma, o clique cria | #309 | Genérico/preset/personagem tinham três comportamentos diferentes; um modelo só elimina a inconsistência |
+| A paleta de tokens existe no desktop **e** na sheet do mobile — alterar os dois | #309 | Mesma pegadinha do botão de realinhar tokens: mexer só num deixa o mobile no comportamento antigo |
+| Chave do cache de ícone inclui imagem **e** cor | #308 | Sem a cor na chave, a troca de cor só aparecia quando outra alteração forçava o redesenho do ícone |
 
 ---
 
@@ -2400,12 +2420,10 @@ New from sync latency + HP milestone (#286–#289):
 
 New from combat panel milestone (#302–#305):
 
-- **OQ — Colocar token de personagem direto no mapa.** Hoje o mestre adiciona um token genérico e depois
-  escolhe o retrato. Com `map_tokens.character_id` (#305) o caminho está pavimentado para um fluxo direto
-  ("adicionar token do personagem X"). Deferred.
-- **OQ — Rótulos nos campos de tamanho e PV do token.** Em "Tokens prontos" e no popup do token no mapa os
-  campos numéricos não têm etiqueta. Agrupar com a correção da cor do token (que só persiste quando outra
-  alteração acontece) e demais polimentos de VTT. Deferred.
+- ~~**OQ — Colocar token de personagem direto no mapa.**~~ *Resolvida (#309).* A paleta única coloca o token
+  do personagem direto no clique, já com `character_id` e retrato.
+- ~~**OQ — Rótulos nos campos de tamanho e PV do token.**~~ *Resolvida (#308).* Rótulos adicionados no popup
+  e nos presets; a correção da cor do token entrou no mesmo lote.
 
 ---
 
