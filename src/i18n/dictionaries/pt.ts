@@ -918,7 +918,7 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.image_remove':  'Remover imagem',
   'token_presets.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
   'token_presets.upload_error_size': 'Imagem muito grande (máx. 10 MB).',
-  'token_presets.palette':       'Tokens prontos',
+  'token_presets.palette':       'Tokens',
   'token_presets.place_hint':    'Clique no mapa para colocar • {name}',
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',

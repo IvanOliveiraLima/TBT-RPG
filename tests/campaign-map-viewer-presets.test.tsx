@@ -408,21 +408,21 @@ describe('CampaignMapViewer — preset palette', () => {
 
   // ── PT i18n ───────────────────────────────────────────────────────────────────
 
-  it('palette panel shows PT label "Tokens prontos"', async () => {
-    mockListTokenPresets.mockResolvedValue([])
+  it('palette panel shows PT section header "Tokens prontos" when presets exist', async () => {
+    mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
-    await waitFor(() => screen.getByTestId('preset-palette-panel'))
+    await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
     expect(screen.getAllByText('Tokens prontos').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('palette panel shows EN label "Ready tokens"', async () => {
-    mockListTokenPresets.mockResolvedValue([])
+  it('palette panel shows EN section header "Ready tokens" when presets exist', async () => {
+    mockListTokenPresets.mockResolvedValue([PRESET_NO_IMG])
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
     await waitFor(() => screen.getByTestId('preset-palette-toggle'))
     fireEvent.click(screen.getByTestId('preset-palette-toggle'))
-    await waitFor(() => screen.getByTestId('preset-palette-panel'))
+    await waitFor(() => screen.getByTestId(`preset-palette-item-${PRESET_NO_IMG.id}`))
     expect(screen.getAllByText('Ready tokens').length).toBeGreaterThanOrEqual(1)
   })
 })

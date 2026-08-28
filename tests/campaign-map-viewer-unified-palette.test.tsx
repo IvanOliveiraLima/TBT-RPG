@@ -25,10 +25,7 @@ let capturedClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void
 
 // ── Mock matchMedia for mobile tests ─────────────────────────────────────────
 
-let isMobileOverride = false
-
 function mockMatchMedia(mobile: boolean) {
-  isMobileOverride = mobile
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: (query: string) => ({
@@ -255,7 +252,6 @@ describe('CampaignMapViewer — unified palette: character section', () => {
     vi.clearAllMocks()
     capturedClickHandler = null
     containerStyle.cursor = ''
-    isMobileOverride = false
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([])
     mockCreateMapToken.mockResolvedValue({ ...TOKEN_BASE, characterId: null })
@@ -384,7 +380,6 @@ describe('CampaignMapViewer — unified palette: generic token', () => {
     vi.clearAllMocks()
     capturedClickHandler = null
     containerStyle.cursor = ''
-    isMobileOverride = false
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([])
     mockCreateMapToken.mockResolvedValue({ ...TOKEN_BASE, id: 'tok-gen', characterId: null, label: 'Generic token' })
@@ -454,7 +449,6 @@ describe('CampaignMapViewer — unified palette: switch armed', () => {
     vi.clearAllMocks()
     capturedClickHandler = null
     containerStyle.cursor = ''
-    isMobileOverride = false
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapTokens.mockResolvedValue([])
     mockCreateMapToken.mockResolvedValue({ ...TOKEN_BASE, id: 'tok-new', characterId: null })
