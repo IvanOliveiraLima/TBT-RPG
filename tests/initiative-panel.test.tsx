@@ -1183,6 +1183,51 @@ describe('CampaignInitiativePanel — token link icon', () => {
     fireEvent.click(screen.getByTestId('combatant-token-c-link'))
     expect(onHighlightToken).toHaveBeenCalledWith('tok-1')
   })
+
+  it('active combatant shows ▶ in indicator slot, not the ↗ button', () => {
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ active: true, combatants: [LINKED_COMBATANT], activeCombatantId: 'c-link' })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-token-c-link')).toBeNull()
+    expect(screen.getByTestId('combatant-row-c-link').textContent).toContain('▶')
+  })
+
+  it('non-active combatant with token shows ↗ in indicator slot', () => {
+    const other = { id: 'c-other', name: 'Skeleton', initiative: 3 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ active: true, combatants: [LINKED_COMBATANT, other], activeCombatantId: 'c-other' })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.getByTestId('combatant-token-c-link')).toBeDefined()
+  })
+
+  it('combatant with no token shows empty indicator slot', () => {
+    const noToken = { id: 'c-bare', name: 'Ghost', initiative: 7 }
+    renderWithI18n(
+      <CampaignInitiativePanel
+        isMaster
+        tracker={makeTracker({ combatants: [noToken] })}
+        linkedChars={[]}
+        onUpdate={noOp}
+        tokens={TOKEN_LIST}
+      />,
+      'en',
+    )
+    expect(screen.queryByTestId('combatant-token-c-bare')).toBeNull()
+  })
 })
 
 describe('CampaignInitiativePanel — highlightCombatantId', () => {

@@ -269,7 +269,7 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
                 className="hover:border-[#2A2537] focus:border-[#2A2537]"
               />
 
-              {/* Color input */}
+              {/* Color input — title + aria-label serve as the accessible label */}
               <input
                 data-testid={`preset-color-${preset.id}`}
                 type="color"
@@ -281,57 +281,74 @@ export function TokenPresetsSection({ campaignId, isMaster }: Props) {
                 }}
                 style={{ width: 28, height: 28, border: 'none', cursor: 'pointer', borderRadius: 4, padding: 2 }}
                 title={t('token_presets.color')}
+                aria-label={t('token_presets.color')}
               />
 
-              {/* Size select */}
-              <select
-                data-testid={`preset-size-${preset.id}`}
-                value={String(preset.size)}
-                onChange={e => {
-                  const size = Number(e.target.value)
-                  setPresets(prev => prev.map(p => p.id === preset.id ? { ...p, size } : p))
-                  void updateTokenPreset(preset.id, { size })
-                }}
-                className="dark-select"
-                style={{
-                  background: T.elevated,
-                  border: `1px solid ${T.borderSubtle}`,
-                  borderRadius: 6, padding: '4px 6px',
-                  color: T.textPrimary, fontFamily: T.sans,
-                  fontSize: 12, cursor: 'pointer',
-                }}
-                title={t('token_presets.size')}
-              >
-                {[1, 2, 3, 4, 5].map(n => (
-                  <option key={n} value={String(n)}>{n}</option>
-                ))}
-              </select>
+              {/* Size select — labeled with short uppercase text above */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span
+                  data-testid={`preset-size-label-${preset.id}`}
+                  style={{ fontSize: 10, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  {t('token_presets.size_label')}
+                </span>
+                <select
+                  data-testid={`preset-size-${preset.id}`}
+                  value={String(preset.size)}
+                  onChange={e => {
+                    const size = Number(e.target.value)
+                    setPresets(prev => prev.map(p => p.id === preset.id ? { ...p, size } : p))
+                    void updateTokenPreset(preset.id, { size })
+                  }}
+                  className="dark-select"
+                  style={{
+                    background: T.elevated,
+                    border: `1px solid ${T.borderSubtle}`,
+                    borderRadius: 6, padding: '4px 6px',
+                    color: T.textPrimary, fontFamily: T.sans,
+                    fontSize: 12, cursor: 'pointer',
+                  }}
+                  title={t('token_presets.size')}
+                >
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
+              </div>
 
-              {/* Default HP input */}
-              <input
-                data-testid={`preset-default-hp-${preset.id}`}
-                type="number"
-                min={1}
-                placeholder={t('token_presets.default_hp')}
-                value={editDefaultHp[preset.id] ?? ''}
-                onChange={e => setEditDefaultHp(prev => ({ ...prev, [preset.id]: e.target.value }))}
-                onBlur={() => {
-                  const raw = editDefaultHp[preset.id] ?? ''
-                  const parsed = parseInt(raw, 10)
-                  const defaultHp = !isNaN(parsed) && parsed > 0 ? parsed : null
-                  void updateTokenPreset(preset.id, { defaultHp })
-                  setPresets(prev => prev.map(p => p.id === preset.id ? { ...p, defaultHp } : p))
-                }}
-                style={{
-                  width: 52,
-                  background: T.elevated,
-                  border: `1px solid ${T.borderSubtle}`,
-                  borderRadius: 6, padding: '4px 6px',
-                  color: T.textPrimary, fontFamily: T.sans,
-                  fontSize: 12, outline: 'none',
-                }}
-                title={t('token_presets.default_hp')}
-              />
+              {/* Default HP input — labeled with short uppercase text above */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span
+                  data-testid={`preset-hp-label-${preset.id}`}
+                  style={{ fontSize: 10, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  {t('token_presets.hp_label')}
+                </span>
+                <input
+                  data-testid={`preset-default-hp-${preset.id}`}
+                  type="number"
+                  min={1}
+                  placeholder={t('token_presets.default_hp')}
+                  value={editDefaultHp[preset.id] ?? ''}
+                  onChange={e => setEditDefaultHp(prev => ({ ...prev, [preset.id]: e.target.value }))}
+                  onBlur={() => {
+                    const raw = editDefaultHp[preset.id] ?? ''
+                    const parsed = parseInt(raw, 10)
+                    const defaultHp = !isNaN(parsed) && parsed > 0 ? parsed : null
+                    void updateTokenPreset(preset.id, { defaultHp })
+                    setPresets(prev => prev.map(p => p.id === preset.id ? { ...p, defaultHp } : p))
+                  }}
+                  style={{
+                    width: 52,
+                    background: T.elevated,
+                    border: `1px solid ${T.borderSubtle}`,
+                    borderRadius: 6, padding: '4px 6px',
+                    color: T.textPrimary, fontFamily: T.sans,
+                    fontSize: 12, outline: 'none',
+                  }}
+                  title={t('token_presets.default_hp')}
+                />
+              </div>
 
               {/* Image upload */}
               <label

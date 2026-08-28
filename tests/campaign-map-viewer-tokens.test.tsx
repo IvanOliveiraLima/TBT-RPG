@@ -352,6 +352,22 @@ describe('CampaignMapViewer — tokens (owner view)', () => {
       { x: 450, y: 350 },
     ))
   })
+
+  it('owner popup shows EN labels for color and size', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_1.id}`))
+    const popup = screen.getByTestId(`token-popup-${TOKEN_1.id}`)
+    expect(popup.textContent).toContain('Color')
+    expect(popup.textContent).toContain('Sz.')
+  })
+
+  it('owner popup shows PT labels for color and size', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
+    await waitFor(() => screen.getByTestId(`token-popup-${TOKEN_1.id}`))
+    const popup = screen.getByTestId(`token-popup-${TOKEN_1.id}`)
+    expect(popup.textContent).toContain('Cor')
+    expect(popup.textContent).toContain('Tam.')
+  })
 })
 
 // ── Token polling ─────────────────────────────────────────────────────────────

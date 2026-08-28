@@ -774,8 +774,10 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_maps.grid_fields_help':    'Tamanho da célula define a largura do quadrado em pixels da imagem — ajuste até bater com a grade desenhada no mapa. Offset X/Y deslocam a grade inteira para as linhas caírem em cima dos quadrados. Ajuste, salve e use "Alinhar tokens à grade".',
   'campaign_maps.token_add':    'Adicionar token',
   'campaign_maps.token_label':  'Rótulo do token',
-  'campaign_maps.token_color':  'Cor do token',
-  'campaign_maps.token_size':   'Tamanho (células)',
+  'campaign_maps.token_color':       'Cor do token',
+  'campaign_maps.token_color_label': 'Cor',
+  'campaign_maps.token_size':        'Tamanho (células)',
+  'campaign_maps.token_size_label':  'Tam.',
   'campaign_maps.token_save':   'Salvar',
   'campaign_maps.token_remove': 'Remover',
   'campaign_maps.token_image':        'Imagem',
@@ -921,6 +923,8 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
   'token_presets.default_hp':    'PV padrão',
+  'token_presets.size_label':    'Tam.',
+  'token_presets.hp_label':      'PV',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',
