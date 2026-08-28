@@ -71,6 +71,7 @@ const T = {
   textMuted:   '#7A7788',
   textPrimary: '#F4EFE0',
   danger:      '#E24B4A',
+  accent:      '#5B3FA8',
   sans:        "'Inter', system-ui, sans-serif",
 } as const
 
@@ -696,6 +697,11 @@ const BOTTOM_SHEET_HDR: React.CSSProperties = {
   marginBottom:   4,
 }
 
+type ArmedToken =
+  | { kind: 'preset'; presetId: string; label: string; color: string; size: number; imagePath: string | null; defaultHp: number | null }
+  | { kind: 'character'; characterId: string; name: string; portraitDataUrl: string | null }
+  | { kind: 'generic' }
+
 export function CampaignMapViewer({ map, isMaster = false, expanded = false, onGridSaved, broadcast = false }: Props) {
   const { t } = useTranslation()
   const isMobile = useIsMobile()
@@ -726,7 +732,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   // Preset palette state (owner only)
   const [presets, setPresets] = useState<CampaignTokenPreset[]>([])
   const [presetUrls, setPresetUrls] = useState<Record<string, string>>({})
-  const [armedPresetId, setArmedPresetId] = useState<string | null>(null)
+  const [armed, setArmed] = useState<ArmedToken | null>(null)
   // Single active panel — mutually exclusive (rolls | presets | initiative)
   // 'tools' = mobile Ferramentas bottom-sheet menu
   const [activePanel, setActivePanel] = useState<'rolls' | 'presets' | 'initiative' | 'tools' | null>(null)
@@ -750,7 +756,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   // Timestamp of the last local tracker edit; suppresses remote poll adoption within grace period
   const lastTrackerEditRef = useRef(0)
   // Quick-add linked chars for initiative panel (owner only); includes live HP for read-only display
-  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string; hp?: { current: number; max: number; temp: number } }>>([])
+  const [linkedChars, setLinkedChars] = useState<Array<{ characterId: string; name: string; hp?: { current: number; max: number; temp: number }; portraitDataUrl: string | null; ownerUserId: string }>>([])
   // Realtime channel status for linked chars HP refresh (owner only)
   const [linkedCharRtActive, setLinkedCharRtActive] = useState(false)
   // Stable ref to current linked-char ids so the realtime callback can filter without a stale closure
@@ -776,7 +782,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
       setAreaPanelOpen(false)
       setAreaMode(false)
       setFogMode(false)
-      setArmedPresetId(null)
+      setArmed(null)
       setRulerMode(false)
       setRulerSegment(null)
     }
@@ -999,13 +1005,19 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   // Fetch linked char names + live HP for the initiative panel (owner only)
   async function loadLinkedCharsPanel(campaignId: string) {
     const details = await fetchLinkedCharactersDetails(campaignId).catch(() => [])
-    const chars = details
-      .filter(d => d.character !== null)
-      .map(d => ({
-        characterId: d.characterId,
-        name:        d.character!.name,
-        hp:          d.character!.hp,
-      }))
+    const filtered = details.filter(d => d.character !== null)
+    const chars = await Promise.all(
+      filtered.map(async d => {
+        const imgs = await fetchCampaignCharacterImages({ userId: d.ownerUserId, characterId: d.characterId }).catch(() => ({ portraitData: null, symbolData: null }))
+        return {
+          characterId:    d.characterId,
+          name:           d.character!.name,
+          hp:             d.character!.hp,
+          portraitDataUrl: imgs.portraitData,
+          ownerUserId:    d.ownerUserId,
+        }
+      })
+    )
     setLinkedChars(chars)
     linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
   }
@@ -1015,15 +1027,22 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     if (!isMaster || broadcast) return
     let cancelled = false
     fetchLinkedCharactersDetails(map.campaignId)
-      .then(details => {
+      .then(async details => {
         if (cancelled) return
-        const chars = details
-          .filter(d => d.character !== null)
-          .map(d => ({
-            characterId: d.characterId,
-            name:        d.character!.name,
-            hp:          d.character!.hp,
-          }))
+        const filtered = details.filter(d => d.character !== null)
+        const chars = await Promise.all(
+          filtered.map(async d => {
+            const imgs = await fetchCampaignCharacterImages({ userId: d.ownerUserId, characterId: d.characterId }).catch(() => ({ portraitData: null, symbolData: null }))
+            return {
+              characterId:    d.characterId,
+              name:           d.character!.name,
+              hp:             d.character!.hp,
+              portraitDataUrl: imgs.portraitData,
+              ownerUserId:    d.ownerUserId,
+            }
+          })
+        )
+        if (cancelled) return
         setLinkedChars(chars)
         linkedCharIdsRef.current = new Set(chars.map(c => c.characterId))
       })
@@ -1164,18 +1183,6 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     return { x: s.x, y: map.height - s.y }
   }, [localGrid, map.height])
 
-  async function handleAddToken() {
-    const cx = map.width / 2
-    const cy = map.height / 2
-    const snapped = snapTokenPos(cx, cy, 1)
-    try {
-      const token = await createMapToken(map.id, snapped.x, snapped.y)
-      setTokens(prev => [...prev, token])
-    } catch {
-      // best-effort
-    }
-  }
-
   async function realignTokens() {
     const updated = tokens.map(t => {
       const s = snapTokenPos(t.x, t.y, t.size)
@@ -1187,35 +1194,73 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     ))
   }
 
-  async function placePreset(latlng: L.LatLng) {
-    const preset = presets.find(p => p.id === armedPresetId)
-    if (!preset) return
-    const snapped = snapTokenPos(latlng.lng, latlng.lat, preset.size)
+  async function applyCharacterToToken(campaignId: string, tokenId: string, characterId: string, portraitDataUrl: string) {
+    const path = await setTokenImageFromCharacterPortrait(campaignId, tokenId, portraitDataUrl)
+    void updateMapToken(tokenId, { characterId }).catch(() => {})
+    setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path, characterId } : t))
+    setTokenImageUrlsByPath(prev => {
+      const oldToken = tokens.find(t => t.id === tokenId)
+      if (!oldToken?.imagePath) return prev
+      const next = { ...prev }
+      delete next[oldToken.imagePath]
+      return next
+    })
+  }
 
-    // Auto-number tokens with the same label family already on the map
-    const { renamedId, renamedLabel, newLabel } = autoNumberLabel(preset.label, tokens)
-    if (renamedId !== null && renamedLabel !== null) {
-      setTokens(prev => prev.map(t => t.id === renamedId ? { ...t, label: renamedLabel } : t))
-      void updateMapToken(renamedId, { label: renamedLabel }).catch(() => {})
-    }
-
-    try {
-      const tok = await createMapToken(map.id, snapped.x, snapped.y, {
-        label: newLabel,
-        color: preset.color,
-        size:  preset.size,
-        ...(preset.defaultHp != null ? { hpMax: preset.defaultHp } : {}),
-      })
-      setTokens(prev => [...prev, tok])
-      if (preset.imagePath) {
-        const signedUrl = presetUrls[preset.imagePath]
-          ?? await getTokenPresetImageSignedUrl(preset.imagePath)
-        const blob = await fetch(signedUrl).then(r => r.blob())
-        const imagePath = await uploadTokenImageBlob(map.campaignId, tok.id, blob)
-        setTokens(prev => prev.map(t => t.id === tok.id ? { ...t, imagePath } : t))
+  async function placeArmed(latlng: L.LatLng) {
+    if (!armed) return
+    if (armed.kind === 'preset') {
+      const snapped = snapTokenPos(latlng.lng, latlng.lat, armed.size)
+      const { renamedId, renamedLabel, newLabel } = autoNumberLabel(armed.label, tokens)
+      if (renamedId !== null && renamedLabel !== null) {
+        setTokens(prev => prev.map(t => t.id === renamedId ? { ...t, label: renamedLabel } : t))
+        void updateMapToken(renamedId, { label: renamedLabel }).catch(() => {})
       }
-    } catch {
-      // best-effort — token may have been created without image
+      try {
+        const tok = await createMapToken(map.id, snapped.x, snapped.y, {
+          label: newLabel,
+          color: armed.color,
+          size:  armed.size,
+          ...(armed.defaultHp != null ? { hpMax: armed.defaultHp } : {}),
+        })
+        setTokens(prev => [...prev, tok])
+        if (armed.imagePath) {
+          const signedUrl = presetUrls[armed.imagePath]
+            ?? await getTokenPresetImageSignedUrl(armed.imagePath)
+          const blob = await fetch(signedUrl).then(r => r.blob())
+          const imagePath = await uploadTokenImageBlob(map.campaignId, tok.id, blob)
+          setTokens(prev => prev.map(t => t.id === tok.id ? { ...t, imagePath } : t))
+        }
+      } catch {
+        // best-effort
+      }
+    } else if (armed.kind === 'generic') {
+      const snapped = snapTokenPos(latlng.lng, latlng.lat, 1)
+      const { renamedId, renamedLabel, newLabel } = autoNumberLabel(t('campaign_maps.palette_generic_label'), tokens)
+      if (renamedId !== null && renamedLabel !== null) {
+        setTokens(prev => prev.map(tk => tk.id === renamedId ? { ...tk, label: renamedLabel } : tk))
+        void updateMapToken(renamedId, { label: renamedLabel }).catch(() => {})
+      }
+      try {
+        const tok = await createMapToken(map.id, snapped.x, snapped.y, { label: newLabel })
+        setTokens(prev => [...prev, tok])
+      } catch {
+        // best-effort
+      }
+    } else if (armed.kind === 'character') {
+      const snapped = snapTokenPos(latlng.lng, latlng.lat, 1)
+      try {
+        const tok = await createMapToken(map.id, snapped.x, snapped.y, { label: armed.name })
+        setTokens(prev => [...prev, tok])
+        if (armed.portraitDataUrl) {
+          await applyCharacterToToken(map.campaignId, tok.id, armed.characterId, armed.portraitDataUrl)
+        } else {
+          void updateMapToken(tok.id, { characterId: armed.characterId }).catch(() => {})
+          setTokens(prev => prev.map(tk => tk.id === tok.id ? { ...tk, characterId: armed.characterId } : tk))
+        }
+      } catch {
+        // best-effort
+      }
     }
   }
 
@@ -1279,16 +1324,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
   async function handlePickCharacterPortrait(tokenId: string, portraitDataUrl: string, characterId: string) {
     try {
-      const path = await setTokenImageFromCharacterPortrait(map.campaignId, tokenId, portraitDataUrl)
-      void updateMapToken(tokenId, { characterId }).catch(() => {})
-      setTokens(prev => prev.map(t => t.id === tokenId ? { ...t, imagePath: path, characterId } : t))
-      setTokenImageUrlsByPath(prev => {
-        const oldToken = tokens.find(t => t.id === tokenId)
-        if (!oldToken?.imagePath) return prev
-        const next = { ...prev }
-        delete next[oldToken.imagePath]
-        return next
-      })
+      await applyCharacterToToken(map.campaignId, tokenId, characterId, portraitDataUrl)
     } catch {
       // noop
     }
@@ -1673,23 +1709,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
           )}
 
-          {/* Add token (always below grid control) */}
-          <button
-            type="button"
-            data-testid="token-add-btn"
-            onClick={() => void handleAddToken()}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-              background: 'rgba(21,18,28,0.85)', color: T.textMuted,
-              border: '1px solid rgba(255,255,255,0.12)',
-              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
-            }}
-          >
-            + {t('campaign_maps.token_add')}
-          </button>
-
-          {/* Preset palette — toggle button or panel */}
+          {/* Token palette — toggle button or panel (merges add-token + presets + generic) */}
           {activePanel !== 'presets' && (
             <button
               type="button"
@@ -1698,9 +1718,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
                 padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
-                background: armedPresetId ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
-                color: armedPresetId ? '#D4A017' : T.textMuted,
-                border: armedPresetId ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
+                background: armed ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
+                color: armed ? '#D4A017' : T.textMuted,
+                border: armed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
                 fontSize: 12, fontWeight: 600, fontFamily: T.sans,
               }}
             >
@@ -1717,8 +1737,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 padding: '10px 12px',
                 fontFamily: T.sans,
                 display: 'flex', flexDirection: 'column', gap: 8,
-                width: 220,
-                maxHeight: 320,
+                width: 230,
+                maxHeight: 380,
                 overflowY: 'auto',
               }}
             >
@@ -1729,70 +1749,144 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <button
                   type="button"
                   data-testid="preset-palette-close"
-                  onClick={() => { setActivePanel(null); setArmedPresetId(null) }}
+                  onClick={() => { setActivePanel(null); setArmed(null) }}
                   style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
                 >×</button>
               </div>
 
-              {presets.length === 0 ? (
+              {/* Section: Characters */}
+              {linkedChars.length > 0 && (
+                <>
+                  <span style={{ fontSize: 10, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                    {t('token_presets.palette_section_characters')}
+                  </span>
+                  {linkedChars.map(lc => {
+                    const alreadyOnMap = tokens.some(tok => tok.characterId === lc.characterId)
+                    const isArmed = armed?.kind === 'character' && armed.characterId === lc.characterId
+                    return (
+                      <button
+                        key={lc.characterId}
+                        type="button"
+                        data-testid={`palette-char-${lc.characterId}`}
+                        disabled={alreadyOnMap}
+                        onClick={() => {
+                          if (alreadyOnMap) return
+                          setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                        }}
+                        title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
+                          border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent',
+                          borderRadius: 6, padding: '5px 8px', cursor: alreadyOnMap ? 'not-allowed' : 'pointer',
+                          textAlign: 'left', width: '100%', opacity: alreadyOnMap ? 0.45 : 1,
+                        }}
+                      >
+                        <div style={{
+                          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                          background: lc.portraitDataUrl ? undefined : T.accent,
+                          backgroundImage: lc.portraitDataUrl ? `url(${lc.portraitDataUrl})` : undefined,
+                          backgroundSize: 'cover', backgroundPosition: 'center',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                        }} />
+                        <span style={{ fontSize: 12, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {lc.name}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+
+              {/* Section: Ready tokens (presets) */}
+              {presets.length > 0 && (
+                <>
+                  <span style={{ fontSize: 10, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                    {t('token_presets.palette_section_presets')}
+                  </span>
+                  {presets.map(preset => {
+                    const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
+                    const isArmed = armed?.kind === 'preset' && armed.presetId === preset.id
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        data-testid={`preset-palette-item-${preset.id}`}
+                        onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
+                          border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent',
+                          borderRadius: 6, padding: '5px 8px', cursor: 'pointer',
+                          textAlign: 'left', width: '100%',
+                        }}
+                      >
+                        <div style={{
+                          width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                          background: imgUrl ? undefined : preset.color,
+                          backgroundImage: imgUrl ? `url(${imgUrl})` : undefined,
+                          backgroundSize: 'cover', backgroundPosition: 'center',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                        }} />
+                        <span style={{ fontSize: 12, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {preset.label || '—'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </>
+              )}
+
+              {/* Empty state — only when no presets and no chars */}
+              {presets.length === 0 && linkedChars.length === 0 && (
                 <p data-testid="preset-palette-empty" style={{ fontSize: 12, color: T.textMuted, margin: 0, fontStyle: 'italic' }}>
                   {t('token_presets.palette_empty')}
                 </p>
-              ) : (
-                presets.map(preset => {
-                  const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
-                  const isArmed = armedPresetId === preset.id
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      data-testid={`preset-palette-item-${preset.id}`}
-                      onClick={() => setArmedPresetId(isArmed ? null : preset.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
-                        border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent',
-                        borderRadius: 6,
-                        padding: '5px 8px',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        width: '100%',
-                      }}
-                    >
-                      <div style={{
-                        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                        background: imgUrl ? undefined : preset.color,
-                        backgroundImage: imgUrl ? `url(${imgUrl})` : undefined,
-                        backgroundSize: 'cover', backgroundPosition: 'center',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                      }} />
-                      <span style={{ fontSize: 12, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {preset.label || '—'}
-                      </span>
-                    </button>
-                  )
-                })
               )}
 
-              {armedPresetId && (
+              {/* Section: Generic token */}
+              {(() => {
+                const isArmed = armed?.kind === 'generic'
+                return (
+                  <button
+                    type="button"
+                    data-testid="palette-generic-item"
+                    onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
+                      border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: 6, padding: '5px 8px', cursor: 'pointer',
+                      textAlign: 'left', width: '100%',
+                    }}
+                  >
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, background: T.textMuted, border: '2px solid rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 12, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t('campaign_maps.palette_generic_label')}
+                    </span>
+                  </button>
+                )
+              })()}
+
+              {armed && (
                 <>
                   <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>
-                    {t('token_presets.place_hint').replace('{name}', presets.find(p => p.id === armedPresetId)?.label ?? '')}
+                    {t('token_presets.place_hint').replace('{name}',
+                      armed.kind === 'preset' ? armed.label :
+                      armed.kind === 'character' ? armed.name :
+                      t('campaign_maps.palette_generic_label')
+                    )}
                   </p>
                   <button
                     type="button"
                     data-testid="preset-place-done"
-                    onClick={() => setArmedPresetId(null)}
+                    onClick={() => setArmed(null)}
                     style={{
                       background: 'transparent',
                       border: '1px solid rgba(255,255,255,0.15)',
-                      borderRadius: 6,
-                      color: T.textPrimary,
-                      padding: '4px 10px',
-                      cursor: 'pointer',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: T.sans,
+                      borderRadius: 6, color: T.textPrimary,
+                      padding: '4px 10px', cursor: 'pointer',
+                      fontSize: 12, fontWeight: 600, fontFamily: T.sans,
                       alignSelf: 'flex-end',
                     }}
                   >
@@ -1811,7 +1905,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               onClick={() => {
                 setAreaPanelOpen(true)
                 setFogMode(false)
-                setArmedPresetId(null)
+                setArmed(null)
                 setRulerMode(false)
                 setRulerSegment(null)
               }}
@@ -2092,7 +2186,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setAreaPanelOpen(false)
                 setFogMode(false)
                 setPanelOpen(false)
-                setArmedPresetId(null)
+                setArmed(null)
                 setActivePanel(null)
               }
             }}
@@ -2309,23 +2403,16 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           >
             ⊞ {t('campaign_maps.grid_title')}
           </button>
-          {/* Adicionar token */}
-          <button type="button" data-testid="tools-add-token-btn"
-            onClick={() => { void handleAddToken(); setActivePanel(null) }}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
-          >
-            + {t('campaign_maps.token_add')}
-          </button>
-          {/* Tokens prontos */}
+          {/* Tokens (palette: characters + presets + generic) */}
           <button type="button" data-testid="tools-presets-btn"
             onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets') }}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armedPresetId ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armedPresetId ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armedPresetId ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armed ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armed ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⬡ {t('token_presets.palette')}
           </button>
           {/* Áreas */}
           <button type="button" data-testid="tools-areas-btn"
-            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmedPresetId(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmed(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ◎ {t('areas.title')}
@@ -2340,7 +2427,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           </button>
           {/* Régua */}
           <button type="button" data-testid="tools-ruler-btn"
-            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmedPresetId(null); setActivePanel(null) }}
+            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: rulerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ↔ {t('ruler.title')}
@@ -2430,40 +2517,98 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
       )}
 
-      {/* Preset palette — mobile bottom sheet */}
+      {/* Token palette — mobile bottom sheet (characters + presets + generic) */}
       {isMaster && isMobile && activePanel === 'presets' && (
         <div data-testid="preset-palette-panel" style={BOTTOM_SHEET}>
           <div style={BOTTOM_SHEET_HDR}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
               {t('token_presets.palette')}
             </span>
-            <button type="button" data-testid="preset-palette-close" onClick={() => { setActivePanel(null); setArmedPresetId(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+            <button type="button" data-testid="preset-palette-close" onClick={() => { setActivePanel(null); setArmed(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
           </div>
-          {presets.length === 0 ? (
+
+          {/* Section: Characters */}
+          {linkedChars.length > 0 && (
+            <>
+              <span style={{ fontSize: 10, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                {t('token_presets.palette_section_characters')}
+              </span>
+              {linkedChars.map(lc => {
+                const alreadyOnMap = tokens.some(tok => tok.characterId === lc.characterId)
+                const isArmed = armed?.kind === 'character' && armed.characterId === lc.characterId
+                return (
+                  <button key={lc.characterId} type="button" data-testid={`palette-char-${lc.characterId}`}
+                    disabled={alreadyOnMap}
+                    onClick={() => {
+                      if (alreadyOnMap) return
+                      setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                    }}
+                    title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: alreadyOnMap ? 'not-allowed' : 'pointer', textAlign: 'left', width: '100%', opacity: alreadyOnMap ? 0.45 : 1 }}
+                  >
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: lc.portraitDataUrl ? undefined : T.accent, backgroundImage: lc.portraitDataUrl ? `url(${lc.portraitDataUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 13, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lc.name}</span>
+                  </button>
+                )
+              })}
+            </>
+          )}
+
+          {/* Section: Ready tokens (presets) */}
+          {presets.length > 0 && (
+            <>
+              <span style={{ fontSize: 10, color: T.textMuted, letterSpacing: 1, textTransform: 'uppercase' }}>
+                {t('token_presets.palette_section_presets')}
+              </span>
+              {presets.map(preset => {
+                const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
+                const isArmed = armed?.kind === 'preset' && armed.presetId === preset.id
+                return (
+                  <button key={preset.id} type="button" data-testid={`preset-palette-item-${preset.id}`}
+                    onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                  >
+                    <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: imgUrl ? undefined : preset.color, backgroundImage: imgUrl ? `url(${imgUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
+                    <span style={{ fontSize: 13, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.label || '—'}</span>
+                  </button>
+                )
+              })}
+            </>
+          )}
+
+          {/* Empty state */}
+          {presets.length === 0 && linkedChars.length === 0 && (
             <p data-testid="preset-palette-empty" style={{ fontSize: 12, color: T.textMuted, margin: 0, fontStyle: 'italic' }}>
               {t('token_presets.palette_empty')}
             </p>
-          ) : (
-            presets.map(preset => {
-              const imgUrl = preset.imagePath ? presetUrls[preset.imagePath] : undefined
-              const isArmed = armedPresetId === preset.id
-              return (
-                <button key={preset.id} type="button" data-testid={`preset-palette-item-${preset.id}`}
-                  onClick={() => setArmedPresetId(isArmed ? null : preset.id)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
-                >
-                  <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: imgUrl ? undefined : preset.color, backgroundImage: imgUrl ? `url(${imgUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
-                  <span style={{ fontSize: 13, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.label || '—'}</span>
-                </button>
-              )
-            })
           )}
-          {armedPresetId && (
+
+          {/* Section: Generic token */}
+          {(() => {
+            const isArmed = armed?.kind === 'generic'
+            return (
+              <button type="button" data-testid="palette-generic-item"
+                onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+              >
+                <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: T.textMuted, border: '2px solid rgba(255,255,255,0.3)' }} />
+                <span style={{ fontSize: 13, color: T.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {t('campaign_maps.palette_generic_label')}
+                </span>
+              </button>
+            )
+          })()}
+
+          {armed && (
             <>
               <p style={{ fontSize: 12, color: '#D4A017', margin: 0 }}>
-                {t('token_presets.place_hint').replace('{name}', presets.find(p => p.id === armedPresetId)?.label ?? '')}
+                {t('token_presets.place_hint').replace('{name}',
+                  armed.kind === 'preset' ? armed.label :
+                  armed.kind === 'character' ? armed.name :
+                  t('campaign_maps.palette_generic_label')
+                )}
               </p>
-              <button type="button" data-testid="preset-place-done" onClick={() => setArmedPresetId(null)}
+              <button type="button" data-testid="preset-place-done" onClick={() => setArmed(null)}
                 style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: T.textPrimary, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: T.sans, alignSelf: 'flex-end' }}
               >
                 {t('token_presets.place_done')}
@@ -2843,18 +2988,18 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 if (fogMode) return  // fog painting handled by FogInteraction
                 if (areaMode) return  // area drawing handled by AreaInteraction
                 if (rulerMode) return  // ruler drawing handled by RulerDragHandler
-                if (armedPresetId) return  // dblclick ignored while preset is armed
+                if (armed) return  // dblclick ignored while token is armed
                 setPendingLatLng(latlng)
                 setPendingLabel('')
               }}
               onSingleClick={latlng => {
                 if (fogMode) return
                 if (areaMode) return  // area drawing handled by AreaInteraction
-                if (!armedPresetId) return
-                void placePreset(latlng)
+                if (!armed) return
+                void placeArmed(latlng)
               }}
             />
-            <ArmedCursorEffect armed={!!armedPresetId} />
+            <ArmedCursorEffect armed={!!armed} />
           </>
         )}
 

@@ -915,13 +915,17 @@ const en = {
   'token_presets.image_remove':  'Remove image',
   'token_presets.upload_error_type': 'Use a PNG, JPG or WebP image.',
   'token_presets.upload_error_size': 'Image is too large (max 10 MB).',
-  'token_presets.palette':       'Ready tokens',
+  'token_presets.palette':       'Tokens',
   'token_presets.place_hint':    'Click the map to place • {name}',
   'token_presets.place_done':    'Done',
   'token_presets.palette_empty': 'No ready tokens — add them in the campaign',
   'token_presets.default_hp':    'Default HP',
   'token_presets.size_label':    'Sz.',
   'token_presets.hp_label':      'HP',
+  'token_presets.palette_section_characters': 'Characters',
+  'token_presets.palette_section_presets':    'Ready tokens',
+  'token_presets.palette_char_on_map':        'Already on map',
+  'campaign_maps.palette_generic_label':      'Generic token',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Conditions',

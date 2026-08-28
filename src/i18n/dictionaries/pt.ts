@@ -918,13 +918,17 @@ const pt: Record<keyof typeof en, string> = {
   'token_presets.image_remove':  'Remover imagem',
   'token_presets.upload_error_type': 'Use uma imagem PNG, JPG ou WebP.',
   'token_presets.upload_error_size': 'Imagem muito grande (máx. 10 MB).',
-  'token_presets.palette':       'Tokens prontos',
+  'token_presets.palette':       'Tokens',
   'token_presets.place_hint':    'Clique no mapa para colocar • {name}',
   'token_presets.place_done':    'Concluir',
   'token_presets.palette_empty': 'Nenhum token pronto — adicione na campanha',
   'token_presets.default_hp':    'PV padrão',
   'token_presets.size_label':    'Tam.',
   'token_presets.hp_label':      'PV',
+  'token_presets.palette_section_characters': 'Personagens',
+  'token_presets.palette_section_presets':    'Tokens prontos',
+  'token_presets.palette_char_on_map':        'Já está no mapa',
+  'campaign_maps.palette_generic_label':      'Token genérico',
 
   // ── Token conditions ──────────────────────────────────────────────────────────
   'token_conditions_title': 'Condições',
