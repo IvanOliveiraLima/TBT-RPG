@@ -1244,9 +1244,9 @@ describe('CampaignInitiativePanel — highlightCombatantId', () => {
       'en',
     )
     const row = screen.getByTestId('combatant-row-c-link') as HTMLDivElement
-    // highlighted row should have a blue-tinted background different from the default surface
+    // highlighted row should have a pink-tinted background different from the default surface
     // (browser normalises rgba: spaces are added between values)
-    expect(row.style.background.replace(/\s/g, '')).toContain('rgba(107,127,212')
+    expect(row.style.background.replace(/\s/g, '')).toContain('rgba(236,72,153')
   })
 
   it('non-highlighted rows keep default surface background', () => {

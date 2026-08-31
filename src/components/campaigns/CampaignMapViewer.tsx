@@ -790,8 +790,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   }, [isMobile])
   // BroadcastChannel refs (owner emitter)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
-  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
-  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment } }, [tokens, fog, areas, localGrid, tracker, rulerSegment])
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight } }, [tokens, fog, areas, localGrid, tracker, rulerSegment, highlight])
 
   useEffect(() => {
     let cancelled = false
@@ -931,8 +931,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     if (!isMaster || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
-    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
-  }, [isMaster, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment])
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight })
+  }, [isMaster, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment, highlight])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
@@ -941,9 +941,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     ch.onmessage = (e: MessageEvent) => {
       if (e.data?.type === 'snapshot') {
-        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r } = e.data as {
+        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r, highlight: h } = e.data as {
           tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
-          ruler?: typeof rulerSegment
+          ruler?: typeof rulerSegment; highlight?: typeof highlight
         }
         if (Array.isArray(t)) setTokens(t)
         if (f) setFog(f)
@@ -951,6 +951,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         if (g) setLocalGrid(g)
         if (ini) setTracker(ini)
         if ('ruler' in e.data) setRulerSegment(r ?? null)
+        if ('highlight' in e.data) setHighlight(h ?? {})
       }
     }
     ch.postMessage({ type: 'hello' })
@@ -3196,14 +3197,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         })}
 
         {/* Highlight ring — pulsing ring overlaid on the spotlighted token (master only) */}
-        {isMaster && highlight.tokenId && (() => {
+        {(isMaster || broadcast) && highlight.tokenId && (() => {
           const tok = tokens.find(tk => tk.id === highlight.tokenId && !isTokenHiddenForViewer(tk))
           if (!tok) return null
           const d = Math.round(tokenDiameterPx(tok.size, localGrid.size, pxPerUnit))
           const rd = d + 10
           const ringIcon = L.divIcon({
             className: '',
-            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #6B7FD4;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
+            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #EC4899;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
             iconSize:   [rd, rd],
             iconAnchor: [rd / 2, rd / 2],
           })
