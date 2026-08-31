@@ -766,12 +766,31 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   // Ephemeral reciprocal highlight between combat panel and map tokens (master only, no persistence)
   const [highlight, setHighlight] = useState<{ tokenId?: string; combatantId?: string }>({})
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ephemeral map ping — expands and fades on both master and broadcast screen (no persistence)
+  const [ping, setPing] = useState<{ x: number; y: number; id: string } | null>(null)
+  const pingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showPing = useCallback((p: { x: number; y: number; id: string }) => {
+    if (pingTimerRef.current !== null) clearTimeout(pingTimerRef.current)
+    setPing(p)
+    pingTimerRef.current = setTimeout(() => { setPing(null); pingTimerRef.current = null }, 1800)
+  }, [])
+
+  function triggerPing(latlng: L.LatLng) {
+    const p = { x: latlng.lng, y: latlng.lat, id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now())) }
+    showPing(p)
+    // broadcastChRef = owner's channel; broadcastRxChRef = receiver's channel; mutually exclusive per instance
+    ;(broadcastChRef.current ?? broadcastRxChRef.current)?.postMessage({ type: 'ping', ...p })
+  }
+
   // Auto-initiative toggle state (owner only, fetched once on mount)
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
   const [diceOpen, setDiceOpen] = useState(false)
   // Ruler mode state (ephemeral — never persisted to Supabase)
   const [rulerMode, setRulerMode] = useState(false)
+  // Marker mode state (click-to-place; exclusive with other editing modes)
+  const [markerMode, setMarkerMode] = useState(false)
   const [rulerSegment, setRulerSegment] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   const rulerStartRef = useRef<{ x: number; y: number } | null>(null)
   // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
@@ -785,13 +804,15 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
       setArmed(null)
       setRulerMode(false)
       setRulerSegment(null)
+      setMarkerMode(false)
     }
     setActivePanel(prev => (prev === next ? null : next))
   }, [isMobile])
-  // BroadcastChannel refs (owner emitter)
+  // BroadcastChannel refs: owner emitter channel + broadcast receiver channel (mutually exclusive)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
-  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
-  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment } }, [tokens, fog, areas, localGrid, tracker, rulerSegment])
+  const broadcastRxChRef     = useRef<BroadcastChannel | null>(null)
+  const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight })
+  useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight } }, [tokens, fog, areas, localGrid, tracker, rulerSegment, highlight])
 
   useEffect(() => {
     let cancelled = false
@@ -918,32 +939,35 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     broadcastChRef.current = ch
     ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'ping') { showPing({ x: e.data.x as number, y: e.data.y as number, id: e.data.id as string }); return }
       if (e.data?.type === 'hello') {
         ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
       }
     }
     ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
     return () => { ch.close(); broadcastChRef.current = null }
-  }, [isMaster, broadcast, map.id])
+  }, [isMaster, broadcast, map.id, showPing])
 
   // Owner: re-post full snapshot whenever any shared state changes
   useEffect(() => {
     if (!isMaster || broadcast) return
     const ch = broadcastChRef.current
     if (!ch) return
-    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment })
-  }, [isMaster, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment])
+    ch.postMessage({ type: 'snapshot', tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight })
+  }, [isMaster, broadcast, tokens, fog, areas, localGrid, tracker, rulerSegment, highlight])
 
   // Broadcast receiver: apply incoming snapshots; post hello on mount
   useEffect(() => {
     if (!broadcast) return
     if (typeof BroadcastChannel === 'undefined') return
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
+    broadcastRxChRef.current = ch
     ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'ping') { showPing({ x: e.data.x as number, y: e.data.y as number, id: e.data.id as string }); return }
       if (e.data?.type === 'snapshot') {
-        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r } = e.data as {
+        const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r, highlight: h } = e.data as {
           tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
-          ruler?: typeof rulerSegment
+          ruler?: typeof rulerSegment; highlight?: typeof highlight
         }
         if (Array.isArray(t)) setTokens(t)
         if (f) setFog(f)
@@ -951,11 +975,15 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         if (g) setLocalGrid(g)
         if (ini) setTracker(ini)
         if ('ruler' in e.data) setRulerSegment(r ?? null)
+        if ('highlight' in e.data) setHighlight(h ?? {})
       }
     }
     ch.postMessage({ type: 'hello' })
-    return () => { ch.close() }
-  }, [broadcast, map.id])
+    return () => { ch.close(); broadcastRxChRef.current = null }
+  }, [broadcast, map.id, showPing])
+
+  // Cleanup ping timer on unmount (avoids setState after unmount)
+  useEffect(() => () => { if (pingTimerRef.current !== null) clearTimeout(pingTimerRef.current) }, [])
 
   // Fetch preset palette + resolve signed URLs for preset images (owner only)
   useEffect(() => {
@@ -1112,6 +1140,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     document.addEventListener('keydown', handle)
     return () => document.removeEventListener('keydown', handle)
   }, [rulerMode])
+
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -1549,8 +1578,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
   return (
     <>
-    {/* Keyframe for the token highlight ring — injected once, harmless if the map is mounted multiple times */}
-    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} }`}</style>
+    {/* Keyframes for the token highlight ring and map ping */}
+    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} } @keyframes tbt-ping { 0%{opacity:0.9;transform:scale(0.35)} 100%{opacity:0;transform:scale(1.6)} }`}</style>
     <div
       data-testid="campaign-map-viewer"
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
@@ -1772,6 +1801,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                         onClick={() => {
                           if (alreadyOnMap) return
                           setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                          setMarkerMode(false)
                         }}
                         title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
                         style={{
@@ -1812,7 +1842,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                         key={preset.id}
                         type="button"
                         data-testid={`preset-palette-item-${preset.id}`}
-                        onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                        onClick={() => { setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null }); setMarkerMode(false) }}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
@@ -1851,7 +1881,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                   <button
                     type="button"
                     data-testid="palette-generic-item"
-                    onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                    onClick={() => { setArmed(isArmed ? null : { kind: 'generic' }); setMarkerMode(false) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
@@ -1908,6 +1938,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setArmed(null)
                 setRulerMode(false)
                 setRulerSegment(null)
+                setMarkerMode(false)
               }}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -2035,7 +2066,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <button
                   type="button"
                   data-testid="area-draw-start"
-                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true) }}
+                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true); setMarkerMode(false) }}
                   style={{
                     background: '#5B3FA8', border: 'none', borderRadius: 6,
                     color: T.textPrimary, padding: '4px 10px',
@@ -2066,7 +2097,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <button
               type="button"
               data-testid="fog-panel-toggle"
-              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null) }}
+              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
               disabled={!localGrid.enabled}
               {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
               aria-label={t('campaign_maps.fog_title')}
@@ -2166,7 +2197,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                   {t('campaign_maps.fog_hide_all')}
                 </button>
               </div>
-              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+              <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>
                 {t('campaign_maps.fog_paint_hint')}
               </p>
             </div>
@@ -2188,6 +2219,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setPanelOpen(false)
                 setArmed(null)
                 setActivePanel(null)
+                setMarkerMode(false)
               }
             }}
             style={{
@@ -2200,6 +2232,33 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             }}
           >
             ↔ {t('ruler.title')}
+          </button>
+
+          {/* Marker mode */}
+          <button
+            type="button"
+            data-testid="marker-toggle"
+            onClick={() => {
+              if (markerMode) {
+                setMarkerMode(false)
+              } else {
+                setMarkerMode(true)
+                setRulerMode(false); setRulerSegment(null)
+                setAreaMode(false); setAreaPanelOpen(false)
+                setFogMode(false); setPanelOpen(false)
+                setArmed(null); setActivePanel(null)
+              }
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: markerMode ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
+              color: markerMode ? '#D4A017' : T.textMuted,
+              border: markerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            📍 {t('campaign_maps.marker_tool')}
           </button>
 
           {/* Broadcast screen button */}
@@ -2223,17 +2282,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
       )}
 
-      {isMaster && (
+      {isMaster && (markerMode || rulerMode) && (
         <div
-          data-testid="marker-add-hint"
+          data-testid={markerMode ? 'marker-add-hint' : 'ruler-hint'}
           style={{
             position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: T.textPrimary,
+            zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: '#D4A017',
             padding: '4px 10px', borderRadius: 4, fontSize: 11, fontFamily: T.sans,
             pointerEvents: 'none',
           }}
         >
-          {t('campaign_maps.marker_add_hint')}
+          {markerMode ? t('campaign_maps.marker_add_hint') : t('ruler.hint')}
         </div>
       )}
 
@@ -2405,14 +2464,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           </button>
           {/* Tokens (palette: characters + presets + generic) */}
           <button type="button" data-testid="tools-presets-btn"
-            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets') }}
+            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets'); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armed ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armed ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⬡ {t('token_presets.palette')}
           </button>
           {/* Áreas */}
           <button type="button" data-testid="tools-areas-btn"
-            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmed(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmed(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ◎ {t('areas.title')}
@@ -2420,17 +2479,24 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           {/* Névoa */}
           <button type="button" data-testid="tools-fog-btn"
             disabled={!localGrid.enabled}
-            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: !localGrid.enabled ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left', opacity: !localGrid.enabled ? 0.5 : 1 }}
           >
             ◎ {t('campaign_maps.fog_title')}
           </button>
           {/* Régua */}
           <button type="button" data-testid="tools-ruler-btn"
-            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
+            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: rulerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ↔ {t('ruler.title')}
+          </button>
+          {/* Marcador */}
+          <button type="button" data-testid="tools-marker-btn"
+            onClick={() => { setMarkerMode(true); setRulerMode(false); setRulerSegment(null); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: markerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: markerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: markerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            📍 {t('campaign_maps.marker_tool')}
           </button>
           {/* Transmissão */}
           <button type="button" data-testid="tools-broadcast-btn"
@@ -2542,6 +2608,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     onClick={() => {
                       if (alreadyOnMap) return
                       setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                      setMarkerMode(false)
                     }}
                     title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: alreadyOnMap ? 'not-allowed' : 'pointer', textAlign: 'left', width: '100%', opacity: alreadyOnMap ? 0.45 : 1 }}
@@ -2565,7 +2632,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 const isArmed = armed?.kind === 'preset' && armed.presetId === preset.id
                 return (
                   <button key={preset.id} type="button" data-testid={`preset-palette-item-${preset.id}`}
-                    onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                    onClick={() => { setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null }); setMarkerMode(false) }}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
                   >
                     <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: imgUrl ? undefined : preset.color, backgroundImage: imgUrl ? `url(${imgUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -2588,7 +2655,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             const isArmed = armed?.kind === 'generic'
             return (
               <button type="button" data-testid="palette-generic-item"
-                onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                onClick={() => { setArmed(isArmed ? null : { kind: 'generic' }); setMarkerMode(false) }}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
               >
                 <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: T.textMuted, border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -2700,7 +2767,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
             >{t('campaign_maps.fog_hide_all')}</button>
           </div>
-          <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>{t('campaign_maps.fog_paint_hint')}</p>
+          <p style={{ fontSize: 12, color: '#D4A017', margin: 0 }}>{t('campaign_maps.fog_paint_hint')}</p>
         </div>
       )}
 
@@ -2985,22 +3052,25 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           <>
             <MapClickHandler
               onDblClick={latlng => {
-                if (fogMode) return  // fog painting handled by FogInteraction
-                if (areaMode) return  // area drawing handled by AreaInteraction
-                if (rulerMode) return  // ruler drawing handled by RulerDragHandler
-                if (armed) return  // dblclick ignored while token is armed
-                setPendingLatLng(latlng)
-                setPendingLabel('')
+                if (fogMode || areaMode || rulerMode || markerMode || armed) return
+                triggerPing(latlng)
               }}
               onSingleClick={latlng => {
                 if (fogMode) return
                 if (areaMode) return  // area drawing handled by AreaInteraction
+                if (rulerMode) return
+                if (markerMode) { setPendingLatLng(latlng); setPendingLabel(''); return }
                 if (!armed) return
                 void placeArmed(latlng)
               }}
             />
             <ArmedCursorEffect armed={!!armed} />
           </>
+        )}
+
+        {/* Broadcast screen: double-click also triggers ping (the viewer posts to the channel) */}
+        {broadcast && (
+          <MapClickHandler onDblClick={latlng => triggerPing(latlng)} />
         )}
 
         {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
@@ -3196,18 +3266,30 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         })}
 
         {/* Highlight ring — pulsing ring overlaid on the spotlighted token (master only) */}
-        {isMaster && highlight.tokenId && (() => {
+        {(isMaster || broadcast) && highlight.tokenId && (() => {
           const tok = tokens.find(tk => tk.id === highlight.tokenId && !isTokenHiddenForViewer(tk))
           if (!tok) return null
           const d = Math.round(tokenDiameterPx(tok.size, localGrid.size, pxPerUnit))
           const rd = d + 10
           const ringIcon = L.divIcon({
             className: '',
-            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #6B7FD4;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
+            html: `<div data-testid="token-highlight-ring" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #EC4899;box-sizing:border-box;animation:tbt-token-pulse 0.7s ease-in-out infinite;pointer-events:none;"></div>`,
             iconSize:   [rd, rd],
             iconAnchor: [rd / 2, rd / 2],
           })
           return <Marker key={`ring-${tok.id}`} position={[tok.y, tok.x]} icon={ringIcon} interactive={false} />
+        })()}
+
+        {/* Map ping — expanding ring visible on both master and broadcast screens */}
+        {ping && (() => {
+          const rd = 64
+          const pingIcon = L.divIcon({
+            className: '',
+            html: `<div data-testid="map-ping" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #22D3EE;box-sizing:border-box;animation:tbt-ping 1.1s ease-out forwards;pointer-events:none;"></div>`,
+            iconSize:   [rd, rd],
+            iconAnchor: [rd / 2, rd / 2],
+          })
+          return <Marker key={ping.id} position={[ping.y, ping.x]} icon={pingIcon} interactive={false} />
         })()}
       </MapContainer>
 

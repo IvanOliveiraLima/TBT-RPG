@@ -335,7 +335,7 @@ export function CampaignInitiativePanel({ isMaster, tracker, linkedChars, onUpda
                   gap:        8,
                   padding:    '6px 10px',
                   background: isActive    ? T.accentLight
-                            : isHighlight ? 'rgba(107,127,212,0.15)'
+                            : isHighlight ? 'rgba(236,72,153,0.15)'
                             : T.surface,
                   border:     `1px solid ${isActive ? T.borderActive : T.border}`,
                   borderRadius: 8,

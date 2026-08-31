@@ -8,6 +8,8 @@
  *   does NOT fetch from Supabase (listMapTokens / getMapFog / listMapAreas not called)
  * - Broadcast render: player perspective (no toolbar, no edit controls)
  * - Owner toolbar: "Open broadcast screen" button present; clicking calls window.open
+ * - Map ping: owner double-click posts ping + renders local; broadcast receives ping;
+ *   broadcast double-click posts ping
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, waitFor, act } from '@testing-library/react'
@@ -16,6 +18,10 @@ import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
 import type { CampaignMap } from '@/services/campaign-maps'
 import type { CampaignMapToken } from '@/services/campaign-map-tokens'
+
+// ── Capture useMapEvents dblclick handler ─────────────────────────────────────
+
+let capturedDblClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
 
 // ── BroadcastChannel mock ─────────────────────────────────────────────────────
 
@@ -74,7 +80,10 @@ vi.mock('react-leaflet', () => ({
     on: vi.fn(),
     off: vi.fn(),
   }),
-  useMapEvents: () => null,
+  useMapEvents: (handlers: { dblclick?: (e: { latlng: { lat: number; lng: number } }) => void; click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
+    if (handlers.dblclick !== undefined) capturedDblClickHandler = handlers.dblclick
+    return null
+  },
 }))
 
 // ── Mock leaflet ──────────────────────────────────────────────────────────────
@@ -180,6 +189,7 @@ let originalBroadcastChannel: typeof BroadcastChannel | undefined
 beforeEach(() => {
   vi.clearAllMocks()
   channels = []
+  capturedDblClickHandler = null
   mockListMapTokens.mockResolvedValue([])
   mockGetMapFog.mockResolvedValue({ mapId: 'map-1', enabled: false, revealed: [], updatedAt: 0 })
   mockListMapAreas.mockResolvedValue([])
@@ -353,5 +363,130 @@ describe('CampaignMapViewer — broadcast receiver', () => {
     expect(screen.queryByTestId('fog-panel-toggle')).toBeNull()
     expect(screen.queryByTestId('area-panel-toggle')).toBeNull()
     expect(screen.queryByTestId('broadcast-open-btn')).toBeNull()
+  })
+})
+
+// ── Token highlight broadcast tests ───────────────────────────────────────────
+
+describe('token highlight — broadcast', () => {
+  it('owner snapshot includes highlight key', async () => {
+    mockListMapTokens.mockResolvedValue([TOKEN])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+    expect(ch).toBeTruthy()
+
+    const snapshotCalls = ch!.postMessage.mock.calls.filter(
+      (c: unknown[]) => (c[0] as Record<string, unknown>)?.type === 'snapshot',
+    )
+    expect(snapshotCalls.length).toBeGreaterThanOrEqual(1)
+    const payload = snapshotCalls[0][0] as Record<string, unknown>
+    expect('highlight' in payload).toBe(true)
+  })
+
+  it('receiver renders highlight ring from snapshot', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} broadcast />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+
+    // First confirm no markers before snapshot
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0)
+
+    act(() => {
+      ch!.onmessage?.({
+        data: {
+          type: 'snapshot',
+          tokens: [TOKEN],
+          fog: { mapId: 'map-1', enabled: false, revealed: [], updatedAt: 0 },
+          areas: [],
+          grid: { enabled: false, size: null, offsetX: 0, offsetY: 0, color: '#5DCAA5' },
+          highlight: { tokenId: TOKEN.id },
+        },
+      } as unknown as MessageEvent)
+    })
+
+    // Token marker + ring marker = 2 markers
+    await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(2))
+  })
+})
+
+// ── Map ping tests ────────────────────────────────────────────────────────────
+
+describe('map ping — broadcast', () => {
+  it('master: double-click posts ping and renders local ping ring', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+    expect(ch).toBeTruthy()
+    expect(capturedDblClickHandler).toBeTruthy()
+
+    // No markers before ping
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0)
+
+    act(() => {
+      capturedDblClickHandler!({ latlng: { lat: 3, lng: 7 } })
+    })
+
+    // Ping ring marker appears locally
+    await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
+
+    // Channel received a ping postMessage
+    const pingCalls = ch!.postMessage.mock.calls.filter(
+      (c: unknown[]) => (c[0] as Record<string, unknown>)?.type === 'ping',
+    )
+    expect(pingCalls.length).toBeGreaterThanOrEqual(1)
+    const pingPayload = pingCalls[0][0] as Record<string, unknown>
+    expect(pingPayload.x).toBe(7)
+    expect(pingPayload.y).toBe(3)
+    expect(typeof pingPayload.id).toBe('string')
+  })
+
+  it('broadcast: receives ping message and renders ping ring', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} broadcast />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+
+    // No markers before ping
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0)
+
+    act(() => {
+      ch!.onmessage?.({
+        data: { type: 'ping', x: 2, y: 3, id: 'p1' },
+      } as unknown as MessageEvent)
+    })
+
+    await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
+  })
+
+  it('broadcast: double-click posts ping to channel and renders local ping ring', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} broadcast />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+    expect(ch).toBeTruthy()
+    expect(capturedDblClickHandler).toBeTruthy()
+
+    // No markers before ping
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0)
+
+    act(() => {
+      capturedDblClickHandler!({ latlng: { lat: 5, lng: 10 } })
+    })
+
+    // Ping ring appears locally
+    await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(1))
+
+    // Channel received a ping postMessage
+    const pingCalls = ch!.postMessage.mock.calls.filter(
+      (c: unknown[]) => (c[0] as Record<string, unknown>)?.type === 'ping',
+    )
+    expect(pingCalls.length).toBeGreaterThanOrEqual(1)
+    const pingPayload = pingCalls[0][0] as Record<string, unknown>
+    expect(pingPayload.x).toBe(10)
+    expect(pingPayload.y).toBe(5)
   })
 })
