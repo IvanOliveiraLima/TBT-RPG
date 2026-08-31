@@ -208,13 +208,25 @@ describe('CampaignMapViewer — markers (owner view)', () => {
     mockListMapMarkers.mockResolvedValue([MARKER_1])
   })
 
-  it('shows add hint for owner', async () => {
+  it('shows add hint for owner when marker mode is on', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    await waitFor(() => screen.getByTestId('marker-add-hint'))
+  })
+
+  it('does NOT show add hint for owner until marker mode is on', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(screen.queryByTestId('marker-add-hint')).toBeNull()
+    fireEvent.click(screen.getByTestId('marker-toggle'))
     await waitFor(() => screen.getByTestId('marker-add-hint'))
   })
 
   it('add hint text in PT', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
     await waitFor(() => screen.getByTestId('marker-add-hint'))
     expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique no mapa para adicionar')
   })

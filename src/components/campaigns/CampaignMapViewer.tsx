@@ -2258,7 +2258,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
       )}
 
-      {isMaster && (
+      {isMaster && markerMode && (
         <div
           data-testid="marker-add-hint"
           style={{
