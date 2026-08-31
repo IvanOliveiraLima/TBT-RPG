@@ -355,3 +355,49 @@ describe('CampaignMapViewer — broadcast receiver', () => {
     expect(screen.queryByTestId('broadcast-open-btn')).toBeNull()
   })
 })
+
+// ── Token highlight broadcast tests ───────────────────────────────────────────
+
+describe('token highlight — broadcast', () => {
+  it('owner snapshot includes highlight key', async () => {
+    mockListMapTokens.mockResolvedValue([TOKEN])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+    expect(ch).toBeTruthy()
+
+    const snapshotCalls = ch!.postMessage.mock.calls.filter(
+      (c: unknown[]) => (c[0] as Record<string, unknown>)?.type === 'snapshot',
+    )
+    expect(snapshotCalls.length).toBeGreaterThanOrEqual(1)
+    const payload = snapshotCalls[0][0] as Record<string, unknown>
+    expect('highlight' in payload).toBe(true)
+  })
+
+  it('receiver renders highlight ring from snapshot', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} broadcast />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+
+    const ch = channels[0]
+
+    // First confirm no markers before snapshot
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0)
+
+    act(() => {
+      ch!.onmessage?.({
+        data: {
+          type: 'snapshot',
+          tokens: [TOKEN],
+          fog: { mapId: 'map-1', enabled: false, revealed: [], updatedAt: 0 },
+          areas: [],
+          grid: { enabled: false, size: null, offsetX: 0, offsetY: 0, color: '#5DCAA5' },
+          highlight: { tokenId: TOKEN.id },
+        },
+      } as unknown as MessageEvent)
+    })
+
+    // Token marker + ring marker = 2 markers
+    await waitFor(() => expect(screen.getAllByTestId('marker')).toHaveLength(2))
+  })
+})
