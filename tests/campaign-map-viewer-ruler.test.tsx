@@ -415,3 +415,16 @@ describe('ruler broadcast snapshot', () => {
     expect(screen.getByTestId('campaign-map-viewer')).toBeDefined()
   })
 })
+
+// ── Ruler hint ────────────────────────────────────────────────────────────────
+
+describe('ruler hint', () => {
+  it('shows the ruler hint (yellow) when ruler mode is active', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    expect(screen.queryByTestId('ruler-hint')).toBeNull()
+    fireEvent.click(screen.getByTestId('ruler-toggle'))
+    await waitFor(() => screen.getByTestId('ruler-hint'))
+    expect(screen.getByTestId('ruler-hint').textContent).toContain('Arraste no mapa para medir')
+  })
+})

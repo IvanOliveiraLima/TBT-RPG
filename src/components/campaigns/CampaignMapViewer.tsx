@@ -2173,7 +2173,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                   {t('campaign_maps.fog_hide_all')}
                 </button>
               </div>
-              <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+              <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>
                 {t('campaign_maps.fog_paint_hint')}
               </p>
             </div>
@@ -2258,17 +2258,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
       )}
 
-      {isMaster && markerMode && (
+      {isMaster && (markerMode || rulerMode) && (
         <div
-          data-testid="marker-add-hint"
+          data-testid={markerMode ? 'marker-add-hint' : 'ruler-hint'}
           style={{
             position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: T.textPrimary,
+            zIndex: 1000, background: 'rgba(0,0,0,0.6)', color: '#D4A017',
             padding: '4px 10px', borderRadius: 4, fontSize: 11, fontFamily: T.sans,
             pointerEvents: 'none',
           }}
         >
-          {t('campaign_maps.marker_add_hint')}
+          {markerMode ? t('campaign_maps.marker_add_hint') : t('ruler.hint')}
         </div>
       )}
 
@@ -2743,7 +2743,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               style={{ flex: 1, padding: '8px 0', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontFamily: T.sans, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: T.textPrimary }}
             >{t('campaign_maps.fog_hide_all')}</button>
           </div>
-          <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>{t('campaign_maps.fog_paint_hint')}</p>
+          <p style={{ fontSize: 12, color: '#D4A017', margin: 0 }}>{t('campaign_maps.fog_paint_hint')}</p>
         </div>
       )}
 

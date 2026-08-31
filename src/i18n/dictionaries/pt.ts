@@ -1028,6 +1028,7 @@ const pt: Record<keyof typeof en, string> = {
 
   // ── Ruler ─────────────────────────────────────────────────────────────────────
   'ruler.title': 'Régua',
+  'ruler.hint':  'Arraste no mapa para medir distância',
 
   // ── Help hints ───────────────────────────────────────────────────────────────
   'help.aria_open': 'Mostrar ajuda',
