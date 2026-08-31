@@ -1397,6 +1397,25 @@ Dois passos que fecham o ciclo de colocação de tokens no mapa.
   descartado) e **não** entra na numeração automática (nome próprio). A paleta vive em dois lugares — barra
   do desktop e sheet "Ferramentas" do mobile — e ambos foram tratados.
 
+### VTT — transmissão, ping e polimento de instruções (COMPLETED — PRs #312, #313, #314, #315)
+Fechamento do ciclo de interações efêmeras do mapa e padronização visual.
+
+- **Destaque na transmissão (#312)** — o destaque recíproco combatente↔token (#304) só aparecia na view do
+  mestre. Passou a viajar no snapshot do BroadcastChannel (mesmo padrão do ruler) e a renderizar também na
+  tela de transmissão; token oculto do jogador continua sem anel (`isTokenHiddenForViewer`). Cor trocada de
+  azul para magenta `#EC4899` (anel no mapa + fundo da linha no painel), mais distinta do dourado do turno.
+- **Marcador vira toggle (#313)** — a criação de marcador saiu do duplo-clique para um toggle "Marcador"
+  (desktop + sheet do mobile), liberando o duplo-clique. Com o modo ativo, clique simples cria o marcador.
+  Hotfix junto: o hint do marcador só aparece com o modo ativo (antes ficava fixo pro mestre).
+- **Ping no mapa (#314)** — duplo-clique solta um ping (anel ciano `#22D3EE` que expande e some em ~1.8s),
+  no mapa do mestre e na tela de transmissão. Local-only, **sem Supabase** — mensagem discreta bidirecional
+  `{ type:'ping', x, y, id }` pelo mesmo canal `tbt-map-${map.id}`. Quem clica renderiza local e posta; a
+  outra janela recebe (o canal não ecoa pro emissor). Cada instância posta no seu ref de canal
+  (`broadcastChRef` do owner / `broadcastRxChRef` do receptor, escolhidos por `??`).
+- **Instruções padronizadas (#315)** — todas as mensagens de instrução do mapa passaram a usar o amarelo
+  `#D4A017` (padrão que já existia em Tokens e Áreas): névoa recolorida (desktop + mobile), e o pill
+  flutuante virou compartilhado entre marcador e régua — a régua, que não tinha instrução, ganhou uma.
+
 ---
 
 ## Patterns established during C.1.c
@@ -2166,6 +2185,10 @@ function buildInviteLink(): string {
 | Todo token nasce no clique: a paleta arma, o clique cria | #309 | Genérico/preset/personagem tinham três comportamentos diferentes; um modelo só elimina a inconsistência |
 | A paleta de tokens existe no desktop **e** na sheet do mobile — alterar os dois | #309 | Mesma pegadinha do botão de realinhar tokens: mexer só num deixa o mobile no comportamento antigo |
 | Chave do cache de ícone inclui imagem **e** cor | #308 | Sem a cor na chave, a troca de cor só aparecia quando outra alteração forçava o redesenho do ícone |
+| Interações efêmeras do mapa (ruler, destaque, ping) viajam pelo BroadcastChannel, nunca pelo Supabase | #312, #314 | São transitórias e locais; persistir seria custo sem valor, e o canal já espelha o mestre na transmissão |
+| Ping é mensagem discreta (`type:'ping'`), não estado no snapshot | #314 | É disparo único; no snapshot cada re-post re-animaria. O emissor não recebe o próprio post — renderiza local e posta |
+| Sem painel (marcador, régua), a instrução vira pill flutuante; com painel, fica no painel | #313, #315 | Padroniza a instrução do mapa em amarelo sem forçar um painel onde não faz sentido |
+| Duplo-clique do mapa é reservado para o ping | #313, #314 | O marcador saiu do duplo-clique (foi pro toggle) para liberar o gesto clássico de "olha aqui" |
 
 ---
 
@@ -2346,15 +2369,16 @@ New from Auth signup + Camp.1-5:
 - ~~**OQ — Iniciativa / turnos.**~~ *Resolved (PR #227).* Lista ordenada de combatentes por campanha, gerenciada pelo mestre, com destaque do turno atual (próximo/anterior), compartilhada com os jogadores via polling. Introduziu o `activePanel` único (painéis do viewer mutuamente exclusivos).
 - ~~**OQ — Régua / medir distância.**~~ *Resolved (PR #244).* Modo régua efêmero (mestre), reusando a
   medição da área-linha; espelhado no broadcast local.
-- **OQ — Ping / destacar ponto.** Mestre solta um marcador temporário pros jogadores; depende de tempo real — fraco com polling de 5s, então fica junto de Realtime channels. Deferred.
+- ~~**OQ — Ping / destacar ponto.**~~ *Resolved (PR #314).* Duplo-clique solta um ping (anel ciano que expande e some), no mapa do mestre e na transmissão. Feito **local via BroadcastChannel** (mensagem discreta bidirecional), sem depender de Realtime — divergindo do plano original de acoplar ao Supabase.
 - ~~**OQ — Rolagem secreta do mestre.**~~ *Resolved (PR #267).* Toggle 🔒 no `DicePanel` só para o mestre; em modo secreto `addRoll` pula `logRoll` e `registerInitiative`; histórico local com marcador; `HelpHint` explica a ausência de registro.
 - **OQ — Rolagem secreta persistida (abordagem B).** Hoje a rolagem secreta é local e não fica registrada.
   Alternativa: coluna `secret` em `campaign_dice_rolls` + RLS `secret = false OR user_id = auth.uid()`, dando
   ao mestre histórico próprio (marcado) sem expor aos jogadores. Avaliar se a falta de histórico incomodar no
   uso. Deferred.
-- **OQ — Realtime para o tracker de iniciativa (e ping).** O refresh do tracker é por polling de 5s com
+- **OQ — Realtime para o tracker de iniciativa.** O refresh do tracker é por polling de 5s com
   janela de carência (não Realtime). Consequência: mestre editando sem parar só vê a rolagem do jogador ao
-  pausar >4s. Candidato a Supabase Realtime channels no futuro, junto do ping (mesma dependência).
+  pausar >4s. Candidato a Supabase Realtime channels no futuro. (O ping, antes acoplado aqui, foi resolvido
+  local via BroadcastChannel no #314 — ver acima.)
 - ~~**OQ — Padrão global de tooltip de ajuda.**~~ *Resolved (PR #240).* `<HelpHint textKey="..." />` —
   ícone `?` com balão via portal (fixed, tap-to-open). Primeiro uso no toggle de auto-iniciativa. Pra
   instruir qualquer controle: `<HelpHint textKey="..." />` + chave em `en/pt`.
