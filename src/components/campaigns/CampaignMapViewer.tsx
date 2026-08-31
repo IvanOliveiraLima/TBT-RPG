@@ -766,6 +766,23 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   // Ephemeral reciprocal highlight between combat panel and map tokens (master only, no persistence)
   const [highlight, setHighlight] = useState<{ tokenId?: string; combatantId?: string }>({})
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Ephemeral map ping — expands and fades on both master and broadcast screen (no persistence)
+  const [ping, setPing] = useState<{ x: number; y: number; id: string } | null>(null)
+  const pingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showPing = useCallback((p: { x: number; y: number; id: string }) => {
+    if (pingTimerRef.current !== null) clearTimeout(pingTimerRef.current)
+    setPing(p)
+    pingTimerRef.current = setTimeout(() => { setPing(null); pingTimerRef.current = null }, 1800)
+  }, [])
+
+  function triggerPing(latlng: L.LatLng) {
+    const p = { x: latlng.lng, y: latlng.lat, id: (globalThis.crypto?.randomUUID?.() ?? String(Date.now())) }
+    showPing(p)
+    // broadcastChRef = owner's channel; broadcastRxChRef = receiver's channel; mutually exclusive per instance
+    ;(broadcastChRef.current ?? broadcastRxChRef.current)?.postMessage({ type: 'ping', ...p })
+  }
+
   // Auto-initiative toggle state (owner only, fetched once on mount)
   const [autoInitiative, setAutoInitiative] = useState(false)
   // Dice tray (owner only, not broadcast)
@@ -791,8 +808,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     }
     setActivePanel(prev => (prev === next ? null : next))
   }, [isMobile])
-  // BroadcastChannel refs (owner emitter)
+  // BroadcastChannel refs: owner emitter channel + broadcast receiver channel (mutually exclusive)
   const broadcastChRef       = useRef<BroadcastChannel | null>(null)
+  const broadcastRxChRef     = useRef<BroadcastChannel | null>(null)
   const broadcastSnapshotRef = useRef({ tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight })
   useEffect(() => { broadcastSnapshotRef.current = { tokens, fog, areas, grid: localGrid, initiative: tracker, ruler: rulerSegment, highlight } }, [tokens, fog, areas, localGrid, tracker, rulerSegment, highlight])
 
@@ -921,13 +939,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
     broadcastChRef.current = ch
     ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'ping') { showPing({ x: e.data.x as number, y: e.data.y as number, id: e.data.id as string }); return }
       if (e.data?.type === 'hello') {
         ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
       }
     }
     ch.postMessage({ type: 'snapshot', ...broadcastSnapshotRef.current })
     return () => { ch.close(); broadcastChRef.current = null }
-  }, [isMaster, broadcast, map.id])
+  }, [isMaster, broadcast, map.id, showPing])
 
   // Owner: re-post full snapshot whenever any shared state changes
   useEffect(() => {
@@ -942,7 +961,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     if (!broadcast) return
     if (typeof BroadcastChannel === 'undefined') return
     const ch = new BroadcastChannel(`tbt-map-${map.id}`)
+    broadcastRxChRef.current = ch
     ch.onmessage = (e: MessageEvent) => {
+      if (e.data?.type === 'ping') { showPing({ x: e.data.x as number, y: e.data.y as number, id: e.data.id as string }); return }
       if (e.data?.type === 'snapshot') {
         const { tokens: t, fog: f, areas: a, grid: g, initiative: ini, ruler: r, highlight: h } = e.data as {
           tokens: typeof tokens; fog: typeof fog; areas: typeof areas; grid: typeof localGrid; initiative?: InitiativeTracker
@@ -958,8 +979,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
       }
     }
     ch.postMessage({ type: 'hello' })
-    return () => { ch.close() }
-  }, [broadcast, map.id])
+    return () => { ch.close(); broadcastRxChRef.current = null }
+  }, [broadcast, map.id, showPing])
+
+  // Cleanup ping timer on unmount (avoids setState after unmount)
+  useEffect(() => () => { if (pingTimerRef.current !== null) clearTimeout(pingTimerRef.current) }, [])
 
   // Fetch preset palette + resolve signed URLs for preset images (owner only)
   useEffect(() => {
@@ -1554,8 +1578,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
   return (
     <>
-    {/* Keyframe for the token highlight ring — injected once, harmless if the map is mounted multiple times */}
-    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} }`}</style>
+    {/* Keyframes for the token highlight ring and map ping */}
+    <style>{`@keyframes tbt-token-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.1)} } @keyframes tbt-ping { 0%{opacity:0.9;transform:scale(0.35)} 100%{opacity:0;transform:scale(1.6)} }`}</style>
     <div
       data-testid="campaign-map-viewer"
       style={{ flex: expanded ? 1 : undefined, minHeight: 0, height: viewerHeight, width: '100%', position: 'relative' }}
@@ -3027,8 +3051,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         {isMaster && (
           <>
             <MapClickHandler
-              onDblClick={() => {
-                // Double-click is reserved for ping (next slice). Marker creation moved to the toggle.
+              onDblClick={latlng => {
+                if (fogMode || areaMode || rulerMode || markerMode || armed) return
+                triggerPing(latlng)
               }}
               onSingleClick={latlng => {
                 if (fogMode) return
@@ -3041,6 +3066,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             />
             <ArmedCursorEffect armed={!!armed} />
           </>
+        )}
+
+        {/* Broadcast screen: double-click also triggers ping (the viewer posts to the channel) */}
+        {broadcast && (
+          <MapClickHandler onDblClick={latlng => triggerPing(latlng)} />
         )}
 
         {/* Fog drag-paint: disables pan in fogMode, handles mousedown/mousemove/mouseup */}
@@ -3248,6 +3278,18 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             iconAnchor: [rd / 2, rd / 2],
           })
           return <Marker key={`ring-${tok.id}`} position={[tok.y, tok.x]} icon={ringIcon} interactive={false} />
+        })()}
+
+        {/* Map ping — expanding ring visible on both master and broadcast screens */}
+        {ping && (() => {
+          const rd = 64
+          const pingIcon = L.divIcon({
+            className: '',
+            html: `<div data-testid="map-ping" style="width:${rd}px;height:${rd}px;border-radius:50%;border:3px solid #22D3EE;box-sizing:border-box;animation:tbt-ping 1.1s ease-out forwards;pointer-events:none;"></div>`,
+            iconSize:   [rd, rd],
+            iconAnchor: [rd / 2, rd / 2],
+          })
+          return <Marker key={ping.id} position={[ping.y, ping.x]} icon={pingIcon} interactive={false} />
         })()}
       </MapContainer>
 
