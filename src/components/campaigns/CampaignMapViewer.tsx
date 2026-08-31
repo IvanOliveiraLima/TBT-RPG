@@ -772,6 +772,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   const [diceOpen, setDiceOpen] = useState(false)
   // Ruler mode state (ephemeral — never persisted to Supabase)
   const [rulerMode, setRulerMode] = useState(false)
+  // Marker mode state (click-to-place; exclusive with other editing modes)
+  const [markerMode, setMarkerMode] = useState(false)
   const [rulerSegment, setRulerSegment] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   const rulerStartRef = useRef<{ x: number; y: number } | null>(null)
   // On mobile, opening a toggle-bar surface closes all tool panels so two bottom sheets never overlap.
@@ -785,6 +787,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
       setArmed(null)
       setRulerMode(false)
       setRulerSegment(null)
+      setMarkerMode(false)
     }
     setActivePanel(prev => (prev === next ? null : next))
   }, [isMobile])
@@ -1113,6 +1116,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     document.addEventListener('keydown', handle)
     return () => document.removeEventListener('keydown', handle)
   }, [rulerMode])
+
 
   const bounds = useMemo(
     () => L.latLngBounds([[0, 0], [map.height, map.width]]),
@@ -1773,6 +1777,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                         onClick={() => {
                           if (alreadyOnMap) return
                           setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                          setMarkerMode(false)
                         }}
                         title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
                         style={{
@@ -1813,7 +1818,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                         key={preset.id}
                         type="button"
                         data-testid={`preset-palette-item-${preset.id}`}
-                        onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                        onClick={() => { setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null }); setMarkerMode(false) }}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
@@ -1852,7 +1857,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                   <button
                     type="button"
                     data-testid="palette-generic-item"
-                    onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                    onClick={() => { setArmed(isArmed ? null : { kind: 'generic' }); setMarkerMode(false) }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent',
@@ -1909,6 +1914,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setArmed(null)
                 setRulerMode(false)
                 setRulerSegment(null)
+                setMarkerMode(false)
               }}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -2036,7 +2042,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <button
                   type="button"
                   data-testid="area-draw-start"
-                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true) }}
+                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true); setMarkerMode(false) }}
                   style={{
                     background: '#5B3FA8', border: 'none', borderRadius: 6,
                     color: T.textPrimary, padding: '4px 10px',
@@ -2067,7 +2073,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <button
               type="button"
               data-testid="fog-panel-toggle"
-              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null) }}
+              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
               disabled={!localGrid.enabled}
               {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
               aria-label={t('campaign_maps.fog_title')}
@@ -2189,6 +2195,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setPanelOpen(false)
                 setArmed(null)
                 setActivePanel(null)
+                setMarkerMode(false)
               }
             }}
             style={{
@@ -2201,6 +2208,33 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             }}
           >
             ↔ {t('ruler.title')}
+          </button>
+
+          {/* Marker mode */}
+          <button
+            type="button"
+            data-testid="marker-toggle"
+            onClick={() => {
+              if (markerMode) {
+                setMarkerMode(false)
+              } else {
+                setMarkerMode(true)
+                setRulerMode(false); setRulerSegment(null)
+                setAreaMode(false); setAreaPanelOpen(false)
+                setFogMode(false); setPanelOpen(false)
+                setArmed(null); setActivePanel(null)
+              }
+            }}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: markerMode ? 'rgba(212,160,23,0.15)' : 'rgba(21,18,28,0.85)',
+              color: markerMode ? '#D4A017' : T.textMuted,
+              border: markerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12, fontWeight: 600, fontFamily: T.sans,
+            }}
+          >
+            📍 {t('campaign_maps.marker_tool')}
           </button>
 
           {/* Broadcast screen button */}
@@ -2224,7 +2258,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         </div>
       )}
 
-      {isMaster && (
+      {isMaster && markerMode && (
         <div
           data-testid="marker-add-hint"
           style={{
@@ -2406,14 +2440,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           </button>
           {/* Tokens (palette: characters + presets + generic) */}
           <button type="button" data-testid="tools-presets-btn"
-            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets') }}
+            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets'); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armed ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armed ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⬡ {t('token_presets.palette')}
           </button>
           {/* Áreas */}
           <button type="button" data-testid="tools-areas-btn"
-            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmed(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setAreaPanelOpen(true); setFogMode(false); setAreaMode(false); setArmed(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ◎ {t('areas.title')}
@@ -2421,17 +2455,24 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           {/* Névoa */}
           <button type="button" data-testid="tools-fog-btn"
             disabled={!localGrid.enabled}
-            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: !localGrid.enabled ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left', opacity: !localGrid.enabled ? 0.5 : 1 }}
           >
             ◎ {t('campaign_maps.fog_title')}
           </button>
           {/* Régua */}
           <button type="button" data-testid="tools-ruler-btn"
-            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
+            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: rulerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ↔ {t('ruler.title')}
+          </button>
+          {/* Marcador */}
+          <button type="button" data-testid="tools-marker-btn"
+            onClick={() => { setMarkerMode(true); setRulerMode(false); setRulerSegment(null); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: markerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: markerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: markerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
+          >
+            📍 {t('campaign_maps.marker_tool')}
           </button>
           {/* Transmissão */}
           <button type="button" data-testid="tools-broadcast-btn"
@@ -2543,6 +2584,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     onClick={() => {
                       if (alreadyOnMap) return
                       setArmed(isArmed ? null : { kind: 'character', characterId: lc.characterId, name: lc.name, portraitDataUrl: lc.portraitDataUrl })
+                      setMarkerMode(false)
                     }}
                     title={alreadyOnMap ? t('token_presets.palette_char_on_map') : lc.name}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: alreadyOnMap ? 'not-allowed' : 'pointer', textAlign: 'left', width: '100%', opacity: alreadyOnMap ? 0.45 : 1 }}
@@ -2566,7 +2608,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 const isArmed = armed?.kind === 'preset' && armed.presetId === preset.id
                 return (
                   <button key={preset.id} type="button" data-testid={`preset-palette-item-${preset.id}`}
-                    onClick={() => setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null })}
+                    onClick={() => { setArmed(isArmed ? null : { kind: 'preset', presetId: preset.id, label: preset.label, color: preset.color, size: preset.size, imagePath: preset.imagePath, defaultHp: preset.defaultHp ?? null }); setMarkerMode(false) }}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid transparent', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
                   >
                     <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: imgUrl ? undefined : preset.color, backgroundImage: imgUrl ? `url(${imgUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -2589,7 +2631,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             const isArmed = armed?.kind === 'generic'
             return (
               <button type="button" data-testid="palette-generic-item"
-                onClick={() => setArmed(isArmed ? null : { kind: 'generic' })}
+                onClick={() => { setArmed(isArmed ? null : { kind: 'generic' }); setMarkerMode(false) }}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, background: isArmed ? 'rgba(212,160,23,0.15)' : 'transparent', border: isArmed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '8px 10px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
               >
                 <div style={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, background: T.textMuted, border: '2px solid rgba(255,255,255,0.3)' }} />
@@ -2985,17 +3027,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
         {isMaster && (
           <>
             <MapClickHandler
-              onDblClick={latlng => {
-                if (fogMode) return  // fog painting handled by FogInteraction
-                if (areaMode) return  // area drawing handled by AreaInteraction
-                if (rulerMode) return  // ruler drawing handled by RulerDragHandler
-                if (armed) return  // dblclick ignored while token is armed
-                setPendingLatLng(latlng)
-                setPendingLabel('')
+              onDblClick={() => {
+                // Double-click is reserved for ping (next slice). Marker creation moved to the toggle.
               }}
               onSingleClick={latlng => {
                 if (fogMode) return
                 if (areaMode) return  // area drawing handled by AreaInteraction
+                if (rulerMode) return
+                if (markerMode) { setPendingLatLng(latlng); setPendingLabel(''); return }
                 if (!armed) return
                 void placeArmed(latlng)
               }}
