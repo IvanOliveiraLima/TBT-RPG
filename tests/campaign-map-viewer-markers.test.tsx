@@ -18,9 +18,10 @@ import { renderWithI18n } from './helpers/render'
 import { CampaignMapViewer } from '@/components/campaigns/CampaignMapViewer'
 import type { CampaignMap } from '@/services/campaign-maps'
 
-// ── Capture useMapEvents dblclick handler ─────────────────────────────────────
+// ── Capture useMapEvents handlers ────────────────────────────────────────────
 
-let capturedDblClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
+let capturedDblClickHandler:    ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
+let capturedSingleClickHandler: ((e: { latlng: { lat: number; lng: number } }) => void) | null = null
 
 // ── Mock react-leaflet ────────────────────────────────────────────────────────
 
@@ -50,8 +51,9 @@ vi.mock('react-leaflet', () => ({
     on: () => {},
     off: () => {},
   }),
-  useMapEvents: (handlers: { dblclick?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
+  useMapEvents: (handlers: { dblclick?: (e: { latlng: { lat: number; lng: number } }) => void; click?: (e: { latlng: { lat: number; lng: number } }) => void }) => {
     if (handlers.dblclick !== undefined) capturedDblClickHandler = handlers.dblclick
+    if (handlers.click   !== undefined) capturedSingleClickHandler = handlers.click
     return null
   },
 }))
@@ -134,6 +136,7 @@ describe('CampaignMapViewer — markers (member view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDblClickHandler = null
+    capturedSingleClickHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1, MARKER_2])
   })
@@ -189,6 +192,7 @@ describe('CampaignMapViewer — markers (member view)', () => {
 
   it('does NOT install dblclick handler for member (no MapClickHandler)', async () => {
     capturedDblClickHandler = null
+    capturedSingleClickHandler = null
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('campaign-map-viewer'))
     expect(capturedDblClickHandler).toBeNull()
@@ -199,6 +203,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDblClickHandler = null
+    capturedSingleClickHandler = null
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1])
   })
@@ -211,7 +216,7 @@ describe('CampaignMapViewer — markers (owner view)', () => {
   it('add hint text in PT', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
     await waitFor(() => screen.getByTestId('marker-add-hint'))
-    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique duas vezes no mapa')
+    expect(screen.getByTestId('marker-add-hint').textContent).toContain('Clique no mapa para adicionar')
   })
 
   it('shows rename and remove buttons for owner', async () => {
@@ -265,8 +270,9 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 
   it('map click shows pending marker UI for owner', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    act(() => { capturedSingleClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
     expect(screen.getByTestId('pending-label-input')).toBeDefined()
     expect(screen.getByTestId('pending-add-btn')).toBeDefined()
@@ -275,8 +281,9 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 
   it('cancel pending marker removes the pending UI', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    act(() => { capturedSingleClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-cancel-btn'))
     fireEvent.click(screen.getByTestId('pending-cancel-btn'))
     expect(screen.queryByTestId('pending-marker')).toBeNull()
@@ -286,8 +293,9 @@ describe('CampaignMapViewer — markers (owner view)', () => {
     const newMarker = { id: 'mk-new', mapId: 'map-1', x: 400, y: 300, label: 'New Spot', createdAt: 2 }
     mockCreateMapMarker.mockResolvedValue(newMarker)
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    act(() => { capturedSingleClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-label-input'))
     fireEvent.change(screen.getByTestId('pending-label-input'), { target: { value: 'New Spot' } })
     fireEvent.click(screen.getByTestId('pending-add-btn'))
@@ -298,14 +306,38 @@ describe('CampaignMapViewer — markers (owner view)', () => {
 
   it('pending marker position uses [lat, lng] = [y, x]', async () => {
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
-    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    act(() => { capturedSingleClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
     await waitFor(() => screen.getByTestId('pending-marker'))
     // Find the pending marker element (last marker rendered)
     const markerEls = screen.getAllByTestId('marker')
     const pendingEl = markerEls[markerEls.length - 1]
     expect(pendingEl.getAttribute('data-lat')).toBe('300')
     expect(pendingEl.getAttribute('data-lng')).toBe('400')
+  })
+
+  it('marker-toggle button is visible for owner', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    expect(screen.getByTestId('marker-toggle')).toBeDefined()
+  })
+
+  it('marker-toggle gets active (golden) style when clicked', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('marker-toggle'))
+    fireEvent.click(screen.getByTestId('marker-toggle'))
+    await waitFor(() => {
+      const btn = screen.getByTestId('marker-toggle') as HTMLButtonElement
+      expect(btn.style.color).toContain('212')  // #D4A017 → rgb(212, 160, 23)
+    })
+  })
+
+  it('double-click does NOT open pending marker UI', async () => {
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('campaign-map-viewer'))
+    act(() => { capturedDblClickHandler?.({ latlng: { lat: 300, lng: 400 } }) })
+    expect(screen.queryByTestId('pending-marker')).toBeNull()
   })
 })
 
@@ -315,6 +347,7 @@ describe('CampaignMapViewer — marker polling', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     capturedDblClickHandler = null
+    capturedSingleClickHandler = null
     vi.useFakeTimers()
     mockGetSignedUrl.mockResolvedValue('https://signed.example.com/map.png')
     mockListMapMarkers.mockResolvedValue([MARKER_1])
