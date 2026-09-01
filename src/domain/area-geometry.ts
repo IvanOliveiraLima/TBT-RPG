@@ -67,3 +67,42 @@ export function translateArea(
     y2: area.y2 == null ? null : area.y2 + dy,
   }
 }
+
+export type AreaHandleKind = 'radius' | 'corner' | 'p1' | 'p2' | 'origin' | 'tip'
+export interface AreaHandle { kind: AreaHandleKind; x: number; y: number }
+
+/** Positions of resize handles for the given area (map coords). */
+export function areaHandles(area: CampaignMapArea): AreaHandle[] {
+  switch (area.shape) {
+    case 'circle': return [{ kind: 'radius', x: area.x + area.radius, y: area.y }]
+    case 'square': return [{ kind: 'corner', x: area.x + area.radius, y: area.y + area.radius }]
+    case 'line':   return [{ kind: 'p1', x: area.x, y: area.y }, { kind: 'p2', x: area.x2 ?? area.x, y: area.y2 ?? area.y }]
+    case 'cone':   return [{ kind: 'origin', x: area.x, y: area.y }, { kind: 'tip', x: area.x2 ?? area.x, y: area.y2 ?? area.y }]
+    default:       return []
+  }
+}
+
+/** Coord patch produced by dragging handle `kind` to (px, py). radius is recalculated for line/cone. */
+export function resizeArea(
+  area: CampaignMapArea,
+  kind: AreaHandleKind,
+  px: number,
+  py: number,
+): { x?: number; y?: number; radius?: number; x2?: number; y2?: number } {
+  const min = 2
+  switch (kind) {
+    case 'radius': return { radius: Math.max(min, Math.hypot(px - area.x, py - area.y)) }
+    case 'corner': return { radius: Math.max(min, Math.abs(px - area.x), Math.abs(py - area.y)) }
+    case 'p1': {
+      const x2 = area.x2 ?? area.x, y2 = area.y2 ?? area.y
+      return { x: px, y: py, radius: Math.hypot(x2 - px, y2 - py) }
+    }
+    case 'p2':     return { x2: px, y2: py, radius: Math.hypot(px - area.x, py - area.y) }
+    case 'origin': {
+      const x2 = area.x2 ?? area.x, y2 = area.y2 ?? area.y
+      return { x: px, y: py, radius: Math.hypot(x2 - px, y2 - py) }
+    }
+    case 'tip':    return { x2: px, y2: py, radius: Math.hypot(px - area.x, py - area.y) }
+    default:       return {}
+  }
+}
