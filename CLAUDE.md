@@ -1416,6 +1416,32 @@ Fechamento do ciclo de interações efêmeras do mapa e padronização visual.
   `#D4A017` (padrão que já existia em Tokens e Áreas): névoa recolorida (desktop + mobile), e o pill
   flutuante virou compartilhado entre marcador e régua — a régua, que não tinha instrução, ganhou uma.
 
+### Bandeja — lançar vários tipos de dado (COMPLETED — PR #318)
+Checkbox "Vários dados" no `DicePanel`. Ligado, o usuário arma tipos de dado (clique alterna), define a
+quantidade de cada (stepper por tipo) e lança todos juntos. O domain ganhou `rollMulti(specs, {modifier})`,
+que devolve **um** `RollResult` combinado (dice[] com lados misturados, notação `2d6 + 1d8 + 3`), então
+`addRoll`/log/histórico/modo secreto seguem sem mudança — a rolagem múltipla vira uma entrada no log. No
+resultado, dados com lados misturados ganham uma etiqueta `d{lados}`. Modo de um dado só ficou intacto.
+
+### VTT — áreas editáveis: mover e redimensionar (COMPLETED — PRs #319, #320, #321)
+Antes, uma área (círculo/quadrado/linha/cone) criada não podia ser ajustada — errou o centro ou o tamanho,
+apagava e refazia. Agora ela é selecionável, móvel e redimensionável. Feito em três fatias:
+
+- **Backend (#319)** — policy de UPDATE em `campaign_map_areas` via `is_map_master(map_id)` (SQL versionado
+  em `supabase/sql/editable_areas.sql`, aplicado à mão) + `updateMapArea(id, patch)` com patch parcial
+  (`shape` não é editável).
+- **Selecionar + mover (#320)** — seleção **deliberada pela lista** do painel (não pelo clique no mapa),
+  evitando concorrência com tokens. Geometria pura em `area-geometry.ts` (`hitTestArea`, `translateArea`).
+  O `AreaEditInteraction` (espelha o `AreaInteraction`) só monta listener quando há área selecionada;
+  arrasta só a selecionada, com o pan desligado apenas nesse caso; **token/UI têm prioridade**
+  (`.leaflet-marker-pane`). Fechar o painel encerra a seleção. Grava no soltar via `updateMapArea`; o
+  movimento reflete na transmissão (áreas já vão no snapshot).
+- **Redimensionar (#321)** — alças que aparecem **só na área selecionada**: círculo (borda→raio), quadrado
+  (canto→meio-lado, centro fixo), linha (2 pontas), cone (origem + ponta; largura = comprimento/2).
+  `areaHandles`/`resizeArea` no domain; alça tem prioridade sobre o corpo no `pointerdown`, com raio de
+  acerto e tamanho escalados por `pxPerUnit`. `handleAreaCommit` passou a enviar `radius` (senão o resize de
+  círculo/quadrado não persistiria).
+
 ---
 
 ## Patterns established during C.1.c
@@ -2189,6 +2215,11 @@ function buildInviteLink(): string {
 | Ping é mensagem discreta (`type:'ping'`), não estado no snapshot | #314 | É disparo único; no snapshot cada re-post re-animaria. O emissor não recebe o próprio post — renderiza local e posta |
 | Sem painel (marcador, régua), a instrução vira pill flutuante; com painel, fica no painel | #313, #315 | Padroniza a instrução do mapa em amarelo sem forçar um painel onde não faz sentido |
 | Duplo-clique do mapa é reservado para o ping | #313, #314 | O marcador saiu do duplo-clique (foi pro toggle) para liberar o gesto clássico de "olha aqui" |
+| Rolagem múltipla é um `RollResult` combinado, não N rolagens | #318 | Reusa addRoll/log/histórico/secreto sem mudança; vira uma entrada no log; dice[] já suporta lados misturados |
+| Geometria de área (hit-test, translação, alças, resize) fica num módulo puro | #320, #321 | O risco real é matemático; puro = testável de verdade, fora do componente e do Leaflet |
+| Edição de área é deliberada: selecionar pela lista, não pelo clique no mapa | #320 | Clique no mapa concorre com tokens/pan; sem seleção, o listener nem existe e o mapa fica intacto |
+| Alça tem prioridade sobre o corpo; token/UI têm prioridade sobre a área | #320, #321 | Ordem de hit-test no pointerdown resolve o empilhamento sem modos extras |
+| `handleAreaCommit` grava `radius` além de x/y/x2/y2 | #321 | Resize de círculo/quadrado só muda o raio; sem isso a mudança não persistia (só local) |
 
 ---
 
