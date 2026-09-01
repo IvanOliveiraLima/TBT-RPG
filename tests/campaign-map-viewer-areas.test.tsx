@@ -501,25 +501,64 @@ describe('CampaignMapViewer — area select and move', () => {
     mockUpdateMapArea.mockResolvedValue(AREA_CIRCLE)
   })
 
-  it('updateMapArea mock is registered and resolves', async () => {
-    // Smoke test: the service mock is wired so the viewer can call it
-    mockUpdateMapArea.mockResolvedValue({ ...AREA_CIRCLE, x: 510, y: 310 })
-    const result = await mockUpdateMapArea('area-1', { x: 510, y: 310 })
-    expect(result).toMatchObject({ x: 510, y: 310 })
-    expect(mockUpdateMapArea).toHaveBeenCalledWith('area-1', { x: 510, y: 310 })
-  })
-
-  it('areas-overlay still renders with areas after mount when updateMapArea is in mock', async () => {
+  it('clicking area-row selects the area (overlay gets strokeDasharray)', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
-    await waitFor(() => screen.getByTestId('areas-overlay'))
-    expect(screen.getByTestId('areas-overlay').querySelector('circle')).not.toBeNull()
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    // After selection the circle element should have strokeDasharray set
+    const overlay = await screen.findByTestId('areas-overlay')
+    const circleEl = overlay.querySelector('circle')
+    expect(circleEl).not.toBeNull()
+    expect(circleEl?.getAttribute('stroke-dasharray')).toBe('6 4')
   })
 
-  it('member view does not call updateMapArea (no interaction)', async () => {
+  it('clicking area-row a second time deselects (no strokeDasharray)', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    const row = screen.getByTestId(`area-row-${AREA_CIRCLE.id}`)
+    fireEvent.click(row)   // select
+    fireEvent.click(row)   // deselect
+    const overlay = await screen.findByTestId('areas-overlay')
+    const circleEl = overlay.querySelector('circle')
+    expect(circleEl?.getAttribute('stroke-dasharray')).toBeNull()
+  })
+
+  it('remove button does not select the area (stopPropagation)', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-remove-${AREA_CIRCLE.id}`))
+    fireEvent.click(screen.getByTestId(`area-remove-${AREA_CIRCLE.id}`))
+    // deleteMapArea should be called, and overlay should not have dashes
+    await waitFor(() => expect(mockDeleteMapArea).toHaveBeenCalledWith(AREA_CIRCLE.id))
+    // Area removed → overlay gone or no dashes
+    const overlay = screen.queryByTestId('areas-overlay')
+    if (overlay) {
+      expect(overlay.querySelector('circle')?.getAttribute('stroke-dasharray')).toBeNull()
+    }
+  })
+
+  it('member view does not render area-row (no panel toggle)', async () => {
     mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
     renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
     await waitFor(() => screen.getByTestId('areas-overlay'))
+    expect(screen.queryByTestId(`area-row-${AREA_CIRCLE.id}`)).toBeNull()
     expect(mockUpdateMapArea).not.toHaveBeenCalled()
+  })
+
+  it('areas-overlay renders normally with areas present', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE, AREA_SQUARE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('areas-overlay'))
+    const overlay = screen.getByTestId('areas-overlay')
+    expect(overlay.querySelector('circle')).not.toBeNull()
+    expect(overlay.querySelector('rect')).not.toBeNull()
   })
 })

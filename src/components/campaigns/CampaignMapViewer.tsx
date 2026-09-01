@@ -410,48 +410,46 @@ function RulerDragHandler({
   return null
 }
 
-// Inner component — handles area selection and move drag (master, outside draw mode).
-// pointerdown on an area selects it and arms a drag; pointerdown on empty deselects.
-// Pan is disabled ONLY when a drag starts over an area; otherwise Leaflet pans as usual.
+// Inner component — handles area move drag for the selected area (master, outside draw mode).
+// Active only when an area is selected from the list. Tokens and UI have priority.
+// Pan is disabled ONLY when a drag starts on the selected area.
 function AreaEditInteraction({
   active,
+  selectedId,
   mapHeight,
   lineWidth,
   areasRef,
-  onSelect,
   onDraftSet,
   onCommit,
 }: {
   active: boolean
+  selectedId: string | null
   mapHeight: number
   lineWidth: number
   areasRef: React.MutableRefObject<CampaignMapArea[]>
-  onSelect: (id: string | null) => void
   onDraftSet: (id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => void
   onCommit: (id: string) => void
 }) {
   const leafletMap = useMap()
   useEffect(() => {
-    if (!active) return
+    if (!active || !selectedId) return
     const container = leafletMap.getContainer()
     const toVB = (e: PointerEvent) => {
       const ll = leafletMap.mouseEventToLatLng(e as unknown as MouseEvent)
       return { x: ll.lng, y: mapHeight - ll.lat }
     }
-    let drag: { id: string; startX: number; startY: number; orig: CampaignMapArea } | null = null
+    let drag: { startX: number; startY: number; orig: CampaignMapArea } | null = null
     let moved = false
     const down = (e: Event) => {
       const pe = e as PointerEvent
-      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      const tgt = pe.target as HTMLElement
+      // Tokens and UI have priority — if the target is inside a marker, button etc., don't intercept
+      if (tgt.closest('.leaflet-marker-pane, button, input, select, label, a')) return
+      const area = areasRef.current.find(a => a.id === selectedId)
+      if (!area) return
       const { x, y } = toVB(pe)
-      let hit: CampaignMapArea | null = null
-      for (let i = areasRef.current.length - 1; i >= 0; i--) {
-        const a = areasRef.current[i]
-        if (a && hitTestArea(a, x, y, { lineWidth })) { hit = a; break }
-      }
-      if (!hit) { onSelect(null); return }
-      onSelect(hit.id)
-      drag = { id: hit.id, startX: x, startY: y, orig: hit }
+      if (!hitTestArea(area, x, y, { lineWidth })) return  // click outside selected area → let Leaflet pan
+      drag = { startX: x, startY: y, orig: area }
       moved = false
       leafletMap.dragging.disable()
       try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
@@ -462,11 +460,11 @@ function AreaEditInteraction({
       const dx = x - drag.startX, dy = y - drag.startY
       if (!moved && Math.abs(dx) + Math.abs(dy) < 1) return
       moved = true
-      onDraftSet(drag.id, translateArea(drag.orig, dx, dy))
+      onDraftSet(drag.orig.id, translateArea(drag.orig, dx, dy))
     }
     const end = () => {
       if (!drag) return
-      const id = drag.id
+      const id = drag.orig.id
       drag = null
       leafletMap.dragging.enable()
       if (moved) onCommit(id)
@@ -482,7 +480,7 @@ function AreaEditInteraction({
       container.removeEventListener('pointercancel', end)
       leafletMap.dragging.enable()
     }
-  }, [active, leafletMap, mapHeight, lineWidth, areasRef, onSelect, onDraftSet, onCommit])
+  }, [active, selectedId, leafletMap, mapHeight, lineWidth, areasRef, onDraftSet, onCommit])
   return null
 }
 
@@ -2113,14 +2111,23 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <p style={{ fontSize: 11, color: '#D4A017', margin: 0 }}>{t('areas.draw_hint')}</p>
               )}
 
-              {/* Area list with per-area remove */}
+              {/* Area list with per-area select + remove */}
               {areas.length > 0 && (
                 <div
                   data-testid="area-list"
                   style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 110, overflowY: 'auto' }}
                 >
                   {areas.map(area => (
-                    <div key={area.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div
+                      key={area.id}
+                      data-testid={`area-row-${area.id}`}
+                      onClick={() => setSelectedAreaId(prev => (prev === area.id ? null : area.id))}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                        borderRadius: 4, padding: '2px 4px',
+                        background: selectedAreaId === area.id ? 'rgba(212,160,23,0.15)' : 'transparent',
+                      }}
+                    >
                       <span
                         style={{
                           width: 10, height: 10, flexShrink: 0,
@@ -2136,7 +2143,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                         type="button"
                         data-testid={`area-remove-${area.id}`}
                         aria-label={t('areas.remove_one')}
-                        onClick={() => void handleRemoveArea(area.id)}
+                        onClick={e => { e.stopPropagation(); void handleRemoveArea(area.id) }}
                         style={{ background: 'transparent', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }}
                       >×</button>
                     </div>
@@ -2810,10 +2817,19 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           {areas.length > 0 && (
             <div data-testid="area-list" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {areas.map(area => (
-                <div key={area.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div
+                  key={area.id}
+                  data-testid={`area-row-${area.id}`}
+                  onClick={() => setSelectedAreaId(prev => (prev === area.id ? null : area.id))}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                    borderRadius: 4, padding: '2px 4px',
+                    background: selectedAreaId === area.id ? 'rgba(212,160,23,0.15)' : 'transparent',
+                  }}
+                >
                   <span style={{ width: 10, height: 10, flexShrink: 0, borderRadius: area.shape === 'circle' ? '50%' : area.shape === 'cone' ? 0 : 2, background: area.color, clipPath: area.shape === 'cone' ? 'polygon(50% 0%,100% 100%,0% 100%)' : undefined }} />
                   <span style={{ fontSize: 12, color: T.textMuted, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t(`areas.shape_${area.shape}` as 'areas.shape_circle')}</span>
-                  <button type="button" data-testid={`area-remove-${area.id}`} aria-label={t('areas.remove_one')} onClick={() => void handleRemoveArea(area.id)} style={{ background: 'transparent', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
+                  <button type="button" data-testid={`area-remove-${area.id}`} aria-label={t('areas.remove_one')} onClick={e => { e.stopPropagation(); void handleRemoveArea(area.id) }} style={{ background: 'transparent', border: 'none', color: T.danger, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
                 </div>
               ))}
             </div>
@@ -3197,13 +3213,13 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           />
         )}
 
-        {/* Area select + move interaction (master, outside draw/broadcast mode) */}
+        {/* Area move interaction — active only when an area is selected from the list */}
         <AreaEditInteraction
-          active={isMaster && !areaMode && !broadcast}
+          active={isMaster && !areaMode && !broadcast && selectedAreaId != null}
+          selectedId={selectedAreaId}
           mapHeight={map.height}
           lineWidth={localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10}
           areasRef={areasRef}
-          onSelect={setSelectedAreaId}
           onDraftSet={handleAreaDraftSet}
           onCommit={handleAreaCommit}
         />
