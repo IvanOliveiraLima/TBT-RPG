@@ -164,6 +164,53 @@ export function roll(notation: string, opts: RollOptions = {}): RollResult {
   return result
 }
 
+// ── Multi-die roll ────────────────────────────────────────────────────────────
+
+export interface DieSpec { sides: number; count: number }
+
+/**
+ * Rolls several die types at once into a single combined RollResult.
+ * - mode always 'normal' (adv/dis is a single-d20 concept)
+ * - readable notation: "2d6 + 1d8 + 3d4" (+ modifier)
+ * - crit only when exactly one d20 is kept (same rule as `roll`)
+ */
+export function rollMulti(
+  specs: DieSpec[],
+  opts: { modifier?: number; label?: string; rng?: RngFn } = {},
+): RollResult {
+  const { modifier = 0, label, rng = defaultRng } = opts
+  const valid = specs.filter(s => s.count > 0 && s.sides >= 1)
+  if (valid.length === 0) throw new Error('rollMulti requires at least one die')
+
+  const dice: DieRoll[] = []
+  for (const { sides, count } of valid) {
+    for (let i = 0; i < count; i++) {
+      dice.push({ sides, value: rollDie(sides, rng), kept: true })
+    }
+  }
+
+  const total = dice.reduce((acc, d) => acc + d.value, 0) + modifier
+
+  let notation = valid.map(s => `${s.count}d${s.sides}`).join(' + ')
+  if (modifier !== 0) notation += ` ${modifier >= 0 ? '+' : '-'} ${Math.abs(modifier)}`
+
+  const keptD20 = dice.filter(d => d.sides === 20 && d.kept)
+  let crit: RollResult['crit'] = null
+  if (keptD20.length === 1) {
+    const d20 = keptD20[0]
+    if (d20 !== undefined) {
+      if (d20.value === 20) crit = 'hit'
+      else if (d20.value === 1) crit = 'miss'
+    }
+  }
+
+  const result: RollResult = {
+    id: makeId(), notation, dice, modifier, total, mode: 'normal', crit, at: Date.now(),
+  }
+  if (label !== undefined) result.label = label
+  return result
+}
+
 // ── Critical hit helper ───────────────────────────────────────────────────────
 
 /**

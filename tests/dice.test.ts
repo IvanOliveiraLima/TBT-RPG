@@ -243,6 +243,77 @@ describe('roll — kind', () => {
   })
 })
 
+// ── rollMulti ─────────────────────────────────────────────────────────────────
+
+import { rollMulti } from '@/domain/dice'
+import type { DieSpec } from '@/domain/dice'
+
+describe('rollMulti', () => {
+  it('produces correct dice count, total range, notation and mode', () => {
+    // 2d6 + 1d8 + modifier=3: 3 dice total
+    const r = rollMulti([{ sides: 6, count: 2 }, { sides: 8, count: 1 }], { modifier: 3, rng: seqRng([3, 4, 5]) })
+    expect(r.dice).toHaveLength(3)
+    expect(r.total).toBe(3 + 4 + 5 + 3) // 15
+    expect(r.notation).toBe('2d6 + 1d8 + 3')
+    expect(r.mode).toBe('normal')
+    expect(r.modifier).toBe(3)
+    expect(r.dice.every(d => d.kept)).toBe(true)
+  })
+
+  it('total is within min-max range for 2d6 + 1d8 + 3', () => {
+    // min = 1+1+1+3 = 6, max = 6+6+8+3 = 23
+    const r = rollMulti([{ sides: 6, count: 2 }, { sides: 8, count: 1 }], { modifier: 3 })
+    expect(r.total).toBeGreaterThanOrEqual(6)
+    expect(r.total).toBeLessThanOrEqual(23)
+  })
+
+  it('throws when specs array is empty', () => {
+    expect(() => rollMulti([])).toThrow('rollMulti requires at least one die')
+  })
+
+  it('throws when all specs have count=0', () => {
+    const specs: DieSpec[] = [{ sides: 6, count: 0 }]
+    expect(() => rollMulti(specs)).toThrow('rollMulti requires at least one die')
+  })
+
+  it('crit=hit when single d20 rolls 20', () => {
+    const r = rollMulti([{ sides: 20, count: 1 }], { rng: seqRng([20]) })
+    expect(r.crit).toBe('hit')
+  })
+
+  it('crit=miss when single d20 rolls 1', () => {
+    const r = rollMulti([{ sides: 20, count: 1 }], { rng: seqRng([1]) })
+    expect(r.crit).toBe('miss')
+  })
+
+  it('crit=null when multiple d20 are kept', () => {
+    const r = rollMulti([{ sides: 20, count: 2 }], { rng: seqRng([20, 20]) })
+    expect(r.crit).toBeNull()
+  })
+
+  it('notation omits modifier when modifier=0', () => {
+    const r = rollMulti([{ sides: 6, count: 2 }], { modifier: 0, rng: seqRng([1, 1]) })
+    expect(r.notation).toBe('2d6')
+  })
+
+  it('notation uses - sign for negative modifier', () => {
+    const r = rollMulti([{ sides: 4, count: 3 }], { modifier: -2, rng: seqRng([1, 1, 1]) })
+    expect(r.notation).toBe('3d4 - 2')
+  })
+
+  it('label is set when passed', () => {
+    const r = rollMulti([{ sides: 6, count: 1 }], { label: 'Multi', rng: seqRng([3]) })
+    expect(r.label).toBe('Multi')
+  })
+
+  it('generates unique ids', () => {
+    const ids = Array.from({ length: 3 }, () =>
+      rollMulti([{ sides: 6, count: 1 }], { rng: seqRng([1]) }).id
+    )
+    expect(new Set(ids).size).toBe(3)
+  })
+})
+
 // ── doubleDiceCount ───────────────────────────────────────────────────────────
 
 import { doubleDiceCount } from '@/domain/dice'
