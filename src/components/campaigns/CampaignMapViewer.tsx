@@ -60,8 +60,10 @@ import {
   createMapArea,
   deleteMapArea,
   clearMapAreas,
+  updateMapArea,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
+import { hitTestArea, translateArea } from '@/domain/area-geometry'
 import { HelpHint } from '@/components/HelpHint'
 import { DicePanel } from '@/components/dice/DicePanel'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
@@ -408,6 +410,82 @@ function RulerDragHandler({
   return null
 }
 
+// Inner component — handles area selection and move drag (master, outside draw mode).
+// pointerdown on an area selects it and arms a drag; pointerdown on empty deselects.
+// Pan is disabled ONLY when a drag starts over an area; otherwise Leaflet pans as usual.
+function AreaEditInteraction({
+  active,
+  mapHeight,
+  lineWidth,
+  areasRef,
+  onSelect,
+  onDraftSet,
+  onCommit,
+}: {
+  active: boolean
+  mapHeight: number
+  lineWidth: number
+  areasRef: React.MutableRefObject<CampaignMapArea[]>
+  onSelect: (id: string | null) => void
+  onDraftSet: (id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => void
+  onCommit: (id: string) => void
+}) {
+  const leafletMap = useMap()
+  useEffect(() => {
+    if (!active) return
+    const container = leafletMap.getContainer()
+    const toVB = (e: PointerEvent) => {
+      const ll = leafletMap.mouseEventToLatLng(e as unknown as MouseEvent)
+      return { x: ll.lng, y: mapHeight - ll.lat }
+    }
+    let drag: { id: string; startX: number; startY: number; orig: CampaignMapArea } | null = null
+    let moved = false
+    const down = (e: Event) => {
+      const pe = e as PointerEvent
+      if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      const { x, y } = toVB(pe)
+      let hit: CampaignMapArea | null = null
+      for (let i = areasRef.current.length - 1; i >= 0; i--) {
+        const a = areasRef.current[i]
+        if (a && hitTestArea(a, x, y, { lineWidth })) { hit = a; break }
+      }
+      if (!hit) { onSelect(null); return }
+      onSelect(hit.id)
+      drag = { id: hit.id, startX: x, startY: y, orig: hit }
+      moved = false
+      leafletMap.dragging.disable()
+      try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
+    }
+    const move = (e: Event) => {
+      if (!drag) return
+      const { x, y } = toVB(e as PointerEvent)
+      const dx = x - drag.startX, dy = y - drag.startY
+      if (!moved && Math.abs(dx) + Math.abs(dy) < 1) return
+      moved = true
+      onDraftSet(drag.id, translateArea(drag.orig, dx, dy))
+    }
+    const end = () => {
+      if (!drag) return
+      const id = drag.id
+      drag = null
+      leafletMap.dragging.enable()
+      if (moved) onCommit(id)
+    }
+    container.addEventListener('pointerdown', down)
+    container.addEventListener('pointermove', move)
+    container.addEventListener('pointerup', end)
+    container.addEventListener('pointercancel', end)
+    return () => {
+      container.removeEventListener('pointerdown', down)
+      container.removeEventListener('pointermove', move)
+      container.removeEventListener('pointerup', end)
+      container.removeEventListener('pointercancel', end)
+      leafletMap.dragging.enable()
+    }
+  }, [active, leafletMap, mapHeight, lineWidth, areasRef, onSelect, onDraftSet, onCommit])
+  return null
+}
+
 // Inner component — owner popup for editing a token's label, color, size, and image
 function TokenPopupContent({
   token,
@@ -738,6 +816,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
   const [activePanel, setActivePanel] = useState<'rolls' | 'presets' | 'initiative' | 'tools' | null>(null)
   // Area drawing state (owner only)
   const [areas, setAreas] = useState<CampaignMapArea[]>([])
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null)
+  const areasRef = useRef(areas)
+  useEffect(() => { areasRef.current = areas }, [areas])
   const [areaMode, setAreaMode] = useState(false)
   const [areaShape, setAreaShape] = useState<CampaignMapArea['shape']>('circle')
   const [areaColor, setAreaColor] = useState('#E0562D')
@@ -1524,6 +1605,24 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     setAreas(prev => prev.filter(a => a.id !== id))
   }
 
+  // Deselect area on Escape
+  useEffect(() => {
+    if (!selectedAreaId) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelectedAreaId(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedAreaId])
+
+  const handleAreaDraftSet = useCallback((id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => {
+    setAreas(prev => prev.map(a => (a.id === id ? { ...a, ...coords } : a)))
+  }, [])
+
+  const handleAreaCommit = useCallback((id: string) => {
+    const a = areasRef.current.find(x => x.id === id)
+    if (!a) return
+    void updateMapArea(id, { x: a.x, y: a.y, x2: a.x2, y2: a.y2 }).catch(() => {})
+  }, [])
+
   const handleRulerStart = useCallback((latlng: L.LatLng) => {
     const cx = latlng.lng
     const cy = map.height - latlng.lat
@@ -2066,7 +2165,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <button
                   type="button"
                   data-testid="area-draw-start"
-                  onClick={() => { setAreaMode(true); setAreaPanelOpen(true); setMarkerMode(false) }}
+                  onClick={() => { setAreaMode(true); setSelectedAreaId(null); setAreaPanelOpen(true); setMarkerMode(false) }}
                   style={{
                     background: '#5B3FA8', border: 'none', borderRadius: 6,
                     color: T.textPrimary, padding: '4px 10px',
@@ -2725,7 +2824,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             >{t('areas.clear')}</button>
           )}
           {!areaMode ? (
-            <button type="button" data-testid="area-draw-start" onClick={() => { setAreaMode(true); setAreaPanelOpen(true) }}
+            <button type="button" data-testid="area-draw-start" onClick={() => { setAreaMode(true); setSelectedAreaId(null); setAreaPanelOpen(true) }}
               style={{ background: '#5B3FA8', border: 'none', borderRadius: 6, color: T.textPrimary, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600 }}
             >{t('areas.draw_hint')}</button>
           ) : (
@@ -2816,6 +2915,9 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             }}
           >
             {areas.map(area => {
+              const selected = area.id === selectedAreaId
+              const sw = selected ? 4 : 2
+              const dash = selected ? '6 4' : undefined
               if (area.shape === 'circle') {
                 return (
                   <circle
@@ -2827,7 +2929,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     fillOpacity={0.28}
                     stroke={area.color}
                     strokeOpacity={0.9}
-                    strokeWidth={2}
+                    strokeWidth={sw}
+                    strokeDasharray={dash}
                     vectorEffect="non-scaling-stroke"
                   />
                 )
@@ -2844,7 +2947,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     fillOpacity={0.28}
                     stroke={area.color}
                     strokeOpacity={0.9}
-                    strokeWidth={2}
+                    strokeWidth={sw}
+                    strokeDasharray={dash}
                     vectorEffect="non-scaling-stroke"
                   />
                 )
@@ -2859,7 +2963,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     stroke={area.color}
                     strokeOpacity={0.9}
                     strokeLinecap="round"
-                    strokeWidth={lineW}
+                    strokeWidth={selected ? lineW + 2 : lineW}
+                    strokeDasharray={dash}
                     vectorEffect="non-scaling-stroke"
                   />
                 )
@@ -2882,7 +2987,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     fillOpacity={0.28}
                     stroke={area.color}
                     strokeOpacity={0.9}
-                    strokeWidth={2}
+                    strokeWidth={sw}
+                    strokeDasharray={dash}
                     vectorEffect="non-scaling-stroke"
                   />
                 )
@@ -3090,6 +3196,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onEnd={handleAreaEnd}
           />
         )}
+
+        {/* Area select + move interaction (master, outside draw/broadcast mode) */}
+        <AreaEditInteraction
+          active={isMaster && !areaMode && !broadcast}
+          mapHeight={map.height}
+          lineWidth={localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10}
+          areasRef={areasRef}
+          onSelect={setSelectedAreaId}
+          onDraftSet={handleAreaDraftSet}
+          onCommit={handleAreaCommit}
+        />
 
         {isMaster && (
           <RulerDragHandler

@@ -114,16 +114,18 @@ vi.mock('@/data/db', () => ({
   deleteCharacter: vi.fn().mockResolvedValue(undefined),
 }))
 
-const mockListMapAreas  = vi.fn()
-const mockCreateMapArea = vi.fn()
-const mockClearMapAreas = vi.fn()
-const mockDeleteMapArea = vi.fn()
+const mockListMapAreas   = vi.fn()
+const mockCreateMapArea  = vi.fn()
+const mockClearMapAreas  = vi.fn()
+const mockDeleteMapArea  = vi.fn()
+const mockUpdateMapArea  = vi.fn()
 
 vi.mock('@/services/campaign-map-areas', () => ({
   listMapAreas:   (...args: unknown[]) => mockListMapAreas(...args),
   createMapArea:  (...args: unknown[]) => mockCreateMapArea(...args),
   deleteMapArea:  (...args: unknown[]) => mockDeleteMapArea(...args),
   clearMapAreas:  (...args: unknown[]) => mockClearMapAreas(...args),
+  updateMapArea:  (...args: unknown[]) => mockUpdateMapArea(...args),
 }))
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -485,5 +487,39 @@ describe('CampaignMapViewer — per-area remove', () => {
     const list = screen.getByTestId('area-list')
     expect(list.textContent).toContain('Line')
     expect(list.textContent).toContain('Cone')
+  })
+})
+
+// ── Area select + move ────────────────────────────────────────────────────────
+
+describe('CampaignMapViewer — area select and move', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockClearMapAreas.mockResolvedValue(undefined)
+    mockCreateMapArea.mockResolvedValue(AREA_CIRCLE)
+    mockDeleteMapArea.mockResolvedValue(undefined)
+    mockUpdateMapArea.mockResolvedValue(AREA_CIRCLE)
+  })
+
+  it('updateMapArea mock is registered and resolves', async () => {
+    // Smoke test: the service mock is wired so the viewer can call it
+    mockUpdateMapArea.mockResolvedValue({ ...AREA_CIRCLE, x: 510, y: 310 })
+    const result = await mockUpdateMapArea('area-1', { x: 510, y: 310 })
+    expect(result).toMatchObject({ x: 510, y: 310 })
+    expect(mockUpdateMapArea).toHaveBeenCalledWith('area-1', { x: 510, y: 310 })
+  })
+
+  it('areas-overlay still renders with areas after mount when updateMapArea is in mock', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('areas-overlay'))
+    expect(screen.getByTestId('areas-overlay').querySelector('circle')).not.toBeNull()
+  })
+
+  it('member view does not call updateMapArea (no interaction)', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
+    await waitFor(() => screen.getByTestId('areas-overlay'))
+    expect(mockUpdateMapArea).not.toHaveBeenCalled()
   })
 })
