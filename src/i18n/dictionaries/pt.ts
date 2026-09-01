@@ -958,6 +958,8 @@ const pt: Record<keyof typeof en, string> = {
   'areas.clear':       'Limpar tudo',
   'areas.remove_one':  'Remover',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
+  'areas.draw_start':  'Desenhar área',
+  'areas.select_hint': 'Clique numa área da lista para movê-la',
   'areas.done':        'Concluir',
 
   // ── Dice ──────────────────────────────────────────────────────────────────────

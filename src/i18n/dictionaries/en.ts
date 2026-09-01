@@ -955,6 +955,8 @@ const en = {
   'areas.clear':       'Clear all',
   'areas.remove_one':  'Remove',
   'areas.draw_hint':   'Drag on the map to draw',
+  'areas.draw_start':  'Draw area',
+  'areas.select_hint': 'Click an area in the list to move it',
   'areas.done':        'Done',
 
   // ── Dice ──────────────────────────────────────────────────────────────────────
