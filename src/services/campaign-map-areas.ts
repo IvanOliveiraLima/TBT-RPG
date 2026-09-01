@@ -80,6 +80,35 @@ export async function createMapArea(
   return toArea(data as Row)
 }
 
+export async function updateMapArea(
+  id: string,
+  patch: {
+    x?: number
+    y?: number
+    radius?: number
+    x2?: number | null
+    y2?: number | null
+    color?: string
+  },
+): Promise<CampaignMapArea> {
+  if (!supabase) throw new Error('no supabase')
+  const row: Record<string, unknown> = {}
+  if (patch.x !== undefined) row.x = patch.x
+  if (patch.y !== undefined) row.y = patch.y
+  if (patch.radius !== undefined) row.radius = patch.radius
+  if (patch.x2 !== undefined) row.x2 = patch.x2
+  if (patch.y2 !== undefined) row.y2 = patch.y2
+  if (patch.color !== undefined) row.color = patch.color
+  const { data, error } = await supabase
+    .from('campaign_map_areas')
+    .update(row)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return toArea(data as Row)
+}
+
 export async function deleteMapArea(id: string): Promise<void> {
   if (!supabase) return
   const { error } = await supabase.from('campaign_map_areas').delete().eq('id', id)
