@@ -878,6 +878,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     if (isMobile) {
       setPanelOpen(false)
       setAreaPanelOpen(false)
+      setSelectedAreaId(null)
       setAreaMode(false)
       setFogMode(false)
       setArmed(null)
@@ -1611,6 +1612,8 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedAreaId])
 
+
+
   const handleAreaDraftSet = useCallback((id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => {
     setAreas(prev => prev.map(a => (a.id === id ? { ...a, ...coords } : a)))
   }, [])
@@ -2068,7 +2071,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 <button
                   type="button"
                   data-testid="area-panel-close"
-                  onClick={() => { setAreaPanelOpen(false); setAreaMode(false); setAreaPreview(null) }}
+                  onClick={() => { setAreaPanelOpen(false); setSelectedAreaId(null); setAreaMode(false); setAreaPreview(null) }}
                   style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 2 }}
                 >×</button>
               </div>
@@ -2151,6 +2154,13 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 </div>
               )}
 
+              {/* List-select hint */}
+              {areas.length > 0 && !areaMode && (
+                <p data-testid="area-select-hint" style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>
+                  {t('areas.select_hint')}
+                </p>
+              )}
+
               {/* Clear all */}
               {areas.length > 0 && (
                 <button
@@ -2179,7 +2189,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                     cursor: 'pointer', fontSize: 12, fontFamily: T.sans, fontWeight: 600,
                   }}
                 >
-                  {t('areas.draw_hint')}
+                  {t('areas.draw_start')}
                 </button>
               ) : (
                 <button
@@ -2203,7 +2213,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <button
               type="button"
               data-testid="fog-panel-toggle"
-              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
+              onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setSelectedAreaId(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
               disabled={!localGrid.enabled}
               {...(!localGrid.enabled ? { title: t('campaign_maps.fog_requires_grid') } : {})}
               aria-label={t('campaign_maps.fog_title')}
@@ -2321,6 +2331,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
                 setRulerMode(true)
                 setAreaMode(false)
                 setAreaPanelOpen(false)
+                setSelectedAreaId(null)
                 setFogMode(false)
                 setPanelOpen(false)
                 setArmed(null)
@@ -2350,7 +2361,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               } else {
                 setMarkerMode(true)
                 setRulerMode(false); setRulerSegment(null)
-                setAreaMode(false); setAreaPanelOpen(false)
+                setAreaMode(false); setAreaPanelOpen(false); setSelectedAreaId(null)
                 setFogMode(false); setPanelOpen(false)
                 setArmed(null); setActivePanel(null)
               }
@@ -2563,14 +2574,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           </div>
           {/* Grade */}
           <button type="button" data-testid="tools-grid-btn"
-            onClick={() => { setPanelOpen(true); setAreaPanelOpen(false); setFogMode(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
+            onClick={() => { setPanelOpen(true); setAreaPanelOpen(false); setSelectedAreaId(null); setFogMode(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⊞ {t('campaign_maps.grid_title')}
           </button>
           {/* Tokens (palette: characters + presets + generic) */}
           <button type="button" data-testid="tools-presets-btn"
-            onClick={() => { setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setActivePanel('presets'); setMarkerMode(false) }}
+            onClick={() => { setAreaPanelOpen(false); setSelectedAreaId(null); setFogMode(false); setPanelOpen(false); setActivePanel('presets'); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: armed ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: armed ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: armed ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ⬡ {t('token_presets.palette')}
@@ -2585,21 +2596,21 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           {/* Névoa */}
           <button type="button" data-testid="tools-fog-btn"
             disabled={!localGrid.enabled}
-            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
+            onClick={() => { setFogMode(true); setAreaMode(false); setAreaPanelOpen(false); setSelectedAreaId(null); setPanelOpen(false); setActivePanel(null); setRulerMode(false); setRulerSegment(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: !localGrid.enabled ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left', opacity: !localGrid.enabled ? 0.5 : 1 }}
           >
             ◎ {t('campaign_maps.fog_title')}
           </button>
           {/* Régua */}
           <button type="button" data-testid="tools-ruler-btn"
-            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null); setMarkerMode(false) }}
+            onClick={() => { setRulerMode(true); setAreaMode(false); setAreaPanelOpen(false); setSelectedAreaId(null); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null); setMarkerMode(false) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: rulerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: rulerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: rulerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             ↔ {t('ruler.title')}
           </button>
           {/* Marcador */}
           <button type="button" data-testid="tools-marker-btn"
-            onClick={() => { setMarkerMode(true); setRulerMode(false); setRulerSegment(null); setAreaMode(false); setAreaPanelOpen(false); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
+            onClick={() => { setMarkerMode(true); setRulerMode(false); setRulerSegment(null); setAreaMode(false); setAreaPanelOpen(false); setSelectedAreaId(null); setFogMode(false); setPanelOpen(false); setArmed(null); setActivePanel(null) }}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: markerMode ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)', border: markerMode ? '1px solid rgba(212,160,23,0.4)' : '1px solid rgba(255,255,255,0.1)', color: markerMode ? '#D4A017' : T.textPrimary, fontSize: 14, fontFamily: T.sans, textAlign: 'left' }}
           >
             📍 {t('campaign_maps.marker_tool')}
@@ -2798,7 +2809,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: T.textMuted }}>
               {t('areas.title')}
             </span>
-            <button type="button" data-testid="area-panel-close" onClick={() => { setAreaPanelOpen(false); setAreaMode(false); setAreaPreview(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
+            <button type="button" data-testid="area-panel-close" onClick={() => { setAreaPanelOpen(false); setSelectedAreaId(null); setAreaMode(false); setAreaPreview(null) }} style={{ background: 'transparent', border: 'none', color: T.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 2 }}>×</button>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {(['circle', 'square', 'line', 'cone'] as const).map(sh => (
@@ -2834,6 +2845,11 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               ))}
             </div>
           )}
+          {areas.length > 0 && !areaMode && (
+            <p data-testid="area-select-hint" style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>
+              {t('areas.select_hint')}
+            </p>
+          )}
           {areas.length > 0 && (
             <button type="button" data-testid="area-clear-btn" onClick={() => void handleClearAreas()}
               style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, color: T.danger, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans }}
@@ -2842,7 +2858,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           {!areaMode ? (
             <button type="button" data-testid="area-draw-start" onClick={() => { setAreaMode(true); setSelectedAreaId(null); setAreaPanelOpen(true) }}
               style={{ background: '#5B3FA8', border: 'none', borderRadius: 6, color: T.textPrimary, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600 }}
-            >{t('areas.draw_hint')}</button>
+            >{t('areas.draw_start')}</button>
           ) : (
             <button type="button" data-testid="area-draw-done" onClick={() => { setAreaMode(false); setAreaPreview(null) }}
               style={{ background: '#5B3FA8', border: 'none', borderRadius: 6, color: T.textPrimary, padding: '8px 12px', cursor: 'pointer', fontSize: 13, fontFamily: T.sans, fontWeight: 600 }}

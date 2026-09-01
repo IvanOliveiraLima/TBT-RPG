@@ -561,4 +561,66 @@ describe('CampaignMapViewer — area select and move', () => {
     expect(overlay.querySelector('circle')).not.toBeNull()
     expect(overlay.querySelector('rect')).not.toBeNull()
   })
+
+  // ── Ajuste 2 ────────────────────────────────────────────────────────────────
+
+  it('closing area panel via area-panel-close clears the selection', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    // select
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    const overlay = await screen.findByTestId('areas-overlay')
+    expect(overlay.querySelector('circle')?.getAttribute('stroke-dasharray')).toBe('6 4')
+    // close panel
+    fireEvent.click(screen.getByTestId('area-panel-close'))
+    // selection cleared → no dasharray
+    await waitFor(() => {
+      const ov = screen.getByTestId('areas-overlay')
+      expect(ov.querySelector('circle')?.getAttribute('stroke-dasharray')).toBeNull()
+    })
+  })
+
+  it('draw-start button shows "Draw area" in EN and "Desenhar área" in PT', async () => {
+    mockListMapAreas.mockResolvedValue([])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId('area-draw-start'))
+    expect(screen.getByTestId('area-draw-start').textContent).toContain('Draw area')
+  })
+
+  it('draw-start button shows "Desenhar área" in PT', async () => {
+    mockListMapAreas.mockResolvedValue([])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'pt')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId('area-draw-start'))
+    expect(screen.getByTestId('area-draw-start').textContent).toContain('Desenhar área')
+  })
+
+  it('area-select-hint present when areas exist, absent when no areas', async () => {
+    // With areas
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    const { unmount } = renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId('area-select-hint'))
+    unmount()
+
+    // Without areas
+    vi.clearAllMocks()
+    mockListMapAreas.mockResolvedValue([])
+    mockClearMapAreas.mockResolvedValue(undefined)
+    mockDeleteMapArea.mockResolvedValue(undefined)
+    mockUpdateMapArea.mockResolvedValue(AREA_CIRCLE)
+    mockCreateMapArea.mockResolvedValue(AREA_CIRCLE)
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId('area-panel'))
+    expect(screen.queryByTestId('area-select-hint')).toBeNull()
+  })
 })
