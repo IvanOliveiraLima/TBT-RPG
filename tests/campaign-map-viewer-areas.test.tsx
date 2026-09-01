@@ -624,3 +624,103 @@ describe('CampaignMapViewer — area select and move', () => {
     expect(screen.queryByTestId('area-select-hint')).toBeNull()
   })
 })
+
+// ── Area resize handles ───────────────────────────────────────────────────────
+
+describe('CampaignMapViewer — area resize handles', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockClearMapAreas.mockResolvedValue(undefined)
+    mockCreateMapArea.mockResolvedValue(AREA_CIRCLE)
+    mockDeleteMapArea.mockResolvedValue(undefined)
+    mockUpdateMapArea.mockResolvedValue(AREA_CIRCLE)
+  })
+
+  it('no handles present when no area is selected', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('areas-overlay'))
+    expect(screen.queryByTestId('area-handle-radius')).toBeNull()
+  })
+
+  it('circle handle (radius) appears after selecting a circle area', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    await waitFor(() => screen.getByTestId('area-handle-radius'))
+    const handle = screen.getByTestId('area-handle-radius')
+    // handle positioned at (x + radius, y)
+    expect(handle.getAttribute('cx')).toBe(String(AREA_CIRCLE.x + AREA_CIRCLE.radius))
+    expect(handle.getAttribute('cy')).toBe(String(AREA_CIRCLE.y))
+  })
+
+  it('square handle (corner) appears after selecting a square area', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_SQUARE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_SQUARE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_SQUARE.id}`))
+    await waitFor(() => screen.getByTestId('area-handle-corner'))
+    const handle = screen.getByTestId('area-handle-corner')
+    expect(handle.getAttribute('cx')).toBe(String(AREA_SQUARE.x + AREA_SQUARE.radius))
+    expect(handle.getAttribute('cy')).toBe(String(AREA_SQUARE.y + AREA_SQUARE.radius))
+  })
+
+  it('line handles (p1, p2) appear after selecting a line area', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_LINE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_LINE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_LINE.id}`))
+    await waitFor(() => screen.getByTestId('area-handle-p1'))
+    expect(screen.getByTestId('area-handle-p2')).toBeDefined()
+  })
+
+  it('cone handles (origin, tip) appear after selecting a cone area', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CONE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CONE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CONE.id}`))
+    await waitFor(() => screen.getByTestId('area-handle-origin'))
+    expect(screen.getByTestId('area-handle-tip')).toBeDefined()
+  })
+
+  it('handles disappear when area is deselected', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    const row = screen.getByTestId(`area-row-${AREA_CIRCLE.id}`)
+    fireEvent.click(row)  // select
+    await waitFor(() => screen.getByTestId('area-handle-radius'))
+    fireEvent.click(row)  // deselect
+    await waitFor(() => expect(screen.queryByTestId('area-handle-radius')).toBeNull())
+  })
+
+  it('handles disappear when panel is closed', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    await waitFor(() => screen.getByTestId('area-handle-radius'))
+    fireEvent.click(screen.getByTestId('area-panel-close'))
+    await waitFor(() => expect(screen.queryByTestId('area-handle-radius')).toBeNull())
+  })
+
+  it('member view has no handles even with areas present', async () => {
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster={false} />, 'en')
+    await waitFor(() => screen.getByTestId('areas-overlay'))
+    expect(screen.queryByTestId('area-handle-radius')).toBeNull()
+  })
+})

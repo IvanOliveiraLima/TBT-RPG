@@ -63,7 +63,7 @@ import {
   updateMapArea,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
-import { hitTestArea, translateArea } from '@/domain/area-geometry'
+import { hitTestArea, translateArea, areaHandles, resizeArea, type AreaHandleKind } from '@/domain/area-geometry'
 import { HelpHint } from '@/components/HelpHint'
 import { DicePanel } from '@/components/dice/DicePanel'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
@@ -418,6 +418,7 @@ function AreaEditInteraction({
   selectedId,
   mapHeight,
   lineWidth,
+  pxPerUnit,
   areasRef,
   onDraftSet,
   onCommit,
@@ -426,8 +427,9 @@ function AreaEditInteraction({
   selectedId: string | null
   mapHeight: number
   lineWidth: number
+  pxPerUnit: number
   areasRef: React.MutableRefObject<CampaignMapArea[]>
-  onDraftSet: (id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => void
+  onDraftSet: (id: string, coords: { x?: number; y?: number; radius?: number; x2?: number | null; y2?: number | null }) => void
   onCommit: (id: string) => void
 }) {
   const leafletMap = useMap()
@@ -438,7 +440,7 @@ function AreaEditInteraction({
       const ll = leafletMap.mouseEventToLatLng(e as unknown as MouseEvent)
       return { x: ll.lng, y: mapHeight - ll.lat }
     }
-    let drag: { startX: number; startY: number; orig: CampaignMapArea } | null = null
+    let drag: { mode: 'move' | 'resize'; kind?: AreaHandleKind; startX: number; startY: number; orig: CampaignMapArea } | null = null
     let moved = false
     const down = (e: Event) => {
       const pe = e as PointerEvent
@@ -448,8 +450,19 @@ function AreaEditInteraction({
       const area = areasRef.current.find(a => a.id === selectedId)
       if (!area) return
       const { x, y } = toVB(pe)
-      if (!hitTestArea(area, x, y, { lineWidth })) return  // click outside selected area → let Leaflet pan
-      drag = { startX: x, startY: y, orig: area }
+      // Handle hit radius: 12 screen-px converted to viewBox units
+      const hitR = 12 / (pxPerUnit || 1)
+      let kind: AreaHandleKind | null = null
+      for (const h of areaHandles(area)) {
+        if (Math.hypot(x - h.x, y - h.y) <= hitR) { kind = h.kind; break }
+      }
+      if (kind) {
+        drag = { mode: 'resize', kind, startX: x, startY: y, orig: area }
+      } else if (hitTestArea(area, x, y, { lineWidth })) {
+        drag = { mode: 'move', startX: x, startY: y, orig: area }
+      } else {
+        return  // click outside selected area → let Leaflet pan
+      }
       moved = false
       leafletMap.dragging.disable()
       try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
@@ -457,10 +470,14 @@ function AreaEditInteraction({
     const move = (e: Event) => {
       if (!drag) return
       const { x, y } = toVB(e as PointerEvent)
-      const dx = x - drag.startX, dy = y - drag.startY
-      if (!moved && Math.abs(dx) + Math.abs(dy) < 1) return
+      if (!moved && Math.abs(x - drag.startX) + Math.abs(y - drag.startY) < 1) return
       moved = true
-      onDraftSet(drag.orig.id, translateArea(drag.orig, dx, dy))
+      if (drag.mode === 'resize' && drag.kind) {
+        onDraftSet(drag.orig.id, resizeArea(drag.orig, drag.kind, x, y))
+      } else {
+        const dx = x - drag.startX, dy = y - drag.startY
+        onDraftSet(drag.orig.id, translateArea(drag.orig, dx, dy))
+      }
     }
     const end = () => {
       if (!drag) return
@@ -480,7 +497,7 @@ function AreaEditInteraction({
       container.removeEventListener('pointercancel', end)
       leafletMap.dragging.enable()
     }
-  }, [active, selectedId, leafletMap, mapHeight, lineWidth, areasRef, onDraftSet, onCommit])
+  }, [active, selectedId, leafletMap, mapHeight, lineWidth, pxPerUnit, areasRef, onDraftSet, onCommit])
   return null
 }
 
@@ -1614,14 +1631,14 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
 
 
 
-  const handleAreaDraftSet = useCallback((id: string, coords: { x: number; y: number; x2: number | null; y2: number | null }) => {
+  const handleAreaDraftSet = useCallback((id: string, coords: { x?: number; y?: number; radius?: number; x2?: number | null; y2?: number | null }) => {
     setAreas(prev => prev.map(a => (a.id === id ? { ...a, ...coords } : a)))
   }, [])
 
   const handleAreaCommit = useCallback((id: string) => {
     const a = areasRef.current.find(x => x.id === id)
     if (!a) return
-    void updateMapArea(id, { x: a.x, y: a.y, x2: a.x2, y2: a.y2 }).catch(() => {})
+    void updateMapArea(id, { x: a.x, y: a.y, radius: a.radius, x2: a.x2, y2: a.y2 }).catch(() => {})
   }, [])
 
   const handleRulerStart = useCallback((latlng: L.LatLng) => {
@@ -3027,6 +3044,21 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
               }
               return null
             })}
+            {selectedAreaId && (() => {
+              const a = areas.find(x => x.id === selectedAreaId)
+              if (!a) return null
+              const hr = 6 / (pxPerUnit || 1)
+              return areaHandles(a).map((h, i) => (
+                <circle
+                  key={`handle-${i}`}
+                  data-testid={`area-handle-${h.kind}`}
+                  cx={h.x} cy={h.y} r={hr}
+                  fill="#fff" stroke={a.color} strokeWidth={2}
+                  vectorEffect="non-scaling-stroke"
+                  style={{ pointerEvents: 'none' }}
+                />
+              ))
+            })()}
             {areaPreview && areaPreview.radius > 0 && (() => {
               const p = areaPreview
               const sharedPreviewProps = {
@@ -3229,12 +3261,13 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
           />
         )}
 
-        {/* Area move interaction — active only when an area is selected from the list */}
+        {/* Area move/resize interaction — active only when an area is selected from the list */}
         <AreaEditInteraction
           active={isMaster && !areaMode && !broadcast && selectedAreaId != null}
           selectedId={selectedAreaId}
           mapHeight={map.height}
           lineWidth={localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10}
+          pxPerUnit={pxPerUnit}
           areasRef={areasRef}
           onDraftSet={handleAreaDraftSet}
           onCommit={handleAreaCommit}

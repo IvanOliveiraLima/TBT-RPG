@@ -959,7 +959,7 @@ const pt: Record<keyof typeof en, string> = {
   'areas.remove_one':  'Remover',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
   'areas.draw_start':  'Desenhar área',
-  'areas.select_hint': 'Clique numa área da lista para movê-la',
+  'areas.select_hint': 'Clique numa área da lista para mover ou redimensionar',
   'areas.done':        'Concluir',
 
   // ── Dice ──────────────────────────────────────────────────────────────────────

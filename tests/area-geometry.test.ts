@@ -3,7 +3,7 @@
  * Pure functions: no mocks needed.
  */
 import { describe, it, expect } from 'vitest'
-import { hitTestArea, translateArea, coneBase } from '@/domain/area-geometry'
+import { hitTestArea, translateArea, coneBase, areaHandles, resizeArea } from '@/domain/area-geometry'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -139,5 +139,128 @@ describe('translateArea — line/cone (x2/y2 set)', () => {
     expect(result.y).toBe(20)
     expect(result.x2).toBe(110)
     expect(result.y2).toBe(70)
+  })
+})
+
+// ── areaHandles ───────────────────────────────────────────────────────────────
+
+describe('areaHandles — circle', () => {
+  const area = makeArea({ shape: 'circle', x: 100, y: 200, radius: 50 })
+
+  it('returns one handle of kind "radius" at (x+r, y)', () => {
+    const handles = areaHandles(area)
+    expect(handles).toHaveLength(1)
+    expect(handles[0].kind).toBe('radius')
+    expect(handles[0].x).toBe(150)
+    expect(handles[0].y).toBe(200)
+  })
+})
+
+describe('areaHandles — square', () => {
+  const area = makeArea({ shape: 'square', x: 200, y: 200, radius: 60 })
+
+  it('returns one handle of kind "corner" at (x+r, y+r)', () => {
+    const handles = areaHandles(area)
+    expect(handles).toHaveLength(1)
+    expect(handles[0].kind).toBe('corner')
+    expect(handles[0].x).toBe(260)
+    expect(handles[0].y).toBe(260)
+  })
+})
+
+describe('areaHandles — line', () => {
+  const area = makeArea({ shape: 'line', x: 10, y: 20, x2: 110, y2: 80, radius: 100 })
+
+  it('returns p1 at the start and p2 at the end', () => {
+    const handles = areaHandles(area)
+    expect(handles).toHaveLength(2)
+    expect(handles.find(h => h.kind === 'p1')).toMatchObject({ x: 10, y: 20 })
+    expect(handles.find(h => h.kind === 'p2')).toMatchObject({ x: 110, y: 80 })
+  })
+})
+
+describe('areaHandles — cone', () => {
+  const area = makeArea({ shape: 'cone', x: 0, y: 0, x2: 0, y2: 100, radius: 100 })
+
+  it('returns origin at apex and tip at the tip point', () => {
+    const handles = areaHandles(area)
+    expect(handles).toHaveLength(2)
+    expect(handles.find(h => h.kind === 'origin')).toMatchObject({ x: 0, y: 0 })
+    expect(handles.find(h => h.kind === 'tip')).toMatchObject({ x: 0, y: 100 })
+  })
+})
+
+// ── resizeArea ────────────────────────────────────────────────────────────────
+
+describe('resizeArea — radius (circle)', () => {
+  const area = makeArea({ shape: 'circle', x: 100, y: 100, radius: 50 })
+
+  it('radius = distance from centre to dragged point', () => {
+    const patch = resizeArea(area, 'radius', 100, 170)  // directly below centre, dist=70
+    expect(patch.radius).toBeCloseTo(70)
+  })
+
+  it('clamps to minimum 2', () => {
+    const patch = resizeArea(area, 'radius', 100, 100)  // same as centre → dist=0
+    expect(patch.radius).toBe(2)
+  })
+})
+
+describe('resizeArea — corner (square)', () => {
+  const area = makeArea({ shape: 'square', x: 200, y: 200, radius: 60 })
+
+  it('radius = max(|dx|, |dy|)', () => {
+    const patch = resizeArea(area, 'corner', 280, 240)  // dx=80, dy=40 → max=80
+    expect(patch.radius).toBe(80)
+  })
+
+  it('clamps to minimum 2', () => {
+    const patch = resizeArea(area, 'corner', 200, 200)  // same as centre → 0
+    expect(patch.radius).toBe(2)
+  })
+})
+
+describe('resizeArea — p1 (line start)', () => {
+  // line from (0,0) to (100,0)
+  const area = makeArea({ shape: 'line', x: 0, y: 0, x2: 100, y2: 0, radius: 100 })
+
+  it('moves start point and recalculates radius as distance between endpoints', () => {
+    const patch = resizeArea(area, 'p1', 20, 0)
+    expect(patch.x).toBe(20)
+    expect(patch.y).toBe(0)
+    expect(patch.radius).toBeCloseTo(80)  // dist from (20,0) to (100,0)
+  })
+})
+
+describe('resizeArea — p2 (line end)', () => {
+  const area = makeArea({ shape: 'line', x: 0, y: 0, x2: 100, y2: 0, radius: 100 })
+
+  it('moves end point and recalculates radius', () => {
+    const patch = resizeArea(area, 'p2', 150, 0)
+    expect(patch.x2).toBe(150)
+    expect(patch.y2).toBe(0)
+    expect(patch.radius).toBeCloseTo(150)  // dist from (0,0) to (150,0)
+  })
+})
+
+describe('resizeArea — origin (cone apex)', () => {
+  const area = makeArea({ shape: 'cone', x: 0, y: 0, x2: 0, y2: 100, radius: 100 })
+
+  it('moves apex and recalculates radius', () => {
+    const patch = resizeArea(area, 'origin', 0, 20)
+    expect(patch.x).toBe(0)
+    expect(patch.y).toBe(20)
+    expect(patch.radius).toBeCloseTo(80)  // dist from (0,20) to (0,100)
+  })
+})
+
+describe('resizeArea — tip (cone tip)', () => {
+  const area = makeArea({ shape: 'cone', x: 0, y: 0, x2: 0, y2: 100, radius: 100 })
+
+  it('moves tip and recalculates radius', () => {
+    const patch = resizeArea(area, 'tip', 0, 200)
+    expect(patch.x2).toBe(0)
+    expect(patch.y2).toBe(200)
+    expect(patch.radius).toBeCloseTo(200)  // dist from (0,0) to (0,200)
   })
 })
