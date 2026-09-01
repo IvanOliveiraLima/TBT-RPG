@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from '@/i18n'
-import { roll, doubleDiceCount } from '@/domain/dice'
-import type { RollResult } from '@/domain/dice'
+import { roll, rollMulti, doubleDiceCount } from '@/domain/dice'
+import type { RollResult, DieSpec } from '@/domain/dice'
 import { useDiceStore } from '@/store/useDiceStore'
 import { NumberField } from '@/components/primitives/NumberField'
 import { HelpHint } from '@/components/HelpHint'
@@ -45,6 +45,7 @@ function RollSummary({ result }: { result: RollResult }) {
   const isCritHit = result.crit === 'hit'
   const isCritMiss = result.crit === 'miss'
   const critColor = isCritHit ? T.green : T.rubyLight
+  const mixed = new Set(result.dice.map(d => d.sides)).size > 1
 
   return (
     <div
@@ -100,18 +101,19 @@ function RollSummary({ result }: { result: RollResult }) {
             key={i}
             data-testid={d.kept ? 'die-kept' : 'die-discarded'}
             style={{
-              display: 'inline-flex',
+              display: 'inline-flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               width: 30, height: 30,
               background: d.kept ? 'rgba(91,63,168,0.25)' : 'rgba(255,255,255,0.04)',
               border: `1px solid ${d.kept ? T.purple : T.border}`,
-              borderRadius: 6,
-              fontSize: 13, fontWeight: 700,
+              borderRadius: 6, fontSize: 13, fontWeight: 700,
               color: d.kept ? T.text : T.textMuted,
               textDecoration: d.kept ? 'none' : 'line-through',
+              lineHeight: 1,
             }}
           >
             {d.value}
+            {mixed && <span style={{ fontSize: 8, fontWeight: 500, color: T.textMuted }}>d{d.sides}</span>}
           </span>
         ))}
       </div>
@@ -159,6 +161,9 @@ export function DicePanel({ onClose }: DicePanelProps) {
   const [selectedSides, setSelectedSides] = useState<DieSides>(20)
   const [quantity, setQuantity] = useState(1)
   const [modifier, setModifier] = useState(0)
+  const [multi, setMulti] = useState(false)
+  const [counts, setCounts] = useState<Record<number, number>>({})
+  const armedSides = DIE_SIDES.filter(s => (counts[s] ?? 0) > 0)
 
   function handleRoll() {
     const notation = quantity === 1 && modifier === 0
@@ -168,6 +173,14 @@ export function DicePanel({ onClose }: DicePanelProps) {
         : `${quantity}d${selectedSides}${modifier >= 0 ? '+' : ''}${modifier}`
 
     const result = roll(notation, { mode: rollMode })
+    addRoll(result)
+    clearCritContext()
+  }
+
+  function handleRollMulti() {
+    const specs: DieSpec[] = armedSides.map(s => ({ sides: s, count: counts[s] ?? 0 }))
+    if (specs.length === 0) return
+    const result = rollMulti(specs, { modifier })
     addRoll(result)
     clearCritContext()
   }
@@ -240,15 +253,40 @@ export function DicePanel({ onClose }: DicePanelProps) {
         </div>
       )}
 
+      {/* Multi-die toggle */}
+      <label
+        data-testid="multi-toggle"
+        style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, cursor: 'pointer', fontSize: 12, color: T.textSub }}
+      >
+        <input
+          type="checkbox"
+          checked={multi}
+          onChange={e => { setMulti(e.target.checked); if (!e.target.checked) setCounts({}) }}
+          style={{ cursor: 'pointer' }}
+        />
+        {t('dice.multi_toggle')}
+      </label>
+
       {/* Die selector */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, flexShrink: 0 }}>
         {DIE_SIDES.map(sides => {
-          const active = sides === selectedSides
+          const active = multi ? (counts[sides] ?? 0) > 0 : sides === selectedSides
           return (
             <button
               key={sides}
               data-testid={`die-btn-d${sides}`}
-              onClick={() => setSelectedSides(sides)}
+              onClick={() => {
+                if (multi) {
+                  setCounts(c => {
+                    const n = { ...c }
+                    if (n[sides]) delete n[sides]
+                    else n[sides] = 1
+                    return n
+                  })
+                } else {
+                  setSelectedSides(sides)
+                }
+              }}
               style={{
                 ...btnBase,
                 padding: '6px 0',
@@ -266,27 +304,52 @@ export function DicePanel({ onClose }: DicePanelProps) {
         })}
       </div>
 
+      {/* Per-type quantity (multi mode) */}
+      {multi && (
+        <div data-testid="multi-qty-list" style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+          {armedSides.length === 0 && (
+            <span style={{ fontSize: 11, color: T.textMuted }}>{t('dice.multi_hint')}</span>
+          )}
+          {armedSides.map(sides => (
+            <div key={sides} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 40, fontSize: 12, color: T.textSub }}>d{sides}</span>
+              <NumberField
+                data-testid={`multi-qty-d${sides}`}
+                value={counts[sides] ?? 1}
+                min={1}
+                max={99}
+                showSteppers
+                onChange={v => setCounts(c => ({ ...c, [sides]: v }))}
+                style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 7, padding: '5px 8px', color: T.text, fontSize: 14, fontFamily: T.sans, flex: 1 }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Quantity + Modifier */}
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
-            {t('dice.quantity')}
-          </label>
-          <NumberField
-            data-testid="quantity-input"
-            value={quantity}
-            min={1}
-            max={99}
-            showSteppers
-            onChange={setQuantity}
-            style={{
-              background: T.surface,
-              border: `1px solid ${T.border}`,
-              borderRadius: 7, padding: '5px 8px',
-              color: T.text, fontSize: 14, fontFamily: T.sans,
-            }}
-          />
-        </div>
+        {!multi && (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
+              {t('dice.quantity')}
+            </label>
+            <NumberField
+              data-testid="quantity-input"
+              value={quantity}
+              min={1}
+              max={99}
+              showSteppers
+              onChange={setQuantity}
+              style={{
+                background: T.surface,
+                border: `1px solid ${T.border}`,
+                borderRadius: 7, padding: '5px 8px',
+                color: T.text, fontSize: 14, fontFamily: T.sans,
+              }}
+            />
+          </div>
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <label style={{ fontSize: 11, color: T.textMuted, display: 'block', marginBottom: 3 }}>
             {t('dice.modifier')}
@@ -309,7 +372,7 @@ export function DicePanel({ onClose }: DicePanelProps) {
       </div>
 
       {/* Advantage / Disadvantage (d20 only) — reads/writes global rollMode */}
-      {selectedSides === 20 && (
+      {!multi && selectedSides === 20 && (
         <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
           {(['normal', 'advantage', 'disadvantage'] as const).map(m => {
             const mLabel = m === 'normal' ? t('dice.normal') : m === 'advantage' ? t('dice.advantage') : t('dice.disadvantage')
@@ -360,7 +423,8 @@ export function DicePanel({ onClose }: DicePanelProps) {
       {/* Roll button */}
       <button
         data-testid="roll-btn"
-        onClick={handleRoll}
+        onClick={multi ? handleRollMulti : handleRoll}
+        disabled={multi && armedSides.length === 0}
         style={{
           ...btnBase,
           padding: '10px',
@@ -369,9 +433,11 @@ export function DicePanel({ onClose }: DicePanelProps) {
           color: '#fff',
           border: `1px solid ${T.rubyLight}`,
           flexShrink: 0,
+          opacity: multi && armedSides.length === 0 ? 0.5 : 1,
+          cursor: multi && armedSides.length === 0 ? 'not-allowed' : 'pointer',
         }}
       >
-        {t('dice.roll')}
+        {multi ? t('dice.roll_all') : t('dice.roll')}
       </button>
 
       {/* Critical damage button — shown when an attack crit was just rolled */}
