@@ -23,11 +23,13 @@ vi.mock('@/domain/dice', async (importOriginal) => {
   return {
     ...actual,
     roll: vi.fn(),
+    rollMulti: vi.fn(),
   }
 })
 
-import { roll } from '@/domain/dice'
+import { roll, rollMulti } from '@/domain/dice'
 const mockRoll = vi.mocked(roll)
+const mockRollMulti = vi.mocked(rollMulti)
 
 function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {}): import('@/domain/dice').RollResult {
   return {
@@ -47,6 +49,7 @@ describe('DicePanel', () => {
   beforeEach(() => {
     useDiceStore.setState({ history: [], lastResult: null })
     mockRoll.mockReturnValue(makeResult())
+    mockRollMulti.mockReturnValue(makeResult())
   })
 
   it('renders title in EN', () => {
@@ -243,6 +246,118 @@ describe('DicePanel', () => {
     await waitFor(() => {
       expect(mockRoll).toHaveBeenCalledWith('2d8+3', { mode: 'normal', label: 'Dano' })
       expect(useDiceStore.getState().critContext).toBeNull()
+    })
+  })
+})
+
+// ── Multi-die mode ────────────────────────────────────────────────────────────
+
+describe('DicePanel — multi-die mode', () => {
+  beforeEach(() => {
+    useDiceStore.setState({ history: [], lastResult: null })
+    mockRoll.mockReturnValue(makeResult())
+    mockRollMulti.mockReturnValue(makeResult())
+  })
+
+  it('activating multi-toggle shows the checkbox checked', () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    const toggle = screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!
+    expect((toggle as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(toggle)
+    expect((toggle as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('clicking a die button in multi mode arms it (shows qty stepper)', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    fireEvent.click(screen.getByTestId('die-btn-d6'))
+    await waitFor(() => {
+      expect(screen.getByTestId('multi-qty-d6')).toBeDefined()
+    })
+  })
+
+  it('clicking an armed die again in multi mode disarms it', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    fireEvent.click(screen.getByTestId('die-btn-d6'))
+    await waitFor(() => { expect(screen.getByTestId('multi-qty-d6')).toBeDefined() })
+    fireEvent.click(screen.getByTestId('die-btn-d6'))
+    await waitFor(() => {
+      expect(screen.queryByTestId('multi-qty-d6')).toBeNull()
+    })
+  })
+
+  it('roll button shows "Roll all" in EN when multi mode active', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    await waitFor(() => {
+      expect(screen.getByTestId('roll-btn').textContent).toBe('Roll all')
+    })
+  })
+
+  it('roll button shows "Lançar todos" in PT when multi mode active', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'pt')
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    await waitFor(() => {
+      expect(screen.getByTestId('roll-btn').textContent).toBe('Lançar todos')
+    })
+  })
+
+  it('roll button is disabled in multi mode with no dice armed', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    await waitFor(() => {
+      expect((screen.getByTestId('roll-btn') as HTMLButtonElement).disabled).toBe(true)
+    })
+  })
+
+  it('clicking roll in multi mode calls rollMulti and shows result', async () => {
+    const multiResult = makeResult({
+      total: 11,
+      dice: [
+        { sides: 6, value: 3, kept: true },
+        { sides: 6, value: 4, kept: true },
+        { sides: 8, value: 4, kept: true },
+      ],
+      notation: '2d6 + 1d8',
+    })
+    mockRollMulti.mockReturnValue(multiResult)
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    const checkbox = screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!
+    fireEvent.click(checkbox)
+    fireEvent.click(screen.getByTestId('die-btn-d6'))
+    fireEvent.click(screen.getByTestId('die-btn-d8'))
+    fireEvent.click(screen.getByTestId('roll-btn'))
+    await waitFor(() => {
+      expect(mockRollMulti).toHaveBeenCalled()
+      expect(screen.getByTestId('roll-result')).toBeDefined()
+      expect(screen.getByTestId('roll-total').textContent).toBe('11')
+      expect(screen.getAllByTestId('die-kept')).toHaveLength(3)
+    })
+  })
+
+  it('adv/dis buttons are hidden in multi mode even when d20 is selected', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    // d20 is selected by default; adv/dis should be visible
+    expect(screen.getByTestId('mode-advantage')).toBeDefined()
+    // enable multi mode
+    fireEvent.click(screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!)
+    await waitFor(() => {
+      expect(screen.queryByTestId('mode-advantage')).toBeNull()
+    })
+  })
+
+  it('disabling multi-toggle clears armed dice and restores quantity-input', async () => {
+    renderWithI18n(<DicePanel onClose={() => {}} />, 'en')
+    const checkbox = screen.getByTestId('multi-toggle').querySelector('input[type="checkbox"]')!
+    fireEvent.click(checkbox)
+    fireEvent.click(screen.getByTestId('die-btn-d6'))
+    await waitFor(() => { expect(screen.getByTestId('multi-qty-d6')).toBeDefined() })
+    // disable multi
+    fireEvent.click(checkbox)
+    await waitFor(() => {
+      expect(screen.queryByTestId('multi-qty-d6')).toBeNull()
+      expect(screen.getByTestId('quantity-input')).toBeDefined()
     })
   })
 })

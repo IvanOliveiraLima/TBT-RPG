@@ -958,6 +958,8 @@ const pt: Record<keyof typeof en, string> = {
   'areas.clear':       'Limpar tudo',
   'areas.remove_one':  'Remover',
   'areas.draw_hint':   'Arraste no mapa para desenhar',
+  'areas.draw_start':  'Desenhar área',
+  'areas.select_hint': 'Clique numa área da lista para mover ou redimensionar',
   'areas.done':        'Concluir',
 
   // ── Dice ──────────────────────────────────────────────────────────────────────
@@ -982,6 +984,9 @@ const pt: Record<keyof typeof en, string> = {
   'dice.secret_badge':     'SEGREDO',
   'dice.secret_help':      "Rolagens secretas não vão para o log da campanha — os jogadores nunca as veem. Elas não ficam salvas em lugar nenhum, nem para você: o resultado fica só nesta bandeja e some ao recarregar ou fechar a página. O modo continua ligado até você desligar, e é desligado ao sair da campanha.",
   'dice.secret_roll_marker': 'Rolagem secreta (não registrada)',
+  'dice.multi_toggle':     'Vários dados',
+  'dice.roll_all':         'Lançar todos',
+  'dice.multi_hint':       'Toque nos dados para armá-los, defina a quantidade de cada e lance todos',
 
   // ── Campaign dice log ─────────────────────────────────────────────────────────
   'dice_log.title':        'Log de rolagens',

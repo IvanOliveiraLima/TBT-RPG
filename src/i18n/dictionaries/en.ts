@@ -955,6 +955,8 @@ const en = {
   'areas.clear':       'Clear all',
   'areas.remove_one':  'Remove',
   'areas.draw_hint':   'Drag on the map to draw',
+  'areas.draw_start':  'Draw area',
+  'areas.select_hint': 'Click an area in the list to move or resize it',
   'areas.done':        'Done',
 
   // ── Dice ──────────────────────────────────────────────────────────────────────
@@ -979,6 +981,9 @@ const en = {
   'dice.secret_badge':     'SECRET',
   'dice.secret_help':      "Secret rolls are not sent to the campaign log — players never see them. They are not saved anywhere, not even for you: the result stays in this tray and is lost when you reload or close the page. The toggle stays on until you turn it off, and resets when you leave the campaign.",
   'dice.secret_roll_marker': 'Secret roll (not logged)',
+  'dice.multi_toggle':     'Multiple dice',
+  'dice.roll_all':         'Roll all',
+  'dice.multi_hint':       'Tap dice to arm them, set each quantity, then roll all',
 
   // ── Campaign dice log ─────────────────────────────────────────────────────────
   'dice_log.title':        'Roll log',
