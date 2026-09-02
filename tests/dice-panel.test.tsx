@@ -50,8 +50,8 @@ function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {})
 describe('DicePanel', () => {
   beforeEach(() => {
     useDiceStore.setState({ history: [], lastResult: null })
-    mockRoll.mockReturnValue(makeResult())
-    mockRollMulti.mockReturnValue(makeResult())
+    mockRoll.mockImplementation(() => makeResult())
+    mockRollMulti.mockImplementation(() => makeResult())
   })
 
   it('renders title in EN', () => {
@@ -257,8 +257,8 @@ describe('DicePanel', () => {
 describe('DicePanel — multi-die mode', () => {
   beforeEach(() => {
     useDiceStore.setState({ history: [], lastResult: null })
-    mockRoll.mockReturnValue(makeResult())
-    mockRollMulti.mockReturnValue(makeResult())
+    mockRoll.mockImplementation(() => makeResult())
+    mockRollMulti.mockImplementation(() => makeResult())
   })
 
   it('activating multi-toggle shows the checkbox checked', () => {
