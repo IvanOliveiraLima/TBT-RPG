@@ -82,6 +82,14 @@ export function areaHandles(area: CampaignMapArea): AreaHandle[] {
   }
 }
 
+/** Returns the handle kind under (px, py), or null. hitR in map coords. */
+export function hitTestHandle(area: CampaignMapArea, px: number, py: number, hitR: number): AreaHandleKind | null {
+  for (const h of areaHandles(area)) {
+    if (Math.hypot(px - h.x, py - h.y) <= hitR) return h.kind
+  }
+  return null
+}
+
 /** Coord patch produced by dragging handle `kind` to (px, py). radius is recalculated for line/cone. */
 export function resizeArea(
   area: CampaignMapArea,
