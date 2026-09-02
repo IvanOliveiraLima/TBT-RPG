@@ -31,9 +31,11 @@ import { roll, rollMulti } from '@/domain/dice'
 const mockRoll = vi.mocked(roll)
 const mockRollMulti = vi.mocked(rollMulti)
 
+let nextResultId = 0
+
 function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {}): import('@/domain/dice').RollResult {
   return {
-    id: 'test-id',
+    id: `test-id-${++nextResultId}`,
     notation: 'd20',
     dice: [{ sides: 20, value: 15, kept: true }],
     modifier: 0,
