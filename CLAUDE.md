@@ -1441,6 +1441,14 @@ apagava e refazia. Agora ela é selecionável, móvel e redimensionável. Feito 
   `areaHandles`/`resizeArea` no domain; alça tem prioridade sobre o corpo no `pointerdown`, com raio de
   acerto e tamanho escalados por `pxPerUnit`. `handleAreaCommit` passou a enviar `radius` (senão o resize de
   círculo/quadrado não persistiria).
+- **Polimento de criação (#325)** — a área recém-desenhada é **auto-selecionada** (alças aparecem na hora) e
+  as alças de resize já funcionam **durante o desenho**, antes do "Concluir": um helper puro `hitTestHandle`
+  decide, o `AreaInteraction` (desenho) desvia quando o clique cai numa alça e o `AreaEditInteraction` faz o
+  resize. **Mover** segue disponível só após o Concluir (`allowMove = !areaMode`), pra não conflitar com o
+  gesto de desenhar.
+- **Fix de teste (#324)** — warning React `same key 'test-id'` eliminado: o mock `makeResult` ganhou id único
+  por chamada (contador) e os `beforeEach` passaram a usar `mockImplementation(() => makeResult())`
+  (resultado fresco por rolagem, em vez de um objeto cacheado). Só testes; produção já usava `makeId()`.
 
 ---
 

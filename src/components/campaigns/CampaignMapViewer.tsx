@@ -63,7 +63,7 @@ import {
   updateMapArea,
 } from '@/services/campaign-map-areas'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
-import { hitTestArea, translateArea, areaHandles, resizeArea, type AreaHandleKind } from '@/domain/area-geometry'
+import { hitTestArea, translateArea, areaHandles, resizeArea, hitTestHandle, type AreaHandleKind } from '@/domain/area-geometry'
 import { HelpHint } from '@/components/HelpHint'
 import { DicePanel } from '@/components/dice/DicePanel'
 import { CampaignRollLog } from '@/components/campaigns/CampaignRollLog'
@@ -305,11 +305,19 @@ function AreaInteraction({
   onStart,
   onMove,
   onEnd,
+  selectedId,
+  areasRef,
+  mapHeight,
+  pxPerUnit,
 }: {
   areaMode: boolean
   onStart: (latlng: L.LatLng) => void
   onMove:  (latlng: L.LatLng) => void
   onEnd:   () => void
+  selectedId: string | null
+  areasRef: React.MutableRefObject<CampaignMapArea[]>
+  mapHeight: number
+  pxPerUnit: number
 }) {
   const leafletMap = useMap()
 
@@ -328,6 +336,15 @@ function AreaInteraction({
     const down = (e: Event) => {
       const pe = e as PointerEvent
       if ((pe.target as HTMLElement).closest('button, input, select, label')) return
+      // If the pointer lands on a handle of the selected area, defer to AreaEditInteraction (resize).
+      if (selectedId) {
+        const sel = areasRef.current.find(a => a.id === selectedId)
+        if (sel) {
+          const ll = leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent)
+          const hitR = 12 / (pxPerUnit || 1)
+          if (hitTestHandle(sel, ll.lng, mapHeight - ll.lat, hitR)) return
+        }
+      }
       dragging = true
       try { container.setPointerCapture(pe.pointerId) } catch { /* noop */ }
       onStart(leafletMap.mouseEventToLatLng(pe as unknown as MouseEvent))
@@ -349,7 +366,7 @@ function AreaInteraction({
       container.style.cursor = ''
       container.style.touchAction = ''
     }
-  }, [areaMode, leafletMap, onStart, onMove, onEnd])
+  }, [areaMode, leafletMap, onStart, onMove, onEnd, selectedId, areasRef, mapHeight, pxPerUnit])
 
   return null
 }
@@ -420,6 +437,7 @@ function AreaEditInteraction({
   lineWidth,
   pxPerUnit,
   areasRef,
+  allowMove,
   onDraftSet,
   onCommit,
 }: {
@@ -429,6 +447,7 @@ function AreaEditInteraction({
   lineWidth: number
   pxPerUnit: number
   areasRef: React.MutableRefObject<CampaignMapArea[]>
+  allowMove: boolean
   onDraftSet: (id: string, coords: { x?: number; y?: number; radius?: number; x2?: number | null; y2?: number | null }) => void
   onCommit: (id: string) => void
 }) {
@@ -458,10 +477,10 @@ function AreaEditInteraction({
       }
       if (kind) {
         drag = { mode: 'resize', kind, startX: x, startY: y, orig: area }
-      } else if (hitTestArea(area, x, y, { lineWidth })) {
+      } else if (allowMove && hitTestArea(area, x, y, { lineWidth })) {
         drag = { mode: 'move', startX: x, startY: y, orig: area }
       } else {
-        return  // click outside selected area → let Leaflet pan
+        return  // click outside handle/body, or move not allowed → let other handlers act
       }
       moved = false
       leafletMap.dragging.disable()
@@ -483,7 +502,7 @@ function AreaEditInteraction({
       if (!drag) return
       const id = drag.orig.id
       drag = null
-      leafletMap.dragging.enable()
+      if (allowMove) leafletMap.dragging.enable()
       if (moved) onCommit(id)
     }
     container.addEventListener('pointerdown', down)
@@ -495,9 +514,9 @@ function AreaEditInteraction({
       container.removeEventListener('pointermove', move)
       container.removeEventListener('pointerup', end)
       container.removeEventListener('pointercancel', end)
-      leafletMap.dragging.enable()
+      if (allowMove) leafletMap.dragging.enable()
     }
-  }, [active, selectedId, leafletMap, mapHeight, lineWidth, pxPerUnit, areasRef, onDraftSet, onCommit])
+  }, [active, selectedId, leafletMap, mapHeight, lineWidth, pxPerUnit, areasRef, allowMove, onDraftSet, onCommit])
   return null
 }
 
@@ -1607,7 +1626,7 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
     if (!preview || preview.radius < 6) return
     const { x, y, radius, x2, y2 } = preview
     void createMapArea(map.id, { shape: areaShape, x, y, radius, color: areaColor, x2: x2 ?? null, y2: y2 ?? null })
-      .then(area => setAreas(prev => [...prev, area]))
+      .then(area => { setAreas(prev => [...prev, area]); setSelectedAreaId(area.id) })
       .catch(() => {})
   }, [map.id, areaShape, areaColor])
 
@@ -3258,12 +3277,17 @@ export function CampaignMapViewer({ map, isMaster = false, expanded = false, onG
             onStart={handleAreaStart}
             onMove={handleAreaMove}
             onEnd={handleAreaEnd}
+            selectedId={selectedAreaId}
+            areasRef={areasRef}
+            mapHeight={map.height}
+            pxPerUnit={pxPerUnit}
           />
         )}
 
-        {/* Area move/resize interaction — active only when an area is selected from the list */}
+        {/* Area move/resize interaction — active when an area is selected (resize also during draw mode) */}
         <AreaEditInteraction
-          active={isMaster && !areaMode && !broadcast && selectedAreaId != null}
+          active={isMaster && !broadcast && selectedAreaId != null}
+          allowMove={!areaMode}
           selectedId={selectedAreaId}
           mapHeight={map.height}
           lineWidth={localGrid.enabled && localGrid.size && localGrid.size > 0 ? localGrid.size : 10}

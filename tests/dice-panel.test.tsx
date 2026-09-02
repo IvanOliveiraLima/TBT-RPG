@@ -31,9 +31,11 @@ import { roll, rollMulti } from '@/domain/dice'
 const mockRoll = vi.mocked(roll)
 const mockRollMulti = vi.mocked(rollMulti)
 
+let nextResultId = 0
+
 function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {}): import('@/domain/dice').RollResult {
   return {
-    id: 'test-id',
+    id: `test-id-${++nextResultId}`,
     notation: 'd20',
     dice: [{ sides: 20, value: 15, kept: true }],
     modifier: 0,
@@ -48,8 +50,8 @@ function makeResult(overrides: Partial<import('@/domain/dice').RollResult> = {})
 describe('DicePanel', () => {
   beforeEach(() => {
     useDiceStore.setState({ history: [], lastResult: null })
-    mockRoll.mockReturnValue(makeResult())
-    mockRollMulti.mockReturnValue(makeResult())
+    mockRoll.mockImplementation(() => makeResult())
+    mockRollMulti.mockImplementation(() => makeResult())
   })
 
   it('renders title in EN', () => {
@@ -255,8 +257,8 @@ describe('DicePanel', () => {
 describe('DicePanel — multi-die mode', () => {
   beforeEach(() => {
     useDiceStore.setState({ history: [], lastResult: null })
-    mockRoll.mockReturnValue(makeResult())
-    mockRollMulti.mockReturnValue(makeResult())
+    mockRoll.mockImplementation(() => makeResult())
+    mockRollMulti.mockImplementation(() => makeResult())
   })
 
   it('activating multi-toggle shows the checkbox checked', () => {
