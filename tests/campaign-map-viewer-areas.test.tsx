@@ -723,4 +723,22 @@ describe('CampaignMapViewer — area resize handles', () => {
     await waitFor(() => screen.getByTestId('areas-overlay'))
     expect(screen.queryByTestId('area-handle-radius')).toBeNull()
   })
+
+  it('handles remain active while in draw mode for a list-selected area (resize during drawing)', async () => {
+    // AreaEditInteraction is now active={!broadcast && selectedAreaId != null} — no longer gated by !areaMode.
+    // This is what enables resize-while-drawing: auto-select sets selectedAreaId during draw mode,
+    // and the handles are immediately visible and interactive.
+    mockListMapAreas.mockResolvedValue([AREA_CIRCLE])
+    renderWithI18n(<CampaignMapViewer map={MAP} isMaster />, 'en')
+    await waitFor(() => screen.getByTestId('area-panel-toggle'))
+    fireEvent.click(screen.getByTestId('area-panel-toggle'))
+    await waitFor(() => screen.getByTestId('area-draw-start'))
+    // Enter draw mode first
+    fireEvent.click(screen.getByTestId('area-draw-start'))
+    // Select area from list while draw mode is active
+    await waitFor(() => screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    fireEvent.click(screen.getByTestId(`area-row-${AREA_CIRCLE.id}`))
+    // Handles must appear even though areaMode is true
+    await waitFor(() => screen.getByTestId('area-handle-radius'))
+  })
 })

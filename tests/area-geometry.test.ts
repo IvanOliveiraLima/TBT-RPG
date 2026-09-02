@@ -3,7 +3,7 @@
  * Pure functions: no mocks needed.
  */
 import { describe, it, expect } from 'vitest'
-import { hitTestArea, translateArea, coneBase, areaHandles, resizeArea } from '@/domain/area-geometry'
+import { hitTestArea, translateArea, coneBase, areaHandles, resizeArea, hitTestHandle } from '@/domain/area-geometry'
 import type { CampaignMapArea } from '@/services/campaign-map-areas'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -251,6 +251,72 @@ describe('resizeArea — origin (cone apex)', () => {
     expect(patch.x).toBe(0)
     expect(patch.y).toBe(20)
     expect(patch.radius).toBeCloseTo(80)  // dist from (0,20) to (0,100)
+  })
+})
+
+// ── hitTestHandle ─────────────────────────────────────────────────────────────
+
+describe('hitTestHandle — circle (radius handle)', () => {
+  // circle at (100,100), radius 50 → handle at (150,100)
+  const area = makeArea({ shape: 'circle', x: 100, y: 100, radius: 50 })
+
+  it('returns "radius" when pointer is within hitR of the handle', () => {
+    expect(hitTestHandle(area, 150, 100, 10)).toBe('radius')
+  })
+
+  it('returns "radius" at the exact handle position', () => {
+    expect(hitTestHandle(area, 150, 100, 5)).toBe('radius')
+  })
+
+  it('returns null when pointer is outside hitR', () => {
+    expect(hitTestHandle(area, 162, 100, 10)).toBeNull()
+  })
+})
+
+describe('hitTestHandle — square (corner handle)', () => {
+  // square at (200,200), radius 60 → handle at (260,260)
+  const area = makeArea({ shape: 'square', x: 200, y: 200, radius: 60 })
+
+  it('returns "corner" when within hitR of the corner handle', () => {
+    expect(hitTestHandle(area, 260, 260, 10)).toBe('corner')
+  })
+
+  it('returns null when outside hitR', () => {
+    expect(hitTestHandle(area, 272, 260, 10)).toBeNull()
+  })
+})
+
+describe('hitTestHandle — line (p1 and p2 handles)', () => {
+  // line from (10,20) to (110,80)
+  const area = makeArea({ shape: 'line', x: 10, y: 20, x2: 110, y2: 80, radius: 100 })
+
+  it('returns "p1" when within hitR of the start point', () => {
+    expect(hitTestHandle(area, 10, 20, 8)).toBe('p1')
+  })
+
+  it('returns "p2" when within hitR of the end point', () => {
+    expect(hitTestHandle(area, 110, 80, 8)).toBe('p2')
+  })
+
+  it('returns null when not near either handle', () => {
+    expect(hitTestHandle(area, 60, 50, 8)).toBeNull()
+  })
+})
+
+describe('hitTestHandle — cone (origin and tip handles)', () => {
+  // cone apex (0,0), tip (0,100)
+  const area = makeArea({ shape: 'cone', x: 0, y: 0, x2: 0, y2: 100, radius: 100 })
+
+  it('returns "origin" when within hitR of the apex', () => {
+    expect(hitTestHandle(area, 0, 0, 8)).toBe('origin')
+  })
+
+  it('returns "tip" when within hitR of the tip', () => {
+    expect(hitTestHandle(area, 0, 100, 8)).toBe('tip')
+  })
+
+  it('returns null when not near any handle', () => {
+    expect(hitTestHandle(area, 50, 50, 8)).toBeNull()
   })
 })
 
