@@ -1450,6 +1450,15 @@ apagava e refazia. Agora ela é selecionável, móvel e redimensionável. Feito 
   por chamada (contador) e os `beforeEach` passaram a usar `mockImplementation(() => makeResult())`
   (resultado fresco por rolagem, em vez de um objeto cacheado). Só testes; produção já usava `makeId()`.
 
+### Campanhas — editar nome e descrição (COMPLETED — PR #328)
+O mestre não conseguia editar a campanha depois de criada — tinha que refazer. Agora edita nome e descrição.
+`updateCampaign(id, {name?, description?})` no serviço (patch parcial, trim, descrição vazia → null),
+**sem SQL**: reusa a policy de UPDATE em `campaigns` que o `updateAutoInitiative` já usava (RLS de UPDATE é
+por linha, não por coluna). No cliente, o `CreateCampaignModal` virou **create/edit** (prop `campaign`
+opcional pré-preenche, título/botão mudam, chama `updateCampaign`) — DRY, sem um modal quase idêntico. Botão
+lápis no `CampaignDetail` visível só pro mestre. (Não confundir com o `EditDisplayNameModal`, que é o nome de
+exibição do usuário.)
+
 ---
 
 ## Patterns established during C.1.c
@@ -2228,6 +2237,7 @@ function buildInviteLink(): string {
 | Edição de área é deliberada: selecionar pela lista, não pelo clique no mapa | #320 | Clique no mapa concorre com tokens/pan; sem seleção, o listener nem existe e o mapa fica intacto |
 | Alça tem prioridade sobre o corpo; token/UI têm prioridade sobre a área | #320, #321 | Ordem de hit-test no pointerdown resolve o empilhamento sem modos extras |
 | `handleAreaCommit` grava `radius` além de x/y/x2/y2 | #321 | Resize de círculo/quadrado só muda o raio; sem isso a mudança não persistia (só local) |
+| Editar campanha reusa a policy de UPDATE existente; modal de criação vira create/edit | #328 | RLS de UPDATE é por linha (mesma do updateAutoInitiative) -> sem SQL; prop opcional evita um segundo modal |
 
 ---
 
