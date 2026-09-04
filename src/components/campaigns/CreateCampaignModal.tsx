@@ -17,39 +17,49 @@ const T = {
 } as const
 
 interface CreateCampaignModalProps {
+  campaign?: Campaign
   onCreated: (campaign: Campaign) => void
   onCancel: () => void
 }
 
-export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModalProps) {
+export function CreateCampaignModal({ campaign, onCreated, onCancel }: CreateCampaignModalProps) {
   const { t } = useTranslation()
   const createCampaign = useCampaignsStore(s => s.createCampaign)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<'idle' | 'creating' | 'error'>('idle')
+  const updateCampaign = useCampaignsStore(s => s.updateCampaign)
+  const [name, setName] = useState(campaign?.name ?? '')
+  const [description, setDescription] = useState(campaign?.description ?? '')
+  const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const [errorCode, setErrorCode] = useState<string | null>(null)
+
+  const isEdit = campaign != null
 
   async function handleSubmit() {
     const trimmedName = name.trim()
     if (trimmedName.length === 0) return
 
-    setStatus('creating')
+    setStatus('saving')
     setErrorCode(null)
     try {
-      const campaign = await createCampaign({ name: trimmedName, description })
-      onCreated(campaign)
+      let result: Campaign
+      if (isEdit) {
+        result = await updateCampaign(campaign.id, { name: trimmedName, description })
+      } else {
+        result = await createCampaign({ name: trimmedName, description })
+      }
+      onCreated(result)
     } catch (err) {
       setStatus('error')
-      setErrorCode(err instanceof CampaignServiceError ? err.code : 'create_failed')
+      setErrorCode(err instanceof CampaignServiceError ? err.code : isEdit ? 'update_failed' : 'create_failed')
     }
   }
 
-  const isCreating = status === 'creating'
-  const canSubmit = name.trim().length > 0 && !isCreating
+  const isSaving = status === 'saving'
+  const canSubmit = name.trim().length > 0 && !isSaving
 
   return (
     <div
       data-testid="create-campaign-modal"
+      data-mode={isEdit ? 'edit' : 'create'}
       onClick={onCancel}
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
@@ -74,7 +84,7 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
           fontFamily: T.serif, fontSize: 16, fontWeight: 700,
           color: T.textPrimary, marginBottom: 20,
         }}>
-          {t('create_campaign.title')}
+          {t(isEdit ? 'edit_campaign.title' : 'create_campaign.title')}
         </div>
 
         {/* Name */}
@@ -95,7 +105,7 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
             onKeyDown={e => { if (e.key === 'Enter' && canSubmit) void handleSubmit() }}
             placeholder={t('create_campaign.name_placeholder')}
             maxLength={100}
-            disabled={isCreating}
+            disabled={isSaving}
             autoFocus
             style={{
               width: '100%',
@@ -128,7 +138,7 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
             onChange={e => setDescription(e.target.value)}
             placeholder={t('create_campaign.description_placeholder')}
             maxLength={500}
-            disabled={isCreating}
+            disabled={isSaving}
             rows={3}
             style={{
               width: '100%',
@@ -166,9 +176,10 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            type="button"
             data-testid="create-campaign-cancel"
             onClick={onCancel}
-            disabled={isCreating}
+            disabled={isSaving}
             style={{
               flex: 1,
               background: 'transparent',
@@ -177,13 +188,14 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
               padding: '10px',
               fontSize: 13, fontWeight: 500,
               color: T.textMuted,
-              cursor: isCreating ? 'not-allowed' : 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
               fontFamily: T.sans,
             }}
           >
             {t('common.cancel')}
           </button>
           <button
+            type="button"
             data-testid="create-campaign-submit"
             onClick={() => void handleSubmit()}
             disabled={!canSubmit}
@@ -199,7 +211,9 @@ export function CreateCampaignModal({ onCreated, onCancel }: CreateCampaignModal
               fontFamily: T.sans,
             }}
           >
-            {isCreating ? t('create_campaign.creating') : t('create_campaign.create_button')}
+            {isSaving
+              ? t(isEdit ? 'edit_campaign.saving' : 'create_campaign.creating')
+              : t(isEdit ? 'edit_campaign.save' : 'create_campaign.create_button')}
           </button>
         </div>
       </div>

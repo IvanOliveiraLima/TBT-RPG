@@ -20,11 +20,12 @@ vi.mock('@/services/user-profile', () => ({
 }))
 
 const mockCreateCampaign = vi.fn()
+const mockUpdateCampaign = vi.fn()
 const mockDeleteCampaign = vi.fn()
 
 vi.mock('@/store/campaigns', () => ({
-  useCampaignsStore: (selector?: (s: { createCampaign: typeof mockCreateCampaign; deleteCampaign: typeof mockDeleteCampaign }) => unknown) => {
-    const state = { createCampaign: mockCreateCampaign, deleteCampaign: mockDeleteCampaign }
+  useCampaignsStore: (selector?: (s: { createCampaign: typeof mockCreateCampaign; updateCampaign: typeof mockUpdateCampaign; deleteCampaign: typeof mockDeleteCampaign }) => unknown) => {
+    const state = { createCampaign: mockCreateCampaign, updateCampaign: mockUpdateCampaign, deleteCampaign: mockDeleteCampaign }
     return selector ? selector(state) : state
   },
 }))
@@ -226,5 +227,73 @@ describe('ConfirmDeleteCampaignModal', () => {
 
     fireEvent.click(screen.getByTestId('delete-campaign-confirm'))
     await waitFor(() => expect(screen.getByTestId('delete-campaign-error')).toBeDefined())
+  })
+})
+
+// ── CreateCampaignModal — edit mode ──────────────────────────────────────────
+
+describe('CreateCampaignModal — edit mode', () => {
+  beforeEach(() => { vi.clearAllMocks(); localStorage.clear() })
+
+  it('renders edit title PT', () => {
+    const campaign = makeCampaign({ name: 'Minha Campanha', description: 'Desc' })
+    renderWithProviders(<CreateCampaignModal campaign={campaign} onCreated={vi.fn()} onCancel={vi.fn()} />, 'pt')
+    expect(screen.getByText('Editar campanha')).toBeDefined()
+  })
+
+  it('renders edit title EN', () => {
+    const campaign = makeCampaign({ name: 'My Campaign' })
+    renderWithProviders(<CreateCampaignModal campaign={campaign} onCreated={vi.fn()} onCancel={vi.fn()} />, 'en')
+    expect(screen.getByText('Edit campaign')).toBeDefined()
+  })
+
+  it('pre-fills name and description from campaign', () => {
+    const campaign = makeCampaign({ name: 'Old Name', description: 'Old desc' })
+    renderWithProviders(<CreateCampaignModal campaign={campaign} onCreated={vi.fn()} onCancel={vi.fn()} />)
+    expect((screen.getByTestId('campaign-name-input') as HTMLInputElement).value).toBe('Old Name')
+    expect((screen.getByTestId('campaign-description-input') as HTMLTextAreaElement).value).toBe('Old desc')
+  })
+
+  it('calls updateCampaign (not createCampaign) on submit', async () => {
+    const campaign = makeCampaign({ id: 'c1', name: 'Old Name' })
+    const updated = makeCampaign({ id: 'c1', name: 'New Name' })
+    mockUpdateCampaign.mockResolvedValue(updated)
+    const onCreated = vi.fn()
+
+    renderWithProviders(<CreateCampaignModal campaign={campaign} onCreated={onCreated} onCancel={vi.fn()} />)
+    fireEvent.change(screen.getByTestId('campaign-name-input'), { target: { value: 'New Name' } })
+    fireEvent.click(screen.getByTestId('create-campaign-submit'))
+
+    await waitFor(() => {
+      expect(mockUpdateCampaign).toHaveBeenCalledWith('c1', { name: 'New Name', description: '' })
+      expect(mockCreateCampaign).not.toHaveBeenCalled()
+      expect(onCreated).toHaveBeenCalledWith(updated)
+    })
+  })
+
+  it('shows error on update failure', async () => {
+    const { CampaignServiceError } = await import('@/services/campaign')
+    const campaign = makeCampaign({ id: 'c1', name: 'Old Name' })
+    mockUpdateCampaign.mockRejectedValue(new CampaignServiceError('update_failed'))
+
+    renderWithProviders(<CreateCampaignModal campaign={campaign} onCreated={vi.fn()} onCancel={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('create-campaign-submit'))
+
+    await waitFor(() => expect(screen.getByTestId('create-campaign-error')).toBeDefined())
+  })
+
+  it('data-mode attribute is "edit" in edit mode and "create" in create mode', () => {
+    const campaign = makeCampaign()
+    const { rerender } = renderWithProviders(
+      <CreateCampaignModal campaign={campaign} onCreated={vi.fn()} onCancel={vi.fn()} />
+    )
+    expect(screen.getByTestId('create-campaign-modal').getAttribute('data-mode')).toBe('edit')
+
+    rerender(
+      <MemoryRouter><I18nProvider>
+        <CreateCampaignModal onCreated={vi.fn()} onCancel={vi.fn()} />
+      </I18nProvider></MemoryRouter>
+    )
+    expect(screen.getByTestId('create-campaign-modal').getAttribute('data-mode')).toBe('create')
   })
 })
