@@ -345,6 +345,27 @@ function mapCampaignRow(row: any): Campaign {
   }
 }
 
+export async function updateCampaign(
+  campaignId: string,
+  input: { name?: string; description?: string },
+): Promise<Campaign> {
+  if (!supabase) throw new CampaignServiceError('not_authenticated')
+  const patch: Record<string, unknown> = {}
+  if (input.name !== undefined) patch.name = input.name.trim()
+  if (input.description !== undefined) patch.description = input.description.trim() || null
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update(patch)
+    .eq('id', campaignId)
+    .select()
+    .single()
+  if (error) {
+    console.error('[campaign] updateCampaign error', error)
+    throw new CampaignServiceError('update_failed')
+  }
+  return mapCampaignRow(data)
+}
+
 export async function updateAutoInitiative(campaignId: string, value: boolean): Promise<void> {
   if (!supabase) return
   const { error } = await supabase

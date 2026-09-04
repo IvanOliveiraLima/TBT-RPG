@@ -11,6 +11,7 @@ import { LinkedCharCard } from '@/components/campaigns/LinkedCharCard'
 import { useTranslation } from '@/i18n'
 import { InviteCodeBlock } from '@/components/campaigns/InviteCodeBlock'
 import { LinkCharacterModal } from '@/components/campaigns/LinkCharacterModal'
+import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
 import { ConfirmDeleteCampaignModal } from '@/components/campaigns/ConfirmDeleteCampaignModal'
 import { ConfirmLeaveCampaignModal } from '@/components/campaigns/ConfirmLeaveCampaignModal'
 import { MemberRowMenu } from '@/components/campaigns/MemberRowMenu'
@@ -55,6 +56,7 @@ export default function CampaignDetail() {
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [leaveModalOpen, setLeaveModalOpen] = useState(false)
+  const [editCampaignOpen, setEditCampaignOpen] = useState(false)
   const [editNameOpen, setEditNameOpen] = useState(false)
   const [pendingRemoveMember, setPendingRemoveMember] = useState<EnrichedMember | null>(null)
   const [pendingTransfer, setPendingTransfer] = useState<EnrichedMember | null>(null)
@@ -295,6 +297,24 @@ export default function CampaignDetail() {
             }}>
               {campaign.name}
             </div>
+            {isMaster && (
+              <button
+                type="button"
+                data-testid="edit-campaign-btn"
+                onClick={() => setEditCampaignOpen(true)}
+                aria-label={t('campaign_detail.edit')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: T.textMuted,
+                  padding: '2px 4px',
+                  fontSize: 16,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >✏️</button>
+            )}
             {/* Realtime status indicator — visible to master only */}
             {isMaster && (
               <div
@@ -543,6 +563,17 @@ export default function CampaignDetail() {
           campaign={campaign}
           onLeft={() => navigate('/campaigns')}
           onCancel={() => setLeaveModalOpen(false)}
+        />
+      )}
+
+      {editCampaignOpen && campaign && (
+        <CreateCampaignModal
+          campaign={campaign}
+          onCreated={(updated) => {
+            setCampaign(updated)
+            setEditCampaignOpen(false)
+          }}
+          onCancel={() => setEditCampaignOpen(false)}
         />
       )}
 

@@ -73,6 +73,7 @@ function makeChain(returnValue: { data: unknown; error: unknown }) {
 
 import {
   createCampaign,
+  updateCampaign,
   listMyCampaigns,
   getCampaign,
   deleteCampaign,
@@ -547,5 +548,92 @@ describe('setCampaignMemberRole', () => {
     const result = await setCampaignMemberRole('c1', 'u2', 'master')
     expect(result.ok).toBe(false)
     expect(result.error).toBe('not_owner')
+  })
+})
+
+// ── updateCampaign ─────────────────────────────────────────────────────────────
+
+describe('updateCampaign', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('throws CampaignServiceError("not_authenticated") when supabase is null', async () => {
+    resetAuth()
+    await expect(updateCampaign('c1', { name: 'New' })).rejects.toMatchObject({ code: 'not_authenticated' })
+  })
+
+  it('sends trimmed name and null description when description is empty', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'New Name', description: null,
+      owner_id: 'u1', invite_code: 'ABCD1234', auto_initiative: false,
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const eqChain = {
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: row, error: null }),
+      }),
+    }
+    const updateChain = { eq: vi.fn().mockReturnValue(eqChain) }
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue(updateChain) })
+
+    const result = await updateCampaign('c1', { name: '  New Name  ', description: '' })
+
+    const updateFn = (mockFrom.mock.results[0].value as { update: ReturnType<typeof vi.fn> }).update
+    expect(updateFn).toHaveBeenCalledWith({ name: 'New Name', description: null })
+    expect(result.name).toBe('New Name')
+    expect(result.description).toBeNull()
+  })
+
+  it('sends description as-is when non-empty', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'Campaign', description: 'A desc',
+      owner_id: 'u1', invite_code: 'ABCD1234', auto_initiative: false,
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const eqChain = {
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: row, error: null }),
+      }),
+    }
+    const updateChain = { eq: vi.fn().mockReturnValue(eqChain) }
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue(updateChain) })
+
+    const result = await updateCampaign('c1', { name: 'Campaign', description: 'A desc' })
+    expect(result.description).toBe('A desc')
+  })
+
+  it('omits keys not passed in input', async () => {
+    setupAuth()
+    const row = {
+      id: 'c1', name: 'Same', description: 'Unchanged',
+      owner_id: 'u1', invite_code: 'ABCD1234', auto_initiative: false,
+      created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-02T00:00:00Z',
+    }
+    const eqChain = {
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: row, error: null }),
+      }),
+    }
+    const updateChain = { eq: vi.fn().mockReturnValue(eqChain) }
+    const updateFn = vi.fn().mockReturnValue(updateChain)
+    mockFrom.mockReturnValue({ update: updateFn })
+
+    // Only name passed — description key must not appear in patch
+    await updateCampaign('c1', { name: 'Same' })
+    expect(updateFn).toHaveBeenCalledWith({ name: 'Same' })
+  })
+
+  it('throws CampaignServiceError("update_failed") on supabase error', async () => {
+    setupAuth()
+    const eqChain = {
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'db error' } }),
+      }),
+    }
+    const updateChain = { eq: vi.fn().mockReturnValue(eqChain) }
+    mockFrom.mockReturnValue({ update: vi.fn().mockReturnValue(updateChain) })
+
+    await expect(updateCampaign('c1', { name: 'Fail' })).rejects.toMatchObject({ code: 'update_failed' })
   })
 })

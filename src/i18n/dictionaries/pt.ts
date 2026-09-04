@@ -871,9 +871,14 @@ const pt: Record<keyof typeof en, string> = {
   'campaign_detail.promote_master':   'Promover a Co-Mestre',
   'campaign_detail.demote_player':    'Rebaixar a Jogador',
   'campaign_detail.role_change_error':'Não foi possível alterar o papel. Tente novamente.',
+  'campaign_detail.edit':             'Editar campanha',
   'campaign_detail.rt_active':        'Atualizações ao vivo ativas',
   'campaign_detail.rt_inactive':      'Sondagem (realtime indisponível)',
   'campaign_detail.rt_help':          'Quando ativo, os cards atualizam em ~2–5 s em vez do fallback de sondagem a cada {interval} s.',
+  'edit_campaign.title':              'Editar campanha',
+  'edit_campaign.save':               'Salvar',
+  'edit_campaign.saving':             'Salvando…',
+  'edit_campaign.error_update_failed': 'Não foi possível atualizar a campanha. Tente novamente.',
 
   // Aria — member row
   'aria.member_row_menu':          'Ações para {name}',
