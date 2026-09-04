@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Campaign } from '@/domain/campaign'
 import {
   createCampaign as createCampaignService,
+  updateCampaign as updateCampaignService,
   listMyCampaigns,
   deleteCampaign as deleteCampaignService,
   leaveCampaign as leaveCampaignService,
@@ -14,6 +15,7 @@ interface CampaignsState {
 
   fetchCampaigns: () => Promise<void>
   createCampaign: (input: { name: string; description?: string }) => Promise<Campaign>
+  updateCampaign: (id: string, input: { name?: string; description?: string }) => Promise<Campaign>
   deleteCampaign: (id: string) => Promise<void>
   leaveCampaign: (id: string) => Promise<void>
 }
@@ -37,6 +39,12 @@ export const useCampaignsStore = create<CampaignsState>((set) => ({
     const created = await createCampaignService(input)
     set((s) => ({ campaigns: [created, ...s.campaigns] }))
     return created
+  },
+
+  updateCampaign: async (id, input) => {
+    const updated = await updateCampaignService(id, input)
+    set((s) => ({ campaigns: s.campaigns.map(c => (c.id === id ? updated : c)) }))
+    return updated
   },
 
   deleteCampaign: async (id) => {
