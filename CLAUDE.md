@@ -1473,6 +1473,10 @@ Três ajustes vindos de jogar de verdade:
 - **Segurar +/- para ±10 (#333)** — na ficha e no combate, tocar no +/- é ±1 e **segurar repete ±10** até
   soltar. Hook `useHoldRepeat` + primitivo `HoldButton` (evita hook dentro de `.map`); com guard de "press
   real" pra não disparar no hover, e cadência calma (220ms).
+- **Feedback ao importar ataque (#336)** — os pickers de importar (armas/magias) do `AttacksList` não davam
+  sinal de que o item foi adicionado e ficavam abertos, então o usuário clicava de novo e duplicava. Agora
+  cada item vira **"✓ Adicionado"** e desabilita ao ser adicionado (rastreado pelo id de origem), e os que
+  já existem na lista aparecem marcados ao abrir (casando por nome). Mata a duplicação por clique repetido.
 
 ---
 
