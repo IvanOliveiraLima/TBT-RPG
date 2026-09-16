@@ -272,6 +272,7 @@ const en = {
   'attacks.import_spells':         'Import from spells',
   'attacks.import_spells_title':   'Import from spells',
   'attacks.import_add':            'Add',
+  'attacks.import_added':          'Added',
   'attacks.import_empty':          'No spells yet',
   'attacks.import_done':           'Done',
   'attacks.import_weapons':        'Import from weapons',

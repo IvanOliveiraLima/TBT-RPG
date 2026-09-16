@@ -274,6 +274,7 @@ const pt: Record<keyof typeof en, string> = {
   'attacks.import_spells':         'Importar de magias',
   'attacks.import_spells_title':   'Importar de magias',
   'attacks.import_add':            'Adicionar',
+  'attacks.import_added':          '✓ Adicionado',
   'attacks.import_empty':          'Nenhuma magia cadastrada',
   'attacks.import_done':           'Concluir',
   'attacks.import_weapons':        'Importar de armas',
