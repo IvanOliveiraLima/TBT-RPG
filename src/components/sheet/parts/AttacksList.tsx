@@ -66,12 +66,16 @@ const SECTION_HEADER_STYLE: React.CSSProperties = {
 interface ImportSpellsPickerProps {
   spells: Spell[]
   spellcastingAbility: Character['spellcastingAbility']
+  existingNames: Set<string>
   onImport: (attack: Attack) => void
   onClose: () => void
 }
 
-function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: ImportSpellsPickerProps) {
+function ImportSpellsPicker({ spells, spellcastingAbility, existingNames, onImport, onClose }: ImportSpellsPickerProps) {
   const { t } = useTranslation()
+  const [added, setAdded] = useState<Set<string>>(
+    () => new Set(spells.filter(s => existingNames.has(s.name)).map(s => s.id)),
+  )
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -226,6 +230,7 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
                     <button
                       type="button"
                       data-testid={`import-spell-${spell.id}`}
+                      disabled={added.has(spell.id)}
                       onClick={() => {
                         const snapshot: Attack = {
                           id: crypto.randomUUID(),
@@ -241,21 +246,22 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
                           spellLevel: spell.level,
                         }
                         onImport(snapshot)
+                        setAdded(prev => { const n = new Set(prev); n.add(spell.id); return n })
                       }}
                       style={{
                         background: 'transparent',
-                        border: `1px solid ${T.borderDefault}`,
+                        border: `1px solid ${added.has(spell.id) ? '#2E7D57' : T.borderDefault}`,
                         borderRadius: 6,
-                        color: T.accent,
+                        color: added.has(spell.id) ? '#5DCAA5' : T.accent,
                         fontSize: 11,
                         fontWeight: 600,
                         padding: '3px 10px',
-                        cursor: 'pointer',
+                        cursor: added.has(spell.id) ? 'default' : 'pointer',
                         fontFamily: T.sans,
                         flexShrink: 0,
                       }}
                     >
-                      + {t('attacks.import_add')}
+                      {added.has(spell.id) ? t('attacks.import_added') : `+ ${t('attacks.import_add')}`}
                     </button>
                   </div>
                 ))}
@@ -272,12 +278,16 @@ function ImportSpellsPicker({ spells, spellcastingAbility, onImport, onClose }: 
 
 interface ImportWeaponsPickerProps {
   items: InventoryItem[]
+  existingNames: Set<string>
   onImport: (attack: Attack) => void
   onClose: () => void
 }
 
-function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerProps) {
+function ImportWeaponsPicker({ items, existingNames, onImport, onClose }: ImportWeaponsPickerProps) {
   const { t } = useTranslation()
+  const [added, setAdded] = useState<Set<string>>(
+    () => new Set(items.filter(i => existingNames.has(i.name)).map(i => i.id)),
+  )
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
@@ -412,6 +422,7 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
                 <button
                   type="button"
                   data-testid={`import-weapon-${item.id}`}
+                  disabled={added.has(item.id)}
                   onClick={() => {
                     const snapshot: Attack = {
                       id: crypto.randomUUID(),
@@ -426,21 +437,22 @@ function ImportWeaponsPicker({ items, onImport, onClose }: ImportWeaponsPickerPr
                       notes: item.description,
                     }
                     onImport(snapshot)
+                    setAdded(prev => { const n = new Set(prev); n.add(item.id); return n })
                   }}
                   style={{
                     background: 'transparent',
-                    border: `1px solid ${T.borderDefault}`,
+                    border: `1px solid ${added.has(item.id) ? '#2E7D57' : T.borderDefault}`,
                     borderRadius: 6,
-                    color: T.accent,
+                    color: added.has(item.id) ? '#5DCAA5' : T.accent,
                     fontSize: 11,
                     fontWeight: 600,
                     padding: '3px 10px',
-                    cursor: 'pointer',
+                    cursor: added.has(item.id) ? 'default' : 'pointer',
                     fontFamily: T.sans,
                     flexShrink: 0,
                   }}
                 >
-                  + {t('attacks.import_add')}
+                  {added.has(item.id) ? t('attacks.import_added') : `+ ${t('attacks.import_add')}`}
                 </button>
               </div>
             ))
@@ -1649,6 +1661,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
         <ImportSpellsPicker
           spells={character.spells}
           spellcastingAbility={character.spellcastingAbility}
+          existingNames={new Set(attacks.map(a => a.name))}
           onImport={importSpell}
           onClose={() => setPickerOpen(false)}
         />
@@ -1658,6 +1671,7 @@ export function AttacksList({ character, onUpdate }: AttacksListProps) {
       {weaponPickerOpen && (
         <ImportWeaponsPicker
           items={character.inventory}
+          existingNames={new Set(attacks.map(a => a.name))}
           onImport={importWeapon}
           onClose={() => setWeaponPickerOpen(false)}
         />

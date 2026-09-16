@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
-import type { Character, Attack } from '@/domain/character'
+import type { Character, Attack, Spell, InventoryItem } from '@/domain/character'
 import { AttacksList } from '@/components/sheet/parts/AttacksList'
 import { renderWithI18n } from './helpers/render'
+
+vi.mock('@/services/sync', () => ({
+  scheduleEditSync:   vi.fn(),
+  startPeriodicSync:  vi.fn(),
+  stopPeriodicSync:   vi.fn(),
+  getSyncStatus:      () => 'idle' as const,
+  onSyncStatusChange: () => () => undefined,
+}))
 
 function makeAttack(overrides: Pick<Attack, 'id'> & Partial<Attack>): Attack {
   return {
@@ -430,5 +438,135 @@ describe('AttackKindIcon', () => {
     renderWithI18n(<AttacksList character={char} />, 'en')
     const iconEl = screen.getByTestId('attack-kind-icon-x')
     expect(iconEl.querySelector('svg')).toBeDefined()
+  })
+})
+
+// ── ImportSpellsPicker — added state ──────────────────────────────────────────
+
+const FIREBALL_SPELL: Spell = {
+  id: 'sp1', name: 'Fireball', level: 3, school: 'evocation',
+  castingTime: '1 action', range: '150 ft', description: '',
+  damage: '8d6', damageType: 'Fire', prepared: false,
+}
+const MAGE_ARMOR_SPELL: Spell = {
+  id: 'sp2', name: 'Mage Armor', level: 1, school: 'abjuration',
+  castingTime: '1 action', range: 'Touch', description: '', prepared: false,
+}
+
+const CHAR_WITH_SPELLS: Character = {
+  ...BASE,
+  spells: [FIREBALL_SPELL, MAGE_ARMOR_SPELL],
+  spellcastingAbility: 'int',
+  attacks: [],
+}
+
+describe('ImportSpellsPicker — added state', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  function openSpellPicker() {
+    fireEvent.click(screen.getByTestId('import-spells-btn'))
+  }
+
+  it('clicking add marks the button as added and disables it', () => {
+    renderWithI18n(<AttacksList character={CHAR_WITH_SPELLS} onUpdate={vi.fn()} />, 'en')
+    openSpellPicker()
+    fireEvent.click(screen.getByTestId('import-spell-sp1'))
+    const btn = screen.getByTestId('import-spell-sp1') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.textContent).toContain('Added')
+  })
+
+  it('clicking add calls onUpdate exactly once; second click (disabled) does not add again', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<AttacksList character={CHAR_WITH_SPELLS} onUpdate={onUpdate} />, 'en')
+    openSpellPicker()
+    fireEvent.click(screen.getByTestId('import-spell-sp1'))
+    fireEvent.click(screen.getByTestId('import-spell-sp1'))
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('spell whose name already exists in attacks shows as added on open', () => {
+    const existing = makeAttack({ id: 'a1', name: 'Fireball' })
+    const char = { ...CHAR_WITH_SPELLS, attacks: [existing] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    openSpellPicker()
+    const btn = screen.getByTestId('import-spell-sp1') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.textContent).toContain('Added')
+  })
+
+  it('spell without a name match stays enabled', () => {
+    const existing = makeAttack({ id: 'a1', name: 'Fireball' })
+    const char = { ...CHAR_WITH_SPELLS, attacks: [existing] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    openSpellPicker()
+    const btn = screen.getByTestId('import-spell-sp2') as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    expect(btn.textContent).toContain('Add')
+  })
+})
+
+// ── ImportWeaponsPicker — added state ─────────────────────────────────────────
+
+const LONGSWORD_ITEM: InventoryItem = {
+  id: 'item1', name: 'Longsword', quantity: 1, weight: 0,
+  category: 'weapon', description: '', equipped: true,
+  damage: '1d8+3', damageType: 'Slashing', attackKind: 'melee',
+}
+const SHORTBOW_ITEM: InventoryItem = {
+  id: 'item2', name: 'Shortbow', quantity: 1, weight: 0,
+  category: 'weapon', description: '', equipped: false,
+  damage: '1d6', damageType: 'Piercing', attackKind: 'ranged',
+}
+
+const CHAR_WITH_WEAPONS: Character = {
+  ...BASE,
+  inventory: [LONGSWORD_ITEM, SHORTBOW_ITEM],
+  attacks: [],
+}
+
+describe('ImportWeaponsPicker — added state', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  function openWeaponPicker() {
+    fireEvent.click(screen.getByTestId('import-weapons-btn'))
+  }
+
+  it('clicking add marks the button as added and disables it', () => {
+    renderWithI18n(<AttacksList character={CHAR_WITH_WEAPONS} onUpdate={vi.fn()} />, 'en')
+    openWeaponPicker()
+    fireEvent.click(screen.getByTestId('import-weapon-item1'))
+    const btn = screen.getByTestId('import-weapon-item1') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.textContent).toContain('Added')
+  })
+
+  it('clicking add calls onUpdate exactly once; second click (disabled) does not add again', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<AttacksList character={CHAR_WITH_WEAPONS} onUpdate={onUpdate} />, 'en')
+    openWeaponPicker()
+    fireEvent.click(screen.getByTestId('import-weapon-item1'))
+    fireEvent.click(screen.getByTestId('import-weapon-item1'))
+    expect(onUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('weapon whose name already exists in attacks shows as added on open', () => {
+    const existing = makeAttack({ id: 'a1', name: 'Longsword' })
+    const char = { ...CHAR_WITH_WEAPONS, attacks: [existing] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    openWeaponPicker()
+    const btn = screen.getByTestId('import-weapon-item1') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    expect(btn.textContent).toContain('Added')
+  })
+
+  it('weapon without a name match stays enabled', () => {
+    const existing = makeAttack({ id: 'a1', name: 'Longsword' })
+    const char = { ...CHAR_WITH_WEAPONS, attacks: [existing] }
+    renderWithI18n(<AttacksList character={char} onUpdate={vi.fn()} />, 'en')
+    openWeaponPicker()
+    const btn = screen.getByTestId('import-weapon-item2') as HTMLButtonElement
+    expect(btn.disabled).toBe(false)
+    expect(btn.textContent).toContain('Add')
   })
 })
