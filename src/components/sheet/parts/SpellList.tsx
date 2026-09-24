@@ -131,6 +131,8 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
   }
 
   const total = spells.length
+  const preparedTotal = spells.filter(s => s.level >= 1 && s.prepared).length
+  const hasLeveled = spells.some(s => s.level >= 1)
 
   return (
     <div ref={listRef} data-testid="spell-list">
@@ -154,6 +156,11 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
           <span style={{ fontSize: 11, color: T.textMuted, fontFamily: T.sans }}>
             {t('spells.count_label', { count: String(total) })}
           </span>
+          {hasLeveled && (
+            <span data-testid="spells-prepared-count" style={{ fontSize: 11, color: T.textMuted, fontFamily: T.sans }}>
+              {' · '}{t('spells.prepared_count', { count: String(preparedTotal) })}
+            </span>
+          )}
         </div>
 
         {/* Empty state */}
@@ -204,6 +211,9 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
                   <span style={{ flex: 1 }} />
                   <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
                     {t('spells.section_count', { count: String(levelSpells.length) })}
+                    {level >= 1 && (
+                      <>{' · '}{t('spells.prepared_count', { count: String(levelSpells.filter(s => s.prepared).length) })}</>
+                    )}
                   </span>
                 </div>
 
@@ -368,16 +378,25 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
 
         {/* Prepared checkbox — non-cantrips only */}
         {!isCantrip && (
-          <input
-            type="checkbox"
-            checked={spell.prepared}
-            onChange={e => onUpdate({ prepared: e.target.checked })}
-            aria-label={t('aria.spell_prepared')}
-            data-testid={`spell-prepared-${spell.id}`}
-            title={t('spells.prepared_hint')}
-            disabled={readOnly}
-            style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
-          />
+          <label
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
+              fontSize: 11, color: T.textMuted, fontFamily: T.sans,
+              cursor: readOnly ? 'default' : 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={spell.prepared}
+              onChange={e => onUpdate({ prepared: e.target.checked })}
+              aria-label={t('aria.spell_prepared')}
+              data-testid={`spell-prepared-${spell.id}`}
+              title={t('spells.prepared_hint')}
+              disabled={readOnly}
+              style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
+            />
+            {t('spells.prepared_label')}
+          </label>
         )}
 
         {/* Remove button */}

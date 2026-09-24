@@ -339,6 +339,8 @@ const en = {
   'spells.cantrip':             'Cantrip',
   'spells.unnamed_spell':       '(unnamed)',
   'spells.prepared_hint':       'Prepared today',
+  'spells.prepared_count':      '{count} prepared',
+  'spells.prepared_label':      'Prepared',
   'spells.add_cantrip':         '+ Add cantrip',
   'spells.add_at_level':        '+ Add level {n} spell',
   'spells.name_placeholder':    'Spell name',
