@@ -341,6 +341,8 @@ const pt: Record<keyof typeof en, string> = {
   'spells.cantrip':             'Truque',
   'spells.unnamed_spell':       '(sem nome)',
   'spells.prepared_hint':       'Preparada hoje',
+  'spells.prepared_count':      '{count} preparadas',
+  'spells.prepared_label':      'Preparada',
   'spells.add_cantrip':         '+ Adicionar truque',
   'spells.add_at_level':        '+ Adicionar magia nível {n}',
   'spells.name_placeholder':    'Nome da magia',
