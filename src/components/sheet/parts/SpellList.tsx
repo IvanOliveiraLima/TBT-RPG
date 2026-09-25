@@ -185,16 +185,15 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
                 display:    'inline-flex',
                 alignItems: 'center',
                 gap:        8,
-                background: T.gold,
-                color:      '#1A1616',
-                border:     'none',
+                background: 'rgba(212,160,23,0.14)',
+                color:      T.gold,
+                border:     '1px solid rgba(212,160,23,0.45)',
                 borderRadius: 8,
                 fontFamily: T.sans,
                 fontSize:   13,
-                fontWeight: 700,
+                fontWeight: 600,
                 padding:    '9px 18px',
                 cursor:     'pointer',
-                boxShadow:  '0 1px 6px rgba(212,160,23,0.35)',
               }}
             >
               🔎 {t('spells.search_srd')}
