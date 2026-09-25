@@ -56,6 +56,28 @@ async function fetchAllPages(firstUrl) {
   return results
 }
 
+/** Converts slug-style time strings to readable text (idempotent for already-clean values). */
+function cleanTime(raw) {
+  return String(raw ?? '')
+    .replace(/-/g, ' ')                   // bonus-action → bonus action
+    .replace(/(\d)([a-zA-Z])/g, '$1 $2') // 1minute → 1 minute, 10minutes → 10 minutes
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Fills empty string/array fields in `win` from `other` (backfill from losing edition).
+ * Mutates and returns `win`.
+ */
+function backfill(win, other) {
+  if (!other) return win
+  for (const k of ['description', 'higherLevel', 'castingTime', 'range', 'components', 'material', 'duration']) {
+    if ((!win[k] || !String(win[k]).trim()) && other[k]) win[k] = other[k]
+  }
+  if ((!win.classes || win.classes.length === 0) && other.classes?.length) win.classes = other.classes
+  return win
+}
+
 function normalizeV1(r) {
   const classes = (r.dnd_class ?? '')
     .split(',')
@@ -66,11 +88,11 @@ function normalizeV1(r) {
     name: r.name ?? '',
     level: r.level_int ?? r.spell_level ?? 0,
     school: (r.school ?? '').toLowerCase(),
-    castingTime: r.casting_time ?? '',
+    castingTime: cleanTime(r.casting_time),
     range: r.range ?? '',
     components: r.components ?? '',
     material: r.material ?? '',
-    duration: r.duration ?? '',
+    duration: cleanTime(r.duration),
     concentration: /^\s*(yes|true)\s*$/i.test(String(r.concentration ?? '')),
     ritual: /^\s*(yes|true)\s*$/i.test(String(r.ritual ?? '')),
     description: r.desc ?? '',
@@ -93,11 +115,11 @@ function normalizeV2(r) {
     name: r.name ?? '',
     level: typeof r.level === 'number' ? r.level : parseInt(String(r.level ?? '0'), 10),
     school: r.school?.key ?? (r.school?.name ?? '').toLowerCase(),
-    castingTime: r.casting_time ?? '',
+    castingTime: cleanTime(r.casting_time),
     range: r.range_text ?? (r.range != null ? String(r.range) : ''),
     components: compParts.join(', '),
     material: r.material_specified ?? '',
-    duration: r.duration ?? '',
+    duration: cleanTime(r.duration),
     concentration: Boolean(r.concentration),
     ritual: Boolean(r.ritual),
     description: r.desc ?? '',
@@ -125,10 +147,14 @@ async function main() {
   const v1Spells = v1Raw.map(normalizeV1)
   const v2Spells = v2Raw.map(normalizeV2)
 
-  // Dedupe by name (lowercase). 2024 overwrites 2014 if both have the same spell.
+  // Dedupe by name (lowercase). 2024 wins, but backfills empty fields from 2014.
   const byName = new Map()
   for (const s of v1Spells) byName.set(s.name.trim().toLowerCase(), s)
-  for (const s of v2Spells) byName.set(s.name.trim().toLowerCase(), s)
+  for (const s of v2Spells) {
+    const key = s.name.trim().toLowerCase()
+    const existing = byName.get(key) // may be undefined (2024-only) or a 2014 entry
+    byName.set(key, backfill(s, existing))
+  }
 
   const spells = Array.from(byName.values()).sort((a, b) => {
     if (a.level !== b.level) return a.level - b.level
@@ -137,6 +163,11 @@ async function main() {
 
   if (spells.length === 0) {
     throw new Error('Final spell list is empty after dedup — refusing to overwrite existing JSON.')
+  }
+
+  const emptyDesc = spells.filter(s => !s.description.trim())
+  if (emptyDesc.length > 0) {
+    console.warn(`  ⚠ ${emptyDesc.length} spell(s) with empty description: ${emptyDesc.map(s => s.name).join(', ')}`)
   }
 
   const by2024 = spells.filter(s => s.edition === '2024').length

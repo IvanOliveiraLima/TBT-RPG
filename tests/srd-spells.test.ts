@@ -5,6 +5,7 @@ import {
   searchSpells,
   type SrdSpell,
 } from '@/data/srd-spells'
+import srdData from '@/data/srd-spells.json'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -203,5 +204,47 @@ describe('searchSpells', () => {
   it('returns empty array for query with no match', () => {
     const results = searchSpells(FIXTURE_LIST, 'zzznomatch')
     expect(results).toHaveLength(0)
+  })
+})
+
+// ─── JSON integrity guards (smoke tests on the committed data) ────────────────
+
+interface SrdSpellsJson {
+  _meta: { totalCount: number }
+  spells: SrdSpell[]
+}
+
+describe('srd-spells.json integrity', () => {
+  const { spells } = srdData as unknown as SrdSpellsJson
+
+  it('has more than 300 spells', () => {
+    expect(spells.length).toBeGreaterThan(300)
+  })
+
+  it('has unique names', () => {
+    const names = spells.map(s => s.name.trim().toLowerCase())
+    const unique = new Set(names)
+    expect(unique.size).toBe(names.length)
+  })
+
+  it('every spell has a non-empty description', () => {
+    const empty = spells.filter(s => !s.description.trim())
+    expect(empty.map(s => s.name)).toEqual([])
+  })
+
+  it('no castingTime contains a hyphen', () => {
+    const withHyphen = spells.filter(s => s.castingTime.includes('-'))
+    expect(withHyphen.map(s => `${s.name}: "${s.castingTime}"`)).toEqual([])
+  })
+
+  it('no castingTime has a digit immediately followed by a letter', () => {
+    const malformed = spells.filter(s => /\d[a-zA-Z]/.test(s.castingTime))
+    expect(malformed.map(s => `${s.name}: "${s.castingTime}"`)).toEqual([])
+  })
+
+  it('Fireball castingTime is readable', () => {
+    const fireball = spells.find(s => s.name === 'Fireball')
+    expect(fireball).toBeDefined()
+    expect(fireball!.castingTime).toBe('action')
   })
 })
