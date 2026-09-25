@@ -1478,6 +1478,24 @@ Três ajustes vindos de jogar de verdade:
   cada item vira **"✓ Adicionado"** e desabilita ao ser adicionado (rastreado pelo id de origem), e os que
   já existem na lista aparecem marcados ao abrir (casando por nome). Mata a duplicação por clique repetido.
 
+### Magias — biblioteca do SRD embutida (COMPLETED — PRs #340, #341)
+A adição de magia era 100% manual (copiar do 5etools e preencher campo a campo). Agora há uma biblioteca do
+SRD embutida e um buscador que preenche a ficha.
+
+- **Fonte/legal:** 5etools não tem API e é conteúdo protegido → fora. Usamos o **SRD** (CC-BY-4.0/OGL) via
+  **Open5e** (v1 = SRD 2014, v2 = SRD 2024). Magias fora do SRD seguem manuais (limitação de direitos, não
+  técnica).
+- **Dados (#340):** `scripts/generate-spells.mjs` busca as duas edições, normaliza numa forma única
+  `SrdSpell`, dedupa por nome (prefere 2024, com backfill dos campos vazios a partir da 2014), e grava
+  `src/data/srd-spells.json` (**341 magias**) — commitado; o app **não faz fetch em runtime** (offline-first).
+  `src/data/srd-spells.ts`: loader lazy, `searchSpells`, `srdSpellToAppFields` (compõe componentes/duração/
+  concentração/ritual na descrição, já que o modelo `Spell` não tem esses campos) e a atribuição CC.
+- **UI (#341):** botão **"Buscar magia"** (dourado suave, centralizado) na aba Magias abre o
+  `SpellSearchModal` (busca por nome + filtros de nível/escola, "✓ Adicionada" por magia, atribuição no
+  rodapé); ao escolher, a magia entra na ficha preenchida. O "+ Adicionar" em branco continua para magias
+  fora do SRD.
+- **Futuro:** colar-e-parsear (magias fora do SRD, preservando o fluxo de copiar/colar).
+
 ---
 
 ## Patterns established during C.1.c
@@ -2259,6 +2277,8 @@ function buildInviteLink(): string {
 | Editar campanha reusa a policy de UPDATE existente; modal de criação vira create/edit | #328 | RLS de UPDATE é por linha (mesma do updateAutoInitiative) -> sem SQL; prop opcional evita um segundo modal |
 | Hold-repeat como HoldButton, nunca hook dentro de .map | #333 | Rules of hooks; o botão encapsula useHoldRepeat e serve painel (por combatente) e ficha |
 | Guard de press real no hold: leave/up sem pointerdown não faz nada | #333 | onPointerLeave chegava a tapear no hover; o ref pressed + leave=cancel matam o disparo acidental |
+| Magias do SRD embutidas (JSON commitado), sem fetch em runtime | #340 | Offline-first + sem depender de uptime/CORS de API comunitária; regenera por script (gen:spells) |
+| SRD via Open5e (v1=2014, v2=2024); 5etools fora (sem API + copyright) | #340 | Só conteúdo CC/OGL é redistribuível; magia fora do SRD segue manual |
 
 ---
 
