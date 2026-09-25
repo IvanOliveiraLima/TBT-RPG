@@ -150,7 +150,7 @@ const FIXTURE_LIST: SrdSpell[] = [
 ]
 
 describe('searchSpells', () => {
-  it('returns all when query is empty (up to limit)', () => {
+  it('returns all filtered when query is empty (no cap)', () => {
     const results = searchSpells(FIXTURE_LIST, '')
     expect(results.length).toBe(FIXTURE_LIST.length)
   })

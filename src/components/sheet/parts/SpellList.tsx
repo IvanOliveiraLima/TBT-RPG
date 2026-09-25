@@ -8,6 +8,9 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react'
 import type { Character, Spell, SpellSchool } from '@/domain/character'
+import { srdSpellToAppFields } from '@/data/srd-spells'
+import type { SrdSpell } from '@/data/srd-spells'
+import { SpellSearchModal } from './SpellSearchModal'
 import { SPELL_SCHOOLS, SCHOOL_COLORS } from '@/data/canonical/spell-schools'
 import { CANONICAL_CASTING_TIMES } from '@/data/canonical/casting-times'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
@@ -58,6 +61,7 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
 
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
+  const [srdOpen, setSrdOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
   // Close open card on outside pointerdown (covers mouse + touch)
@@ -130,6 +134,13 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
     setOpenId(cur => (cur === id ? null : cur))
   }
 
+  function addSrdSpell(s: SrdSpell) {
+    if (!onUpdate) return
+    const fields = srdSpellToAppFields(s)
+    const newSpell: Spell = { id: crypto.randomUUID(), ...fields, prepared: false }
+    onUpdate({ spells: [...spells, newSpell] })
+  }
+
   const total = spells.length
   const preparedTotal = spells.filter(s => s.level >= 1 && s.prepared).length
   const hasLeveled = spells.some(s => s.level >= 1)
@@ -162,6 +173,42 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
             </span>
           )}
         </div>
+
+        {/* SRD spell search — prominent centered button */}
+        {!readOnly && !locked && (
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 4px' }}>
+            <button
+              type="button"
+              data-testid="open-spell-search"
+              onClick={() => setSrdOpen(true)}
+              style={{
+                display:    'inline-flex',
+                alignItems: 'center',
+                gap:        8,
+                background: 'rgba(212,160,23,0.14)',
+                color:      T.gold,
+                border:     '1px solid rgba(212,160,23,0.45)',
+                borderRadius: 8,
+                fontFamily: T.sans,
+                fontSize:   13,
+                fontWeight: 600,
+                padding:    '9px 18px',
+                cursor:     'pointer',
+              }}
+            >
+              🔎 {t('spells.search_srd')}
+            </button>
+          </div>
+        )}
+
+        {/* SRD spell search modal */}
+        {srdOpen && (
+          <SpellSearchModal
+            existingNames={new Set(spells.map(s => s.name))}
+            onAdd={addSrdSpell}
+            onClose={() => setSrdOpen(false)}
+          />
+        )}
 
         {/* Empty state */}
         {total === 0 && (

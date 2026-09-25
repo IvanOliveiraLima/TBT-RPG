@@ -77,7 +77,7 @@ export function searchSpells(
     filtered = filtered.filter(s => s.school === school)
   }
 
-  if (q === '') return filtered.slice(0, MAX_RESULTS)
+  if (q === '') return filtered
 
   const prefix: SrdSpell[] = []
   const substring: SrdSpell[] = []
