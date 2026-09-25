@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "knip": "knip"
+    "knip": "knip",
+    "gen:spells": "node scripts/generate-spells.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
