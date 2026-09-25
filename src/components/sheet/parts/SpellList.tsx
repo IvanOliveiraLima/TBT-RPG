@@ -172,28 +172,35 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
               {' · '}{t('spells.prepared_count', { count: String(preparedTotal) })}
             </span>
           )}
-          {!readOnly && !locked && (
+        </div>
+
+        {/* SRD spell search — prominent centered button */}
+        {!readOnly && !locked && (
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 4px' }}>
             <button
               type="button"
               data-testid="open-spell-search"
               onClick={() => setSrdOpen(true)}
               style={{
-                marginLeft:   8,
-                background:   'transparent',
-                border:       `1px solid ${T.borderDefault}`,
-                borderRadius:  6,
-                color:         T.textMuted,
-                fontFamily:    T.sans,
-                fontSize:      11,
-                fontWeight:    500,
-                padding:       '3px 8px',
-                cursor:        'pointer',
+                display:    'inline-flex',
+                alignItems: 'center',
+                gap:        8,
+                background: T.gold,
+                color:      '#1A1616',
+                border:     'none',
+                borderRadius: 8,
+                fontFamily: T.sans,
+                fontSize:   13,
+                fontWeight: 700,
+                padding:    '9px 18px',
+                cursor:     'pointer',
+                boxShadow:  '0 1px 6px rgba(212,160,23,0.35)',
               }}
             >
               🔎 {t('spells.search_srd')}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* SRD spell search modal */}
         {srdOpen && (

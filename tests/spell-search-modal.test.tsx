@@ -19,7 +19,7 @@ vi.mock('@/services/sync', () => ({
 
 // ─── SRD fixture spells (hoisted so the vi.mock factory can reference them) ──
 
-const { FIXTURE_SRD, SRD_FIREBALL, SRD_BLESS, SRD_MAGE_ARMOR } = vi.hoisted(() => {
+const { FIXTURE_SRD, SRD_FIREBALL } = vi.hoisted(() => {
   const SRD_FIREBALL: SrdSpell = {
     slug:         'fireball',
     name:         'Fireball',

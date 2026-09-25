@@ -341,7 +341,7 @@ const en = {
   'spells.prepared_hint':       'Prepared today',
   'spells.prepared_count':      '{count} prepared',
   'spells.prepared_label':      'Prepared',
-  'spells.search_srd':          'Search SRD',
+  'spells.search_srd':          'Find a spell',
   'spells.search_placeholder':  'Search spell by name…',
   'spells.search_add':          'Add',
   'spells.search_added':        '✓ Added',

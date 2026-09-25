@@ -343,7 +343,7 @@ const pt: Record<keyof typeof en, string> = {
   'spells.prepared_hint':       'Preparada hoje',
   'spells.prepared_count':      '{count} preparadas',
   'spells.prepared_label':      'Preparada',
-  'spells.search_srd':          'Buscar no SRD',
+  'spells.search_srd':          'Buscar magia',
   'spells.search_placeholder':  'Buscar magia por nome…',
   'spells.search_add':          'Adicionar',
   'spells.search_added':        '✓ Adicionada',
