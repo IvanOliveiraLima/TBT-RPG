@@ -8,6 +8,9 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react'
 import type { Character, Spell, SpellSchool } from '@/domain/character'
+import { srdSpellToAppFields } from '@/data/srd-spells'
+import type { SrdSpell } from '@/data/srd-spells'
+import { SpellSearchModal } from './SpellSearchModal'
 import { SPELL_SCHOOLS, SCHOOL_COLORS } from '@/data/canonical/spell-schools'
 import { CANONICAL_CASTING_TIMES } from '@/data/canonical/casting-times'
 import { CANONICAL_RANGES } from '@/data/canonical/attack-ranges'
@@ -58,6 +61,7 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
 
   // Single-open accordion state
   const [openId, setOpenId] = useState<string | null>(null)
+  const [srdOpen, setSrdOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
   // Close open card on outside pointerdown (covers mouse + touch)
@@ -130,7 +134,16 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
     setOpenId(cur => (cur === id ? null : cur))
   }
 
+  function addSrdSpell(s: SrdSpell) {
+    if (!onUpdate) return
+    const fields = srdSpellToAppFields(s)
+    const newSpell: Spell = { id: crypto.randomUUID(), ...fields, prepared: false }
+    onUpdate({ spells: [...spells, newSpell] })
+  }
+
   const total = spells.length
+  const preparedTotal = spells.filter(s => s.level >= 1 && s.prepared).length
+  const hasLeveled = spells.some(s => s.level >= 1)
 
   return (
     <div ref={listRef} data-testid="spell-list">
@@ -154,7 +167,48 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
           <span style={{ fontSize: 11, color: T.textMuted, fontFamily: T.sans }}>
             {t('spells.count_label', { count: String(total) })}
           </span>
+          {hasLeveled && (
+            <span data-testid="spells-prepared-count" style={{ fontSize: 11, color: T.textMuted, fontFamily: T.sans }}>
+              {' · '}{t('spells.prepared_count', { count: String(preparedTotal) })}
+            </span>
+          )}
         </div>
+
+        {/* SRD spell search — prominent centered button */}
+        {!readOnly && !locked && (
+          <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 4px' }}>
+            <button
+              type="button"
+              data-testid="open-spell-search"
+              onClick={() => setSrdOpen(true)}
+              style={{
+                display:    'inline-flex',
+                alignItems: 'center',
+                gap:        8,
+                background: 'rgba(212,160,23,0.14)',
+                color:      T.gold,
+                border:     '1px solid rgba(212,160,23,0.45)',
+                borderRadius: 8,
+                fontFamily: T.sans,
+                fontSize:   13,
+                fontWeight: 600,
+                padding:    '9px 18px',
+                cursor:     'pointer',
+              }}
+            >
+              🔎 {t('spells.search_srd')}
+            </button>
+          </div>
+        )}
+
+        {/* SRD spell search modal */}
+        {srdOpen && (
+          <SpellSearchModal
+            existingNames={new Set(spells.map(s => s.name))}
+            onAdd={addSrdSpell}
+            onClose={() => setSrdOpen(false)}
+          />
+        )}
 
         {/* Empty state */}
         {total === 0 && (
@@ -204,6 +258,9 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
                   <span style={{ flex: 1 }} />
                   <span style={{ fontSize: 10, color: T.textMuted, fontFamily: T.sans }}>
                     {t('spells.section_count', { count: String(levelSpells.length) })}
+                    {level >= 1 && (
+                      <>{' · '}{t('spells.prepared_count', { count: String(levelSpells.filter(s => s.prepared).length) })}</>
+                    )}
                   </span>
                 </div>
 
@@ -368,16 +425,25 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
 
         {/* Prepared checkbox — non-cantrips only */}
         {!isCantrip && (
-          <input
-            type="checkbox"
-            checked={spell.prepared}
-            onChange={e => onUpdate({ prepared: e.target.checked })}
-            aria-label={t('aria.spell_prepared')}
-            data-testid={`spell-prepared-${spell.id}`}
-            title={t('spells.prepared_hint')}
-            disabled={readOnly}
-            style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
-          />
+          <label
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0,
+              fontSize: 11, color: T.textMuted, fontFamily: T.sans,
+              cursor: readOnly ? 'default' : 'pointer',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={spell.prepared}
+              onChange={e => onUpdate({ prepared: e.target.checked })}
+              aria-label={t('aria.spell_prepared')}
+              data-testid={`spell-prepared-${spell.id}`}
+              title={t('spells.prepared_hint')}
+              disabled={readOnly}
+              style={{ cursor: readOnly ? 'default' : 'pointer', flexShrink: 0 }}
+            />
+            {t('spells.prepared_label')}
+          </label>
         )}
 
         {/* Remove button */}

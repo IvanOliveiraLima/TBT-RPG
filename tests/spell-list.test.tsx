@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { I18nProvider } from '@/i18n'
 import type { Character, Spell } from '@/domain/character'
 import { SpellList } from '@/components/sheet/parts/SpellList'
 import { renderWithI18n } from './helpers/render'
@@ -239,5 +240,98 @@ describe('SpellList', () => {
     fireEvent.click(screen.getByText('Vicious Mockery'))
     const schoolSelect = screen.getByTestId('spell-school-s1')
     expect((schoolSelect as HTMLElement).classList.contains('dark-select')).toBe(true)
+  })
+
+  // ── prepared count + label tests ──────────────────────────────────────
+
+  it('header shows spells-prepared-count when leveled spells exist (EN)', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    const badge = screen.getByTestId('spells-prepared-count')
+    expect(badge).toBeDefined()
+    // KAEL has s3 (level 1, prepared:true), s4 (level 1, prepared:false) → 1 prepared
+    expect(badge.textContent).toContain('1 prepared')
+  })
+
+  it('header shows spells-prepared-count in PT', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+    const badge = screen.getByTestId('spells-prepared-count')
+    expect(badge.textContent).toContain('1 preparadas')
+  })
+
+  it('header spells-prepared-count not present when only cantrips exist', () => {
+    const cantripOnly: Character = {
+      ...KAEL,
+      spells: [
+        { id: 'c1', name: 'Fire Bolt', level: 0, school: 'evocation', castingTime: '1 action', range: '120 ft', description: '', prepared: false },
+      ],
+      spellSlots: {},
+    }
+    renderWithI18n(<SpellList character={cantripOnly} />, 'en')
+    expect(screen.queryByTestId('spells-prepared-count')).toBeNull()
+  })
+
+  it('header prepared count updates when checkbox is toggled', () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'en')
+    let char = KAEL
+    const onUpdate = vi.fn((partial: Partial<Character>) => {
+      char = { ...char, spells: partial.spells ?? char.spells }
+    })
+    const { rerender } = render(
+      <I18nProvider><SpellList character={char} onUpdate={onUpdate} /></I18nProvider>
+    )
+
+    // Initially 1 prepared (s3)
+    expect(screen.getByTestId('spells-prepared-count').textContent).toContain('1 prepared')
+
+    // Prepare s4 (currently unprepared)
+    const s4checkbox = screen.getByTestId('spell-prepared-s4') as HTMLInputElement
+    fireEvent.click(s4checkbox)
+    expect(onUpdate).toHaveBeenCalledOnce()
+
+    const updatedSpells = onUpdate.mock.calls[0]![0].spells as Spell[]
+    const updatedChar = { ...char, spells: updatedSpells }
+    rerender(
+      <I18nProvider><SpellList character={updatedChar} onUpdate={onUpdate} /></I18nProvider>
+    )
+
+    expect(screen.getByTestId('spells-prepared-count').textContent).toContain('2 prepared')
+  })
+
+  it('level section shows prepared count for level >= 1', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    const section1 = screen.getByTestId('spell-section-1')
+    // level 1 has 2 spells, 1 prepared
+    expect(section1.textContent).toContain('1 prepared')
+  })
+
+  it('cantrip section does NOT show prepared count', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    const section0 = screen.getByTestId('spell-section-0')
+    // Should not contain "prepared" word
+    expect(section0.textContent).not.toContain('prepared')
+  })
+
+  it('prepared checkbox shows visible label "Prepared" for non-cantrips (EN)', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    // The label containing the checkbox for s3 should show "Prepared"
+    const checkbox = screen.getByTestId('spell-prepared-s3')
+    const label = checkbox.closest('label')
+    expect(label).toBeDefined()
+    expect(label!.textContent).toContain('Prepared')
+  })
+
+  it('prepared checkbox shows visible label "Preparada" for non-cantrips (PT)', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+    const checkbox = screen.getByTestId('spell-prepared-s4')
+    const label = checkbox.closest('label')
+    expect(label).toBeDefined()
+    expect(label!.textContent).toContain('Preparada')
+  })
+
+  it('cantrip cards do not have a prepared label', () => {
+    renderWithI18n(<SpellList character={KAEL} />, 'en')
+    // s1 and s2 are cantrips — no label wrapping a prepared checkbox
+    expect(screen.queryByTestId('spell-prepared-s1')).toBeNull()
+    expect(screen.queryByTestId('spell-prepared-s2')).toBeNull()
   })
 })

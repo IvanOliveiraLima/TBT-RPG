@@ -1,7 +1,7 @@
 {
   "name": "tbt-rpg",
   "private": true,
-  "version": "2.12.1",
+  "version": "2.13.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "knip": "knip"
+    "knip": "knip",
+    "gen:spells": "node scripts/generate-spells.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
