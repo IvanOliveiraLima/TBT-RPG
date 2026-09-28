@@ -11,6 +11,7 @@
  */
 
 import type { Spell, SpellSchool } from '@/domain/character'
+import type { Lang } from '@/i18n/types'
 
 // ─── Public attribution constant ────────────────────────────────────────────
 
@@ -137,32 +138,43 @@ export function srdSchoolToApp(s: string): SpellSchool {
   return SCHOOLS.includes(k) ? k : 'abjuration'
 }
 
+const LABELS: Record<Lang, { components: string; duration: string; concentration: string; ritual: string; higher: string }> = {
+  en: { components: 'Components', duration: 'Duration', concentration: 'Concentration', ritual: 'Ritual', higher: 'At higher levels' },
+  pt: { components: 'Componentes', duration: 'Duração', concentration: 'Concentração', ritual: 'Ritual', higher: 'Em níveis superiores' },
+}
+
 /**
  * Composes the description the app uses with metadata that has no dedicated field
  * (components, duration, concentration, ritual, higher-level text).
+ *
+ * When lang='pt' and s.pt exists, uses PT text and PT labels.
+ * Otherwise uses EN text and EN labels.
  */
-export function srdSpellToAppFields(s: SrdSpell): Omit<Spell, 'id' | 'prepared'> {
-  const meta: string[] = []
-  if (s.components) {
-    meta.push(
-      `Componentes: ${s.components}${s.material ? ` (${s.material})` : ''}`,
-    )
-  }
-  if (s.duration) {
-    meta.push(`Duração: ${s.duration}${s.concentration ? ' (Concentração)' : ''}`)
-  }
-  if (s.ritual) meta.push('Ritual')
+export function srdSpellToAppFields(s: SrdSpell, lang: Lang = 'en'): Omit<Spell, 'id' | 'prepared' | 'pt'> {
+  const L = LABELS[lang]
+  const src = (lang === 'pt' && s.pt)
+    ? { ...s.pt }
+    : { name: s.name, castingTime: s.castingTime, range: s.range, duration: s.duration, components: s.components, material: s.material, description: s.description, higherLevel: s.higherLevel }
 
-  const parts = [s.description.trim()]
-  if (s.higherLevel) parts.push(`Em níveis superiores: ${s.higherLevel.trim()}`)
+  const meta: string[] = []
+  if (src.components) {
+    meta.push(`${L.components}: ${src.components}${src.material ? ` (${src.material})` : ''}`)
+  }
+  if (src.duration) {
+    meta.push(`${L.duration}: ${src.duration}${s.concentration ? ` (${L.concentration})` : ''}`)
+  }
+  if (s.ritual) meta.push(L.ritual)
+
+  const parts = [src.description.trim()]
+  if (src.higherLevel) parts.push(`${L.higher}: ${src.higherLevel.trim()}`)
   if (meta.length) parts.push(meta.join(' · '))
 
   return {
-    name: s.name,
+    name: src.name,
     level: s.level,
     school: srdSchoolToApp(s.school),
-    castingTime: s.castingTime,
-    range: s.range,
+    castingTime: src.castingTime,
+    range: src.range,
     description: parts.filter(Boolean).join('\n\n'),
   }
 }

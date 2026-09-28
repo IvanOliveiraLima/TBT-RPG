@@ -31,7 +31,7 @@ export interface SpellSearchModalProps {
 }
 
 export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchModalProps) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
 
   const [all, setAll] = useState<SrdSpell[]>([])
   const [loading, setLoading] = useState(true)
@@ -240,6 +240,7 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
           ) : (
             results.map(spell => {
               const isAdded = added.has(spell.slug)
+              const nm = (lang === 'pt' && spell.pt?.name) ? spell.pt.name : spell.name
               return (
                 <div
                   key={spell.slug}
@@ -265,7 +266,7 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {spell.name}
+                      {nm}
                     </div>
                     <div
                       style={{

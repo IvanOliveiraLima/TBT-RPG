@@ -77,6 +77,7 @@ export interface Spell {
   prepared: boolean       // marked for use today (ignored for cantrips)
   damage?: string         // optional, e.g. "8d6" — used when importing to attacks
   damageType?: string     // optional, e.g. "Fire" — used when importing to attacks
+  pt?: { name: string; castingTime: string; range: string; description: string }
 }
 
 export type ItemCategory =
