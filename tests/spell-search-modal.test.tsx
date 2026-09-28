@@ -301,6 +301,92 @@ describe('SpellSearchModal', () => {
     // EN name should not appear for the spell that has a PT translation
     expect(screen.queryByText('Fireball')).toBeNull()
   })
+
+  // ── Preview panel ──────────────────────────────────────────────────────────
+
+  it('toggle button is present for each spell result', async () => {
+    renderModal()
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-toggle-fireball')).toBeDefined()
+      expect(screen.getByTestId('srd-spell-toggle-bless')).toBeDefined()
+    })
+  })
+
+  it('clicking toggle shows the preview panel with spell description', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    // Preview not visible before toggle
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    expect(preview).toBeDefined()
+    expect(preview.textContent).toContain('A bright streak.')
+  })
+
+  it('clicking toggle again collapses the preview', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.getByTestId('srd-spell-preview-fireball')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+  })
+
+  it('opening a second spell closes the first (one at a time)', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.getByTestId('srd-spell-preview-fireball')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-bless'))
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+    expect(screen.getByTestId('srd-spell-preview-bless')).toBeDefined()
+  })
+
+  it('preview shows PT description when lang=PT and spell has PT translation', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    // SRD_FIREBALL.pt.description = 'Uma faísca brilhante.'
+    expect(preview.textContent).toContain('Uma faísca brilhante.')
+    expect(preview.textContent).not.toContain('A bright streak.')
+  })
+
+  it('preview shows EN description when lang=EN', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    expect(preview.textContent).toContain('A bright streak.')
+  })
+
+  it('Add button still works when preview is expanded', async () => {
+    const { onAdd } = renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    fireEvent.click(screen.getByTestId('srd-spell-add-fireball'))
+
+    expect(onAdd).toHaveBeenCalledWith(SRD_FIREBALL)
+    const btn = screen.getByTestId('srd-spell-add-fireball') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+  })
 })
 
 // ─── SpellList integration tests ─────────────────────────────────────────────
