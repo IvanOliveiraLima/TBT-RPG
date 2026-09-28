@@ -136,8 +136,12 @@ export function SpellList({ character, onUpdate }: SpellListProps) {
 
   function addSrdSpell(s: SrdSpell) {
     if (!onUpdate) return
-    const fields = srdSpellToAppFields(s)
-    const newSpell: Spell = { id: crypto.randomUUID(), ...fields, prepared: false }
+    const en = srdSpellToAppFields(s, 'en')
+    const newSpell: Spell = { id: crypto.randomUUID(), ...en, prepared: false }
+    if (s.pt) {
+      const pt = srdSpellToAppFields(s, 'pt')
+      newSpell.pt = { name: pt.name, castingTime: pt.castingTime, range: pt.range, description: pt.description }
+    }
     onUpdate({ spells: [...spells, newSpell] })
   }
 
@@ -338,7 +342,20 @@ interface SpellCardProps {
 }
 
 function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, locked }: SpellCardProps) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
+
+  const ptView = lang === 'pt' && spell.pt ? spell.pt : null
+  const disp = {
+    name:        ptView?.name        ?? spell.name,
+    castingTime: ptView?.castingTime ?? spell.castingTime,
+    range:       ptView?.range       ?? spell.range,
+    description: ptView?.description ?? spell.description,
+  }
+
+  function editField(field: 'name' | 'castingTime' | 'range' | 'description', value: string) {
+    if (ptView) onUpdate({ pt: { ...spell.pt!, [field]: value } })
+    else onUpdate({ [field]: value })
+  }
 
   function handleCardClick(e: React.MouseEvent) {
     // When readOnly (no onUpdate at all): never expand
@@ -393,8 +410,8 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
         {expanded && !readOnly ? (
           <input
             type="text"
-            value={spell.name}
-            onChange={e => onUpdate({ name: e.target.value })}
+            value={disp.name}
+            onChange={e => editField('name', e.target.value)}
             placeholder={t('spells.name_placeholder')}
             aria-label={t('aria.spell_name')}
             data-testid={`spell-name-${spell.id}`}
@@ -416,7 +433,7 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
               minWidth:     0,
             }}
           >
-            {spell.name || t('spells.unnamed_spell')}
+            {disp.name || t('spells.unnamed_spell')}
           </span>
         )}
 
@@ -520,8 +537,8 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
               <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.casting_time_label')}</Label>
               <input
                 type="text"
-                value={spell.castingTime}
-                onChange={e => onUpdate({ castingTime: e.target.value })}
+                value={disp.castingTime}
+                onChange={e => editField('castingTime', e.target.value)}
                 list="canonical-casting-times"
                 data-testid={`spell-casting-time-${spell.id}`}
                 style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
@@ -534,8 +551,8 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
               <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.range_label')}</Label>
               <input
                 type="text"
-                value={spell.range}
-                onChange={e => onUpdate({ range: e.target.value })}
+                value={disp.range}
+                onChange={e => editField('range', e.target.value)}
                 list="canonical-spell-ranges"
                 data-testid={`spell-range-${spell.id}`}
                 style={{ ...SEAMLESS, border: `1px solid ${T.borderSubtle}` }}
@@ -579,8 +596,8 @@ function SpellCard({ spell, readOnly, expanded, onToggle, onUpdate, onRemove, lo
           <div>
             <Label style={{ fontSize: 10, marginBottom: 3 }}>{t('spells.description_label')}</Label>
             <AutoGrowTextarea
-              value={spell.description}
-              onChange={e => onUpdate({ description: e.target.value })}
+              value={disp.description}
+              onChange={e => editField('description', e.target.value)}
               placeholder={t('spells.description_placeholder')}
               rows={3}
               data-testid={`spell-description-${spell.id}`}

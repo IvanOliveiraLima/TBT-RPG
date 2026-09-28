@@ -80,7 +80,7 @@ describe('srdSchoolToApp', () => {
 describe('srdSpellToAppFields', () => {
   it('maps name, level, school, castingTime, range', () => {
     const s = makeSpell()
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'en')
 
     expect(result.name).toBe('Fireball')
     expect(result.level).toBe(3)
@@ -91,65 +91,142 @@ describe('srdSpellToAppFields', () => {
 
   it('includes description in output', () => {
     const s = makeSpell({ description: 'A bright streak.' })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'en')
     expect(result.description).toContain('A bright streak.')
   })
 
-  it('appends higher level text when present', () => {
+  it('does not include id, prepared, or pt in result', () => {
+    const s = makeSpell()
+    const result = srdSpellToAppFields(s, 'en')
+    expect('id' in result).toBe(false)
+    expect('prepared' in result).toBe(false)
+    expect('pt' in result).toBe(false)
+  })
+
+  // ─── EN labels ───────────────────────────────────────────────────────────
+
+  it('(en) appends higher level text with EN label', () => {
     const s = makeSpell({ higherLevel: 'Damage increases.' })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('At higher levels: Damage increases.')
+  })
+
+  it('(en) does NOT add higher level section when empty', () => {
+    const s = makeSpell({ higherLevel: '' })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).not.toContain('At higher levels')
+  })
+
+  it('(en) includes components and material in meta', () => {
+    const s = makeSpell({ components: 'V, S, M', material: 'bat guano' })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('Components: V, S, M (bat guano)')
+  })
+
+  it('(en) includes components without material when material is empty', () => {
+    const s = makeSpell({ components: 'V, S', material: '' })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('Components: V, S')
+    expect(result.description).not.toContain('()')
+  })
+
+  it('(en) includes duration in meta', () => {
+    const s = makeSpell({ duration: 'Instantaneous', concentration: false })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('Duration: Instantaneous')
+    expect(result.description).not.toContain('Concentration')
+  })
+
+  it('(en) marks concentration in duration line', () => {
+    const s = makeSpell({ duration: '1 minute', concentration: true })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('Duration: 1 minute (Concentration)')
+  })
+
+  it('(en) adds Ritual to meta when ritual is true', () => {
+    const s = makeSpell({ ritual: true })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).toContain('Ritual')
+  })
+
+  it('(en) does NOT add Ritual when ritual is false', () => {
+    const s = makeSpell({ ritual: false })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.description).not.toContain('Ritual')
+  })
+
+  // ─── PT labels ───────────────────────────────────────────────────────────
+
+  it('(pt) appends higher level text with PT label', () => {
+    const s = makeSpell({ higherLevel: 'Damage increases.' })
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Em níveis superiores: Damage increases.')
   })
 
-  it('does NOT add higher level section when empty', () => {
+  it('(pt) does NOT add higher level section when empty', () => {
     const s = makeSpell({ higherLevel: '' })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).not.toContain('Em níveis superiores')
   })
 
-  it('includes components and material in meta', () => {
+  it('(pt) includes components and material in meta', () => {
     const s = makeSpell({ components: 'V, S, M', material: 'bat guano' })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Componentes: V, S, M (bat guano)')
   })
 
-  it('includes components without material when material is empty', () => {
+  it('(pt) includes components without material when material is empty', () => {
     const s = makeSpell({ components: 'V, S', material: '' })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Componentes: V, S')
     expect(result.description).not.toContain('()')
   })
 
-  it('includes duration in meta', () => {
+  it('(pt) includes duration in meta', () => {
     const s = makeSpell({ duration: 'Instantaneous', concentration: false })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Duração: Instantaneous')
     expect(result.description).not.toContain('Concentração')
   })
 
-  it('marks concentration in duration line', () => {
+  it('(pt) marks concentration in duration line', () => {
     const s = makeSpell({ duration: '1 minute', concentration: true })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Duração: 1 minute (Concentração)')
   })
 
-  it('adds Ritual to meta when ritual is true', () => {
+  it('(pt) adds Ritual to meta when ritual is true', () => {
     const s = makeSpell({ ritual: true })
-    const result = srdSpellToAppFields(s)
+    const result = srdSpellToAppFields(s, 'pt')
     expect(result.description).toContain('Ritual')
   })
 
-  it('does NOT add Ritual when ritual is false', () => {
-    const s = makeSpell({ ritual: false })
-    const result = srdSpellToAppFields(s)
-    expect(result.description).not.toContain('Ritual')
+  // ─── PT content overlay ───────────────────────────────────────────────────
+
+  it('(pt) uses PT text fields when s.pt is present', () => {
+    const s = makeSpell({ pt: makePt({ name: 'Bola de Fogo', description: 'Um clarão brilhante.', castingTime: 'ação', range: '45 metros' }) })
+    const result = srdSpellToAppFields(s, 'pt')
+    expect(result.name).toBe('Bola de Fogo')
+    expect(result.castingTime).toBe('ação')
+    expect(result.range).toBe('45 metros')
+    expect(result.description).toContain('Um clarão brilhante.')
   })
 
-  it('does not include id or prepared in result', () => {
-    const s = makeSpell()
-    const result = srdSpellToAppFields(s)
-    expect('id' in result).toBe(false)
-    expect('prepared' in result).toBe(false)
+  it('(pt) falls back to EN content when s.pt is absent', () => {
+    const s = makeSpell()  // no pt
+    const result = srdSpellToAppFields(s, 'pt')
+    expect(result.name).toBe('Fireball')
+    expect(result.castingTime).toBe('1 action')
+    expect(result.range).toBe('150 feet')
+    expect(result.description).toContain('A bright streak flashes from you')
+  })
+
+  it('(en) always uses EN content even when s.pt is present', () => {
+    const s = makeSpell({ pt: makePt({ name: 'Bola de Fogo', description: 'Texto PT.' }) })
+    const result = srdSpellToAppFields(s, 'en')
+    expect(result.name).toBe('Fireball')
+    expect(result.description).toContain('A bright streak flashes from you')
+    expect(result.description).not.toContain('Texto PT.')
   })
 })
 

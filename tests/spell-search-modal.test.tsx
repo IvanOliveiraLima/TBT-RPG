@@ -36,6 +36,16 @@ const { FIXTURE_SRD, SRD_FIREBALL } = vi.hoisted(() => {
     higherLevel:  'Damage increases.',
     classes:      ['Sorcerer', 'Wizard'],
     edition:      '2024',
+    pt: {
+      name:        'Bola de Fogo',
+      castingTime: '1 ação',
+      range:       '150 pés',
+      duration:    'instantânea',
+      components:  'V, S, M',
+      material:    'guano de morcego',
+      description: 'Uma faísca brilhante.',
+      higherLevel: 'O dano aumenta.',
+    },
   }
   const SRD_BLESS: SrdSpell = {
     slug:         'bless',
@@ -276,6 +286,21 @@ describe('SpellSearchModal', () => {
     const btn = screen.getByTestId('srd-spell-add-fireball')
     expect(btn.textContent).toBe('Adicionar')
   })
+
+  it('shows PT name in results when lang=PT and spell has pt translation', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => {
+      // SRD_FIREBALL has pt.name = 'Bola de Fogo', displayed in PT lang
+      expect(screen.getByText('Bola de Fogo')).toBeDefined()
+    })
+    // EN name should not appear for the spell that has a PT translation
+    expect(screen.queryByText('Fireball')).toBeNull()
+  })
 })
 
 // ─── SpellList integration tests ─────────────────────────────────────────────
@@ -368,5 +393,26 @@ describe('SpellList — SRD spell search button', () => {
 
     const btn = screen.getByTestId('srd-spell-add-fireball') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
+  })
+
+  it('saves spell.pt when adding an SRD spell that has a PT translation', async () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <SpellList character={BASE_CHAR} onUpdate={onUpdate} />,
+      'en',
+    )
+
+    fireEvent.click(screen.getByTestId('open-spell-search'))
+    await waitFor(() => screen.getByTestId('srd-spell-add-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-add-fireball'))
+
+    const call = onUpdate.mock.calls[0]?.[0] as { spells: Spell[] }
+    const added = call.spells[call.spells.length - 1]!
+    // SRD_FIREBALL has pt, so the added Spell must carry a pt snapshot
+    expect(added.pt).toBeDefined()
+    expect(added.pt!.name).toBe('Bola de Fogo')
+    // Base EN name is always preserved
+    expect(added.name).toBe('Fireball')
   })
 })
