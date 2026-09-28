@@ -1,6 +1,6 @@
-# TBT-RPG — Ficha de Personagem de Dungeons & Dragons 5ª Edição
+# TBT-RPG — Fichas e Campanhas de Dungeons & Dragons 5ª Edição
 
-Uma ficha de personagem moderna, offline e com persistência automática para Dungeons & Dragons 5e.
+Uma plataforma web moderna, offline-first e bilíngue para jogar Dungeons & Dragons 5e — da ficha de personagem à gerência de campanhas com mestre e jogadores, mesa virtual (VTT), rastreador de combate e biblioteca de magias.
 
 ## Demo
 
@@ -8,21 +8,24 @@ Uma ficha de personagem moderna, offline e com persistência automática para Du
 
 ## Sobre
 
-TBT-RPG é uma mesa virtual para fichas de D&D 5e. Aplicação web client-side
-com sincronização opcional na nuvem, offline-first, bilíngue (PT/EN),
-PWA instalável.
+TBT-RPG é uma aplicação web client-side para jogar D&D 5e de ponta a ponta: fichas
+de personagem, campanhas multiplayer (mestre e jogadores, personagens vinculados),
+mesa virtual com mapas/tokens/névoa/áreas, rastreador de iniciativa e combate,
+bandeja de dados e biblioteca de magias do SRD. Offline-first, sincronização opcional
+na nuvem, bilíngue (PT/EN), PWA instalável.
 
 ### Funcionalidades
 
 **Criação e edição de personagens:**
 
 - **Criar do zero** — char com defaults sensatos, edição completa em todas as abas
-- **Criar com IA** — geração via Cloudflare Worker (Llama 3 8B) com backstory,
+- **Criar com IA** — geração via Cloudflare Worker (Llama 3.3 70B) com backstory,
   classe, nível, atributos. Modal com toggle de idioma e estados de erro traduzidos
 - **Edição completa** — Status, Combate, Magias, Inventário, Lore, todas com
   expand/collapse, datalists canônicos, UUIDs estáveis
 - **Importar para o combate** — magias e armas já cadastradas podem ser importadas como ataques (com dano e alcance), sem digitar tudo de novo
 - **Combate prático** — magias agrupadas por nível com CD, botão Conjurar que gasta o espaço de magia, controle de munição e sugestão do bônus de ataque
+- **Biblioteca de magias (SRD)** — busca as 341 magias do SRD (2014 + 2024) com filtros de nível, escola e classe, preview do texto antes de adicionar e preenchimento automático da ficha; traduzidas para PT (a exibição segue o idioma selecionado). Dados via Open5e (CC-BY-4.0/OGL).
 - **Excluir character** — kebab menu + modal de confirmação. Cascade local +
   Supabase + Storage cleanup
 - **Classe** — lista fixa traduzida (PT/EN); o dado de vida sai sempre correto pela classe escolhida
@@ -237,7 +240,7 @@ A IA preenche automaticamente: nome, raça, background, alinhamento, classe, atr
 perícias, proficiências, traços de personalidade e história. Items e magias ficam
 vazios para preenchimento manual.
 
-A geração usa Cloudflare Workers AI (Llama 3) como backend — sem custo para o
+A geração usa Cloudflare Workers AI (Llama 3.3 70B) como backend — sem custo para o
 usuário, sem necessidade de conta ou chave de API.
 
 ### 8. Campanhas
@@ -364,7 +367,7 @@ personagem — cada ficha tem seu estado independente.
 O projeto conta com:
 
 - **ESLint** — análise estática com regras para TypeScript moderno
-- **Vitest** — ~1661 testes unitários e de integração (83 arquivos)
+- **Vitest** — ~3548 testes unitários e de integração (175 arquivos)
 - **CI via GitHub Actions** — lint, testes e build validados automaticamente em todo Pull Request
 - **Segurança no Worker** — rate limiting, proteção contra prompt injection e validação estrutural do JSON retornado pela IA, com mensagens de erro amigáveis ao usuário final
 
