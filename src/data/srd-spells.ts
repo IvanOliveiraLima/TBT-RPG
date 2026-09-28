@@ -17,6 +17,17 @@ export const SRD_ATTRIBUTION =
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export interface SrdSpellPt {
+  name: string
+  castingTime: string
+  range: string
+  duration: string
+  components: string
+  material: string
+  description: string
+  higherLevel: string
+}
+
 export interface SrdSpell {
   slug: string
   name: string
@@ -33,6 +44,7 @@ export interface SrdSpell {
   higherLevel: string    // empty string when absent
   classes: string[]      // ["Sorcerer", "Wizard"]
   edition: '2014' | '2024'
+  pt?: SrdSpellPt
 }
 
 interface SrdSpellsJson {
@@ -83,10 +95,13 @@ export function searchSpells(
   const substring: SrdSpell[] = []
 
   for (const s of filtered) {
-    const name = s.name.toLowerCase()
-    if (name.startsWith(q)) {
+    const enName = s.name.toLowerCase()
+    const ptName = (s.pt?.name ?? '').toLowerCase()
+    const isPrefix = enName.startsWith(q) || (ptName !== '' && ptName.startsWith(q))
+    const isSubstring = enName.includes(q) || ptName.includes(q)
+    if (isPrefix) {
       prefix.push(s)
-    } else if (name.includes(q)) {
+    } else if (isSubstring) {
       substring.push(s)
     }
     if (prefix.length + substring.length >= MAX_RESULTS * 2) break

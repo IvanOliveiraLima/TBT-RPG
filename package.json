@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "knip": "knip",
-    "gen:spells": "node scripts/generate-spells.mjs"
+    "gen:spells": "node scripts/generate-spells.mjs",
+    "translate:spells": "node scripts/translate-spells.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
