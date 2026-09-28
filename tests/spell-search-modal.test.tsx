@@ -387,6 +387,92 @@ describe('SpellSearchModal', () => {
     const btn = screen.getByTestId('srd-spell-add-fireball') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
   })
+
+  // ── Class filter ────────────────────────────────────────────────────────────
+
+  it('class filter select is present with "All classes" default', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    const select = screen.getByTestId('spell-search-class') as HTMLSelectElement
+    expect(select.value).toBe('')
+  })
+
+  it('class filter lists classes derived from fixture spells', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    // Fixtures: Fireball=[Sorcerer,Wizard], Bless=[Cleric,Paladin], MageArmor=[Wizard]
+    // Distinct sorted: Cleric, Paladin, Sorcerer, Wizard
+    const select = screen.getByTestId('spell-search-class')
+    expect(select.textContent).toContain('Cleric')
+    expect(select.textContent).toContain('Wizard')
+    expect(select.textContent).not.toContain('Druid')   // not in fixtures
+  })
+
+  it('filtering by Wizard shows Fireball and Mage Armor, hides Bless', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-fireball')).toBeDefined()
+      expect(screen.getByTestId('srd-spell-mage-armor')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-bless')).toBeNull()
+    })
+  })
+
+  it('filtering by Cleric shows only Bless', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Cleric' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-bless')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-fireball')).toBeNull()
+      expect(screen.queryByTestId('srd-spell-mage-armor')).toBeNull()
+    })
+  })
+
+  it('class filter combines with name search', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+    fireEvent.change(screen.getByTestId('spell-search-input'), { target: { value: 'mage' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-mage-armor')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-fireball')).toBeNull()
+    })
+  })
+
+  it('class filter combines with level filter', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    // Wizard level-3 spells: only Fireball (MageArmor is level 1)
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+    fireEvent.change(screen.getByTestId('spell-search-level'), { target: { value: '3' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-fireball')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-mage-armor')).toBeNull()
+    })
+  })
+
+  it('shows PT class labels in PT lang', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    const select = screen.getByTestId('spell-search-class')
+    // 'class.wizard' in PT = 'Mago'
+    expect(select.textContent).toContain('Mago')
+  })
 })
 
 // ─── SpellList integration tests ─────────────────────────────────────────────

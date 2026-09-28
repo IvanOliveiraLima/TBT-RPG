@@ -38,6 +38,7 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
   const [query, setQuery] = useState('')
   const [levelFilter, setLevelFilter] = useState<number | undefined>(undefined)
   const [schoolFilter, setSchoolFilter] = useState<string>('')
+  const [classFilter, setClassFilter] = useState<string>('')
 
   const [added, setAdded] = useState<Set<string>>(() => new Set())
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null)
@@ -63,12 +64,18 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
+  const classOptions = useMemo(
+    () => [...new Set(all.flatMap(s => s.classes ?? []))].sort((a, b) => a.localeCompare(b)),
+    [all],
+  )
+
   const results = useMemo(() => {
-    const opts: { level?: number; school?: string } = {}
+    const opts: { level?: number; school?: string; class?: string } = {}
     if (levelFilter !== undefined) opts.level = levelFilter
     if (schoolFilter !== '') opts.school = schoolFilter
+    if (classFilter !== '') opts.class = classFilter
     return searchSpells(all, query, opts)
-  }, [all, query, levelFilter, schoolFilter])
+  }, [all, query, levelFilter, schoolFilter, classFilter])
 
   function handleAdd(spell: SrdSpell) {
     onAdd(spell)
@@ -77,6 +84,9 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
 
   const schoolKey = (school: SpellSchool) =>
     `spells.school_${school}` as Parameters<typeof t>[0]
+
+  const classKey = (c: string) =>
+    `class.${c.toLowerCase()}` as Parameters<typeof t>[0]
 
   return (
     <div
@@ -221,6 +231,30 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
             <option value="">{t('spells.search_school_all')}</option>
             {SPELL_SCHOOLS.map(s => (
               <option key={s} value={s}>{t(schoolKey(s))}</option>
+            ))}
+          </select>
+
+          {/* Class select */}
+          <select
+            value={classFilter}
+            onChange={e => setClassFilter(e.target.value)}
+            data-testid="spell-search-class"
+            className="dark-select"
+            style={{
+              flex:         '0 0 auto',
+              background:   T.bgCard,
+              border:       `1px solid ${T.borderDefault}`,
+              borderRadius:  6,
+              color:         T.textPrimary,
+              fontFamily:    T.sans,
+              fontSize:      12,
+              padding:       '6px 8px',
+              cursor:        'pointer',
+            }}
+          >
+            <option value="">{t('spells.search_class_all')}</option>
+            {classOptions.map(c => (
+              <option key={c} value={c}>{t(classKey(c))}</option>
             ))}
           </select>
         </div>

@@ -87,17 +87,19 @@ const MAX_RESULTS = 50
 export function searchSpells(
   all: SrdSpell[],
   query: string,
-  opts?: { level?: number; school?: string },
+  opts?: { level?: number; school?: string; class?: string },
 ): SrdSpell[] {
   const q = query.trim().toLowerCase()
   const level = opts?.level
   const school = opts?.school?.trim().toLowerCase()
+  const cls = opts?.class?.trim().toLowerCase()
 
   let filtered = all
   if (level !== undefined) filtered = filtered.filter(s => s.level === level)
   if (school !== undefined && school !== '') {
     filtered = filtered.filter(s => s.school === school)
   }
+  if (cls) filtered = filtered.filter(s => (s.classes ?? []).some(c => c.toLowerCase() === cls))
 
   if (q === '') return filtered
 
