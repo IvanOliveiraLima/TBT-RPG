@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import type { SrdSpell } from '@/data/srd-spells'
-import { loadSrdSpells, searchSpells, SRD_ATTRIBUTION } from '@/data/srd-spells'
+import { loadSrdSpells, searchSpells, srdSpellToAppFields, SRD_ATTRIBUTION } from '@/data/srd-spells'
 import { SPELL_SCHOOLS } from '@/data/canonical/spell-schools'
 import { useTranslation } from '@/i18n'
 import type { SpellSchool } from '@/domain/character'
@@ -40,6 +40,7 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
   const [schoolFilter, setSchoolFilter] = useState<string>('')
 
   const [added, setAdded] = useState<Set<string>>(() => new Set())
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null)
 
   // Load spells on mount, then initialise added from existingNames
   useEffect(() => {
@@ -240,68 +241,107 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
           ) : (
             results.map(spell => {
               const isAdded = added.has(spell.slug)
+              const isExpanded = expandedSlug === spell.slug
               const nm = (lang === 'pt' && spell.pt?.name) ? spell.pt.name : spell.name
               return (
                 <div
                   key={spell.slug}
                   data-testid={`srd-spell-${spell.slug}`}
-                  style={{
-                    display:     'flex',
-                    alignItems:  'center',
-                    gap:         10,
-                    padding:     '7px 16px',
-                    borderBottom: `1px solid ${T.borderSubtle}`,
-                  }}
+                  style={{ borderBottom: `1px solid ${T.borderSubtle}` }}
                 >
-                  {/* Spell info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize:    13,
-                        fontWeight:  500,
-                        color:       T.textPrimary,
-                        fontFamily:  T.sans,
-                        whiteSpace:  'nowrap',
-                        overflow:    'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {nm}
-                    </div>
-                    <div
-                      style={{
-                        fontSize:   10,
-                        color:      T.textMuted,
-                        fontFamily: T.sans,
-                        marginTop:  1,
-                      }}
-                    >
-                      {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
-                    </div>
-                  </div>
-
-                  {/* Add / Added button */}
-                  <button
-                    type="button"
-                    data-testid={`srd-spell-add-${spell.slug}`}
-                    disabled={isAdded}
-                    onClick={() => handleAdd(spell)}
+                  {/* ── Row: info toggle + add button ── */}
+                  <div
                     style={{
-                      flexShrink:   0,
-                      background:   isAdded ? 'rgba(85,160,90,0.15)' : 'transparent',
-                      border:       `1px solid ${isAdded ? '#55A05A' : T.borderDefault}`,
-                      borderRadius:  6,
-                      color:         isAdded ? '#55A05A' : T.textPrimary,
-                      fontFamily:    T.sans,
-                      fontSize:      11,
-                      fontWeight:    600,
-                      padding:       '4px 10px',
-                      cursor:        isAdded ? 'default' : 'pointer',
-                      whiteSpace:    'nowrap',
+                      display:    'flex',
+                      alignItems: 'center',
+                      gap:        10,
+                      padding:    '7px 16px',
                     }}
                   >
-                    {isAdded ? t('spells.search_added') : t('spells.search_add')}
-                  </button>
+                    {/* Clickable info area — toggles preview */}
+                    <div
+                      role="button"
+                      aria-expanded={isExpanded}
+                      aria-label={t('spells.preview_toggle')}
+                      data-testid={`srd-spell-toggle-${spell.slug}`}
+                      onClick={() => setExpandedSlug(prev => prev === spell.slug ? null : spell.slug)}
+                      style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                    >
+                      <div
+                        style={{
+                          display:      'flex',
+                          alignItems:   'center',
+                          gap:          4,
+                          fontSize:     13,
+                          fontWeight:   500,
+                          color:        T.textPrimary,
+                          fontFamily:   T.sans,
+                          whiteSpace:   'nowrap',
+                          overflow:     'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        <span style={{ fontSize: 9, color: T.textMuted, flexShrink: 0 }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                        {nm}
+                      </div>
+                      <div
+                        style={{
+                          fontSize:   10,
+                          color:      T.textMuted,
+                          fontFamily: T.sans,
+                          marginTop:  1,
+                          paddingLeft: 13,
+                        }}
+                      >
+                        {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
+                      </div>
+                    </div>
+
+                    {/* Add / Added button */}
+                    <button
+                      type="button"
+                      data-testid={`srd-spell-add-${spell.slug}`}
+                      disabled={isAdded}
+                      onClick={() => handleAdd(spell)}
+                      style={{
+                        flexShrink:   0,
+                        background:   isAdded ? 'rgba(85,160,90,0.15)' : 'transparent',
+                        border:       `1px solid ${isAdded ? '#55A05A' : T.borderDefault}`,
+                        borderRadius:  6,
+                        color:         isAdded ? '#55A05A' : T.textPrimary,
+                        fontFamily:    T.sans,
+                        fontSize:      11,
+                        fontWeight:    600,
+                        padding:       '4px 10px',
+                        cursor:        isAdded ? 'default' : 'pointer',
+                        whiteSpace:    'nowrap',
+                      }}
+                    >
+                      {isAdded ? t('spells.search_added') : t('spells.search_add')}
+                    </button>
+                  </div>
+
+                  {/* ── Preview panel ── */}
+                  {isExpanded && (() => {
+                    const f = srdSpellToAppFields(spell, lang)
+                    return (
+                      <div
+                        data-testid={`srd-spell-preview-${spell.slug}`}
+                        style={{ padding: '4px 16px 10px', fontFamily: T.sans }}
+                      >
+                        <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
+                          {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
+                          {f.castingTime ? ` · ${f.castingTime}` : ''}
+                          {f.range ? ` · ${f.range}` : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: T.textPrimary, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                          {f.description}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })
