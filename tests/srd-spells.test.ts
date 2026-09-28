@@ -6,6 +6,7 @@ import {
   type SrdSpell,
 } from '@/data/srd-spells'
 import srdData from '@/data/srd-spells.json'
+import srdPtData from '@/data/srd-spells-pt.json'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -278,6 +279,11 @@ interface SrdSpellsJson {
   spells: SrdSpell[]
 }
 
+const PT_REQUIRED_KEYS = [
+  'name', 'castingTime', 'range', 'duration',
+  'components', 'material', 'description', 'higherLevel',
+] as const
+
 describe('srd-spells.json integrity', () => {
   const { spells } = srdData as unknown as SrdSpellsJson
 
@@ -311,37 +317,37 @@ describe('srd-spells.json integrity', () => {
     expect(fireball).toBeDefined()
     expect(fireball!.castingTime).toBe('action')
   })
+})
 
-  it('every spell has a pt field', () => {
-    const missing = spells.filter(s => !s.pt)
-    expect(missing.map(s => s.name)).toEqual([])
+describe('srd-spells-pt.json integrity', () => {
+  const { spells } = srdData as unknown as SrdSpellsJson
+  const ptMap = srdPtData as Record<string, Record<string, string>>
+
+  it('has an entry for every spell slug', () => {
+    const missing = spells.filter(s => !ptMap[s.slug])
+    expect(missing.map(s => `${s.slug} (${s.name})`)).toEqual([])
   })
 
-  it('every pt has all 8 required keys as strings', () => {
-    const required = ['name', 'castingTime', 'range', 'duration', 'components', 'material', 'description', 'higherLevel'] as const
+  it('every entry has all 8 required keys as strings (name and description non-empty)', () => {
     const invalid = spells.filter(s => {
-      if (!s.pt) return true
-      return required.some(k => typeof s.pt![k] !== 'string')
+      const pt = ptMap[s.slug]
+      if (!pt) return true
+      // All 8 keys must be present as strings
+      if (PT_REQUIRED_KEYS.some(k => typeof pt[k] !== 'string')) return true
+      // name and description must be non-empty (higherLevel and material may be "")
+      return !pt['name'] || !pt['description']
     })
     expect(invalid.map(s => s.name)).toEqual([])
   })
 
-  it('every pt has non-empty name and description', () => {
-    const empty = spells.filter(s => !s.pt?.name?.trim() || !s.pt?.description?.trim())
-    expect(empty.map(s => s.name)).toEqual([])
+  it('Fireball pt.name is "Bola de Fogo"', () => {
+    const fireball = spells.find(s => s.name === 'Fireball')!
+    expect(ptMap[fireball.slug]?.name).toBe('Bola de Fogo')
   })
 
-  it('Fireball pt.name is the established PT-BR name', () => {
-    const fireball = spells.find(s => s.name === 'Fireball')
-    expect(fireball?.pt?.name).toBeDefined()
-    // Spot-check: should contain "Bola" (as in "Bola de Fogo")
-    expect(fireball!.pt!.name.toLowerCase()).toContain('bola')
-  })
-
-  it('Fireball pt.description is in PT with key D&D terms', () => {
-    const fireball = spells.find(s => s.name === 'Fireball')
-    const desc = fireball?.pt?.description?.toLowerCase() ?? ''
-    // Must contain at least one canonical PT term (dano, salvaguarda, or CD)
+  it('Fireball pt.description contains key PT-BR D&D terms', () => {
+    const fireball = spells.find(s => s.name === 'Fireball')!
+    const desc = (ptMap[fireball.slug]?.description ?? '').toLowerCase()
     expect(desc).toMatch(/dano|salvaguarda|cd/)
   })
 })
