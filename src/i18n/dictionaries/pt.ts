@@ -351,6 +351,7 @@ const pt: Record<keyof typeof en, string> = {
   'spells.search_level_all':    'Todos os níveis',
   'spells.search_school_all':   'Todas as escolas',
   'spells.preview_toggle':      'Ver/ocultar detalhes da magia',
+  'spells.search_class_all':    'Todas as classes',
   'spells.add_cantrip':         '+ Adicionar truque',
   'spells.add_at_level':        '+ Adicionar magia nível {n}',
   'spells.name_placeholder':    'Nome da magia',
