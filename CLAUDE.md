@@ -1496,6 +1496,18 @@ SRD embutida e um buscador que preenche a ficha.
   fora do SRD.
 - **Futuro:** colar-e-parsear (magias fora do SRD, preservando o fluxo de copiar/colar).
 
+### Magias — tradução PT, preview e filtro por classe (COMPLETED — PRs #344, #345, #346, #347)
+Complementa a biblioteca SRD com tradução e navegação.
+
+- **Tradução PT (#344/#345):** overlay `srd-spells-pt.json` (341 magias, traduzidas pelo Claude Code no
+  build, glossário PHB-PT), mesclado por slug no loader. A magia adicionada guarda os dois idiomas
+  (`Spell.pt`); `SpellCard`, buscador e preview mostram/editam conforme o idioma selecionado
+  (`useTranslation().lang`); a busca casa nome EN e PT. Magia manual (um idioma) inalterada.
+- **Preview (#346):** no buscador, expandir uma magia mostra o texto completo (via
+  `srdSpellToAppFields(spell, lang)`) antes de adicionar — exatamente o que será inserido, no idioma atual.
+- **Filtro por classe (#347):** `SrdSpell.classes` (100% preenchido) vira filtro no buscador, junto de
+  nível/escola; rótulos por i18n (`class.*`); combina com a busca por nome.
+
 ---
 
 ## Patterns established during C.1.c
