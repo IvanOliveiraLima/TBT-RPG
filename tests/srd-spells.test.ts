@@ -6,6 +6,7 @@ import {
   type SrdSpell,
 } from '@/data/srd-spells'
 import srdData from '@/data/srd-spells.json'
+import srdPtData from '@/data/srd-spells-pt.json'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -26,6 +27,20 @@ function makeSpell(overrides: Partial<SrdSpell> = {}): SrdSpell {
     higherLevel: 'The damage increases by 1d6 for each spell slot level above 3.',
     classes: ['Sorcerer', 'Wizard'],
     edition: '2024',
+    ...overrides,
+  }
+}
+
+function makePt(overrides: Partial<SrdSpell['pt'] & object> = {}): NonNullable<SrdSpell['pt']> {
+  return {
+    name: 'Bola de Fogo',
+    castingTime: 'ação',
+    range: '45 metros',
+    duration: 'Instantânea',
+    components: 'V, S, M',
+    material: 'uma bolinha de guano de morcego e enxofre',
+    description: 'Um brilhante clarão parte de você…',
+    higherLevel: 'O dano aumenta em 1d6 para cada nível de espaço de magia acima do 3º.',
     ...overrides,
   }
 }
@@ -205,6 +220,56 @@ describe('searchSpells', () => {
     const results = searchSpells(FIXTURE_LIST, 'zzznomatch')
     expect(results).toHaveLength(0)
   })
+
+  it('finds spell by PT name substring', () => {
+    const list = [
+      makeSpell({ name: 'Fireball', pt: makePt({ name: 'Bola de Fogo' }) }),
+      makeSpell({ slug: 'bless', name: 'Bless', pt: makePt({ name: 'Abençoar' }) }),
+    ]
+    const results = searchSpells(list, 'bola')
+    expect(results.map(s => s.name)).toContain('Fireball')
+    expect(results.map(s => s.name)).not.toContain('Bless')
+  })
+
+  it('finds spell by PT name when EN name does not match', () => {
+    const list = [
+      makeSpell({ name: 'Fireball', pt: makePt({ name: 'Bola de Fogo' }) }),
+      makeSpell({ slug: 'bless', name: 'Bless', pt: makePt({ name: 'Abençoar' }) }),
+    ]
+    // 'abenç' only appears in the PT name
+    const results = searchSpells(list, 'abenç')
+    expect(results.map(s => s.name)).toContain('Bless')
+    expect(results.map(s => s.name)).not.toContain('Fireball')
+  })
+
+  it('PT prefix match ranks before PT substring match', () => {
+    const list = [
+      makeSpell({ slug: 'bless', name: 'Bless', pt: makePt({ name: 'Abençoar' }) }),
+      makeSpell({ slug: 'fireball', name: 'Fireball', pt: makePt({ name: 'Bola de Fogo' }) }),
+      makeSpell({ slug: 'wall-of-fire', name: 'Wall of Fire', pt: makePt({ name: 'Muro de Fogo' }) }),
+    ]
+    // 'fogo' is a substring in both "Bola de Fogo" and "Muro de Fogo"; neither starts with 'fogo'
+    // "Bola de Fogo" starts with 'b', not 'fogo'
+    const results = searchSpells(list, 'fogo')
+    expect(results.length).toBe(2)
+    expect(results.map(s => s.name)).toContain('Fireball')
+    expect(results.map(s => s.name)).toContain('Wall of Fire')
+    expect(results.map(s => s.name)).not.toContain('Bless')
+  })
+
+  it('EN prefix still ranks before PT substring', () => {
+    const list = [
+      makeSpell({ name: 'Fireball', pt: makePt({ name: 'Bola de Fogo' }) }),
+      makeSpell({ slug: 'fire-bolt', name: 'Fire Bolt', pt: makePt({ name: 'Raio de Fogo' }) }),
+      makeSpell({ slug: 'wall-of-fire', name: 'Wall of Fire', pt: makePt({ name: 'Muro de Fogo' }) }),
+    ]
+    const results = searchSpells(list, 'fire')
+    const firstTwo = results.slice(0, 2).map(s => s.name)
+    expect(firstTwo).toContain('Fireball')
+    expect(firstTwo).toContain('Fire Bolt')
+    const wallIdx = results.findIndex(s => s.name === 'Wall of Fire')
+    expect(wallIdx).toBeGreaterThan(1)
+  })
 })
 
 // ─── JSON integrity guards (smoke tests on the committed data) ────────────────
@@ -213,6 +278,11 @@ interface SrdSpellsJson {
   _meta: { totalCount: number }
   spells: SrdSpell[]
 }
+
+const PT_REQUIRED_KEYS = [
+  'name', 'castingTime', 'range', 'duration',
+  'components', 'material', 'description', 'higherLevel',
+] as const
 
 describe('srd-spells.json integrity', () => {
   const { spells } = srdData as unknown as SrdSpellsJson
@@ -246,5 +316,38 @@ describe('srd-spells.json integrity', () => {
     const fireball = spells.find(s => s.name === 'Fireball')
     expect(fireball).toBeDefined()
     expect(fireball!.castingTime).toBe('action')
+  })
+})
+
+describe('srd-spells-pt.json integrity', () => {
+  const { spells } = srdData as unknown as SrdSpellsJson
+  const ptMap = srdPtData as Record<string, Record<string, string>>
+
+  it('has an entry for every spell slug', () => {
+    const missing = spells.filter(s => !ptMap[s.slug])
+    expect(missing.map(s => `${s.slug} (${s.name})`)).toEqual([])
+  })
+
+  it('every entry has all 8 required keys as strings (name and description non-empty)', () => {
+    const invalid = spells.filter(s => {
+      const pt = ptMap[s.slug]
+      if (!pt) return true
+      // All 8 keys must be present as strings
+      if (PT_REQUIRED_KEYS.some(k => typeof pt[k] !== 'string')) return true
+      // name and description must be non-empty (higherLevel and material may be "")
+      return !pt['name'] || !pt['description']
+    })
+    expect(invalid.map(s => s.name)).toEqual([])
+  })
+
+  it('Fireball pt.name is "Bola de Fogo"', () => {
+    const fireball = spells.find(s => s.name === 'Fireball')!
+    expect(ptMap[fireball.slug]?.name).toBe('Bola de Fogo')
+  })
+
+  it('Fireball pt.description contains key PT-BR D&D terms', () => {
+    const fireball = spells.find(s => s.name === 'Fireball')!
+    const desc = (ptMap[fireball.slug]?.description ?? '').toLowerCase()
+    expect(desc).toMatch(/dano|salvaguarda|cd/)
   })
 })
