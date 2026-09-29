@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import type { SrdSpell } from '@/data/srd-spells'
-import { loadSrdSpells, searchSpells, SRD_ATTRIBUTION } from '@/data/srd-spells'
+import { loadSrdSpells, searchSpells, srdSpellToAppFields, SRD_ATTRIBUTION } from '@/data/srd-spells'
 import { SPELL_SCHOOLS } from '@/data/canonical/spell-schools'
 import { useTranslation } from '@/i18n'
 import type { SpellSchool } from '@/domain/character'
@@ -31,15 +31,17 @@ export interface SpellSearchModalProps {
 }
 
 export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchModalProps) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
 
   const [all, setAll] = useState<SrdSpell[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [levelFilter, setLevelFilter] = useState<number | undefined>(undefined)
   const [schoolFilter, setSchoolFilter] = useState<string>('')
+  const [classFilter, setClassFilter] = useState<string>('')
 
   const [added, setAdded] = useState<Set<string>>(() => new Set())
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null)
 
   // Load spells on mount, then initialise added from existingNames
   useEffect(() => {
@@ -62,12 +64,18 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
+  const classOptions = useMemo(
+    () => [...new Set(all.flatMap(s => s.classes ?? []))].sort((a, b) => a.localeCompare(b)),
+    [all],
+  )
+
   const results = useMemo(() => {
-    const opts: { level?: number; school?: string } = {}
+    const opts: { level?: number; school?: string; class?: string } = {}
     if (levelFilter !== undefined) opts.level = levelFilter
     if (schoolFilter !== '') opts.school = schoolFilter
+    if (classFilter !== '') opts.class = classFilter
     return searchSpells(all, query, opts)
-  }, [all, query, levelFilter, schoolFilter])
+  }, [all, query, levelFilter, schoolFilter, classFilter])
 
   function handleAdd(spell: SrdSpell) {
     onAdd(spell)
@@ -76,6 +84,9 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
 
   const schoolKey = (school: SpellSchool) =>
     `spells.school_${school}` as Parameters<typeof t>[0]
+
+  const classKey = (c: string) =>
+    `class.${c.toLowerCase()}` as Parameters<typeof t>[0]
 
   return (
     <div
@@ -222,6 +233,30 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
               <option key={s} value={s}>{t(schoolKey(s))}</option>
             ))}
           </select>
+
+          {/* Class select */}
+          <select
+            value={classFilter}
+            onChange={e => setClassFilter(e.target.value)}
+            data-testid="spell-search-class"
+            className="dark-select"
+            style={{
+              flex:         '0 0 auto',
+              background:   T.bgCard,
+              border:       `1px solid ${T.borderDefault}`,
+              borderRadius:  6,
+              color:         T.textPrimary,
+              fontFamily:    T.sans,
+              fontSize:      12,
+              padding:       '6px 8px',
+              cursor:        'pointer',
+            }}
+          >
+            <option value="">{t('spells.search_class_all')}</option>
+            {classOptions.map(c => (
+              <option key={c} value={c}>{t(classKey(c))}</option>
+            ))}
+          </select>
         </div>
 
         {/* ── Results ── */}
@@ -240,67 +275,107 @@ export function SpellSearchModal({ existingNames, onAdd, onClose }: SpellSearchM
           ) : (
             results.map(spell => {
               const isAdded = added.has(spell.slug)
+              const isExpanded = expandedSlug === spell.slug
+              const nm = (lang === 'pt' && spell.pt?.name) ? spell.pt.name : spell.name
               return (
                 <div
                   key={spell.slug}
                   data-testid={`srd-spell-${spell.slug}`}
-                  style={{
-                    display:     'flex',
-                    alignItems:  'center',
-                    gap:         10,
-                    padding:     '7px 16px',
-                    borderBottom: `1px solid ${T.borderSubtle}`,
-                  }}
+                  style={{ borderBottom: `1px solid ${T.borderSubtle}` }}
                 >
-                  {/* Spell info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize:    13,
-                        fontWeight:  500,
-                        color:       T.textPrimary,
-                        fontFamily:  T.sans,
-                        whiteSpace:  'nowrap',
-                        overflow:    'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {spell.name}
-                    </div>
-                    <div
-                      style={{
-                        fontSize:   10,
-                        color:      T.textMuted,
-                        fontFamily: T.sans,
-                        marginTop:  1,
-                      }}
-                    >
-                      {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
-                    </div>
-                  </div>
-
-                  {/* Add / Added button */}
-                  <button
-                    type="button"
-                    data-testid={`srd-spell-add-${spell.slug}`}
-                    disabled={isAdded}
-                    onClick={() => handleAdd(spell)}
+                  {/* ── Row: info toggle + add button ── */}
+                  <div
                     style={{
-                      flexShrink:   0,
-                      background:   isAdded ? 'rgba(85,160,90,0.15)' : 'transparent',
-                      border:       `1px solid ${isAdded ? '#55A05A' : T.borderDefault}`,
-                      borderRadius:  6,
-                      color:         isAdded ? '#55A05A' : T.textPrimary,
-                      fontFamily:    T.sans,
-                      fontSize:      11,
-                      fontWeight:    600,
-                      padding:       '4px 10px',
-                      cursor:        isAdded ? 'default' : 'pointer',
-                      whiteSpace:    'nowrap',
+                      display:    'flex',
+                      alignItems: 'center',
+                      gap:        10,
+                      padding:    '7px 16px',
                     }}
                   >
-                    {isAdded ? t('spells.search_added') : t('spells.search_add')}
-                  </button>
+                    {/* Clickable info area — toggles preview */}
+                    <div
+                      role="button"
+                      aria-expanded={isExpanded}
+                      aria-label={t('spells.preview_toggle')}
+                      data-testid={`srd-spell-toggle-${spell.slug}`}
+                      onClick={() => setExpandedSlug(prev => prev === spell.slug ? null : spell.slug)}
+                      style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+                    >
+                      <div
+                        style={{
+                          display:      'flex',
+                          alignItems:   'center',
+                          gap:          4,
+                          fontSize:     13,
+                          fontWeight:   500,
+                          color:        T.textPrimary,
+                          fontFamily:   T.sans,
+                          whiteSpace:   'nowrap',
+                          overflow:     'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        <span style={{ fontSize: 9, color: T.textMuted, flexShrink: 0 }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                        {nm}
+                      </div>
+                      <div
+                        style={{
+                          fontSize:   10,
+                          color:      T.textMuted,
+                          fontFamily: T.sans,
+                          marginTop:  1,
+                          paddingLeft: 13,
+                        }}
+                      >
+                        {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
+                      </div>
+                    </div>
+
+                    {/* Add / Added button */}
+                    <button
+                      type="button"
+                      data-testid={`srd-spell-add-${spell.slug}`}
+                      disabled={isAdded}
+                      onClick={() => handleAdd(spell)}
+                      style={{
+                        flexShrink:   0,
+                        background:   isAdded ? 'rgba(85,160,90,0.15)' : 'transparent',
+                        border:       `1px solid ${isAdded ? '#55A05A' : T.borderDefault}`,
+                        borderRadius:  6,
+                        color:         isAdded ? '#55A05A' : T.textPrimary,
+                        fontFamily:    T.sans,
+                        fontSize:      11,
+                        fontWeight:    600,
+                        padding:       '4px 10px',
+                        cursor:        isAdded ? 'default' : 'pointer',
+                        whiteSpace:    'nowrap',
+                      }}
+                    >
+                      {isAdded ? t('spells.search_added') : t('spells.search_add')}
+                    </button>
+                  </div>
+
+                  {/* ── Preview panel ── */}
+                  {isExpanded && (() => {
+                    const f = srdSpellToAppFields(spell, lang)
+                    return (
+                      <div
+                        data-testid={`srd-spell-preview-${spell.slug}`}
+                        style={{ padding: '4px 16px 10px', fontFamily: T.sans }}
+                      >
+                        <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
+                          {`Nv ${spell.level} · ${t(schoolKey(spell.school as SpellSchool))}`}
+                          {f.castingTime ? ` · ${f.castingTime}` : ''}
+                          {f.range ? ` · ${f.range}` : ''}
+                        </div>
+                        <div style={{ fontSize: 12, color: T.textPrimary, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                          {f.description}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               )
             })

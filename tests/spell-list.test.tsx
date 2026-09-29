@@ -335,3 +335,84 @@ describe('SpellList', () => {
     expect(screen.queryByTestId('spell-prepared-s2')).toBeNull()
   })
 })
+
+// ── SpellCard — PT display and editField routing ───────────────────────────────
+
+const PT_FIREBALL: Spell = {
+  id: 'fire1',
+  name: 'Fireball',
+  level: 3,
+  school: 'evocation',
+  castingTime: '1 action',
+  range: '150 feet',
+  description: 'A bright streak.',
+  prepared: true,
+  pt: {
+    name: 'Bola de Fogo',
+    castingTime: '1 ação',
+    range: '150 pés',
+    description: 'Uma faísca brilhante.',
+  },
+}
+
+const CHAR_WITH_PT_SPELL: Character = {
+  ...KAEL,
+  spells: [PT_FIREBALL],
+  spellSlots: { '3': { current: 1, max: 1 } },
+}
+
+describe('SpellCard — PT display and editField routing', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('compact row shows PT name when lang=PT and spell.pt exists', () => {
+    renderWithI18n(<SpellList character={CHAR_WITH_PT_SPELL} />, 'pt')
+    expect(screen.getByText('Bola de Fogo')).toBeDefined()
+    expect(screen.queryByText('Fireball')).toBeNull()
+  })
+
+  it('compact row shows EN name when lang=EN even if spell.pt exists', () => {
+    renderWithI18n(<SpellList character={CHAR_WITH_PT_SPELL} />, 'en')
+    expect(screen.getByText('Fireball')).toBeDefined()
+    expect(screen.queryByText('Bola de Fogo')).toBeNull()
+  })
+
+  it('spell without pt shows EN name in PT lang (no translation available)', () => {
+    // KAEL spells have no pt, so they always show their base EN names
+    renderWithI18n(<SpellList character={KAEL} />, 'pt')
+    expect(screen.getByText('Vicious Mockery')).toBeDefined()
+  })
+
+  it('expanded name input shows PT value when lang=PT and spell.pt exists', () => {
+    renderWithI18n(<SpellList character={CHAR_WITH_PT_SPELL} onUpdate={vi.fn()} />, 'pt')
+    // Click the PT name span to expand the card
+    fireEvent.click(screen.getByText('Bola de Fogo'))
+    const nameInput = screen.getByTestId('spell-name-fire1') as HTMLInputElement
+    expect(nameInput.value).toBe('Bola de Fogo')
+  })
+
+  it('editing name in PT routes update to pt.name (base name unchanged)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SpellList character={CHAR_WITH_PT_SPELL} onUpdate={onUpdate} />, 'pt')
+    fireEvent.click(screen.getByText('Bola de Fogo'))
+    const nameInput = screen.getByTestId('spell-name-fire1')
+    fireEvent.change(nameInput, { target: { value: 'Bola de Fogo Editada' } })
+
+    const call = onUpdate.mock.calls[0]![0] as { spells: Spell[] }
+    const updated = call.spells.find(s => s.id === 'fire1')!
+    expect(updated.pt?.name).toBe('Bola de Fogo Editada')
+    expect(updated.name).toBe('Fireball')   // EN base field unchanged
+  })
+
+  it('editing name in EN routes update to base name field (pt.name unchanged)', () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(<SpellList character={CHAR_WITH_PT_SPELL} onUpdate={onUpdate} />, 'en')
+    fireEvent.click(screen.getByText('Fireball'))
+    const nameInput = screen.getByTestId('spell-name-fire1')
+    fireEvent.change(nameInput, { target: { value: 'Fireball Enhanced' } })
+
+    const call = onUpdate.mock.calls[0]![0] as { spells: Spell[] }
+    const updated = call.spells.find(s => s.id === 'fire1')!
+    expect(updated.name).toBe('Fireball Enhanced')
+    expect(updated.pt?.name).toBe('Bola de Fogo')  // PT field unchanged
+  })
+})

@@ -348,6 +348,8 @@ const en = {
   'spells.search_empty':        'No spells found',
   'spells.search_level_all':    'All levels',
   'spells.search_school_all':   'All schools',
+  'spells.preview_toggle':      'Toggle spell details',
+  'spells.search_class_all':    'All classes',
   'spells.add_cantrip':         '+ Add cantrip',
   'spells.add_at_level':        '+ Add level {n} spell',
   'spells.name_placeholder':    'Spell name',

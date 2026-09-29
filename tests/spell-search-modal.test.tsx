@@ -36,6 +36,16 @@ const { FIXTURE_SRD, SRD_FIREBALL } = vi.hoisted(() => {
     higherLevel:  'Damage increases.',
     classes:      ['Sorcerer', 'Wizard'],
     edition:      '2024',
+    pt: {
+      name:        'Bola de Fogo',
+      castingTime: '1 ação',
+      range:       '150 pés',
+      duration:    'instantânea',
+      components:  'V, S, M',
+      material:    'guano de morcego',
+      description: 'Uma faísca brilhante.',
+      higherLevel: 'O dano aumenta.',
+    },
   }
   const SRD_BLESS: SrdSpell = {
     slug:         'bless',
@@ -276,6 +286,193 @@ describe('SpellSearchModal', () => {
     const btn = screen.getByTestId('srd-spell-add-fireball')
     expect(btn.textContent).toBe('Adicionar')
   })
+
+  it('shows PT name in results when lang=PT and spell has pt translation', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => {
+      // SRD_FIREBALL has pt.name = 'Bola de Fogo', displayed in PT lang
+      expect(screen.getByText('Bola de Fogo')).toBeDefined()
+    })
+    // EN name should not appear for the spell that has a PT translation
+    expect(screen.queryByText('Fireball')).toBeNull()
+  })
+
+  // ── Preview panel ──────────────────────────────────────────────────────────
+
+  it('toggle button is present for each spell result', async () => {
+    renderModal()
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-toggle-fireball')).toBeDefined()
+      expect(screen.getByTestId('srd-spell-toggle-bless')).toBeDefined()
+    })
+  })
+
+  it('clicking toggle shows the preview panel with spell description', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    // Preview not visible before toggle
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    expect(preview).toBeDefined()
+    expect(preview.textContent).toContain('A bright streak.')
+  })
+
+  it('clicking toggle again collapses the preview', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.getByTestId('srd-spell-preview-fireball')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+  })
+
+  it('opening a second spell closes the first (one at a time)', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    expect(screen.getByTestId('srd-spell-preview-fireball')).toBeDefined()
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-bless'))
+    expect(screen.queryByTestId('srd-spell-preview-fireball')).toBeNull()
+    expect(screen.getByTestId('srd-spell-preview-bless')).toBeDefined()
+  })
+
+  it('preview shows PT description when lang=PT and spell has PT translation', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    // SRD_FIREBALL.pt.description = 'Uma faísca brilhante.'
+    expect(preview.textContent).toContain('Uma faísca brilhante.')
+    expect(preview.textContent).not.toContain('A bright streak.')
+  })
+
+  it('preview shows EN description when lang=EN', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+
+    const preview = screen.getByTestId('srd-spell-preview-fireball')
+    expect(preview.textContent).toContain('A bright streak.')
+  })
+
+  it('Add button still works when preview is expanded', async () => {
+    const { onAdd } = renderModal()
+    await waitFor(() => screen.getByTestId('srd-spell-toggle-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-toggle-fireball'))
+    fireEvent.click(screen.getByTestId('srd-spell-add-fireball'))
+
+    expect(onAdd).toHaveBeenCalledWith(SRD_FIREBALL)
+    const btn = screen.getByTestId('srd-spell-add-fireball') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+  })
+
+  // ── Class filter ────────────────────────────────────────────────────────────
+
+  it('class filter select is present with "All classes" default', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    const select = screen.getByTestId('spell-search-class') as HTMLSelectElement
+    expect(select.value).toBe('')
+  })
+
+  it('class filter lists classes derived from fixture spells', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    // Fixtures: Fireball=[Sorcerer,Wizard], Bless=[Cleric,Paladin], MageArmor=[Wizard]
+    // Distinct sorted: Cleric, Paladin, Sorcerer, Wizard
+    const select = screen.getByTestId('spell-search-class')
+    expect(select.textContent).toContain('Cleric')
+    expect(select.textContent).toContain('Wizard')
+    expect(select.textContent).not.toContain('Druid')   // not in fixtures
+  })
+
+  it('filtering by Wizard shows Fireball and Mage Armor, hides Bless', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-fireball')).toBeDefined()
+      expect(screen.getByTestId('srd-spell-mage-armor')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-bless')).toBeNull()
+    })
+  })
+
+  it('filtering by Cleric shows only Bless', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Cleric' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-bless')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-fireball')).toBeNull()
+      expect(screen.queryByTestId('srd-spell-mage-armor')).toBeNull()
+    })
+  })
+
+  it('class filter combines with name search', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+    fireEvent.change(screen.getByTestId('spell-search-input'), { target: { value: 'mage' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-mage-armor')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-fireball')).toBeNull()
+    })
+  })
+
+  it('class filter combines with level filter', async () => {
+    renderModal()
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+
+    // Wizard level-3 spells: only Fireball (MageArmor is level 1)
+    fireEvent.change(screen.getByTestId('spell-search-class'), { target: { value: 'Wizard' } })
+    fireEvent.change(screen.getByTestId('spell-search-level'), { target: { value: '3' } })
+
+    await waitFor(() => {
+      expect(screen.getByTestId('srd-spell-fireball')).toBeDefined()
+      expect(screen.queryByTestId('srd-spell-mage-armor')).toBeNull()
+    })
+  })
+
+  it('shows PT class labels in PT lang', async () => {
+    localStorage.setItem('tbt-rpg-v2-lang', 'pt')
+    render(
+      <I18nProvider>
+        <SpellSearchModal existingNames={new Set()} onAdd={vi.fn()} onClose={vi.fn()} />
+      </I18nProvider>
+    )
+    await waitFor(() => screen.getByTestId('spell-search-class'))
+    const select = screen.getByTestId('spell-search-class')
+    // 'class.wizard' in PT = 'Mago'
+    expect(select.textContent).toContain('Mago')
+  })
 })
 
 // ─── SpellList integration tests ─────────────────────────────────────────────
@@ -368,5 +565,26 @@ describe('SpellList — SRD spell search button', () => {
 
     const btn = screen.getByTestId('srd-spell-add-fireball') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
+  })
+
+  it('saves spell.pt when adding an SRD spell that has a PT translation', async () => {
+    const onUpdate = vi.fn()
+    renderWithI18n(
+      <SpellList character={BASE_CHAR} onUpdate={onUpdate} />,
+      'en',
+    )
+
+    fireEvent.click(screen.getByTestId('open-spell-search'))
+    await waitFor(() => screen.getByTestId('srd-spell-add-fireball'))
+
+    fireEvent.click(screen.getByTestId('srd-spell-add-fireball'))
+
+    const call = onUpdate.mock.calls[0]?.[0] as { spells: Spell[] }
+    const added = call.spells[call.spells.length - 1]!
+    // SRD_FIREBALL has pt, so the added Spell must carry a pt snapshot
+    expect(added.pt).toBeDefined()
+    expect(added.pt!.name).toBe('Bola de Fogo')
+    // Base EN name is always preserved
+    expect(added.name).toBe('Fireball')
   })
 })
